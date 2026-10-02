@@ -54,8 +54,8 @@
 
 | ID | 조건 |
 |---|---|
-| C1 | rules.json `screens_required` 컴포넌트가 해당 화면 DOM에 존재 (MVP: 13 = home-summary·quick-action) |
-| C2 | 폭 390: 화면 2~13에 `tab-bar` 1개·`tab-item` 4개, 화면 1·14에 0 / 폭 1440: `tab-bar` 0 |
+| C1 | rules.json `screens_required` 컴포넌트가 해당 화면 DOM에 존재 (MVP: 13 = home-summary·quick-action, 15 = landing-hero·feature-card·landing-cta) |
+| C2 | 폭 390: 화면 2~13에 `tab-bar` 1개·`tab-item` 4개, 화면 1·14·15에 0 / 폭 1440: `tab-bar` 0 |
 
 ### N — 어기면 안 되는 것 ★
 
@@ -75,4 +75,4 @@
 
 ## 3. 사람 승인
 
-D3 화면 6개가 끝나면 Vercel 미리보기 URL과 V1 비교 이미지로 approval.md를 만든다. 형식은 디자인 하네스와 같다(result·reason·approver·date).
+D3 화면 7개가 끝나면 Vercel 미리보기 URL과 V1 비교 이미지로 approval.md를 만든다. 형식은 디자인 하네스와 같다(result·reason·approver·date).

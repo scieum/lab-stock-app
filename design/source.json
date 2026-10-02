@@ -1,8 +1,8 @@
 {
   "repo": "https://github.com/scieum/harness",
-  "commit": "b55a661",
+  "commit": "19c56dd",
   "path": "harness/rules.json",
-  "sha256": "72e3b3a4c76b917b0c5f88a0cbbde849380407280141d3dbb077755af5ecf96d",
+  "sha256": "6ee04520b0d3ba4d2b9c37fec24878fe6c23168c4f542bb0f2edc3ca825039b1",
   "figma_file": "https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2",
   "figma_page": "00 최신 시안",
   "frames_from_runs": {
@@ -17,7 +17,9 @@
     "4-mobile": "runs/20261002-1441",
     "4-desktop": "runs/20261002-1441",
     "14-mobile": "runs/20261002-2019",
-    "14-desktop": "runs/20261002-2019"
+    "14-desktop": "runs/20261002-2019",
+    "15-mobile": "runs/20261003-0112",
+    "15-desktop": "runs/20261003-0112"
   },
-  "copied": "2026-10-02 (2차: 로그인/회원가입 분리)"
+  "copied": "2026-10-03 (3차: 화면 15 랜딩)"
 }

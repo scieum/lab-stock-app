@@ -5,7 +5,7 @@
 ## 1. 단계
 
 ```
-D0 셋업 ─▶ D1 토큰·컴포넌트 ─▶ D2 데이터·권한 ─▶ D3 화면(×6) ─▶ [G-승인] ─▶ D4 최종 검수
+D0 셋업 ─▶ D1 토큰·컴포넌트 ─▶ D2 데이터·권한 ─▶ D3 화면(×7) ─▶ [G-승인] ─▶ D4 최종 검수
 ```
 
 | 단계 | 하는 일 | 입력 | 출력 | 게이트 |
@@ -13,7 +13,7 @@ D0 셋업 ─▶ D1 토큰·컴포넌트 ─▶ D2 데이터·권한 ─▶ D3 �
 | D0 셋업 | Next.js·Supabase 연결, 디자인 규칙 가져오기 | design/rules.json | 빈 앱이 빌드·배포됨 | G-D0 |
 | D1 토큰·컴포넌트 | rules.json → `styles/tokens.css` 생성, 공통 컴포넌트 | rules.json, Figma 00 최신 시안 | components/*, 컴포넌트 갤러리 페이지 | G-D1 |
 | D2 데이터·권한 | 테이블·RLS·시드, NEIS 중계 API | d2 §5 결정 | supabase/migrations, app/api/neis | G-D2 |
-| D3 화면 | 화면 1개씩 (14 → 1 → 13 → 2 → 3 → 4) | 시안 프레임 2장(mobile·desktop), D1·D2 | app/(screens)/… | G-D3 (화면마다) |
+| D3 화면 | 화면 1개씩 (15 → 14 → 1 → 13 → 2 → 3 → 4) | 시안 프레임 2장(mobile·desktop), D1·D2 | app/(screens)/… | G-D3 (화면마다) |
 | G-승인 | 사람이 미리보기 URL에서 확인 | Vercel 미리보기 | approval.md | 사람 |
 | D4 최종 검수 | 전체 게이트 재실행 | 전부 | judge/gate-D4.json | G-D4 |
 
