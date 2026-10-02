@@ -111,9 +111,9 @@ export default function GalleryPage() {
         </Item>
 
         <Item name="ex-auth-form-card">
-          <AuthFormCard title="로그인" subtitle="우리 학교를 선택하고 로그인하세요" steps={{ total: 3, done: 3 }}>
-            <TextInput placeholder="아이디" autoComplete="username" />
-            <TextInput placeholder="비밀번호" type="password" autoComplete="current-password" />
+          <AuthFormCard title="로그인" subtitle="개인 이메일로 로그인하세요">
+            <TextInput label="개인 이메일" placeholder="name@example.com" autoComplete="username" />
+            <TextInput label="비밀번호" placeholder="비밀번호를 입력하세요" type="password" autoComplete="current-password" />
             <ButtonPrimary type="submit" fullWidth>
               로그인
             </ButtonPrimary>

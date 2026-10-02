@@ -1,55 +1,19 @@
-/* 화면 1 — 모바일: content padding 16/16/32/16 · gap 24, 카드 전폭 */
+/*
+ * 비밀번호 찾기·재설정 (시안 없음 — 화면 1과 같은 틀: nav-pill + ex-auth-form-card)
+ * 모바일: content padding 16/16/32/16 · gap 24 / 데스크톱: 24/64/32/64, 카드 폭 480 가운데
+ */
 .page {
   display: flex;
   flex-direction: column;
   gap: var(--space-24);
   min-height: 100dvh;
   padding: var(--space-16) var(--space-16) var(--space-32);
+  box-sizing: border-box;
 }
 
-.layout {
+.main {
   display: flex;
   flex-direction: column;
-}
-
-.intro {
-  display: none;
-}
-
-.formColumn {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-24);
-}
-
-/* 시안 signup-row: 안내 문구 + 회원가입 pill, 가운데 정렬 · 사이 8 */
-.signupRow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-8);
-}
-
-.signupPrompt {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-13);
-  line-height: var(--line-height-normal);
-}
-
-.introTitle {
-  margin: 0;
-  color: var(--color-text);
-  font-size: var(--font-size-32);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-normal);
-}
-
-.introBody {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-17);
-  font-weight: var(--font-weight-light);
-  line-height: var(--line-height-normal);
 }
 
 .fields {
@@ -68,8 +32,7 @@
   line-height: var(--line-height-normal);
 }
 
-/* 시안 link-find-password: 카드 안 마지막 줄, 높이 44 · 좌우 16, 가운데 */
-.findPassword {
+.backLink {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -81,17 +44,16 @@
   text-decoration: none;
 }
 
-.findPassword:hover {
+.backLink:hover {
   text-decoration: underline;
 }
 
-.findPassword:focus-visible {
+.backLink:focus-visible {
   outline: var(--border-width) solid var(--color-highlight);
   outline-offset: calc(var(--space-4) * -1);
   border-radius: var(--radius-pill);
 }
 
-/* 비밀번호 보기 (시안 icon-eye) */
 .eye {
   display: inline-flex;
   align-items: center;
@@ -112,24 +74,17 @@
   height: var(--icon-md);
 }
 
-/* 데스크톱: content padding 24/64/32/64 · gap 24, 소개(768) + 카드(480) · gap 64 */
 @media (min-width: 1024px) {
   .page {
-    gap: var(--space-24);
     padding: var(--space-24) var(--space-64) var(--space-32);
   }
 
-  .layout {
-    display: grid;
-    grid-template-columns: 8fr 5fr;
-    align-items: start;
-    gap: var(--space-64);
+  .main {
+    align-items: center;
   }
 
-  .intro {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-16);
-    padding-top: var(--space-64);
+  .main > * {
+    width: 100%;
+    max-width: calc(var(--space-64) * 7 + var(--space-32));
   }
 }

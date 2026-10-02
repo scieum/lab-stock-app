@@ -33,6 +33,12 @@
   cursor: not-allowed;
 }
 
+/* 고른 단계: 연하늘 바탕 + 하늘 테두리 (시안 select-box 선택됨) */
+.selected {
+  border-color: var(--color-highlight);
+  background: var(--color-highlight-soft);
+}
+
 .open,
 .box:focus-visible {
   border-color: var(--color-highlight);
@@ -82,7 +88,7 @@
 
 .option,
 .empty {
-  padding: var(--space-8) var(--space-16);
+  padding: var(--space-12) var(--space-16);
   color: var(--color-text);
   font-size: var(--font-size-15);
   line-height: var(--line-height-normal);

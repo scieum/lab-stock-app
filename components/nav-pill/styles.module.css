@@ -35,6 +35,15 @@
   white-space: nowrap;
 }
 
+.endTitle {
+  flex-shrink: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
 .back {
   display: inline-flex;
   color: var(--color-highlight);

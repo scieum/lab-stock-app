@@ -279,6 +279,30 @@ export type Database = {
           user_name: string | null
         }[]
       }
+      register_profile: {
+        Args: {
+          p_display_name: string
+          p_neis_code: string
+          p_office_code: string
+          p_region: string
+          p_school_name: string
+          p_sido: string
+          p_user_id: string
+        }
+        Returns: {
+          created_at: string
+          display_name: string
+          role: string
+          school_id: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       record_usage: {
         Args: { amount: number; reagent_id: string }
         Returns: {

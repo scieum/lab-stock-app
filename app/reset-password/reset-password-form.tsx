@@ -1,48 +1,48 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ButtonPrimary } from "@/components/button-primary";
 import { AuthFormCard } from "@/components/ex-auth-form-card";
 import { Icon } from "@/components/icons";
 import { TextInput } from "@/components/text-input";
-import styles from "./login.module.css";
+import { newPasswordProblem } from "@/lib/auth/password-rules";
+import { PASSWORD_MIN } from "@/lib/auth/signup-rules";
+import styles from "../forgot-password/recovery.module.css";
 
-type Props = {
-  redirectTo: string;
-  /** 다른 화면에서 넘어온 안내 (비밀번호 변경 완료·메일 링크 만료 등) */
-  notice?: string | null;
-};
-
-/** 화면 1 로그인 폼 — 개인 이메일·비밀번호만 (학교는 가입 때 정해진 프로필에서) */
-export function LoginForm({ redirectTo, notice }: Props) {
-  const [email, setEmail] = useState("");
+export function ResetPasswordForm() {
+  const router = useRouter();
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const canSubmit = email.trim() !== "" && password !== "" && !submitting;
-
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!canSubmit) return;
+    if (submitting) return;
+    const problem = newPasswordProblem(password, passwordConfirm);
+    if (problem) {
+      setError(problem);
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch("/api/auth/password-update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({ password, passwordConfirm }),
       });
       const body = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
       if (!res.ok || !body.ok) {
-        setError(body.error ?? "로그인에 실패했어요. 잠시 후 다시 시도하세요.");
+        setError(body.error ?? "비밀번호를 바꾸지 못했어요. 잠시 후 다시 시도하세요.");
         setSubmitting(false);
         return;
       }
-      // 세션 쿠키가 생겼으므로 전체 이동 (proxy가 새 세션을 본다)
-      window.location.assign(redirectTo);
+      // 서버가 세션을 지웠다 — 새 비밀번호로 다시 로그인
+      router.replace("/login?reset=done");
+      router.refresh();
     } catch {
       setError("서버에 연결하지 못했어요. 잠시 후 다시 시도하세요.");
       setSubmitting(false);
@@ -50,28 +50,22 @@ export function LoginForm({ redirectTo, notice }: Props) {
   };
 
   return (
-    <AuthFormCard title="로그인" subtitle="개인 이메일로 로그인하세요" onSubmit={onSubmit} noValidate aria-label="로그인">
-      {notice ? (
-        <p className={styles.message} role="status">
-          {notice}
-        </p>
-      ) : null}
+    <AuthFormCard
+      title="새 비밀번호"
+      subtitle="앞으로 로그인할 때 쓸 비밀번호를 정하세요"
+      onSubmit={onSubmit}
+      noValidate
+      aria-label="새 비밀번호"
+    >
       <div className={styles.fields}>
         <TextInput
-          label="개인 이메일"
-          type="email"
-          name="email"
-          placeholder="name@example.com"
-          autoComplete="username"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <TextInput
-          label="비밀번호"
+          label="새 비밀번호"
+          required
           type={showPassword ? "text" : "password"}
           name="password"
-          placeholder="비밀번호를 입력하세요"
-          autoComplete="current-password"
+          placeholder={`${PASSWORD_MIN}자 이상 입력하세요`}
+          autoComplete="new-password"
+          minLength={PASSWORD_MIN}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           trailing={
@@ -86,18 +80,25 @@ export function LoginForm({ redirectTo, notice }: Props) {
             </button>
           }
         />
+        <TextInput
+          label="새 비밀번호 확인"
+          required
+          type={showPassword ? "text" : "password"}
+          name="passwordConfirm"
+          placeholder="비밀번호를 한 번 더 입력하세요"
+          autoComplete="new-password"
+          value={passwordConfirm}
+          onChange={(e) => setPasswordConfirm(e.target.value)}
+        />
       </div>
       {error ? (
         <p className={styles.message} role="alert">
           {error}
         </p>
       ) : null}
-      <ButtonPrimary type="submit" fullWidth disabled={!canSubmit}>
-        {submitting ? "로그인 중…" : "로그인"}
+      <ButtonPrimary type="submit" fullWidth disabled={submitting}>
+        {submitting ? "저장하는 중…" : "비밀번호 바꾸기"}
       </ButtonPrimary>
-      <Link href="/forgot-password" className={styles.findPassword}>
-        비밀번호 찾기
-      </Link>
     </AuthFormCard>
   );
 }

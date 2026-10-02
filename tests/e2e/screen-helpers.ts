@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type Page, type TestInfo } from "@playwright/test";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import "./db-helpers"; // .env.local 로딩 (계정·공개 키 환경변수)
 import { type Role } from "./db-helpers";
 
 type RoleRule = {
@@ -28,6 +29,7 @@ export type DesignRules = {
       screens_require_school_name: number[];
       school_select_only_on: number[];
       school_select_levels: string[];
+      school_select_screen: number;
     };
   };
   neis: { default_sido: string; default_region: string; exclude_sido: string[]; school_kind: string };
@@ -123,21 +125,30 @@ export function roleChecks(screen: number, role: string | null): RoleCheck[] {
   return out;
 }
 
-/** 화면 1 에서 이메일·비밀번호로 로그인 (학교 미선택) → 화면 1 을 벗어날 때까지 기다린다 */
-export async function loginViaUi(page: Page, role: Role): Promise<void> {
+/** 테스트 계정 이메일·비밀번호 (환경변수에서만) */
+export function credentialsOf(role: Role): { email: string; password: string } {
   const prefix = { student: "TEST_STUDENT", teacher: "TEST_TEACHER", admin: "TEST_ADMIN", schoolB: "TEST_SCHOOL_B" }[role];
   const email = process.env[`${prefix}_EMAIL`];
   const password = process.env[`${prefix}_PASSWORD`];
   if (!email || !password) throw new Error(`환경변수 ${prefix}_EMAIL/PASSWORD 가 없습니다`);
+  return { email, password };
+}
+
+/**
+ * 화면 1 에서 이메일·비밀번호만으로 로그인 (화면 1 에는 학교 선택이 없다 — d7 §4-2) → 화면 1 을 벗어날 때까지 기다린다.
+ * 하이드레이션 신호: 입력 뒤 제출 버튼이 켜진다 = React 상태에 값이 들어갔다.
+ * 하이드레이션 전에 입력돼 상태에 안 남았으면 다시 입력한다.
+ */
+export async function loginViaUi(page: Page, role: Role): Promise<void> {
+  const { email, password } = credentialsOf(role);
   await page.goto(routeOf(1));
-  await page.waitForLoadState("load");
-  // 하이드레이션 뒤에 입력해야 controlled input 값이 남는다 (시/도 목록 요청이 시작됐다 = 하이드레이션 완료)
-  await expect(page.locator(`${sel("school-select-sido")} button[aria-haspopup="listbox"]`)).toBeVisible();
-  await page.waitForFunction(() => performance.getEntriesByType("resource").some((e) => e.name.includes("/api/neis/sido")));
-  await page.locator('input[name="email"]').fill(email);
-  await page.locator('input[name="password"]').fill(password);
+  await waitLoginScreen(page);
   const submit = page.locator('form button[type="submit"]');
-  await expect(submit).toBeEnabled();
+  await expect(async () => {
+    await page.locator('input[name="email"]').fill(email);
+    await page.locator('input[name="password"]').fill(password);
+    await expect(submit).toBeEnabled({ timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
   await submit.click();
   await page.waitForURL((u) => !u.pathname.startsWith(routeOf(1)), { timeout: 45_000 });
   await page.waitForLoadState("load");

@@ -10,12 +10,14 @@ type Props = {
   backHref?: string;
   /** 자기 학교 이름 (로그인 후) */
   schoolName?: string;
+  /** 오른쪽 끝 제목 (예: 회원가입 — 왼쪽은 뒤로가기 + 워드마크) */
+  endTitle?: string;
   /** 데스크톱 상단 링크 (모바일에서는 숨김 — 모바일은 tab-bar) */
   links?: NavLinkItem[];
 };
 
 /** 상단 내비게이션 stadium pill */
-export function NavPill({ title, backHref, schoolName, links }: Props) {
+export function NavPill({ title, backHref, schoolName, endTitle, links }: Props) {
   return (
     <header data-component="nav-pill" className={styles.nav}>
       <div className={styles.left}>
@@ -27,6 +29,13 @@ export function NavPill({ title, backHref, schoolName, links }: Props) {
               </Link>
             ) : null}
             <span className={styles.title}>{title}</span>
+          </span>
+        ) : backHref ? (
+          <span className={styles.titleGroup}>
+            <Link href={backHref} className={styles.back} aria-label="뒤로">
+              <Icon name="back" className={styles.backIcon} />
+            </Link>
+            <span className={styles.wordmark}>Lab_Stock</span>
           </span>
         ) : (
           <Link href="/" className={styles.wordmark}>
@@ -49,6 +58,7 @@ export function NavPill({ title, backHref, schoolName, links }: Props) {
         ) : null}
       </div>
       {schoolName ? <span className={styles.school}>{schoolName}</span> : null}
+      {endTitle ? <span className={styles.endTitle}>{endTitle}</span> : null}
     </header>
   );
 }

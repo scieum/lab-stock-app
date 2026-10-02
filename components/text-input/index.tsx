@@ -10,10 +10,12 @@ type Props = {
   icon?: "search" | "calendar";
   /** 뒤 단위 칩 (예: g, mL) */
   unit?: string;
+  /** 상자 안 뒤쪽 요소 (예: 비밀번호 보기 버튼) */
+  trailing?: React.ReactNode;
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "required">;
 
 /** 입력 상자 (회색 바탕, radius 16). 라벨이 있으면 라벨 + 필수 표시 + 상자. */
-export function TextInput({ label, required, icon, unit, id, className, ...rest }: Props) {
+export function TextInput({ label, required, icon, unit, trailing, id, className, ...rest }: Props) {
   const autoId = useId();
   const inputId = id ?? autoId;
   const cls = [styles.field, className ?? ""].join(" ").trim();
@@ -38,6 +40,7 @@ export function TextInput({ label, required, icon, unit, id, className, ...rest 
         />
         {icon === "calendar" ? <Icon name="calendar" className={styles.icon} /> : null}
         {unit ? <span className={styles.unit}>{unit}</span> : null}
+        {trailing}
       </div>
     </div>
   );
