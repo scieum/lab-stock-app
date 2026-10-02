@@ -258,6 +258,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      pending_signup_user: {
+        Args: { p_email: string }
+        Returns: string | null
+      }
       reagent_usage: {
         Args: { p_limit?: number; p_reagent_id: string }
         Returns: {

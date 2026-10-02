@@ -7,7 +7,7 @@ import { test, expect, type APIRequestContext, type APIResponse } from "@playwri
 import { PASSWORD_MIN, DISPLAY_NAME_MAX } from "../../lib/auth/signup-rules";
 import { anonClient } from "./db-helpers";
 import { openAs } from "./auth-state";
-import { browserClient, rules, seedRows } from "./screen-helpers";
+import { browserClient, credentialsOf, rules, seedRows } from "./screen-helpers";
 import { SCREEN, SIGNUP_API } from "./screen-14-helpers";
 
 // 형식은 모두 맞고 neisCode 만 NEIS 에 없는 가짜인 기본 본문 (기본 본문 자체도 서버가 거부해야 한다)
@@ -167,6 +167,30 @@ test(`[R-db][S${SCREEN}] 로그인한 학생이 자기 user_id 로 register_prof
     const { data, error } = await client.rpc("register_profile", { ...RPC_ARGS, p_user_id: userId });
     expect(data, "결과 행").toBeNull();
     expect(error?.code, `권한 거부 (${error?.message})`).toBe("42501");
+  } finally {
+    await context.close();
+  }
+});
+
+// ---------- R-db: 가입 미완료 사용자 찾기(pending_signup_user)도 service role 전용 ----------
+// 이 함수는 auth.users 를 이메일로 찾는다. 클라이언트가 부를 수 있으면 계정 존재 여부가 새어 나간다.
+test(`[R-db][S${SCREEN}] anon 은 pending_signup_user(가입 미완료 사용자 찾기) 호출 거부`, async () => {
+  const { data, error } = await anonClient().rpc("pending_signup_user", { p_email: "e2e-pending@example.com" });
+  expect(data, "결과").toBeNull();
+  expect(error?.code, `권한 거부 (${error?.message})`).toBe("42501");
+});
+
+test(`[R-db][S${SCREEN}] 로그인한 학생이 pending_signup_user 호출 거부 (자기 이메일·다른 이메일 모두)`, async ({ browser }, info) => {
+  test.setTimeout(120_000);
+  const { context, page } = await openAs(browser, info, "student", 13);
+  try {
+    const { client } = await browserClient(page);
+    const own = credentialsOf("student").email;
+    for (const p_email of [own, "e2e-pending@example.com"]) {
+      const { data, error } = await client.rpc("pending_signup_user", { p_email });
+      expect(data, `결과 (${p_email === own ? "자기 이메일" : "다른 이메일"})`).toBeNull();
+      expect(error?.code, `권한 거부 (${error?.message})`).toBe("42501");
+    }
   } finally {
     await context.close();
   }
