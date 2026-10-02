@@ -63,7 +63,7 @@ export function SelectField({
       </span>
       <button
         type="button"
-        className={[styles.box, open ? styles.open : ""].join(" ").trim()}
+        className={[styles.box, selected ? styles.selected : "", open ? styles.open : ""].join(" ").trim()}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}

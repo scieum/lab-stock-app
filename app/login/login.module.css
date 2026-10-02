@@ -1,8 +1,8 @@
-/* 화면 1 — 모바일: content padding 16/16/32/16 · gap 16, 카드 전폭 */
+/* 화면 1 — 모바일: content padding 16/16/32/16 · gap 24, 카드 전폭 */
 .page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-16);
+  gap: var(--space-24);
   min-height: 100dvh;
   padding: var(--space-16) var(--space-16) var(--space-32);
 }
@@ -14,6 +14,26 @@
 
 .intro {
   display: none;
+}
+
+.formColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+/* 시안 signup-row: 안내 문구 + 회원가입 pill, 가운데 정렬 · 사이 8 */
+.signupRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+}
+
+.signupPrompt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
 }
 
 .introTitle {
@@ -46,6 +66,50 @@
   color: var(--color-text);
   font-size: var(--font-size-13);
   line-height: var(--line-height-normal);
+}
+
+/* 시안 link-find-password: 카드 안 마지막 줄, 높이 44 · 좌우 16, 가운데 */
+.findPassword {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-16);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+  text-decoration: none;
+}
+
+.findPassword:hover {
+  text-decoration: underline;
+}
+
+.findPassword:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: calc(var(--space-4) * -1);
+  border-radius: var(--radius-pill);
+}
+
+/* 비밀번호 보기 (시안 icon-eye) */
+.eye {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin: calc(var(--space-12) * -1) calc(var(--space-12) * -1) calc(var(--space-12) * -1) 0;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.eyeIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
 }
 
 /* 데스크톱: content padding 24/64/32/64 · gap 24, 소개(768) + 카드(480) · gap 64 */

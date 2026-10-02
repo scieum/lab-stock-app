@@ -17,7 +17,9 @@ export type IconName =
   | "external"
   | "calendar"
   | "cabinet"
-  | "users";
+  | "users"
+  | "eye"
+  | "eye-off";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: (
@@ -93,6 +95,19 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <circle cx="9" cy="8" r="3.5" />
       <path d="M2.5 20a6.5 6.5 0 0 1 13 0" />
       <path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14a6.5 6.5 0 0 1 3.5 6" />
+    </>
+  ),
+  eye: (
+    <>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  "eye-off": (
+    <>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="3" />
+      <path d="M4 4l16 16" />
     </>
   ),
   calendar: (

@@ -3,8 +3,15 @@ import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/lib/types/database";
 import { getSupabasePublicEnv } from "./env";
 
-/** 로그인 없이 열리는 경로 (화면 1·NEIS 중계·컴포넌트 갤러리) */
-const PUBLIC_ROOTS = ["/login", "/api", "/gallery"];
+/** 로그인 없이 열리는 경로 (화면 1·14·비밀번호 찾기·확인 메일 링크·NEIS 중계·컴포넌트 갤러리) */
+const PUBLIC_ROOTS = ["/login", "/signup", "/forgot-password", "/auth", "/api", "/gallery"];
+
+/** 로그인된 사용자가 오면 홈으로 보내는 경로 (회원가입) */
+const GUEST_ONLY = ["/signup"];
+
+export function isGuestOnlyPath(pathname: string): boolean {
+  return GUEST_ONLY.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
 
 export function isPublicPath(pathname: string): boolean {
   return PUBLIC_ROOTS.some((p) => pathname === p || pathname.startsWith(p + "/"));
@@ -37,6 +44,15 @@ export async function updateSession(request: NextRequest) {
     to.pathname = "/login";
     to.search = "";
     if (pathname !== "/") to.searchParams.set("next", pathname + search);
+    const redirect = NextResponse.redirect(to);
+    response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+    return redirect;
+  }
+
+  if (signedIn && isGuestOnlyPath(pathname)) {
+    const to = request.nextUrl.clone();
+    to.pathname = "/";
+    to.search = "";
     const redirect = NextResponse.redirect(to);
     response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
     return redirect;

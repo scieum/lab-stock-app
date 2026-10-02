@@ -30,20 +30,3 @@
   font-weight: var(--font-weight-light);
   line-height: var(--line-height-normal);
 }
-
-.progress {
-  display: flex;
-  gap: var(--space-4);
-}
-
-.bar,
-.barDone {
-  flex: 1;
-  height: var(--progress-height);
-  border-radius: var(--radius-pill);
-  background: var(--color-border-strong);
-}
-
-.barDone {
-  background: var(--color-highlight);
-}
