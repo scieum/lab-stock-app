@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Browser, BrowserContext, Page, Response, TestInfo } from "@playwright/test";
 import type { Role } from "./db-helpers";
-import { devRules, loginViaUi, routeOf, type ViewportName } from "./screen-helpers";
+import { devRules, loginViaUi, routeOf, sel, type ViewportName } from "./screen-helpers";
 
 const DIR = join(tmpdir(), "lab-stock-e2e-auth");
 const MAX_AGE_MS = 30 * 60 * 1000;
@@ -95,10 +95,25 @@ export async function openAs(browser: Browser, info: TestInfo, role: Role, scree
     const page = await context.newPage();
     const response = await page.goto(route);
     await page.waitForLoadState("load");
-    if (!new URL(page.url()).pathname.startsWith(routeOf(1))) {
+    if (!new URL(page.url()).pathname.startsWith(routeOf(1)) && !(await showsLanding(page))) {
       return { context, page, viewport: vp.name, response };
     }
     await context.close();
   }
-  throw new Error(`${role} 저장 세션으로 ${route} 진입 실패 (로그인 화면으로 이동)`);
+  throw new Error(`${role} 저장 세션으로 ${route} 진입 실패 (로그인 화면 또는 로그인 전 랜딩 표시)`);
+}
+
+/**
+ * 세션이 거부됐는데 `/` 는 /login 으로 가지 않고 화면 15 랜딩을 보여 준다 (dev-rules.json route_auth).
+ * `/` 에 도착했는데 landing-hero 가 있거나 home-summary 가 끝내 안 나오면 세션 없음으로 본다.
+ */
+async function showsLanding(page: Page): Promise<boolean> {
+  if (new URL(page.url()).pathname !== routeOf(15)) return false;
+  if ((await page.locator(sel("landing-hero")).count()) > 0) return true;
+  try {
+    await page.locator(sel("home-summary")).first().waitFor({ state: "attached", timeout: 30_000 });
+    return false;
+  } catch {
+    return true;
+  }
 }

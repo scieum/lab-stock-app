@@ -7,7 +7,10 @@ import { AuthFormCard } from "@/components/ex-auth-form-card";
 import { DataTable, DataTableRow } from "@/components/ex-data-table";
 import { DataTableCell } from "@/components/ex-data-table-cell";
 import { Toast } from "@/components/ex-toast";
+import { FeatureCard } from "@/components/feature-card";
 import { CabinetSummaryCard, HomeSummary, StockSummaryCard } from "@/components/home-summary";
+import { LandingCta } from "@/components/landing-cta";
+import { LandingHero } from "@/components/landing-hero";
 import { MsdsEntry } from "@/components/msds-entry";
 import { MsdsQrTile } from "@/components/msds-qr-tile";
 import { NavPill } from "@/components/nav-pill";
@@ -215,6 +218,28 @@ export default function GalleryPage() {
 
         <Item name="ex-toast">
           <Toast>사용 기록을 저장했어요</Toast>
+        </Item>
+
+        <Item name="landing-hero">
+          <LandingHero />
+        </Item>
+
+        <Item name="feature-card">
+          <FeatureCard
+            icon="building"
+            title="학교별 분리"
+            description="우리 학교 시약·재고·사용 기록만 보여요. 다른 학교와 섞이지 않아요"
+          />
+          <FeatureCard
+            icon="bell"
+            title="재고 부족 알림"
+            description="필요한 양보다 적으면 알려 주고 판매처로 연결해요"
+            badge={<BadgeLowStock />}
+          />
+        </Item>
+
+        <Item name="landing-cta">
+          <LandingCta />
         </Item>
 
         <Item name="tab-bar · tab-item">

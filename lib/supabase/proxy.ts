@@ -13,11 +13,16 @@ export function isGuestOnlyPath(pathname: string): boolean {
   return GUEST_ONLY.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
+/**
+ * 로그인 없이 열리는 경로. `/` 는 정확히 그 경로만 — 로그인 전이면 화면 15 랜딩, 로그인 후면 화면 13 홈
+ * (dev-rules.json route_auth, 분기는 app/page.tsx). /reagents 등 다른 보호 경로는 그대로 /login 으로 보낸다.
+ */
 export function isPublicPath(pathname: string): boolean {
+  if (pathname === "/") return true;
   return PUBLIC_ROOTS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
-/** proxy에서 세션 쿠키를 갱신하고, 로그인 안 된 사용자를 /login 으로 보낸다. */
+/** proxy에서 세션 쿠키를 갱신하고, 로그인 안 된 사용자를 /login 으로 보낸다 (`/` 와 공개 경로 제외). */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
   const { url, key } = getSupabasePublicEnv();
@@ -43,7 +48,7 @@ export async function updateSession(request: NextRequest) {
     const to = request.nextUrl.clone();
     to.pathname = "/login";
     to.search = "";
-    if (pathname !== "/") to.searchParams.set("next", pathname + search);
+    to.searchParams.set("next", pathname + search);
     const redirect = NextResponse.redirect(to);
     response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
     return redirect;
