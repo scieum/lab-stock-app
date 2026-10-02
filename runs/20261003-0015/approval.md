@@ -1,6 +1,6 @@
 # G-승인 — runs/20261003-0015 (화면 14 가입 실패 처리)
 
-- 미리보기 URL: (배포 후 기록)
+- 미리보기 URL: https://lab-stock-app-o97y-git-dev-run-2026-275c33-hayeonkeems-projects.vercel.app (브랜치 dev/run-20261003-0015, 배포 dpl_GraDFDezHPBjkREyAcEx4pNqxsHZ)
 - 확인 방법: 미리보기에서 실제 이메일로 1회 가입 → 확인 메일 → 로그인 → 홈에 학교명 표시, 그 학교 첫 가입자면 admin
 
 ## 바뀐 것
