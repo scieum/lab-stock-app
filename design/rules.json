@@ -1,0 +1,450 @@
+{
+  "version": "1.10",
+  "sources": [
+    "docs/design.md",
+    "docs/story-service.md",
+    "harness/r4-outputs.md",
+    "harness/r5-gates.md",
+    "harness/r8 (R8 결정)",
+    "2026-10-01 NEIS 학교 선택 결정",
+    "2026-10-02 하늘색 강조색 결정",
+    "2026-10-02 화면 7~10 추가",
+    "2026-10-02 화면 11·12 추가",
+    "2026-10-02 화면 13 홈 추가"
+  ],
+  "colors": {
+    "allowed": [
+      "#141414",
+      "#262626",
+      "#707070",
+      "#adadad",
+      "#e0e0e0",
+      "#f0f0f0",
+      "#f3f3f3",
+      "#ffffff",
+      "#d6246a",
+      "#2b9fe0",
+      "#e6f4fc",
+      "#fbe9f0"
+    ],
+    "allowed_rgba": [
+      {
+        "value": "rgba(115,115,115,0.56)",
+        "only_in": "badge-overlay"
+      }
+    ],
+    "accent": {
+      "value": "#d6246a",
+      "only_within": [
+        "badge-low-stock",
+        "reorder-alert-card",
+        "mix-warning"
+      ],
+      "mix_warning_source": "2026-10-02 사용자 결정: 시약장 혼재 주의사항은 핑크로 경고"
+    },
+    "on_primary": {
+      "value": "#ffffff",
+      "source": "R4 결정"
+    },
+    "highlight": {
+      "values": [
+        "#2b9fe0",
+        "#e6f4fc"
+      ],
+      "forbidden_within": [
+        "badge-low-stock",
+        "button-primary",
+        "mix-warning",
+        "reorder-alert-card"
+      ],
+      "no_text": [
+        "#2b9fe0",
+        "#e6f4fc"
+      ],
+      "source": "2026-10-02 사용자 결정: 하늘색 = 재고 부족 외 강조. 흰 배경 대비 2.94:1이라 글자색 금지"
+    },
+    "accent_soft": {
+      "value": "#fbe9f0",
+      "only_within": [
+        "badge-low-stock",
+        "reorder-alert-card",
+        "mix-warning"
+      ],
+      "source": "2026-10-02 사용자 결정: 핫핑크가 쨍함 → 핑크 10% 틴트(흰 바탕 위 #d6246a 10%). 글자는 #141414(15.8:1)"
+    }
+  },
+  "radius": {
+    "allowed": [
+      0,
+      16,
+      24,
+      9999
+    ],
+    "button": 9999
+  },
+  "typography": {
+    "family": "Pretendard",
+    "figma_fallback_family": "IBM Plex Sans KR",
+    "figma_fallback_source": "Figma 서버 환경에 Pretendard 없음 — 시안 한정 대체, 개발은 Pretendard",
+    "weights": [
+      300,
+      400,
+      600,
+      700
+    ],
+    "sizes": [
+      12,
+      13,
+      15,
+      17,
+      18,
+      20,
+      24,
+      28,
+      32
+    ],
+    "letter_spacing": 0,
+    "text_case": [
+      "ORIGINAL"
+    ],
+    "text_case_source": "R4 결정"
+  },
+  "effects": {
+    "drop_shadow_max": 0,
+    "exceptions": [
+      "segmented-control-active"
+    ],
+    "source": "R4 결정"
+  },
+  "spacing": {
+    "allowed": [
+      0,
+      4,
+      8,
+      12,
+      16,
+      24,
+      32,
+      48,
+      64
+    ]
+  },
+  "button": {
+    "name_prefix": "button-",
+    "min_height": 44
+  },
+  "frames": {
+    "mobile": [
+      390,
+      844
+    ],
+    "desktop": [
+      1440,
+      900
+    ],
+    "name_pattern": "^([1-9]|1[0-3])-(mobile|desktop)$",
+    "keyscreens": {
+      "default": [
+        2,
+        3,
+        6
+      ],
+      "count": [
+        2,
+        3
+      ]
+    },
+    "screen_ids": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13
+    ]
+  },
+  "s1": {
+    "refs_per_screen": [
+      3,
+      5
+    ]
+  },
+  "roles": {
+    "R1": {
+      "role": "학생",
+      "component": "manual-upload",
+      "max": 0
+    },
+    "R2": {
+      "role": "학생",
+      "components": [
+        "reorder-alert-card",
+        "vendor-link"
+      ],
+      "max": 0
+    },
+    "R3": {
+      "component": "vendor-register",
+      "only_roles": [
+        "admin"
+      ]
+    },
+    "R4": {
+      "component": "msds-entry",
+      "min_per_role": 1,
+      "roles": [
+        "학생",
+        "교사",
+        "admin"
+      ]
+    },
+    "R5": {
+      "role": "학생",
+      "components": [
+        "stock-intake",
+        "reagent-register"
+      ],
+      "max": 0,
+      "source": "2026-10-02 화면 7"
+    },
+    "R6": {
+      "component": "user-manage",
+      "only_roles": [
+        "admin"
+      ],
+      "source": "2026-10-02 화면 8"
+    },
+    "R7": {
+      "role": "학생",
+      "components": [
+        "cabinet-edit"
+      ],
+      "max": 0,
+      "source": "2026-10-02 화면 11"
+    }
+  },
+  "never": {
+    "N1": {
+      "school_name_from": "input.json#school_name",
+      "screens_require_school_name": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "school_name_pattern": "[가-힣A-Za-z0-9]+고등학교",
+      "distinct_school_names": 1,
+      "school_select_only_on": [
+        1
+      ],
+      "school_name_pattern_source": "R8 수정: '…고'는 '재고' 등과 오탐",
+      "school_name_scope_screens": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "school_name_scope_source": "2026-10-01 NEIS: 화면 1 학교 목록에는 여러 학교명이 정상",
+      "school_select_levels": [
+        "school-select-sido",
+        "school-select-region",
+        "school-select-school"
+      ],
+      "school_select_levels_source": "docs/story-service.md 결정 사항 \"학교 선택\""
+    },
+    "N2": {
+      "banned_terms": [
+        "API 키",
+        "API key",
+        "apiKey",
+        "Gemini 키",
+        "토큰",
+        "NEIS 키",
+        "나이스 키",
+        "인증키"
+      ],
+      "scan": [
+        "frames",
+        "spec/s2-spec.md"
+      ],
+      "screen5_input_label_banned": [
+        "키",
+        "모델",
+        "model"
+      ],
+      "key_value_pattern": "(?<![0-9A-Fa-f])[0-9A-Fa-f]{32}(?![0-9A-Fa-f])",
+      "key_value_pattern_source": "NEIS 인증키 형식(32자리 16진수) — 키 값 자체는 .env에만 둔다"
+    }
+  },
+  "retries": {
+    "S1": 2,
+    "S2": 2,
+    "S3": 3,
+    "S5": 3
+  },
+  "files": {
+    "allowed": [
+      "input.json",
+      "state.json",
+      "neis.json",
+      "approval.md",
+      "research/s1-references.md",
+      "research/s1-adopt.md",
+      "spec/s2-spec.md",
+      "design/s3-keyscreens.json",
+      "design/s4-frames.json",
+      "judge/gate-S1.json",
+      "judge/gate-S2.json",
+      "judge/gate-S3.json",
+      "judge/gate-S5.json"
+    ],
+    "source": "R4 산출물 목록, R8 F1",
+    "allowed_patterns": [
+      "design/s3-keyscreens/*.json",
+      "design/s4-frames/*.json"
+    ],
+    "allowed_patterns_source": "2026-10-02: 1,057노드 JSON 단일 파일 저장 불가 → 프레임별 파일 허용"
+  },
+  "hash_scope": {
+    "include": [
+      "docs",
+      "harness"
+    ],
+    "exclude": [
+      "harness/tests"
+    ],
+    "exclude_names": [
+      "__pycache__"
+    ],
+    "source": "R8 F2"
+  },
+  "neis": {
+    "endpoint": "https://open.neis.go.kr/hub/schoolInfo",
+    "key_env": "NEIS_API_KEY",
+    "key_file": ".env",
+    "school_kind": "고등학교",
+    "sido_field": "LCTN_SC_NM",
+    "region_from": "ORG_RDNMA 두 번째 토큰 (시/군/구로 끝날 때만, 아니면 시/도 이름)",
+    "default_sido": "충청북도",
+    "default_region": "청주시",
+    "output": "neis.json",
+    "source": "2026-10-01 사용자 결정",
+    "exclude_sido": [
+      "재외한국학교"
+    ],
+    "exclude_sido_source": "2026-10-01 사용자 결정 (그 외 시/도 이름은 NEIS 값 그대로)"
+  },
+  "screens_required": {
+    "11": [
+      "cabinet-door-select",
+      "cabinet-shelf-select",
+      "cabinet-slot",
+      "storage-class-chip",
+      "mix-warning"
+    ],
+    "12": [
+      "qr-scan",
+      "qr-manual-entry"
+    ],
+    "source": "2026-10-02 story-service 결정 (화면별 필수 컴포넌트, 규칙 C1)",
+    "13": [
+      "home-summary",
+      "quick-action"
+    ]
+  },
+  "cabinet": {
+    "door_types": [
+      "양문형",
+      "단문형"
+    ],
+    "shelves": [
+      3,
+      4
+    ],
+    "storage_classes": [
+      "유기",
+      "산",
+      "염기",
+      "산화제",
+      "인화성",
+      "무기염",
+      "독성",
+      "기타"
+    ],
+    "incompatible": [
+      [
+        "산",
+        "염기"
+      ],
+      [
+        "산화제",
+        "인화성"
+      ],
+      [
+        "산화제",
+        "유기"
+      ],
+      [
+        "산",
+        "인화성"
+      ],
+      [
+        "독성",
+        "산"
+      ]
+    ],
+    "warning_color": "#d6246a",
+    "source": "2026-10-02 사용자 결정 (혼재 경고 = 핑크 #d6246a, 재고 부족과 같은 \"결정이 필요한 신호\")"
+  },
+  "tab_bar": {
+    "component": "tab-bar",
+    "item": "tab-item",
+    "items": 4,
+    "labels": [
+      "홈",
+      "시약",
+      "QR 스캔",
+      "기록"
+    ],
+    "mobile_screens": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13
+    ],
+    "source": "2026-10-02 사용자 결정: 하단 탭바 (refs/uibowl-home-nav-20261002.md)",
+    "radius": 0,
+    "shape_source": "2026-10-02 사용자 결정: 둥근 floating pill 말고 하단에 붙은 사각형"
+  }
+}
