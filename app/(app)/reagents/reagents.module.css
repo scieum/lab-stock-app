@@ -1,0 +1,66 @@
+/* 화면 2 시약 목록
+ * 모바일: 제목 → segmented-control → 검색 → 목록, 사이 16
+ * 데스크톱: 제목 → toolbar(segmented-control 400 : 검색 896, 사이 16) → 목록, 사이 24
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-28);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}
+
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+.segment {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.search {
+  min-width: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.empty {
+  margin: 0;
+  padding: var(--space-24);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+  text-align: center;
+}
+
+@media (min-width: 1024px) {
+  .page {
+    gap: var(--space-24);
+  }
+
+  .toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 9fr);
+    align-items: center;
+  }
+}

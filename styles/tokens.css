@@ -1,0 +1,101 @@
+/* 자동 생성 파일 — 직접 고치지 않는다. */
+/* 원본: design/rules.json · 생성: node scripts/gen-tokens.mjs */
+/* rules.json version 1.10 */
+
+:root {
+  /* color (rules.json colors.allowed) */
+  --color-gray-950: #141414;
+  --color-gray-900: #262626;
+  --color-gray-600: #707070;
+  --color-gray-400: #adadad;
+  --color-gray-200: #e0e0e0;
+  --color-gray-100: #f0f0f0;
+  --color-gray-50: #f3f3f3;
+  --color-white: #ffffff;
+
+  /* color roles */
+  --color-accent: #d6246a;
+  --color-accent-soft: #fbe9f0;
+  --color-on-primary: #ffffff;
+  --color-highlight: #2b9fe0;
+  --color-highlight-soft: #e6f4fc;
+  --color-badge-overlay: rgba(115,115,115,0.56);
+  --color-text: var(--color-gray-950);
+  --color-text-strong: var(--color-gray-900);
+  --color-text-muted: var(--color-gray-600);
+  --color-text-placeholder: var(--color-gray-400);
+  --color-surface: var(--color-white);
+  --color-surface-muted: var(--color-gray-50);
+  --color-surface-input: var(--color-gray-100);
+  --color-border: var(--color-gray-100);
+  --color-border-strong: var(--color-gray-200);
+  --color-primary: var(--color-gray-950);
+  --color-toast: var(--color-gray-900);
+
+  /* radius (rules.json radius.allowed) */
+  --radius-none: 0;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-pill: 9999px;
+  --radius-button: 9999px;
+  --radius-tab-bar: 0;
+
+  /* typography */
+  --font-family: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-size-12: 12px;
+  --font-size-13: 13px;
+  --font-size-15: 15px;
+  --font-size-17: 17px;
+  --font-size-18: 18px;
+  --font-size-20: 20px;
+  --font-size-24: 24px;
+  --font-size-28: 28px;
+  --font-size-32: 32px;
+  --letter-spacing: 0;
+  --line-height-tight: 1.3;
+  --line-height-normal: 1.5;
+
+  /* spacing (rules.json spacing.allowed) */
+  --space-0: 0;
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-48: 48px;
+  --space-64: 64px;
+
+  /* button */
+  --button-min-height: 44px;
+
+  /* effects (drop shadow는 exceptions 만) */
+  --shadow-none: none;
+  --shadow-segmented-control-active: 0 1px 3px rgba(20, 20, 20, 0.12);
+
+  /* frames */
+  --frame-mobile-width: 390px;
+  --frame-mobile-height: 844px;
+  --frame-desktop-width: 1440px;
+  --frame-desktop-height: 900px;
+  --tab-bar-items: 4;
+
+  /* layout (design/frames 측정값) */
+  --border-width: 1px;
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+  --icon-bg-size: 40px;
+  --control-height: 48px;
+  --tab-bar-height: 64px;
+  --indicator-height: 4px;
+  --nav-indicator-height: 2px;
+  --progress-height: 4px;
+  --status-bar-height: 8px;
+  --qr-size: 126px;
+  --side-column-width: 400px;
+}

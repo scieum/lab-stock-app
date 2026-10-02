@@ -1,0 +1,30 @@
+/* 로그인 후 공통 — 모바일: content padding 16 · gap 24, 하단 tab-bar 자리 확보 */
+.shell {
+  min-height: 100dvh;
+  padding-bottom: var(--tab-bar-height);
+  background: var(--color-surface);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  padding: var(--space-16);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+/* 데스크톱: content padding 24/64/32/64 · gap 24, tab-bar 없음 */
+@media (min-width: 1024px) {
+  .shell {
+    padding-bottom: var(--space-0);
+  }
+
+  .content {
+    padding: var(--space-24) var(--space-64) var(--space-32);
+  }
+}

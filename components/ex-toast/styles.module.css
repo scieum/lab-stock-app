@@ -1,0 +1,29 @@
+.toast {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-lg);
+  background: var(--color-toast);
+  color: var(--color-on-primary);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  box-shadow: var(--shadow-none);
+  white-space: nowrap;
+}
+
+.floating {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tab-bar-height) + var(--control-height) + var(--space-48));
+  transform: translateX(-50%);
+  z-index: 20;
+}
+
+.icon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex-shrink: 0;
+  color: var(--color-highlight);
+}

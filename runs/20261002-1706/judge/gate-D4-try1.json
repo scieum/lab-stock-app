@@ -1,0 +1,37 @@
+{
+  "gate": "gate-D4",
+  "pass": false,
+  "exit": 1,
+  "violations": [
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교A 학생 → 학교B 교사 학교 시약 id 직접 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교B 교사 → 학교A 교사 학교 시약 id 직접 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    }
+  ],
+  "logs": {},
+  "report": {
+    "V1": {
+      "screenshots": [
+        "test-results/v1-1-desktop.png",
+        "test-results/v1-1-mobile.png",
+        "test-results/v1-13-desktop.png",
+        "test-results/v1-13-mobile.png",
+        "test-results/v1-2-desktop.png",
+        "test-results/v1-2-mobile.png",
+        "test-results/v1-3-desktop.png",
+        "test-results/v1-3-mobile.png",
+        "test-results/v1-4-desktop.png",
+        "test-results/v1-4-mobile.png"
+      ],
+      "figma_page": "https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2"
+    }
+  }
+}

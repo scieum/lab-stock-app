@@ -1,0 +1,39 @@
+.item,
+.itemActive {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  min-width: 0;
+  min-height: var(--control-height);
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.icon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  color: var(--color-text-muted);
+}
+
+.itemActive {
+  color: var(--color-text);
+}
+
+.itemActive .icon {
+  color: var(--color-highlight);
+}
+
+.label {
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.item:focus-visible,
+.itemActive:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: calc(var(--space-4) * -1);
+}
