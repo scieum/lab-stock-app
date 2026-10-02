@@ -1,11 +1,14 @@
 {
-  "stage": "G",
-  "retries": 0,
+  "stage": "done",
+  "retries": 2,
   "baseline_hash": "098a39ab2684f1184a24a27e32badf19044609e468803755fca5326511a18346",
   "passed": [
-    "D3"
+    "D3",
+    "G",
+    "D4"
   ],
   "screens_passed": [
     15
-  ]
+  ],
+  "note": "D4 try1·2: Chromium 크래시(자원 부족). playwright workers 3 고정 후 재판정"
 }

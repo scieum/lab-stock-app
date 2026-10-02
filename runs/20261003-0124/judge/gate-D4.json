@@ -1,0 +1,28 @@
+{
+  "gate": "gate-D4",
+  "pass": true,
+  "exit": 0,
+  "violations": [],
+  "logs": {},
+  "report": {
+    "V1": {
+      "screenshots": [
+        "test-results/v1-1-desktop.png",
+        "test-results/v1-1-mobile.png",
+        "test-results/v1-13-desktop.png",
+        "test-results/v1-13-mobile.png",
+        "test-results/v1-14-desktop.png",
+        "test-results/v1-14-mobile.png",
+        "test-results/v1-15-desktop.png",
+        "test-results/v1-15-mobile.png",
+        "test-results/v1-2-desktop.png",
+        "test-results/v1-2-mobile.png",
+        "test-results/v1-3-desktop.png",
+        "test-results/v1-3-mobile.png",
+        "test-results/v1-4-desktop.png",
+        "test-results/v1-4-mobile.png"
+      ],
+      "figma_page": "https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2"
+    }
+  }
+}
