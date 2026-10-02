@@ -4,7 +4,7 @@
 
 | 테이블 | 주요 열 | 비고 |
 |---|---|---|
-| schools | id, neis_code(SD_SCHUL_CODE, unique), office_code(ATPT_OFCDC_SC_CODE), name, sido, region | NEIS에서 첫 가입 시 생성 |
+| schools | id, neis_code(SD_SCHUL_CODE, unique), office_code(ATPT_OFCDC_SC_CODE), name, sido, region | 회원가입(14)에서 그 학교 첫 가입 시 생성 |
 | profiles | user_id(auth.users), school_id, role(student·teacher·admin), display_name | 사용자당 1개 |
 | cabinets | id, school_id, label, door_type(양문형·단문형), shelves(3·4) | 화면 11은 2차, MVP는 시드 |
 | cabinet_slots | id, cabinet_id, side(L·R), shelf, storage_class | storage_class ∈ rules.json cabinet.storage_classes |
@@ -31,3 +31,9 @@
 
 - 디자인 하네스 `harness/scripts/neis.py`의 지역 규칙(도로명주소 두 번째 토큰, 없으면 시/도)을 그대로 옮긴다.
 - NEIS 응답은 서버에서 하루 캐시(학교 목록은 거의 안 바뀜).
+
+## 4. 가입·로그인 흐름 (2026-10-02)
+
+1. 회원가입(14): `/api/neis/*`로 학교 선택 → Supabase Auth signUp(개인 이메일·비밀번호) → 서버(lib/server)가 schools upsert(neis_code) + profiles insert(school_id, role = 그 학교 첫 사용자면 admin, 아니면 student)
+2. 로그인(1): signInWithPassword(이메일·비밀번호)만. 학교는 profiles.school_id에서 읽는다 — 로그인 화면에서 학교를 받지 않는다(받은 값으로 학교를 바꿀 수 없게).
+3. 비밀번호 찾기: Supabase 비밀번호 재설정 메일.

@@ -1,5 +1,5 @@
 {
-  "version": "1.10",
+  "version": "1.11",
   "sources": [
     "docs/design.md",
     "docs/story-service.md",
@@ -10,7 +10,8 @@
     "2026-10-02 하늘색 강조색 결정",
     "2026-10-02 화면 7~10 추가",
     "2026-10-02 화면 11·12 추가",
-    "2026-10-02 화면 13 홈 추가"
+    "2026-10-02 화면 13 홈 추가",
+    "2026-10-02 로그인/회원가입 분리 (화면 14)"
   ],
   "colors": {
     "allowed": [
@@ -142,7 +143,7 @@
       1440,
       900
     ],
-    "name_pattern": "^([1-9]|1[0-3])-(mobile|desktop)$",
+    "name_pattern": "^([1-9]|1[0-4])-(mobile|desktop)$",
     "keyscreens": {
       "default": [
         2,
@@ -167,7 +168,8 @@
       10,
       11,
       12,
-      13
+      13,
+      14
     ]
   },
   "s1": {
@@ -250,7 +252,7 @@
       "school_name_pattern": "[가-힣A-Za-z0-9]+고등학교",
       "distinct_school_names": 1,
       "school_select_only_on": [
-        1
+        14
       ],
       "school_name_pattern_source": "R8 수정: '…고'는 '재고' 등과 오탐",
       "school_name_scope_screens": [
@@ -273,7 +275,9 @@
         "school-select-region",
         "school-select-school"
       ],
-      "school_select_levels_source": "docs/story-service.md 결정 사항 \"학교 선택\""
+      "school_select_levels_source": "docs/story-service.md 결정 사항 \"학교 선택\"",
+      "school_select_screen": 14,
+      "school_select_source": "2026-10-02 사용자 결정: 학교는 회원가입(14)에서만 선택, 로그인(1)은 개인 이메일·비밀번호"
     },
     "N2": {
       "banned_terms": [
@@ -446,5 +450,11 @@
     "source": "2026-10-02 사용자 결정: 하단 탭바 (refs/uibowl-home-nav-20261002.md)",
     "radius": 0,
     "shape_source": "2026-10-02 사용자 결정: 둥근 floating pill 말고 하단에 붙은 사각형"
+  },
+  "auth": {
+    "login_id": "개인 이메일",
+    "login_screen": 1,
+    "signup_screen": 14,
+    "source": "2026-10-02 사용자 결정"
   }
 }

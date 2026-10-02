@@ -258,7 +258,7 @@ def e2e_results(ctx):
 
 def check_test_rule(rule):
     def check(ctx):
-        if rule == "N1-d" and 1 not in ctx["screens"]:
+        if rule == "N1-d" and 14 not in ctx["screens"]:
             return []
         tests = [(t, ok) for t, ok in e2e_results(ctx) if f"[{rule}]" in t]
         if not tests:

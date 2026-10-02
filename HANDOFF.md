@@ -7,7 +7,7 @@
 
 ## 2. 먼저 읽을 파일 (이 순서)
 1. `CLAUDE.md` — 이 세션은 오케스트레이터. 트리거·단계·금지 사항
-2. `harness/d2-purpose.md` — 스택(Next.js + Supabase + Vercel), **MVP = 화면 1·13·2·3·4**, 완료 기준
+2. `harness/d2-purpose.md` — 스택(Next.js + Supabase + Vercel), **MVP = 화면 14·1·13·2·3·4**, 완료 기준
 3. `harness/d3-pipeline.md` — D0 셋업 → D1 토큰·컴포넌트 → D2 데이터·권한 → D3 화면 → 사람 승인 → D4
 4. `harness/d5-gates.md` — 게이트 규칙 (판정: `python harness/scripts/judge.py`)
 5. `harness/d6-roles.md` · `harness/d7-data.md` — 에이전트 역할, 테이블·RLS·NEIS API
@@ -15,8 +15,8 @@
 
 ## 3. 디자인 정답지 (읽기만, 고치지 않음)
 - `design/rules.json` — 색·크기·간격·radius·역할(R1~R7)·탭바 규칙. 디자인 저장소 사본(출처·해시: `design/source.json`)
-- `design/frames/{1,2,3,4,13}-{mobile,desktop}.json` — MVP 화면 시안의 Figma 노드
-- Figma: https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2 (페이지 `00 최신 시안`, 화면 1~13 최신본)
+- `design/frames/{1,2,3,4,13,14}-{mobile,desktop}.json` — MVP 화면 시안의 Figma 노드
+- Figma: https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2 (페이지 `00 최신 시안`, 화면 1~14 최신본)
 - 디자인 저장소: `C:\Users\User\OneDrive - 한국교원대학교\Claude Code\DESIGN-HARNESS` (github.com/scieum/harness)
 
 ## 4. 연결 상태
@@ -30,9 +30,9 @@
 ## 5. 시안에서 정해진 핵심 (코드에 그대로 옮김)
 - 노드 이름 = `data-component` 속성 (예: `<nav data-component="tab-bar">`) — 역할·탭바 검사가 DOM에서 이걸 센다
 - 색은 흑백 기본 + 핑크 #d6246a(재고 부족·재주문·시약장 혼재 경고 전용, 연핑크 #fbe9f0) + 하늘색 #2b9fe0·#e6f4fc(선택·활성·링크·아이콘, 글자색 금지)
-- 버튼·nav 등은 stadium pill, 단 **모바일 하단 탭바는 하단에 붙은 전폭 사각형**(탭 4개: 홈·시약·QR 스캔·기록, 모든 역할 동일, 화면 1과 데스크탑엔 없음)
+- 버튼·nav 등은 stadium pill, 단 **모바일 하단 탭바는 하단에 붙은 전폭 사각형**(탭 4개: 홈·시약·QR 스캔·기록, 모든 역할 동일, 화면 1·14와 데스크탑엔 없음)
 - 그림자 없음(segmented-control-active만 예외), 폰트 Pretendard(시안은 IBM Plex Sans KR 대체)
-- 학교 선택 = NEIS 시/도 → 지역(시/군/구) → 학교, 재외한국학교 제외
+- 학교 선택은 **회원가입(화면 14)에서만** NEIS 시/도 → 지역(시/군/구) → 학교(재외한국학교 제외). 로그인(화면 1)은 개인 이메일·비밀번호만, 학교는 계정(profiles.school_id)에서 읽음
 
 ## 6. 남아 있는 확인 사항 (시안 쪽)
 - 화면 3(시약 상세): "MSDS 보기"가 스크롤해야 보임 — 위로 올리는 것 검토
