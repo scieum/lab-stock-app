@@ -1,6 +1,6 @@
 # G-승인 — runs/20261002-2043 (화면 14·1: 로그인/회원가입 분리)
 
-- 미리보기 URL: (배포 후 기록)
+- 미리보기 URL: https://lab-stock-app-o97y-git-dev-run-2026-b0bd33-hayeonkeems-projects.vercel.app (브랜치 dev/run-20261002-2043, 배포 dpl_5tQUY8e7bh1c3HNoFAJuTakaJTLp)
 - V1 스크린샷: runs/20261002-2043/v1/
 - Figma 비교: https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2 (화면 1·14)
 
@@ -11,7 +11,7 @@
 4. 가입 첫 사용자 = 그 학교 admin, 이후 student
 5. 공용 컴포넌트 변경(nav-pill endTitle, text-input trailing, select-field 선택 색) — 화면 13·2·3·4 회귀는 D4에서 확인
 
-result:
-reason:
-approver:
-date:
+result: approved
+reason: 미리보기 확인 후 사용자 승인
+approver: scieum (사용자)
+date: 2026-10-02
