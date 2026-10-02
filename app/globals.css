@@ -1,0 +1,23 @@
+@import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--font-size-15);
+  letter-spacing: var(--letter-spacing);
+  line-height: var(--line-height-normal);
+  -webkit-font-smoothing: antialiased;
+}

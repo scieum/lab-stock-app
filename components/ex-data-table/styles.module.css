@@ -1,0 +1,32 @@
+.wrap {
+  overflow: hidden;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.row > * {
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.row > :first-child {
+  padding-left: var(--space-16);
+}
+
+.row > :last-child {
+  padding-right: var(--space-16);
+  text-align: right;
+}
+
+tbody .row:last-child > * {
+  border-bottom: 0;
+}
+
+.selected {
+  background: var(--color-highlight-soft);
+}

@@ -1,0 +1,25 @@
+.bar {
+  display: flex;
+  align-items: stretch;
+  height: var(--tab-bar-height);
+  padding: var(--space-8) 0;
+  border-top: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-tab-bar);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-none);
+  box-sizing: border-box;
+}
+
+.fixed {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+}
+
+@media (min-width: 1024px) {
+  .fixed {
+    display: none;
+  }
+}
