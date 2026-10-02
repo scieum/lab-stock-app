@@ -1,0 +1,32 @@
+/* 시안 15-mobile landing-cta: 흰 바탕 · 위 테두리 gray-100(border) · padding 16 · gap 8, 버튼 전폭 세로 2개 */
+.cta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-16);
+  border-top: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-none);
+}
+
+.button {
+  width: 100%;
+}
+
+/* 시안 15-desktop landing-cta: 테두리·바탕 없음, 가로 한 줄 · gap 12 · 가운데, 버튼 폭 240 (= control-height 48 × 5) */
+@media (min-width: 1024px) {
+  .cta {
+    --cta-button-width: calc(var(--control-height) * 5);
+
+    flex-direction: row;
+    justify-content: center;
+    gap: var(--space-12);
+    padding: 0;
+    border-top: 0;
+    background: transparent;
+  }
+
+  .button {
+    width: var(--cta-button-width);
+  }
+}

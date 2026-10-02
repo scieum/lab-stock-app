@@ -8,8 +8,6 @@ import { ReorderAlertCard } from "@/components/reorder-alert-card";
 import { getHomeData, type Role } from "@/lib/supabase/home-data";
 import styles from "./home.module.css";
 
-export const dynamic = "force-dynamic";
-
 // 시안 13 quick-action — 역할별 2칸 (탭과 겹치는 QR·시약 목록·사용 기록 내역은 두지 않는다)
 const USAGE_NEW: QuickActionItem = { label: "사용 기록 입력", href: "/usage/new", icon: "pen" };
 const INTAKE: QuickActionItem = { label: "입고", href: "/intake", icon: "intake", entry: "stock-intake" };
@@ -19,8 +17,11 @@ const QUICK_ACTIONS: Record<Role, QuickActionItem[]> = {
   admin: [INTAKE, { label: "사용자 관리", href: "/users", icon: "users", entry: "user-manage" }],
 };
 
-/** 화면 13 홈 */
-export default async function Home() {
+/**
+ * 화면 13 홈 — 경로 `/` 로그인 후 (app/page.tsx 가 세션을 확인해 AppShell 안에서 그린다).
+ * 라우트 파일이 아니라 화면 컴포넌트다 (로그인 전 `/` 는 화면 15 랜딩).
+ */
+export async function HomeScreen() {
   const data = await getHomeData();
   if (!data) redirect("/login");
   const staff = data.role !== "student";

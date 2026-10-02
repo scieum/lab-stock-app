@@ -19,7 +19,10 @@ export type IconName =
   | "cabinet"
   | "users"
   | "eye"
-  | "eye-off";
+  | "eye-off"
+  | "building"
+  | "map-pin"
+  | "bell";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: (
@@ -114,6 +117,29 @@ const PATHS: Record<IconName, React.ReactNode> = {
     <>
       <rect x="3.5" y="5" width="17" height="15.5" rx="2" />
       <path d="M3.5 10h17M8 3v4M16 3v4" />
+    </>
+  ),
+  // 시안 15 feature-card icon-building (학교별 분리)
+  building: (
+    <>
+      <path d="M6 21V3h8v18" />
+      <path d="M14 8h4v13" />
+      <path d="M4 21h16" />
+      <path d="M9 7h2M9 11h2M9 15h2M16 12h.01M16 16h.01" />
+    </>
+  ),
+  // 시안 15 feature-card icon-map-pin (NEIS 학교 선택)
+  "map-pin": (
+    <>
+      <path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11Z" />
+      <circle cx="12" cy="10" r="3" />
+    </>
+  ),
+  // 시안 15 feature-card icon-bell (재고 부족 알림)
+  bell: (
+    <>
+      <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15Z" />
+      <path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" />
     </>
   ),
 };

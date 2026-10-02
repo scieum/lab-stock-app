@@ -1,0 +1,56 @@
+/*
+ * 화면 15 랜딩
+ * 모바일(15-mobile): landing-body padding 16/16/32/16 · gap 32 (nav-pill → landing-hero → feature-list gap 12),
+ *   landing-cta 는 화면 하단에 붙는다 (sticky).
+ * 데스크톱(15-desktop): content padding 24/64/32/64 · gap 48, feature-grid 4열 gap 24, landing-cta 가운데 한 줄.
+ */
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--color-surface);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+  gap: var(--space-32);
+  padding: var(--space-16) var(--space-16) var(--space-32);
+}
+
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.cta {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+}
+
+@media (min-width: 1024px) {
+  .page {
+    gap: var(--space-48);
+    padding: var(--space-24) var(--space-64) var(--space-32);
+  }
+
+  .body {
+    flex: 0 0 auto;
+    gap: var(--space-48);
+    padding: 0;
+  }
+
+  .features {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-24);
+  }
+
+  .cta {
+    position: static;
+    margin-top: 0;
+  }
+}

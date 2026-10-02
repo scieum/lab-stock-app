@@ -1,0 +1,83 @@
+{
+  "gate": "gate-D4",
+  "pass": false,
+  "exit": 1,
+  "violations": [
+    {
+      "rule": "C1",
+      "where": "[C1][S15] landing-cta 링크 href = routes[\"14\"]·routes[\"1\"] · 클릭 시 실제 이동",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교A 학생 사용 기록 저장: ex-toast 표시 · 화면 재고와 DB stock 1 감소 · usage_logs 자기 user_id·school_id 1행 추가 (교사 세션으로 원복)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S2] 학교A 학생 시약 목록: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S2] 학교B 교사 시약 목록: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교A admin 시약 상세: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교B 교사 시약 상세: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교A 교사 → 학교B 교사 학교 시약 id 직접 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A 학생 → 학교B 교사 학교 시약 id 로 ?reagent 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A admin → 학교B 교사 학교 시약 id 로 ?reagent 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    }
+  ],
+  "logs": {},
+  "report": {
+    "V1": {
+      "screenshots": [
+        "test-results/v1-1-desktop.png",
+        "test-results/v1-1-mobile.png",
+        "test-results/v1-13-desktop.png",
+        "test-results/v1-13-mobile.png",
+        "test-results/v1-14-desktop.png",
+        "test-results/v1-14-mobile.png",
+        "test-results/v1-15-desktop.png",
+        "test-results/v1-15-mobile.png",
+        "test-results/v1-2-desktop.png",
+        "test-results/v1-2-mobile.png",
+        "test-results/v1-3-desktop.png",
+        "test-results/v1-3-mobile.png",
+        "test-results/v1-4-desktop.png",
+        "test-results/v1-4-mobile.png"
+      ],
+      "figma_page": "https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2"
+    }
+  }
+}
