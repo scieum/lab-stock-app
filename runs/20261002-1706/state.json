@@ -1,12 +1,14 @@
 {
-  "stage": "G",
-  "retries": 0,
+  "stage": "done",
+  "retries": 1,
   "baseline_hash": "a3addd577d129ee89a8485a0ef506ad245ec726a578a9148caaae0fca067506c",
   "passed": [
     "D0",
     "D1",
     "D2",
-    "D3"
+    "D3",
+    "G",
+    "D4"
   ],
   "screens_passed": [
     1,
@@ -14,5 +16,6 @@
     2,
     3,
     4
-  ]
+  ],
+  "note": "D4 try1: N1-ui S3 2건 timeout/worker crash (환경), 코드 변경 없이 재판정"
 }

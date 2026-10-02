@@ -1,6 +1,6 @@
 # G-승인 — runs/20261002-1706
 
-- 미리보기 URL: (Vercel 연결 후 기록)
+- 미리보기 URL: https://lab-stock-app-o97y-git-dev-run-2026-aa6246-hayeonkeems-projects.vercel.app (브랜치 dev/run-20261002-1706, 배포 dpl_Dx3WuziHrQVckKESrLfHY8PYNu9J, 환경변수 반영)
 - V1 스크린샷: runs/20261002-1706/v1/ (현재 화면 4만 보관, 1·13·2·3은 다음 전체 e2e 실행 때 다시 저장)
 - Figma 비교: https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2
 
@@ -12,7 +12,7 @@
 5. 화면 1: 아이디 안내 문구 "아이디(이메일)"
 6. 미구현 경로 404: /intake, /cabinets, /users, /scan, /reorder
 
-result:
-reason:
-approver:
-date:
+result: approved
+reason: 미리보기 확인 후 사용자 승인 (확인 요청 사항 1~6 수용)
+approver: scieum (사용자)
+date: 2026-10-02
