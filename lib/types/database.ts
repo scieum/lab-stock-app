@@ -267,6 +267,7 @@ export type Database = {
           amount: number
           demo_user_name: string | null
           id: string
+          memo: string | null
           reagent_id: string
           school_id: string
           used_at: string
@@ -276,6 +277,7 @@ export type Database = {
           amount: number
           demo_user_name?: string | null
           id?: string
+          memo?: string | null
           reagent_id: string
           school_id: string
           used_at?: string
@@ -285,6 +287,7 @@ export type Database = {
           amount?: number
           demo_user_name?: string | null
           id?: string
+          memo?: string | null
           reagent_id?: string
           school_id?: string
           used_at?: string
@@ -374,11 +377,12 @@ export type Database = {
         }
       }
       record_usage: {
-        Args: { amount: number; reagent_id: string }
+        Args: { amount: number; memo?: string; reagent_id: string }
         Returns: {
           amount: number
           demo_user_name: string | null
           id: string
+          memo: string | null
           reagent_id: string
           school_id: string
           used_at: string
@@ -444,6 +448,26 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      usage_history: {
+        Args: {
+          p_limit?: number
+          p_only_mine?: boolean
+          p_query?: string
+          p_since?: string
+        }
+        Returns: {
+          amount: number
+          id: string
+          is_mine: boolean
+          memo: string
+          msds_url: string
+          reagent_id: string
+          reagent_name: string
+          unit: string
+          used_at: string
+          user_name: string
+        }[]
       }
     }
     Enums: {
