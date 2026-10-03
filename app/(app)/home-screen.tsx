@@ -1,30 +1,43 @@
 import { redirect } from "next/navigation";
 import { ButtonOutline } from "@/components/button-outline";
 import { ButtonPillSoft } from "@/components/button-pill-soft";
+import { GuestLockedButton } from "@/components/guest-lock/locked-button";
 import { CabinetSummaryCard, HomeSummary, StockSummaryCard, SummaryEmptyCard } from "@/components/home-summary";
 import { QuickAction, type QuickActionItem } from "@/components/quick-action";
 import { ReagentRow } from "@/components/reagent-row";
 import { ReorderAlertCard } from "@/components/reorder-alert-card";
-import { getHomeData, type Role } from "@/lib/supabase/home-data";
+import { getHomeData, type HomeData, type Role } from "@/lib/supabase/home-data";
 import styles from "./home.module.css";
 
 // 시안 13 quick-action — 역할별 2칸 (탭과 겹치는 QR·시약 목록·사용 기록 내역은 두지 않는다)
 const USAGE_NEW: QuickActionItem = { label: "사용 기록 입력", href: "/usage/new", icon: "pen" };
+const CABINETS: QuickActionItem = { label: "시약장 보기", href: "/cabinets", icon: "cabinet" };
 const INTAKE: QuickActionItem = { label: "입고", href: "/intake", icon: "intake", entry: "stock-intake" };
 const QUICK_ACTIONS: Record<Role, QuickActionItem[]> = {
-  student: [USAGE_NEW, { label: "시약장 보기", href: "/cabinets", icon: "cabinet" }],
+  student: [USAGE_NEW, CABINETS],
   teacher: [USAGE_NEW, INTAKE],
   admin: [INTAKE, { label: "사용자 관리", href: "/users", icon: "users", entry: "user-manage" }],
 };
+// 시안 13-guest quick-action: 학생과 같은 2칸, 둘 다 guest-lock (쓰기·범위 밖 진입점)
+const GUEST_QUICK_ACTIONS: QuickActionItem[] = [
+  { ...USAGE_NEW, locked: true },
+  { ...CABINETS, locked: true },
+];
 
-/**
- * 화면 13 홈 — 경로 `/` 로그인 후 (app/page.tsx 가 세션을 확인해 AppShell 안에서 그린다).
- * 라우트 파일이 아니라 화면 컴포넌트다 (로그인 전 `/` 는 화면 15 랜딩).
- */
-export async function HomeScreen() {
-  const data = await getHomeData();
-  if (!data) redirect("/login");
-  const staff = data.role !== "student";
+type HomeViewProps = {
+  data: Omit<HomeData, "role">;
+  /**
+   * 로그인 역할. 없으면 둘러보기(13g, /demo): 데모 학교 데이터, 쓰기·범위 밖 진입점은 guest-lock,
+   * 교사·admin 전용 컴포넌트(stock-intake·user-manage·cabinet-edit·reorder-alert-card)는 두지 않는다.
+   */
+  role?: Role;
+};
+
+/** 화면 13 홈 본문 — 로그인(역할별) / 둘러보기(role 없음) 공용 */
+export function HomeView({ data, role }: HomeViewProps) {
+  const guest = !role;
+  const staff = !guest && role !== "student";
+  const reagentHref = (id: string) => (guest ? `/demo/reagents/${id}` : `/reagents/${id}`);
 
   return (
     <>
@@ -32,14 +45,14 @@ export async function HomeScreen() {
       <div className={styles.dashboard}>
         <div className={styles.column}>
           <div className={styles.quick}>
-            <QuickAction items={QUICK_ACTIONS[data.role]} />
+            <QuickAction items={role ? QUICK_ACTIONS[role] : GUEST_QUICK_ACTIONS} />
           </div>
           <HomeSummary className={styles.summary}>
             <div className={styles.stock}>
               <StockSummaryCard
                 lowStockCount={data.lowStock.length}
                 totalCount={data.totalReagents}
-                items={data.lowStock.map((r) => ({ name: r.name, amount: r.amount, href: `/reagents/${r.id}` }))}
+                items={data.lowStock.map((r) => ({ name: r.name, amount: r.amount, href: reagentHref(r.id) }))}
               />
             </div>
             <div className={styles.cabinet}>
@@ -87,15 +100,36 @@ export async function HomeScreen() {
             ) : (
               <div className={styles.empty}>
                 <p className={styles.body}>아직 사용 기록이 없어요</p>
-                <ButtonOutline href="/usage/new">사용 기록 입력</ButtonOutline>
+                {guest ? (
+                  <GuestLockedButton variant="outline">사용 기록 입력</GuestLockedButton>
+                ) : (
+                  <ButtonOutline href="/usage/new">사용 기록 입력</ButtonOutline>
+                )}
               </div>
             )}
-            <ButtonPillSoft href="/usage" icon="chevron-right" fullWidth>
-              더 보기
-            </ButtonPillSoft>
+            {guest ? (
+              // 시안 13-guest recent-usage-card/button-pill-soft + guest-lock (사용 기록 내역은 둘러보기 범위 밖)
+              <GuestLockedButton variant="pill-soft" fullWidth>
+                더 보기
+              </GuestLockedButton>
+            ) : (
+              <ButtonPillSoft href="/usage" icon="chevron-right" fullWidth>
+                더 보기
+              </ButtonPillSoft>
+            )}
           </section>
         </div>
       </div>
     </>
   );
+}
+
+/**
+ * 화면 13 홈 — 경로 `/` 로그인 후 (app/page.tsx 가 세션을 확인해 AppShell 안에서 그린다).
+ * 라우트 파일이 아니라 화면 컴포넌트다 (로그인 전 `/` 는 화면 15 랜딩).
+ */
+export async function HomeScreen() {
+  const data = await getHomeData();
+  if (!data) redirect("/login");
+  return <HomeView data={data} role={data.role} />;
 }

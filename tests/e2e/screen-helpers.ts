@@ -33,12 +33,35 @@ export type DesignRules = {
     };
   };
   neis: { default_sido: string; default_region: string; exclude_sido: string[]; school_kind: string };
+  guest: {
+    screens: number[];
+    entry_screen: number;
+    entry_component: string;
+    school_name: string;
+    banner: string;
+    banner_cta: string;
+    lock: string;
+    tab_locks: number;
+    locked_tabs: string[];
+    write_lock_screens: number[];
+    hidden_components: string[];
+  };
 };
+
+/**
+ * rules.json guest 의 둘러보기 전용 컴포넌트(배너·잠금·진입점) — 로그인 화면에서는 0 이어야 하고,
+ * dev-rules components 의 [2,3,13] 소속은 둘러보기(/demo) 버전 화면을 뜻한다 (dev-rules components_note).
+ */
+export function guestOnlyComponents(): string[] {
+  const g = rules.guest;
+  return [...new Set([g.banner, g.lock, g.entry_component].filter(Boolean))];
+}
 
 export type DevRules = {
   routes: Record<string, string>;
   viewports: Record<string, [number, number]>;
   components: Record<string, number[]>;
+  guest_screens: number[];
 };
 
 const readJson = <T>(rel: string): T => JSON.parse(readFileSync(join(process.cwd(), rel), "utf8")) as T;

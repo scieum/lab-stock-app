@@ -8,6 +8,9 @@ import { DataTable, DataTableRow } from "@/components/ex-data-table";
 import { DataTableCell } from "@/components/ex-data-table-cell";
 import { Toast } from "@/components/ex-toast";
 import { FeatureCard } from "@/components/feature-card";
+import { GuestBanner } from "@/components/guest-banner";
+import { GuestEntry } from "@/components/guest-entry";
+import { GuestLock } from "@/components/guest-lock";
 import { CabinetSummaryCard, HomeSummary, StockSummaryCard } from "@/components/home-summary";
 import { LandingCta } from "@/components/landing-cta";
 import { LandingHero } from "@/components/landing-hero";
@@ -240,6 +243,22 @@ export default function GalleryPage() {
 
         <Item name="landing-cta">
           <LandingCta />
+        </Item>
+
+        <Item name="guest-entry">
+          <GuestEntry />
+        </Item>
+
+        <Item name="guest-banner">
+          <GuestBanner />
+        </Item>
+
+        <Item name="guest-lock">
+          <div className={styles.row}>
+            <GuestLock />
+            <span>사용 기록 입력</span>
+            <GuestLock />
+          </div>
         </Item>
 
         <Item name="tab-bar · tab-item">

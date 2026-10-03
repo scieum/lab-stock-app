@@ -42,3 +42,22 @@
   font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-normal);
 }
+
+/* 둘러보기 잠금 칸 (button) — 링크 칸과 같은 모양 + 오른쪽 위 guest-lock (시안 x=149 y=8 / 173) */
+.item {
+  position: relative;
+}
+
+button.item {
+  width: 100%;
+  border: 0;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lock {
+  position: absolute;
+  top: var(--space-8);
+  right: var(--space-8);
+}

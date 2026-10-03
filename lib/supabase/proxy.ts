@@ -3,11 +3,14 @@ import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/lib/types/database";
 import { getSupabasePublicEnv } from "./env";
 
-/** 로그인 없이 열리는 경로 (화면 1·14·비밀번호 찾기·확인 메일 링크·NEIS 중계·컴포넌트 갤러리) */
-const PUBLIC_ROOTS = ["/login", "/signup", "/forgot-password", "/auth", "/api", "/gallery"];
+/** 로그인 없이 열리는 경로 (화면 1·14·비밀번호 찾기·확인 메일 링크·NEIS 중계·컴포넌트 갤러리·둘러보기 /demo) */
+const PUBLIC_ROOTS = ["/login", "/signup", "/forgot-password", "/auth", "/api", "/gallery", "/demo"];
 
-/** 로그인된 사용자가 오면 홈으로 보내는 경로 (회원가입) */
-const GUEST_ONLY = ["/signup"];
+/**
+ * 로그인된 사용자가 오면 홈(`/`)으로 보내는 경로 — 회원가입, 둘러보기 /demo·/demo/**
+ * (dev-rules.json route_auth guest_note: 로그인 사용자가 /demo 에 오면 / 로)
+ */
+const GUEST_ONLY = ["/signup", "/demo"];
 
 export function isGuestOnlyPath(pathname: string): boolean {
   return GUEST_ONLY.some((p) => pathname === p || pathname.startsWith(p + "/"));

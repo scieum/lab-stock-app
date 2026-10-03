@@ -1,0 +1,5 @@
+{
+  "stages": ["D2", "D3", "G", "D4"],
+  "screens": [15, 13, 2, 3],
+  "reason": "둘러보기(비회원) 모드: D2 데모 학교 seed·RLS, D3 15 guest-entry, 13g·2g·3g (/demo)"
+}

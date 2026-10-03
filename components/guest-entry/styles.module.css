@@ -1,0 +1,20 @@
+/* 시안 15-mobile guest-entry: 358×44, 바탕·테두리 없음, 버튼(106×44) 가운데 */
+.entry {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: var(--button-min-height);
+}
+
+.button {
+  height: var(--button-min-height);
+  min-height: var(--button-min-height);
+}
+
+/* 시안 15-desktop guest-entry: 버튼 폭만 (106×44) */
+@media (min-width: 1024px) {
+  .entry {
+    width: auto;
+  }
+}
