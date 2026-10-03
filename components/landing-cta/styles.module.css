@@ -1,4 +1,4 @@
-/* 시안 15-mobile landing-cta: 흰 바탕 · 위 테두리 gray-100(border) · padding 16 · gap 8, 버튼 전폭 세로 2개 */
+/* 시안 15-mobile landing-cta: 흰 바탕 · 위 테두리 gray-100(border) · padding 16 · gap 8, 버튼 전폭 세로 2개 + guest-entry */
 .cta {
   display: flex;
   flex-direction: column;
@@ -9,21 +9,32 @@
   box-shadow: var(--shadow-none);
 }
 
+.buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
 .button {
   width: 100%;
 }
 
-/* 시안 15-desktop landing-cta: 테두리·바탕 없음, 가로 한 줄 · gap 12 · 가운데, 버튼 폭 240 (= control-height 48 × 5) */
+/* 시안 15-desktop cta-stack: 테두리·바탕 없음, 세로 gap 12 가운데 — landing-cta 는 가로 한 줄 gap 12, 버튼 폭 240 (= control-height 48 × 5) */
 @media (min-width: 1024px) {
   .cta {
     --cta-button-width: calc(var(--control-height) * 5);
 
-    flex-direction: row;
-    justify-content: center;
+    align-items: center;
     gap: var(--space-12);
     padding: 0;
     border-top: 0;
     background: transparent;
+  }
+
+  .buttons {
+    flex-direction: row;
+    justify-content: center;
+    gap: var(--space-12);
   }
 
   .button {

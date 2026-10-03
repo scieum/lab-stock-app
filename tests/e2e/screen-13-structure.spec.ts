@@ -5,7 +5,16 @@ import { join } from "node:path";
 import { test, expect, type Page } from "@playwright/test";
 import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
-import { PROFILE_ROLE, ROLE_NAME, browserSession, countComponent, roleChecks, rules, sel } from "./screen-helpers";
+import {
+  PROFILE_ROLE,
+  ROLE_NAME,
+  browserSession,
+  countComponent,
+  guestOnlyComponents,
+  roleChecks,
+  rules,
+  sel,
+} from "./screen-helpers";
 
 const SCREEN = 13;
 const ROLES: Role[] = [...SCHOOL_A_ROLES, "schoolB"];
@@ -30,6 +39,10 @@ for (const role of ROLES) {
       for (const name of required) {
         expect(await countComponent(page, name), `screens_required ${name}`).toBeGreaterThanOrEqual(1);
         await expect(page.locator(sel(name)).first(), `${name} 보임`).toBeVisible();
+      }
+      // rules.guest 의 둘러보기 전용 컴포넌트(배너·잠금·진입점)는 로그인 홈에 0 (dev-rules components 의 13 은 /demo 버전)
+      for (const name of guestOnlyComponents()) {
+        expect(await countComponent(page, name), `로그인 화면에 둘러보기 전용 ${name} 0개`).toBe(0);
       }
     } finally {
       await context.close();

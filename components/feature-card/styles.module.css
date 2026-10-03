@@ -36,8 +36,11 @@
   line-height: var(--line-height-tight);
 }
 
+/* feature-desc: 시안 "
+" 줄바꿈 그대로 (모바일·데스크톱 같음) */
 .desc {
   margin: 0;
+  white-space: pre-line;
   color: var(--color-text-muted);
   font-size: var(--font-size-15);
   font-weight: var(--font-weight-regular);

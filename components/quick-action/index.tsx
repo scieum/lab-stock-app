@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Icon } from "@/components/icons";
+import { QuickActionLocked } from "./locked-item";
 import styles from "./styles.module.css";
 
 export type QuickActionItem = {
@@ -11,20 +12,26 @@ export type QuickActionItem = {
    * 주면 칸 링크에 data-component 로 붙는다.
    */
   entry?: string;
+  /** 둘러보기 잠금 — 링크 대신 guest-lock 버튼(ex-toast "가입하면 쓸 수 있어요"), 이동·요청 없음 */
+  locked?: boolean;
 };
 
 /** 홈 빠른 실행 (회색 타일 + 하늘색 원 아이콘). 역할별로 보여줄 항목만 넘긴다. */
 export function QuickAction({ items }: { items: QuickActionItem[] }) {
   return (
     <nav data-component="quick-action" className={styles.grid} aria-label="빠른 실행">
-      {items.map((it) => (
-        <Link key={it.href} href={it.href} className={styles.item} data-component={it.entry}>
-          <span className={styles.iconBg}>
-            <Icon name={it.icon} className={styles.icon} />
-          </span>
-          <span className={styles.label}>{it.label}</span>
-        </Link>
-      ))}
+      {items.map((it) =>
+        it.locked ? (
+          <QuickActionLocked key={it.href} label={it.label} icon={it.icon} />
+        ) : (
+          <Link key={it.href} href={it.href} className={styles.item} data-component={it.entry}>
+            <span className={styles.iconBg}>
+              <Icon name={it.icon} className={styles.icon} />
+            </span>
+            <span className={styles.label}>{it.label}</span>
+          </Link>
+        ),
+      )}
     </nav>
   );
 }

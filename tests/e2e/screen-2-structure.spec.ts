@@ -12,6 +12,7 @@ import {
   browserSession,
   countComponent,
   devRules,
+  guestOnlyComponents,
   roleChecks,
   rules,
   sel,
@@ -42,14 +43,20 @@ for (const role of ROLES) {
     // rules.json screens_required 에 화면 2 가 있으면 그 목록도 모두 있어야 한다 (현재 없으면 dev-rules 기준만)
     const raw = rules.screens_required[String(SCREEN)];
     const required = Array.isArray(raw) ? raw : [];
+    // rules.guest 의 둘러보기 전용 컴포넌트(배너·잠금·진입점)는 /demo 버전 화면 소속 — 로그인 화면에서는 0 (아래)
+    const guestOnly = new Set(guestOnlyComponents());
     const fromDev = Object.entries(devRules.components)
       .filter(([, screens]) => screens.includes(SCREEN))
-      .map(([n]) => n);
+      .map(([n]) => n)
+      .filter((n) => !guestOnly.has(n));
     expect(fromDev.length, `dev-rules components 에 화면 ${SCREEN} 컴포넌트가 있어야 함`).toBeGreaterThan(0);
 
     const { context, page } = await openAs(browser, info, role, SCREEN);
     try {
       await waitList(page);
+      for (const name of guestOnly) {
+        expect(await countComponent(page, name), `로그인 화면에 둘러보기 전용 ${name} 0개`).toBe(0);
+      }
       for (const name of required) {
         expect(await countComponent(page, name), `screens_required ${name}`).toBeGreaterThanOrEqual(1);
       }

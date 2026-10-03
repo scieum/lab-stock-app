@@ -162,10 +162,28 @@ test(`[N1-db][S*] 학교A admin으로 학교 B profiles 조회·update 0행`, as
   expect((await ownIds(admin, "profiles")).length).toBeGreaterThan(1);
 });
 
-test(`[N1-db][S*] 로그인 안 한 anon은 업무 테이블 0행`, async () => {
+// d7 §5 (2026-10-03): anon 은 데모 학교(is_demo) 행만 본다. 실제 학교(A·B) 행은 0. profiles 는 0.
+test(`[N1-db][S*] 로그인 안 한 anon은 실제 학교 행 0행 (데모 학교 행만)·profiles 0행`, async () => {
   const anon = anonClient();
-  for (const table of [...SCHOOL_TABLES, "schools", "profiles"]) {
-    const res = await anon.from(table).select("*").limit(5);
-    expect(res.error ? [] : res.data ?? [], `anon ${table}`).toHaveLength(0);
+  const a = await signIn("teacher");
+  const b = await signIn("schoolB");
+  const demo = await anon.from("schools").select("id, is_demo");
+  expect(demo.error).toBeNull();
+  const demoIds = (demo.data ?? []).map((s) => s.id as string);
+  expect((demo.data ?? []).filter((s) => !s.is_demo), "anon 이 보는 schools 는 전부 is_demo").toHaveLength(0);
+  expect(demoIds).not.toContain(a.schoolId);
+  expect(demoIds).not.toContain(b.schoolId);
+
+  for (const table of SCHOOL_TABLES) {
+    const res = await anon.from(table).select("id, school_id");
+    expect(res.error, `anon ${table}`).toBeNull();
+    const real = (res.data ?? []).filter((r) => !demoIds.includes(r.school_id as string));
+    expect(real, `anon ${table} 실제 학교 행`).toHaveLength(0);
+    for (const sid of [a.schoolId, b.schoolId]) {
+      const by = await anon.from(table).select("id").eq("school_id", sid);
+      expect(by.error ? [] : by.data ?? [], `anon ${table} school_id=${sid}`).toHaveLength(0);
+    }
   }
+  const prof = await anon.from("profiles").select("user_id").limit(5);
+  expect(prof.error ? [] : prof.data ?? [], "anon profiles").toHaveLength(0);
 });

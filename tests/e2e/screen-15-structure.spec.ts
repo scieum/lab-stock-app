@@ -5,7 +5,16 @@ import { join } from "node:path";
 import { test, expect } from "@playwright/test";
 import { countComponent, devRules, roleChecks, routeOf, rules, sel, useProjectViewport } from "./screen-helpers";
 import { frameCount } from "./screen-14-helpers";
-import { LOGIN, SCREEN, SIGNUP, assertSharedRootRoute, waitLanding } from "./screen-15-helpers";
+import {
+  HOME,
+  LOGIN,
+  SCREEN,
+  SIGNUP,
+  assertSharedRootRoute,
+  frameTextsUnder,
+  guestEntryRoute,
+  waitLanding,
+} from "./screen-15-helpers";
 
 // ---------- C1 ----------
 test(`[C1][S${SCREEN}] rules.json screens_required[${SCREEN}] 컴포넌트 모두 존재·보임 · feature-card 개수 = 시안 노드 수`, async ({ page }, info) => {
@@ -70,6 +79,40 @@ test(`[C1][S${SCREEN}] landing-cta 링크 href = routes["${SIGNUP}"]·routes["${
   await page.locator(sel("landing-cta")).locator(`${sel("button-outline")}[href]`).click();
   await page.waitForURL((u) => u.pathname === routeOf(LOGIN), { timeout: 30_000 });
   await expect(page.locator(sel("ex-auth-form-card")).first(), "로그인 화면 표시").toBeVisible();
+});
+
+test(`[C1][S${SCREEN}] guest-entry(rules.json guest.entry_component) 1개 · href = routes["${HOME}-guest"] · 라벨 = 시안 · 클릭 시 둘러보기로 이동(200, 로그인 아님)`, async ({ page }, info) => {
+  const vp = await useProjectViewport(page, info);
+  const entry = rules.guest.entry_component;
+  expect(entry, "guest.entry_component").toBe("guest-entry");
+  expect(rules.screens_required[String(SCREEN)], `screens_required["${SCREEN}"] 에 ${entry} 포함`).toContain(entry);
+  const demo = guestEntryRoute();
+  expect(demo, "둘러보기 경로는 로그인 경로가 아님").not.toBe(routeOf(LOGIN));
+
+  await page.goto(routeOf(SCREEN));
+  await waitLanding(page);
+  const inFrame = frameCount(SCREEN, vp, entry);
+  expect(inFrame, `시안 ${SCREEN}-${vp} 에 ${entry} 노드`).toBe(1);
+  const box = page.locator(sel(entry));
+  await expect(box, `${entry} 개수 = 시안 노드 수`).toHaveCount(inFrame);
+  await expect(box.first(), `${entry} 보임`).toBeVisible();
+
+  const link = box.locator("a[href]");
+  await expect(link, `${entry} 안 링크 1개`).toHaveCount(1);
+  await expect(link, "둘러보기 href").toHaveAttribute("href", demo);
+  const labels = frameTextsUnder(SCREEN, vp, entry);
+  expect(labels.length, `시안 ${entry} 문구`).toBe(1);
+  expect((await link.innerText()).trim(), "둘러보기 라벨 = 시안 문구").toBe(labels[0]);
+
+  // Next <Link> 는 클라이언트 이동(RSC fetch)이라 문서 응답이 없다 → URL 이동 뒤 같은(비로그인) 컨텍스트로 문서 응답을 확인
+  await link.click();
+  await page.waitForURL((u) => u.pathname === demo, { timeout: 30_000 });
+  await page.waitForLoadState("load");
+  expect(new URL(page.url()).pathname, "둘러보기 경로에 머무름 (/login 아님)").toBe(demo);
+  await expect(page.locator(sel("ex-auth-form-card")), "로그인 화면 아님").toHaveCount(0);
+  await expect(page.locator(sel("landing-hero")), "랜딩 아님").toHaveCount(0);
+  const res = await page.request.get(demo, { maxRedirects: 0 });
+  expect(res.status(), `${demo} 문서 응답 (리다이렉트 아님)`).toBe(200);
 });
 
 // ---------- C2 ----------

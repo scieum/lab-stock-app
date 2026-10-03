@@ -29,8 +29,18 @@
   line-height: var(--line-height-normal);
 }
 
+/* 시안 15-mobile 은 제목·부제 두 줄 ("
+"), 15-desktop 은 한 줄 */
+.mobileBreak {
+  display: inline;
+}
+
 /* 시안 15-desktop landing-hero: padding-top 64, 가운데 정렬, 제목 32 */
 @media (min-width: 1024px) {
+  .mobileBreak {
+    display: none;
+  }
+
   .hero {
     align-items: center;
     padding-top: var(--space-64);
