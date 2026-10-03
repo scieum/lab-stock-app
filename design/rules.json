@@ -1,5 +1,5 @@
 {
-  "version": "1.11",
+  "version": "1.13",
   "sources": [
     "docs/design.md",
     "docs/story-service.md",
@@ -11,7 +11,9 @@
     "2026-10-02 화면 7~10 추가",
     "2026-10-02 화면 11·12 추가",
     "2026-10-02 화면 13 홈 추가",
-    "2026-10-02 로그인/회원가입 분리 (화면 14)"
+    "2026-10-02 로그인/회원가입 분리 (화면 14)",
+    "2026-10-03 화면 15 랜딩 추가",
+    "2026-10-03 둘러보기(guest) 모드"
   ],
   "colors": {
     "allowed": [
@@ -143,7 +145,7 @@
       1440,
       900
     ],
-    "name_pattern": "^([1-9]|1[0-4])-(mobile|desktop)$",
+    "name_pattern": "^([1-9]|1[0-5])-(mobile|desktop)$",
     "keyscreens": {
       "default": [
         2,
@@ -169,8 +171,10 @@
       11,
       12,
       13,
-      14
-    ]
+      14,
+      15
+    ],
+    "guest_name_pattern": "^([1-9]|1[0-5])-guest-(mobile|desktop)$"
   },
   "s1": {
     "refs_per_screen": [
@@ -373,10 +377,16 @@
       "qr-scan",
       "qr-manual-entry"
     ],
-    "source": "2026-10-02 story-service 결정 (화면별 필수 컴포넌트, 규칙 C1)",
+    "source": "2026-10-02 story-service 결정 (화면별 필수 컴포넌트, 규칙 C1) · 15 랜딩 2026-10-03",
     "13": [
       "home-summary",
       "quick-action"
+    ],
+    "15": [
+      "landing-hero",
+      "feature-card",
+      "landing-cta",
+      "guest-entry"
     ]
   },
   "cabinet": {
@@ -449,12 +459,50 @@
     ],
     "source": "2026-10-02 사용자 결정: 하단 탭바 (refs/uibowl-home-nav-20261002.md)",
     "radius": 0,
-    "shape_source": "2026-10-02 사용자 결정: 둥근 floating pill 말고 하단에 붙은 사각형"
+    "shape_source": "2026-10-02 사용자 결정: 둥근 floating pill 말고 하단에 붙은 사각형",
+    "mobile_screens_note": "1 로그인·14 회원가입·15 랜딩 제외 (로그인 전 화면)"
   },
   "auth": {
     "login_id": "개인 이메일",
     "login_screen": 1,
     "signup_screen": 14,
-    "source": "2026-10-02 사용자 결정"
+    "source": "2026-10-02 사용자 결정",
+    "landing_screen": 15
+  },
+  "guest": {
+    "screens": [
+      13,
+      2,
+      3
+    ],
+    "entry_screen": 15,
+    "entry_component": "guest-entry",
+    "school_name": "데모 학교",
+    "banner": "guest-banner",
+    "banner_cta": "button-primary",
+    "lock": "guest-lock",
+    "tab_locks": 2,
+    "locked_tabs": [
+      "QR 스캔",
+      "기록"
+    ],
+    "write_lock_screens": [
+      13,
+      3
+    ],
+    "hidden_components": [
+      "stock-intake",
+      "reagent-register",
+      "manual-upload",
+      "user-manage",
+      "cabinet-edit",
+      "vendor-register",
+      "vendor-link",
+      "reorder-alert-card",
+      "school-select-sido",
+      "school-select-region",
+      "school-select-school"
+    ],
+    "source": "2026-10-03 사용자 결정: 비회원 둘러보기 (데모 학교 읽기 전용)"
   }
 }

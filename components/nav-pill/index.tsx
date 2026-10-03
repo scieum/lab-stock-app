@@ -1,8 +1,15 @@
 import Link from "next/link";
 import { Icon } from "@/components/icons";
+import { NavLinkLocked } from "./locked-link";
 import styles from "./styles.module.css";
 
-export type NavLinkItem = { label: string; href: string; active?: boolean };
+export type NavLinkItem = {
+  label: string;
+  href: string;
+  active?: boolean;
+  /** 둘러보기 잠금 — 링크 대신 guest-lock 버튼(ex-toast) */
+  locked?: boolean;
+};
 
 type Props = {
   /** 하위 화면 제목 (있으면 뒤로가기 + 제목, 없으면 워드마크) */
@@ -44,16 +51,20 @@ export function NavPill({ title, backHref, schoolName, endTitle, links }: Props)
         )}
         {links && links.length > 0 ? (
           <nav className={styles.links} aria-label="주 메뉴">
-            {links.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className={l.active ? styles.linkActive : styles.link}
-                aria-current={l.active ? "page" : undefined}
-              >
-                {l.label}
-              </Link>
-            ))}
+            {links.map((l) =>
+              l.locked ? (
+                <NavLinkLocked key={l.href} label={l.label} />
+              ) : (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className={l.active ? styles.linkActive : styles.link}
+                  aria-current={l.active ? "page" : undefined}
+                >
+                  {l.label}
+                </Link>
+              ),
+            )}
           </nav>
         ) : null}
       </div>

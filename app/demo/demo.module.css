@@ -1,0 +1,15 @@
+/* 둘러보기 셸 — 공통 틀은 app/(app)/shell.module.css 를 그대로 쓴다.
+ * guest-banner: 모바일(시안 13-guest-mobile)은 390 전폭(x=0) — content padding 16 을 음수 여백으로 상쇄.
+ * 데스크톱(13-guest-desktop)은 content 안 1312 폭 그대로.
+ */
+.banner {
+  width: auto;
+  margin: 0 calc(var(--space-16) * -1);
+}
+
+@media (min-width: 1024px) {
+  .banner {
+    width: 100%;
+    margin: 0;
+  }
+}

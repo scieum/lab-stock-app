@@ -1,0 +1,58 @@
+{
+  "gate": "gate-D3-S13",
+  "pass": false,
+  "exit": 1,
+  "violations": [
+    {
+      "rule": "R-ui",
+      "where": "tests/",
+      "actual": "테스트 없음",
+      "allowed": "제목에 [R-ui] 포함 테스트 ≥ 1"
+    },
+    {
+      "rule": "C1",
+      "where": "tests/",
+      "actual": "테스트 없음",
+      "allowed": "제목에 [C1] 포함 테스트 ≥ 1"
+    },
+    {
+      "rule": "C2",
+      "where": "tests/",
+      "actual": "테스트 없음",
+      "allowed": "제목에 [C2] 포함 테스트 ≥ 1"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "tests/",
+      "actual": "테스트 없음",
+      "allowed": "제목에 [N1-ui] 포함 테스트 ≥ 1"
+    },
+    {
+      "rule": "GM-ui",
+      "where": "tests/",
+      "actual": "테스트 없음",
+      "allowed": "제목에 [GM-ui] 포함 테스트 ≥ 1"
+    },
+    {
+      "rule": "GM-db",
+      "where": "tests/",
+      "actual": "테스트 없음",
+      "allowed": "제목에 [GM-db] 포함 테스트 ≥ 1"
+    },
+    {
+      "rule": "Q2",
+      "where": "npm run build",
+      "actual": "exit 1",
+      "allowed": "exit 0"
+    }
+  ],
+  "logs": {
+    "npm run build": "> lab-stock-app@0.1.0 build\n> next build\n\n▲ Next.js 16.3.8 (Turbopack)\n- Environments: .env.local\n✓ Running next.config.ts took 107ms\n\n> Build error occurred\nError: EPERM: operation not permitted, unlink 'C:\\Users\\User\\OneDrive - 한국교원대학교\\Claude Code\\lab-stock-app\\.next\\server\\app\\demo'\n    at ignore-listed frames {\n  errno: -4048,\n  code: 'EPERM',\n  syscall: 'unlink',\n  path: 'C:\\\\Users\\\\User\\\\OneDrive - 한국교원대학교\\\\Claude Code\\\\lab-stock-app\\\\.next\\\\server\\\\app\\\\demo'\n}"
+  },
+  "report": {
+    "V1": {
+      "screenshots": [],
+      "figma_page": "https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2"
+    }
+  }
+}

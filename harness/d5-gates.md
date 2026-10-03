@@ -54,8 +54,8 @@
 
 | ID | 조건 |
 |---|---|
-| C1 | rules.json `screens_required` 컴포넌트가 해당 화면 DOM에 존재 (MVP: 13 = home-summary·quick-action) |
-| C2 | 폭 390: 화면 2~13에 `tab-bar` 1개·`tab-item` 4개, 화면 1·14에 0 / 폭 1440: `tab-bar` 0 |
+| C1 | rules.json `screens_required` 컴포넌트가 해당 화면 DOM에 존재 (MVP: 13 = home-summary·quick-action, 15 = landing-hero·feature-card·landing-cta) |
+| C2 | 폭 390: 화면 2~13에 `tab-bar` 1개·`tab-item` 4개, 화면 1·14·15에 0 / 폭 1440: `tab-bar` 0 |
 
 ### N — 어기면 안 되는 것 ★
 
@@ -67,6 +67,13 @@
 | N2-env | 키 환경변수 이름에 `NEXT_PUBLIC_` 접두사 = 0, 키 사용 파일은 `app/api/**`·`lib/server/**`만 |
 | N2-bundle | `.next/static/**` 안에 32자리 16진수·`AIza`로 시작하는 문자열·키 변수 이름 = 0 |
 
+### GM — 둘러보기(비회원) ★ (2026-10-03)
+
+| ID | 조건 |
+|---|---|
+| GM-ui | /demo·/demo/reagents·/demo/reagents/[id] 비로그인 접속: guest-banner 1(가입 버튼 → /signup), design/rules.json guest.hidden_components 0, 학교명 "데모 학교"만, 폭 390 tab-bar 1·tab-item 4·탭바 안 guest-lock 2(QR 스캔·기록), 쓰기 동작(13·3)에 guest-lock ≥ 1이고 눌러도 쓰기 요청 0건 |
+| GM-db | anon 키(비로그인)로: 데모 학교 reagents·usage_logs·cabinets select 가능, 실제 학교 데이터 select 0행, 데모 학교 insert·update·delete 거부. 로그인 사용자도 데모 학교 쓰기 거부 |
+
 ### V — 시안 비교
 
 | ID | 조건 |
@@ -75,4 +82,4 @@
 
 ## 3. 사람 승인
 
-D3 화면 6개가 끝나면 Vercel 미리보기 URL과 V1 비교 이미지로 approval.md를 만든다. 형식은 디자인 하네스와 같다(result·reason·approver·date).
+D3 화면 7개가 끝나면 Vercel 미리보기 URL과 V1 비교 이미지로 approval.md를 만든다. 형식은 디자인 하네스와 같다(result·reason·approver·date).

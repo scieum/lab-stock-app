@@ -1,0 +1,37 @@
+/* 시안 13-guest-mobile guest-banner: 바탕 highlight-soft · padding 8/16 · gap 12 · 높이 60 · radius 0 */
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  width: 100%;
+  min-height: calc(var(--button-min-height) + var(--space-16));
+  padding: var(--space-8) var(--space-16);
+  border-radius: var(--radius-none);
+  background: var(--color-highlight-soft);
+  color: var(--color-text);
+  box-shadow: var(--shadow-none);
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+/* button-primary 86×44 */
+.button {
+  flex-shrink: 0;
+  height: var(--button-min-height);
+  min-height: var(--button-min-height);
+}
+
+/* 데스크톱(13-guest-desktop): 문구 한 줄 */
+@media (min-width: 1024px) {
+  .mobileBreak {
+    display: none;
+  }
+}

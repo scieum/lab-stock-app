@@ -37,3 +37,24 @@
   outline: var(--border-width) solid var(--color-highlight);
   outline-offset: calc(var(--space-4) * -1);
 }
+
+/* 둘러보기 잠금 탭 (button) — 링크와 같은 모양 */
+button.item {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* 시안: guest-lock 16 이 아이콘 오른쪽 위에 겹친다 (아이콘 왼쪽에서 20 = 100% - 4) */
+.iconWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.lock {
+  position: absolute;
+  top: 0;
+  left: calc(100% - var(--space-4));
+}

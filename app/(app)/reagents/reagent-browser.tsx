@@ -14,7 +14,13 @@ const FILTERS: SegmentOption[] = [
   { value: "low-stock", label: "재고 부족" },
 ];
 
-type Props = { items: ReagentListItem[]; initialFilter: ReagentFilter; initialQuery: string };
+type Props = {
+  items: ReagentListItem[];
+  initialFilter: ReagentFilter;
+  initialQuery: string;
+  /** 행 링크의 상세 경로 앞부분 (기본 /reagents, 둘러보기는 /demo/reagents) */
+  detailBase?: string;
+};
 
 /** 주소창(?filter·?q)을 화면 상태와 맞춘다 — 새로고침·뒤로가기에도 같은 목록 */
 function syncUrl(filter: ReagentFilter, q: string) {
@@ -26,7 +32,7 @@ function syncUrl(filter: ReagentFilter, q: string) {
   window.history.replaceState(window.history.state, "", url);
 }
 
-export function ReagentBrowser({ items, initialFilter, initialQuery }: Props) {
+export function ReagentBrowser({ items, initialFilter, initialQuery, detailBase = "/reagents" }: Props) {
   const [filter, setFilter] = useState<ReagentFilter>(initialFilter);
   const [query, setQuery] = useState(initialQuery);
 
@@ -79,7 +85,7 @@ export function ReagentBrowser({ items, initialFilter, initialQuery }: Props) {
                 body={r.stock}
                 caption={r.intake}
                 lowStock={r.lowStock}
-                href={`/reagents/${r.id}`}
+                href={`${detailBase}/${r.id}`}
               />
             </li>
           ))}

@@ -1,0 +1,88 @@
+{
+  "gate": "gate-D4",
+  "pass": false,
+  "exit": 1,
+  "violations": [
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S14] 로그인 전 화면 14: roles R1~R7 역할 제한 컴포넌트 0개",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S13] 학교B 교사 홈: 재고 부족(stock<min_stock) 수·시약명과 badge-low-stock 표시가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S13] 학교A 학생: rules.json screens_required[13] 컴포넌트 모두 표시",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S13] 학교A admin: rules.json screens_required[13] 컴포넌트 모두 표시",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S13] 학교B 교사: rules.json screens_required[13] 컴포넌트 모두 표시",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S14] 화면 14 시안 컴포넌트(dev-rules components) 모두 존재 · 개수 ≥ 시안 프레임",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S15] 로그인 전 랜딩: 학교명 패턴 0 · seed 학교명 미노출 · 학교 선택 단계 0",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S15] 학교A 학생 로그인 상태로 / 접근 → 화면 13 홈 (랜딩 0) · 학교명 종류 = rules.json distinct_school_names · 자기 학교명만",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S15] 학교B 교사 로그인 상태로 / 접근 → 화면 13 홈 (랜딩 0) · 학교명 종류 = rules.json distinct_school_names · 자기 학교명만",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S15] 로그인 없이 /reagents (화면 2) → /login · 학교 데이터 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    }
+  ],
+  "logs": {},
+  "report": {
+    "V1": {
+      "screenshots": [
+        "test-results/v1-1-desktop.png",
+        "test-results/v1-1-mobile.png",
+        "test-results/v1-13-desktop.png",
+        "test-results/v1-13-mobile.png",
+        "test-results/v1-14-desktop.png",
+        "test-results/v1-15-desktop.png",
+        "test-results/v1-15-mobile.png",
+        "test-results/v1-2-desktop.png",
+        "test-results/v1-2-mobile.png",
+        "test-results/v1-3-desktop.png",
+        "test-results/v1-3-mobile.png",
+        "test-results/v1-4-desktop.png",
+        "test-results/v1-4-mobile.png"
+      ],
+      "figma_page": "https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2"
+    }
+  }
+}

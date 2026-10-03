@@ -185,8 +185,9 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_demo: boolean
           name: string
-          neis_code: string
+          neis_code: string | null
           office_code: string
           region: string
           sido: string
@@ -194,8 +195,9 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_demo?: boolean
           name: string
-          neis_code: string
+          neis_code?: string | null
           office_code: string
           region: string
           sido: string
@@ -203,8 +205,9 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_demo?: boolean
           name?: string
-          neis_code?: string
+          neis_code?: string | null
           office_code?: string
           region?: string
           sido?: string
@@ -214,27 +217,30 @@ export type Database = {
       usage_logs: {
         Row: {
           amount: number
+          demo_user_name: string | null
           id: string
           reagent_id: string
           school_id: string
           used_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           amount: number
+          demo_user_name?: string | null
           id?: string
           reagent_id: string
           school_id: string
           used_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           amount?: number
+          demo_user_name?: string | null
           id?: string
           reagent_id?: string
           school_id?: string
           used_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -258,17 +264,35 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      pending_signup_user: {
-        Args: { p_email: string }
-        Returns: string | null
+      demo_reagent_usage: {
+        Args: { p_limit?: number; p_reagent_id: string }
+        Returns: {
+          amount: number
+          id: string
+          used_at: string
+          user_name: string
+        }[]
       }
+      demo_recent_usage: {
+        Args: { p_limit?: number }
+        Returns: {
+          amount: number
+          id: string
+          reagent_id: string
+          reagent_name: string
+          unit: string
+          used_at: string
+          user_name: string
+        }[]
+      }
+      pending_signup_user: { Args: { p_email: string }; Returns: string }
       reagent_usage: {
         Args: { p_limit?: number; p_reagent_id: string }
         Returns: {
           amount: number
           id: string
           used_at: string
-          user_name: string | null
+          user_name: string
         }[]
       }
       recent_usage: {
@@ -280,8 +304,26 @@ export type Database = {
           reagent_name: string
           unit: string
           used_at: string
-          user_name: string | null
+          user_name: string
         }[]
+      }
+      record_usage: {
+        Args: { amount: number; reagent_id: string }
+        Returns: {
+          amount: number
+          demo_user_name: string | null
+          id: string
+          reagent_id: string
+          school_id: string
+          used_at: string
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "usage_logs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       register_profile: {
         Args: {
@@ -303,23 +345,6 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "profiles"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      record_usage: {
-        Args: { amount: number; reagent_id: string }
-        Returns: {
-          amount: number
-          id: string
-          reagent_id: string
-          school_id: string
-          used_at: string
-          user_id: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "usage_logs"
           isOneToOne: true
           isSetofReturn: false
         }

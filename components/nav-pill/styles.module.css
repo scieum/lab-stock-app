@@ -110,3 +110,18 @@
     gap: var(--space-24);
   }
 }
+
+/* 둘러보기 잠금 링크 (button) — 링크와 같은 모양, 라벨 오른쪽에 guest-lock (시안 nav-link 71×23: 라벨 + 4 + 16) */
+button.link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.linkRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+}
