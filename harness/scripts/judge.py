@@ -233,7 +233,7 @@ def e2e_results(ctx):
     out_file.parent.mkdir(exist_ok=True)
     cmd = ctx["dev"]["commands"]["e2e"]
     if ctx.get("screen"):
-        cmd += f' --grep "\\[S{ctx["screen"]}\\]|\\[S\\*\\]"'
+        cmd += f' --grep "\\[S{ctx["screen"]}g?\\]|\\[S\\*\\]"'
     env = dict(os.environ, PLAYWRIGHT_JSON_OUTPUT_NAME=str(out_file))
     p = subprocess.run(cmd, cwd=ROOT, shell=True, capture_output=True, text=True,
                        encoding="utf-8", errors="replace", env=env, timeout=1800)
@@ -260,6 +260,8 @@ def check_test_rule(rule):
     def check(ctx):
         if rule == "N1-d" and 14 not in ctx["screens"]:
             return []
+        if rule.startswith("GM-") and not set(ctx["dev"].get("guest_screens", [])) & set(ctx["screens"]):
+            return []
         tests = [(t, ok) for t, ok in e2e_results(ctx) if f"[{rule}]" in t]
         if not tests:
             return [v(rule, "tests/", "테스트 없음", f"제목에 [{rule}] 포함 테스트 ≥ 1")]
@@ -279,7 +281,7 @@ CHECKS = {
     "T1": check_T1, "T2": check_T2, "K1": check_K1,
     "N2-env": check_N2env, "N2-bundle": check_N2bundle, "V1": check_V1,
 }
-for _r in ("N1-db", "R-db", "R-ui", "C1", "C2", "N1-ui", "N1-d"):
+for _r in ("N1-db", "R-db", "R-ui", "C1", "C2", "N1-ui", "N1-d", "GM-ui", "GM-db"):
     CHECKS[_r] = check_test_rule(_r)
 
 

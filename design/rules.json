@@ -1,5 +1,5 @@
 {
-  "version": "1.12",
+  "version": "1.13",
   "sources": [
     "docs/design.md",
     "docs/story-service.md",
@@ -12,7 +12,8 @@
     "2026-10-02 화면 11·12 추가",
     "2026-10-02 화면 13 홈 추가",
     "2026-10-02 로그인/회원가입 분리 (화면 14)",
-    "2026-10-03 화면 15 랜딩 추가"
+    "2026-10-03 화면 15 랜딩 추가",
+    "2026-10-03 둘러보기(guest) 모드"
   ],
   "colors": {
     "allowed": [
@@ -172,7 +173,8 @@
       13,
       14,
       15
-    ]
+    ],
+    "guest_name_pattern": "^([1-9]|1[0-5])-guest-(mobile|desktop)$"
   },
   "s1": {
     "refs_per_screen": [
@@ -383,7 +385,8 @@
     "15": [
       "landing-hero",
       "feature-card",
-      "landing-cta"
+      "landing-cta",
+      "guest-entry"
     ]
   },
   "cabinet": {
@@ -465,5 +468,41 @@
     "signup_screen": 14,
     "source": "2026-10-02 사용자 결정",
     "landing_screen": 15
+  },
+  "guest": {
+    "screens": [
+      13,
+      2,
+      3
+    ],
+    "entry_screen": 15,
+    "entry_component": "guest-entry",
+    "school_name": "데모 학교",
+    "banner": "guest-banner",
+    "banner_cta": "button-primary",
+    "lock": "guest-lock",
+    "tab_locks": 2,
+    "locked_tabs": [
+      "QR 스캔",
+      "기록"
+    ],
+    "write_lock_screens": [
+      13,
+      3
+    ],
+    "hidden_components": [
+      "stock-intake",
+      "reagent-register",
+      "manual-upload",
+      "user-manage",
+      "cabinet-edit",
+      "vendor-register",
+      "vendor-link",
+      "reorder-alert-card",
+      "school-select-sido",
+      "school-select-region",
+      "school-select-school"
+    ],
+    "source": "2026-10-03 사용자 결정: 비회원 둘러보기 (데모 학교 읽기 전용)"
   }
 }

@@ -1,8 +1,8 @@
 {
   "repo": "https://github.com/scieum/harness",
-  "commit": "19c56dd",
+  "commit": "f132520",
   "path": "harness/rules.json",
-  "sha256": "6ee04520b0d3ba4d2b9c37fec24878fe6c23168c4f542bb0f2edc3ca825039b1",
+  "sha256": "2fb25605b713fae3e9447afed0c22c8648157193caae18fc68b3b0d7ad1d6f1d",
   "figma_file": "https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2",
   "figma_page": "00 최신 시안",
   "frames_from_runs": {
@@ -18,8 +18,14 @@
     "4-desktop": "runs/20261002-1441",
     "14-mobile": "runs/20261002-2019",
     "14-desktop": "runs/20261002-2019",
-    "15-mobile": "runs/20261003-0112",
-    "15-desktop": "runs/20261003-0112"
+    "15-mobile": "runs/20261003-1212",
+    "15-desktop": "runs/20261003-1212",
+    "13-guest-mobile": "runs/20261003-1212",
+    "13-guest-desktop": "runs/20261003-1212",
+    "2-guest-mobile": "runs/20261003-1212",
+    "2-guest-desktop": "runs/20261003-1212",
+    "3-guest-mobile": "runs/20261003-1212",
+    "3-guest-desktop": "runs/20261003-1212"
   },
-  "copied": "2026-10-03 (3차: 화면 15 랜딩)"
+  "copied": "2026-10-03 (4차: 둘러보기 모드 + 랜딩 줄바꿈)"
 }

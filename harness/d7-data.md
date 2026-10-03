@@ -4,7 +4,7 @@
 
 | 테이블 | 주요 열 | 비고 |
 |---|---|---|
-| schools | id, neis_code(SD_SCHUL_CODE, unique), office_code(ATPT_OFCDC_SC_CODE), name, sido, region | 회원가입(14)에서 그 학교 첫 가입 시 생성 |
+| schools | id, neis_code(SD_SCHUL_CODE, unique, 데모 학교는 null), office_code(ATPT_OFCDC_SC_CODE), name, sido, region, is_demo(boolean, 기본 false) | 회원가입(14)에서 그 학교 첫 가입 시 생성 |
 | profiles | user_id(auth.users), school_id, role(student·teacher·admin), display_name | 사용자당 1개 |
 | cabinets | id, school_id, label, door_type(양문형·단문형), shelves(3·4) | 화면 11은 2차, MVP는 시드 |
 | cabinet_slots | id, cabinet_id, side(L·R), shelf, storage_class | storage_class ∈ rules.json cabinet.storage_classes |
@@ -37,3 +37,15 @@
 1. 회원가입(14): `/api/neis/*`로 학교 선택 → Supabase Auth signUp(개인 이메일·비밀번호) → 서버(lib/server)가 schools upsert(neis_code) + profiles insert(school_id, role = 그 학교 첫 사용자면 admin, 아니면 student)
 2. 로그인(1): signInWithPassword(이메일·비밀번호)만. 학교는 profiles.school_id에서 읽는다 — 로그인 화면에서 학교를 받지 않는다(받은 값으로 학교를 바꿀 수 없게).
 3. 비밀번호 찾기: Supabase 비밀번호 재설정 메일.
+
+## 5. 데모 학교 (둘러보기, 2026-10-03 결정)
+
+| 항목 | 결정 |
+|---|---|
+| 레코드 | schools에 `is_demo = true`, name = "데모 학교"(design/rules.json guest.school_name), neis_code = null 인 행 1개. 마이그레이션 seed로만 만든다 |
+| 데이터 | 시약 15~20종(재고 부족 1~2종 포함), 시약장 1개(양문형 4단, 칸 분류 지정), 최근 사용 기록 10건 — 사용자 이름은 "학생 A"·"교사 B"처럼 가짜 |
+| 읽기 | RLS: anon 역할은 `school_id = 데모 학교`인 행만 select. 로그인 사용자의 기존 정책(자기 학교만)은 그대로 — 로그인 사용자는 둘러보기 화면에 오지 않는다(/demo → /) |
+| 쓰기 | 데모 학교 행은 anon·authenticated 모두 insert·update·delete 정책 없음(= 거부). seed 변경은 마이그레이션으로만 |
+| 분리 (N1) | 데모 학교는 가입 학교 목록에 나오지 않는다(NEIS 목록에서만 선택, is_demo 학교는 profiles.school_id가 될 수 없음 — check 제약 또는 트리거). 실제 학교 데이터는 anon에게 0행 |
+| 키 (N2) | 둘러보기는 NEIS·Gemini 호출 없음. Supabase anon 키만 사용 |
+| 화면 | /demo(13 둘러보기 홈) · /demo/reagents(2) · /demo/reagents/[id](3). 상단 guest-banner, 쓰기·범위 밖 진입점 guest-lock(탭 시 ex-toast "가입하면 쓸 수 있어요"), 탭바 QR 스캔·기록 잠금 |
