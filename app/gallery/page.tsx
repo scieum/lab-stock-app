@@ -6,6 +6,7 @@ import { ButtonPrimary } from "@/components/button-primary";
 import { AuthFormCard } from "@/components/ex-auth-form-card";
 import { DataTable, DataTableRow } from "@/components/ex-data-table";
 import { DataTableCell } from "@/components/ex-data-table-cell";
+import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { Toast } from "@/components/ex-toast";
 import { FeatureCard } from "@/components/feature-card";
 import { GuestBanner } from "@/components/guest-banner";
@@ -19,6 +20,7 @@ import { MsdsQrTile } from "@/components/msds-qr-tile";
 import { NavPill } from "@/components/nav-pill";
 import { QuickAction } from "@/components/quick-action";
 import { ReagentDetailCard } from "@/components/reagent-detail-card";
+import { ReagentRegister } from "@/components/reagent-register";
 import { ReagentRow } from "@/components/reagent-row";
 import { ReorderAlertCard } from "@/components/reorder-alert-card";
 import { SchoolSelectRegion } from "@/components/school-select-region";
@@ -26,6 +28,7 @@ import { SchoolSelectSchool } from "@/components/school-select-school";
 import { SchoolSelectSido } from "@/components/school-select-sido";
 import { SegmentedControl } from "@/components/segmented-control";
 import { SegmentedControlActive } from "@/components/segmented-control-active";
+import { StockIntake } from "@/components/stock-intake";
 import { TabBar } from "@/components/tab-bar";
 import { TabItem } from "@/components/tab-item";
 import { TextInput } from "@/components/text-input";
@@ -40,6 +43,14 @@ const usageRows = [
   { date: "2026.09.25", user: "이준호", amount: "8 g" },
   { date: "2026.09.18", user: "박서연", amount: "10 g" },
 ];
+
+const intakeReagents = [
+  { id: "sample-1", name: "황산 (95%)", stock: 3, unit: "병" },
+  { id: "sample-2", name: "황산구리(II) 오수화물", stock: 30, unit: "g" },
+  { id: "sample-3", name: "황산나트륨", stock: 250, unit: "g" },
+];
+
+const storageClasses = ["유기", "산", "염기", "산화제", "인화성", "무기염", "독성", "기타"];
 
 function Item({ name, children }: { name: string; children: React.ReactNode }) {
   return (
@@ -217,6 +228,30 @@ export default function GalleryPage() {
 
         <Item name="reorder-alert-card">
           <ReorderAlertCard count={3} href="/reorder" />
+        </Item>
+
+        <Item name="stock-intake">
+          <StockIntake
+            reagents={intakeReagents}
+            defaultIntakeDate="2026-10-02"
+            defaultQuery="황산"
+            defaultSelectedId="sample-1"
+            defaultQuantity={5}
+            stickyActions={false}
+          />
+        </Item>
+
+        <Item name="reagent-register">
+          <ReagentRegister storageClasses={storageClasses} defaultIntakeDate="2026-10-02" stickyActions={false} />
+        </Item>
+
+        <Item name="ex-empty-state-card">
+          <EmptyStateCard
+            title="찾는 시약이 없어요"
+            description="시약명을 확인하거나 새로 등록하세요"
+            actionLabel="새 시약 등록"
+            actionHref="/intake"
+          />
         </Item>
 
         <Item name="ex-toast">

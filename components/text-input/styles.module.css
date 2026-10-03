@@ -75,3 +75,60 @@
   font-size: var(--font-size-13);
   line-height: var(--line-height-normal);
 }
+
+/* 화면 7: 단위 suffix (회색 글자, 칩 아님) */
+.unitPlain {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+}
+
+/* 화면 7: 진한 라벨 (13/600, 라벨과 상자 사이 8) */
+.strong {
+  gap: var(--space-8);
+}
+
+.strong .labelRow {
+  gap: var(--space-4);
+}
+
+.strong .label {
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* 화면 7: 스테퍼 가운데 수량 칸 */
+.compact {
+  gap: var(--space-4);
+  padding: var(--space-12);
+}
+
+.compact .input {
+  font-weight: var(--font-weight-semibold);
+  text-align: right;
+}
+
+/* 입력 아래 안내 (핑크 아님) */
+.error {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+/* 날짜 입력: 브라우저 기본 달력 아이콘 대신 시안의 달력 아이콘을 보여 주고, 상자 어디를 눌러도 달력이 열린다 */
+.box:has(.input[type="date"]) {
+  position: relative;
+}
+
+.input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}

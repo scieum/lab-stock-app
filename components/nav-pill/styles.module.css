@@ -35,6 +35,24 @@
   white-space: nowrap;
 }
 
+/* 워드마크 + 섹션 제목 (시안 7-mobile nav-left, 사이 12). 데스크톱에서는 제목을 숨긴다 */
+.sectionGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+.sectionTitle {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .endTitle {
   flex-shrink: 0;
   color: var(--color-text);
@@ -102,6 +120,10 @@
 
   .left {
     gap: var(--space-32);
+  }
+
+  .sectionTitle {
+    display: none;
   }
 
   .links {

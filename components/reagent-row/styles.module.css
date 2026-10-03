@@ -70,3 +70,27 @@
 a.row:hover {
   background: var(--color-highlight-soft);
 }
+
+/* 화면 7: 선택 버튼 행 */
+.selectable {
+  width: 100%;
+  border: 0;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.indicator {
+  flex-shrink: 0;
+  width: var(--space-4);
+  height: var(--icon-bg-size);
+  border-radius: var(--radius-pill);
+  background: var(--color-highlight);
+}
+
+.check {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex-shrink: 0;
+  color: var(--color-highlight);
+}

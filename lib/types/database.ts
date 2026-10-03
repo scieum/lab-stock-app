@@ -92,6 +92,51 @@ export type Database = {
           },
         ]
       }
+      intake_logs: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          intake_date: string
+          reagent_id: string
+          school_id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          intake_date: string
+          reagent_id: string
+          school_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          intake_date?: string
+          reagent_id?: string
+          school_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_logs_reagent_id_school_id_fkey"
+            columns: ["reagent_id", "school_id"]
+            isOneToOne: false
+            referencedRelation: "reagents"
+            referencedColumns: ["id", "school_id"]
+          },
+          {
+            foreignKeyName: "intake_logs_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -136,6 +181,7 @@ export type Database = {
           school_id: string
           slot_id: string | null
           stock: number
+          storage_class: string | null
           unit: string
         }
         Insert: {
@@ -149,6 +195,7 @@ export type Database = {
           school_id: string
           slot_id?: string | null
           stock?: number
+          storage_class?: string | null
           unit?: string
         }
         Update: {
@@ -162,6 +209,7 @@ export type Database = {
           school_id?: string
           slot_id?: string | null
           stock?: number
+          storage_class?: string | null
           unit?: string
         }
         Relationships: [
@@ -307,6 +355,24 @@ export type Database = {
           user_name: string
         }[]
       }
+      record_intake: {
+        Args: { p_amount: number; p_intake_date: string; p_reagent_id: string }
+        Returns: {
+          amount: number
+          created_at: string
+          id: string
+          intake_date: string
+          reagent_id: string
+          school_id: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "intake_logs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       record_usage: {
         Args: { amount: number; reagent_id: string }
         Returns: {
@@ -345,6 +411,36 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      register_reagent: {
+        Args: {
+          p_intake_date: string
+          p_msds_url?: string
+          p_name: string
+          p_stock: number
+          p_storage_class: string
+          p_unit: string
+        }
+        Returns: {
+          cas_no: string | null
+          created_at: string
+          id: string
+          intake_date: string
+          min_stock: number
+          msds_url: string | null
+          name: string
+          school_id: string
+          slot_id: string | null
+          stock: number
+          storage_class: string | null
+          unit: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "reagents"
           isOneToOne: true
           isSetofReturn: false
         }

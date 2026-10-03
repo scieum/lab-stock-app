@@ -11,6 +11,8 @@ type Props = {
   tone?: "muted" | "white";
   fullWidth?: boolean;
   external?: boolean;
+  /** 선택형 칩 (화면 7 프리셋·단위). true = 연하늘 바탕 + 하늘색 테두리 */
+  selected?: boolean;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>;
 
 /** 연한 바탕 stadium pill 버튼 (더 보기·MSDS 보기·N건) */
@@ -21,11 +23,21 @@ export function ButtonPillSoft({
   tone = "muted",
   fullWidth,
   external,
+  selected,
   className,
   type = "button",
   ...rest
 }: Props) {
-  const cls = [styles.button, styles[tone], fullWidth ? styles.full : "", className ?? ""].join(" ").trim();
+  const cls = [
+    styles.button,
+    styles[tone],
+    fullWidth ? styles.full : "",
+    selected !== undefined ? styles.selectable : "",
+    selected ? styles.selected : "",
+    className ?? "",
+  ]
+    .filter(Boolean)
+    .join(" ");
   const content = (
     <>
       <span>{children}</span>
@@ -47,7 +59,7 @@ export function ButtonPillSoft({
     );
   }
   return (
-    <button data-component="button-pill-soft" type={type} className={cls} {...rest}>
+    <button data-component="button-pill-soft" type={type} className={cls} aria-pressed={selected} {...rest}>
       {content}
     </button>
   );

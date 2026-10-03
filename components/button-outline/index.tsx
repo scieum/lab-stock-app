@@ -4,11 +4,13 @@ import styles from "./styles.module.css";
 type Props = {
   children: React.ReactNode;
   href?: string;
+  /** circle = 스테퍼 − · + 원형 버튼 (화면 7) */
+  shape?: "pill" | "circle";
 } & React.ButtonHTMLAttributes<HTMLButtonElement>;
 
 /** 흰 바탕 + 회색 테두리 stadium pill 버튼 (보조 행동) */
-export function ButtonOutline({ children, href, className, type = "button", ...rest }: Props) {
-  const cls = [styles.button, className ?? ""].join(" ").trim();
+export function ButtonOutline({ children, href, shape = "pill", className, type = "button", ...rest }: Props) {
+  const cls = [styles.button, shape === "circle" ? styles.circle : "", className ?? ""].filter(Boolean).join(" ");
   if (href) {
     return (
       <Link data-component="button-outline" href={href} className={cls}>

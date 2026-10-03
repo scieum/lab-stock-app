@@ -25,6 +25,16 @@
   background: var(--color-surface);
 }
 
+/* 화면 7: 선택형 칩 — 선택 여부와 상관없이 폭이 같도록 투명 테두리를 둔다 */
+.selectable {
+  border: var(--border-width) solid transparent;
+}
+
+.selected {
+  border-color: var(--color-highlight);
+  background: var(--color-highlight-soft);
+}
+
 .full {
   width: 100%;
 }

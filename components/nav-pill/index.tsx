@@ -19,12 +19,14 @@ type Props = {
   schoolName?: string;
   /** 오른쪽 끝 제목 (예: 회원가입 — 왼쪽은 뒤로가기 + 워드마크) */
   endTitle?: string;
+  /** 워드마크 옆 현재 섹션 제목 — 모바일에서만 보인다 (데스크톱은 links 의 현재 섹션 표시가 대신한다) */
+  sectionTitle?: string;
   /** 데스크톱 상단 링크 (모바일에서는 숨김 — 모바일은 tab-bar) */
   links?: NavLinkItem[];
 };
 
 /** 상단 내비게이션 stadium pill */
-export function NavPill({ title, backHref, schoolName, endTitle, links }: Props) {
+export function NavPill({ title, backHref, schoolName, endTitle, links, sectionTitle }: Props) {
   return (
     <header data-component="nav-pill" className={styles.nav}>
       <div className={styles.left}>
@@ -43,6 +45,13 @@ export function NavPill({ title, backHref, schoolName, endTitle, links }: Props)
               <Icon name="back" className={styles.backIcon} />
             </Link>
             <span className={styles.wordmark}>Lab_Stock</span>
+          </span>
+        ) : sectionTitle ? (
+          <span className={styles.sectionGroup}>
+            <Link href="/" className={styles.wordmark}>
+              Lab_Stock
+            </Link>
+            <span className={styles.sectionTitle}>{sectionTitle}</span>
           </span>
         ) : (
           <Link href="/" className={styles.wordmark}>
