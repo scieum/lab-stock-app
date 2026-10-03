@@ -1,0 +1,124 @@
+/* 화면 10 사용 기록 내역
+ * 모바일(10-mobile): filter-row(segmented-control + 기간, 사이 8) → 검색 → record-list, 사이 16. 제목은 nav-pill 안(nav-title)
+ *                    상세(ex-modal-card)는 tab-bar 위쪽 선에 붙는 하단 시트 (컴포넌트가 고정 배치)
+ * 데스크톱(10-desktop): screen-title → filter-row(segmented 320 · 기간 · 검색, 사이 16)
+ *                      → history-layout(record-list 832 + 32 + ex-modal-card 448), 사이 24
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+  /* 하단 시트가 열려 있으면 그 높이만큼 비워 마지막 행까지 시트 위로 올릴 수 있다 (값은 화면이 잰다) */
+  padding-bottom: var(--usage-sheet-space, var(--space-0));
+}
+
+/* 모바일에서는 nav-pill 의 제목이 대신한다 (화면에는 안 보이고 읽기 도구에는 남긴다) */
+.title {
+  position: absolute;
+  width: var(--border-width);
+  height: var(--border-width);
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  color: var(--color-text);
+  font-size: var(--font-size-28);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--space-16) var(--space-8);
+  min-width: 0;
+}
+
+.scope {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.period {
+  flex: 0 0 auto;
+  justify-content: center;
+}
+
+.search {
+  flex: 1 0 100%;
+  justify-content: center;
+}
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.listColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.more {
+  margin: 0;
+  padding: var(--space-8) var(--space-16);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+  text-align: center;
+}
+
+.detail {
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .page {
+    gap: var(--space-24);
+    padding-bottom: var(--space-0);
+  }
+
+  .title {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+
+  .filters {
+    flex-wrap: nowrap;
+    gap: var(--space-16);
+  }
+
+  /* 시안 segmented-control 폭 320 = 옆 열 폭(400)의 0.8 */
+  .scope {
+    flex: 0 0 calc(var(--side-column-width) * 0.8);
+  }
+
+  .search {
+    flex: 1 1 0;
+  }
+
+  /* 시안 history-layout: 832 + 32 + 448 = 13 : 7 */
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 13fr) minmax(0, 7fr);
+    align-items: start;
+    gap: var(--space-32);
+  }
+
+  /* 긴 목록을 내려도 상세가 같이 따라온다 */
+  .detail {
+    position: sticky;
+    top: var(--space-24);
+  }
+}

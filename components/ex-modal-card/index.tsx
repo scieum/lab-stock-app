@@ -25,6 +25,11 @@ type Props = {
   closeLabel?: string;
   /** true(기본) = 모바일에서 tab-bar 위쪽 선에 붙는 하단 시트. false = 항상 제자리(갤러리) */
   sheet?: boolean;
+  /**
+   * true(기본) = 모달 대화상자(aria-modal).
+   * false = 비모달 — 뒤 화면(목록)을 계속 조작할 수 있는 자리(화면 10: 목록 옆 패널 · 목록 위 하단 시트)에서 쓴다.
+   */
+  modal?: boolean;
 };
 
 /**
@@ -40,16 +45,20 @@ export function ModalCard({
   onClose,
   closeLabel = "닫기",
   sheet = true,
+  modal = true,
 }: Props) {
   const titleId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const [dismissed, setDismissed] = useState(false);
 
-  // 열릴 때 카드로 포커스를 옮기고, 닫히면 원래 있던 곳(누른 행)으로 돌려준다
+  // 열릴 때 카드로 포커스를 옮기고, 닫히면 원래 있던 곳(누른 행)으로 돌려준다.
+  // 닫는 쪽이 이미 포커스를 다른 곳에 두었으면(예: 다른 행을 눌렀음) 건드리지 않는다
   useEffect(() => {
     const before = document.activeElement;
     rootRef.current?.focus({ preventScroll: true });
     return () => {
+      const now = document.activeElement;
+      if (now && now !== document.body) return;
       if (before instanceof HTMLElement && before !== document.body && before.isConnected) {
         before.focus({ preventScroll: true });
       }
@@ -79,7 +88,7 @@ export function ModalCard({
       ref={rootRef}
       data-component="ex-modal-card"
       role="dialog"
-      aria-modal="true"
+      aria-modal={modal ? "true" : undefined}
       aria-labelledby={titleId}
       tabIndex={-1}
       className={[styles.card, sheet ? styles.sheet : ""].join(" ").trim()}

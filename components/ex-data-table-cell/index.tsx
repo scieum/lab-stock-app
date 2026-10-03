@@ -38,7 +38,7 @@ type RecordRowProps = {
   amount: string;
   /** 누른 행 (상세가 열려 있음) = 연하늘 바탕 */
   selected?: boolean;
-} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "title" | "children">;
+} & Omit<React.ComponentProps<"button">, "title" | "children">;
 
 /** 기록 행 (화면 10): 3열 = 날짜 · 시약명/사용자 · 사용량. 누르면 상세(ex-modal-card)가 열린다 */
 export function DataRecordRow({ date, title, subtitle, amount, selected, className, type = "button", ...rest }: RecordRowProps) {

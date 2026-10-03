@@ -35,3 +35,38 @@ export function formatDateDots(isoDate: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(isoDate);
   return m ? `${m[1]}.${m[2]}.${m[3]}` : isoDate;
 }
+
+function parts(d: Date): Record<"year" | "month" | "day" | "hour" | "minute", string> {
+  const out = { year: "", month: "", day: "", hour: "", minute: "" };
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+  for (const p of fmt.formatToParts(d)) {
+    if (p.type in out) out[p.type as keyof typeof out] = p.value;
+  }
+  return out;
+}
+
+/** 화면 10 기록 행 날짜: "10.02" (한국 시간) */
+export function formatMonthDay(d: Date): string {
+  const p = parts(d);
+  return `${p.month}.${p.day}`;
+}
+
+/** 화면 10 월 그룹: "2026년 10월" (한국 시간). key 는 그룹을 가르는 값 "2026-10" */
+export function formatYearMonth(d: Date): { key: string; label: string } {
+  const p = parts(d);
+  return { key: `${p.year}-${p.month}`, label: `${p.year}년 ${Number(p.month)}월` };
+}
+
+/** 화면 10 기록 상세 일시: "2026.10.02 14:20" (한국 시간) */
+export function formatDateTimeDots(d: Date): string {
+  const p = parts(d);
+  return `${p.year}.${p.month}.${p.day} ${p.hour}:${p.minute}`;
+}

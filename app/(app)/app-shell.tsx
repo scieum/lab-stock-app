@@ -50,9 +50,12 @@ function subPage(pathname: string): SubPage | undefined {
   return undefined;
 }
 
-/** 최상위 섹션인데 모바일 nav-pill 에 제목을 같이 보여 주는 화면 (시안 7-mobile: 워드마크 + nav-title) */
+/** 최상위 섹션인데 모바일 nav-pill 에 제목을 같이 보여 주는 화면 (시안 7-mobile · 10-mobile: 워드마크 + nav-title) */
 function sectionTitle(pathname: string): string | undefined {
-  return isActive(pathname, "/intake") ? "입고·시약 등록" : undefined;
+  if (isActive(pathname, "/intake")) return "입고·시약 등록";
+  // 시안 10-mobile: 워드마크 + "사용 기록 내역" (/usage/new 는 하위 화면이라 subPage 가 먼저 잡는다)
+  if (/^\/usage\/?$/.test(pathname)) return "사용 기록 내역";
+  return undefined;
 }
 
 type Props = {
