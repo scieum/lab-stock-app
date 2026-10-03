@@ -1,0 +1,1642 @@
+{
+  "gate": "gate-D4",
+  "pass": false,
+  "exit": 1,
+  "violations": [
+    {
+      "rule": "N1-db",
+      "where": "[N1-db][S*] 로그인 안 한 anon은 업무 테이블 0행",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-db",
+      "where": "[N1-db][S*] 로그인 안 한 anon은 업무 테이블 0행",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-db",
+      "where": "[R-db][S14] 로그인한 학생이 자기 user_id 로 register_profile(역할 admin 가능) 호출 거부",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-db",
+      "where": "[R-db][S14] 로그인한 학생이 pending_signup_user 호출 거부 (자기 이메일·다른 이메일 모두)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-db",
+      "where": "[R-db][S14] 로그인한 학생이 자기 user_id 로 register_profile(역할 admin 가능) 호출 거부",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-db",
+      "where": "[R-db][S14] 로그인한 학생이 pending_signup_user 호출 거부 (자기 이메일·다른 이메일 모두)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S1] 로그인 전 화면 1: roles R1~R7 역할 제한 컴포넌트 0개",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S1] 학교A 학생 로그인 상태 화면 1: roles R1·R2·R3·R5·R6·R7",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S1] 학교A 교사 로그인 상태 화면 1: roles R3·R6",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S1] 로그인 전 화면 1: roles R1~R7 역할 제한 컴포넌트 0개",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S1] 학교A 학생 로그인 상태 화면 1: roles R1·R2·R3·R5·R6·R7",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S1] 학교A 교사 로그인 상태 화면 1: roles R3·R6",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S13] 학교A 학생 홈: roles R1·R2·R3·R5·R6·R7 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S13] 학교A 교사 홈: roles R3·R6 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S13] 학교A 학생 홈: roles R1·R2·R3·R5·R6·R7 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S13] 학교A 교사 홈: roles R3·R6 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S14] 학교A 학생 로그인 상태 /signup: 가입 폼·학교 선택 0 (학교·역할 재선택 불가)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S14] 학교A 교사 로그인 상태 /signup: 가입 폼·학교 선택 0 (학교·역할 재선택 불가)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S14] 학교A admin 로그인 상태 /signup: 가입 폼·학교 선택 0 (학교·역할 재선택 불가)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S14] 학교A 학생 로그인 상태 /signup: 가입 폼·학교 선택 0 (학교·역할 재선택 불가)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S14] 학교A 교사 로그인 상태 /signup: 가입 폼·학교 선택 0 (학교·역할 재선택 불가)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S14] 학교A admin 로그인 상태 /signup: 가입 폼·학교 선택 0 (학교·역할 재선택 불가)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S14] 로그인 전 화면 14: roles R1~R7 역할 제한 컴포넌트 0개",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S14] 로그인 전 화면 14: roles R1~R7 역할 제한 컴포넌트 0개",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S2] 학교A 학생 시약 목록: roles R1·R2·R3·R5·R6·R7 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S2] 학교A 교사 시약 목록: roles R3·R6 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S2] 학교A 학생 시약 목록: roles R1·R2·R3·R5·R6·R7 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S2] 학교A 교사 시약 목록: roles R3·R6 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S3] 학교A 학생 시약 상세: roles R1·R2·R3·R4·R5·R6·R7 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S3] 학교A 교사 시약 상세: roles R3·R4·R6 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S3] 학교A admin 시약 상세: roles R4 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S3] 학교A 학생 시약 상세: roles R1·R2·R3·R4·R5·R6·R7 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S3] 학교A 교사 시약 상세: roles R3·R4·R6 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S3] 학교A admin 시약 상세: roles R4 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S4] 학교A 학생 사용 기록 입력(?reagent 지정): roles R1·R2·R3·R5·R6·R7 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S4] 학교A 학생 사용 기록 입력(시약 선택): roles R1·R2·R3·R5·R6·R7 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S4] 학교A 교사 사용 기록 입력(?reagent 지정): roles R3·R6 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S4] 학교A 교사 사용 기록 입력(시약 선택): roles R3·R6 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S4] 학교A 학생 사용 기록 입력(?reagent 지정): roles R1·R2·R3·R5·R6·R7 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S4] 학교A 학생 사용 기록 입력(시약 선택): roles R1·R2·R3·R5·R6·R7 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S4] 학교A 교사 사용 기록 입력(?reagent 지정): roles R3·R6 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "R-ui",
+      "where": "[R-ui][S4] 학교A 교사 사용 기록 입력(시약 선택): roles R3·R6 개수",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S1] 비밀번호 찾기 API: 없는 이메일과 있는 이메일(테스트 계정) 응답 동일 (이메일 존재 비노출)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S1] 비밀번호 찾기 API: 서로 다른 없는 이메일 응답 동일 · 형식 오류·JSON 아님 400",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S1] 비밀번호 찾기 화면: 없는 이메일 제출 → API 안내 문구 그대로 표시 (학교 선택 0)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S1] 세션 없이 /reset-password → 화면 1 (routes[1])",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S1] 세션 없이 비밀번호 변경 API → 401 · 세션 쿠키 없음",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S1] 잘못된 재설정 메일 링크(/auth/confirm) → 화면 1 · 세션 없음 · 외부 next 무시",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S1] rules.json screens_required[1] 컴포넌트 모두 존재",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S1] 화면 1 시안 컴포넌트(dev-rules components) 모두 존재 · 개수 ≥ 시안 프레임",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S1] 로그인 폼 = 개인 이메일·비밀번호 입력만 (rules.json auth.login_id)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S1] 회원가입 링크(button-pill-soft) → routes[14] 화면",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S1] 비밀번호 찾기 링크 → /forgot-password (이메일 입력 폼, 학교 선택 0)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S13] 학교A 학생 홈: 재고 부족(stock<min_stock) 수·시약명과 badge-low-stock 표시가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S13] 학교A 교사 홈: 재고 부족(stock<min_stock) 수·시약명과 badge-low-stock 표시가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S13] 학교A admin 홈: 재고 부족(stock<min_stock) 수·시약명과 badge-low-stock 표시가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S13] 학교B 교사 홈: 재고 부족(stock<min_stock) 수·시약명과 badge-low-stock 표시가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S13] 학교A admin: rules.json screens_required[13] 컴포넌트 모두 표시",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S13] 학교B 교사: rules.json screens_required[13] 컴포넌트 모두 표시",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S13] 학교A 학생: rules.json screens_required[13] 컴포넌트 모두 표시",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S13] 학교A 교사: rules.json screens_required[13] 컴포넌트 모두 표시",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S13] 학교A admin: rules.json screens_required[13] 컴포넌트 모두 표시",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S13] 학교B 교사: rules.json screens_required[13] 컴포넌트 모두 표시",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S14] 가입 API: JSON 아닌 본문 400",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S14] 가입 API: 이메일 형식 오류 400",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S14] 가입 API: 비밀번호 8자 미만·확인 불일치 400",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S14] 가입 API: 이름 빈 값·40자 초과 · 필수 약관 미동의 400",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S14] 가입 API: JSON 아닌 본문 400",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S14] 가입 API: 이메일 형식 오류 400",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S14] 가입 API: 비밀번호 8자 미만·확인 불일치 400",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S14] 가입 API: 이름 빈 값·40자 초과 · 필수 약관 미동의 400",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S14] rules.json screens_required[14] 컴포넌트 모두 존재",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S14] 화면 14 시안 컴포넌트(dev-rules components) 모두 존재 · 개수 ≥ 시안 프레임",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S14] rules.json screens_required[14] 컴포넌트 모두 존재",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S14] 화면 14 시안 컴포넌트(dev-rules components) 모두 존재 · 개수 ≥ 시안 프레임",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S14] 가입하기 중복 제출 방지: 연타·Enter 반복에도 요청 1건 · 요청 중 disabled·aria-busy=true · 실패 응답 뒤 다시 활성",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S14] 서버 오류 응답(503·429)의 error 문구가 화면에 그대로 표시 · 가입 화면 유지",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S14] 가입하기 중복 제출 방지: 연타·Enter 반복에도 요청 1건 · 요청 중 disabled·aria-busy=true · 실패 응답 뒤 다시 활성",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S14] 서버 오류 응답(503·429)의 error 문구가 화면에 그대로 표시 · 가입 화면 유지",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교A 학생 시약 목록: 행 수·행 링크·badge-low-stock(stock<min_stock 행만) 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교A 학생 시약 목록 ?filter=low-stock: 재고 부족 시약 행만 (DB 와 일치)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교A 교사 시약 목록: 행 수·행 링크·badge-low-stock(stock<min_stock 행만) 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교A 교사 시약 목록 ?filter=low-stock: 재고 부족 시약 행만 (DB 와 일치)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교A admin 시약 목록: 행 수·행 링크·badge-low-stock(stock<min_stock 행만) 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교A admin 시약 목록 ?filter=low-stock: 재고 부족 시약 행만 (DB 와 일치)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교B 교사 시약 목록: 행 수·행 링크·badge-low-stock(stock<min_stock 행만) 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교B 교사 시약 목록 ?filter=low-stock: 재고 부족 시약 행만 (DB 와 일치)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교A 학생 시약 목록: 행 수·행 링크·badge-low-stock(stock<min_stock 행만) 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교A 학생 시약 목록 ?filter=low-stock: 재고 부족 시약 행만 (DB 와 일치)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교A 교사 시약 목록: 행 수·행 링크·badge-low-stock(stock<min_stock 행만) 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교A 교사 시약 목록 ?filter=low-stock: 재고 부족 시약 행만 (DB 와 일치)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교A admin 시약 목록: 행 수·행 링크·badge-low-stock(stock<min_stock 행만) 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교A admin 시약 목록 ?filter=low-stock: 재고 부족 시약 행만 (DB 와 일치)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교B 교사 시약 목록: 행 수·행 링크·badge-low-stock(stock<min_stock 행만) 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교B 교사 시약 목록 ?filter=low-stock: 재고 부족 시약 행만 (DB 와 일치)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교A 학생: screens_required[2] · dev-rules components 중 화면 2 컴포넌트 표시",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교A 교사: screens_required[2] · dev-rules components 중 화면 2 컴포넌트 표시",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교A admin: screens_required[2] · dev-rules components 중 화면 2 컴포넌트 표시",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교B 교사: screens_required[2] · dev-rules components 중 화면 2 컴포넌트 표시",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교A 학생: screens_required[2] · dev-rules components 중 화면 2 컴포넌트 표시",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교A 교사: screens_required[2] · dev-rules components 중 화면 2 컴포넌트 표시",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교A admin: screens_required[2] · dev-rules components 중 화면 2 컴포넌트 표시",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S2] 학교B 교사: screens_required[2] · dev-rules components 중 화면 2 컴포넌트 표시",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A 학생 시약 상세(수산화나트륨, seed 재고 부족): 이름·CAS·재고·단위·보관 위치·badge-low-stock 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A 학생 시약 상세(염산, seed 재고 충분): 이름·CAS·재고·단위·보관 위치·badge-low-stock 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A 학생 시약 상세: 사용 기록 버튼(button-primary) 링크 = routes[\"4\"]?reagent={id}",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A 교사 시약 상세(수산화나트륨, seed 재고 부족): 이름·CAS·재고·단위·보관 위치·badge-low-stock 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A 교사 시약 상세(염산, seed 재고 충분): 이름·CAS·재고·단위·보관 위치·badge-low-stock 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A 교사 시약 상세: 사용 기록 버튼(button-primary) 링크 = routes[\"4\"]?reagent={id}",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A admin 시약 상세(수산화나트륨, seed 재고 부족): 이름·CAS·재고·단위·보관 위치·badge-low-stock 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A admin 시약 상세(염산, seed 재고 충분): 이름·CAS·재고·단위·보관 위치·badge-low-stock 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A admin 시약 상세: 사용 기록 버튼(button-primary) 링크 = routes[\"4\"]?reagent={id}",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교B 교사 시약 상세(B학교 질산, seed 재고 충분): 이름·CAS·재고·단위·보관 위치·badge-low-stock 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교B 교사 시약 상세: 사용 기록 버튼(button-primary) 링크 = routes[\"4\"]?reagent={id}",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A 학생 시약 상세(수산화나트륨, seed 재고 부족): 이름·CAS·재고·단위·보관 위치·badge-low-stock 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A 학생 시약 상세(염산, seed 재고 충분): 이름·CAS·재고·단위·보관 위치·badge-low-stock 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A 학생 시약 상세: 사용 기록 버튼(button-primary) 링크 = routes[\"4\"]?reagent={id}",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A 교사 시약 상세(수산화나트륨, seed 재고 부족): 이름·CAS·재고·단위·보관 위치·badge-low-stock 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A 교사 시약 상세(염산, seed 재고 충분): 이름·CAS·재고·단위·보관 위치·badge-low-stock 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A 교사 시약 상세: 사용 기록 버튼(button-primary) 링크 = routes[\"4\"]?reagent={id}",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A admin 시약 상세(수산화나트륨, seed 재고 부족): 이름·CAS·재고·단위·보관 위치·badge-low-stock 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A admin 시약 상세(염산, seed 재고 충분): 이름·CAS·재고·단위·보관 위치·badge-low-stock 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A admin 시약 상세: 사용 기록 버튼(button-primary) 링크 = routes[\"4\"]?reagent={id}",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교B 교사 시약 상세(B학교 질산, seed 재고 충분): 이름·CAS·재고·단위·보관 위치·badge-low-stock 가 DB 와 일치",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교B 교사 시약 상세: 사용 기록 버튼(button-primary) 링크 = routes[\"4\"]?reagent={id}",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A 학생: screens_required[3] · dev-rules components 중 화면 3 컴포넌트 표시 (roles 로 금지된 것 제외)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A 교사: screens_required[3] · dev-rules components 중 화면 3 컴포넌트 표시 (roles 로 금지된 것 제외)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A admin: screens_required[3] · dev-rules components 중 화면 3 컴포넌트 표시 (roles 로 금지된 것 제외)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교B 교사: screens_required[3] · dev-rules components 중 화면 3 컴포넌트 표시 (roles 로 금지된 것 제외)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A 학생: screens_required[3] · dev-rules components 중 화면 3 컴포넌트 표시 (roles 로 금지된 것 제외)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A 교사: screens_required[3] · dev-rules components 중 화면 3 컴포넌트 표시 (roles 로 금지된 것 제외)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교A admin: screens_required[3] · dev-rules components 중 화면 3 컴포넌트 표시 (roles 로 금지된 것 제외)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S3] 학교B 교사: screens_required[3] · dev-rules components 중 화면 3 컴포넌트 표시 (roles 로 금지된 것 제외)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교A 학생 사용 기록 저장: ex-toast 표시 · 화면 재고와 DB stock 1 감소 · usage_logs 자기 user_id·school_id 1행 추가 (교사 세션으로 원복)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교A 교사 사용 기록 저장: ex-toast 표시 · 화면 재고와 DB stock 1 감소 · usage_logs 자기 user_id·school_id 1행 추가 (교사 세션으로 원복)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교A admin 사용 기록 저장: ex-toast 표시 · 화면 재고와 DB stock 1 감소 · usage_logs 자기 user_id·school_id 1행 추가 (교사 세션으로 원복)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교A 학생 잘못된 사용량(재고 초과·0·음수·숫자 아님): 에러 표시 · ex-toast 없음 · DB stock·usage_logs 불변",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교A 교사 잘못된 사용량(재고 초과·0·음수·숫자 아님): 에러 표시 · ex-toast 없음 · DB stock·usage_logs 불변",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교A admin 잘못된 사용량(재고 초과·0·음수·숫자 아님): 에러 표시 · ex-toast 없음 · DB stock·usage_logs 불변",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교A 학생 사용 기록 저장: ex-toast 표시 · 화면 재고와 DB stock 1 감소 · usage_logs 자기 user_id·school_id 1행 추가 (교사 세션으로 원복)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교A 교사 사용 기록 저장: ex-toast 표시 · 화면 재고와 DB stock 1 감소 · usage_logs 자기 user_id·school_id 1행 추가 (교사 세션으로 원복)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교A admin 사용 기록 저장: ex-toast 표시 · 화면 재고와 DB stock 1 감소 · usage_logs 자기 user_id·school_id 1행 추가 (교사 세션으로 원복)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교A 학생 잘못된 사용량(재고 초과·0·음수·숫자 아님): 에러 표시 · ex-toast 없음 · DB stock·usage_logs 불변",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교A 교사 잘못된 사용량(재고 초과·0·음수·숫자 아님): 에러 표시 · ex-toast 없음 · DB stock·usage_logs 불변",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교A admin 잘못된 사용량(재고 초과·0·음수·숫자 아님): 에러 표시 · ex-toast 없음 · DB stock·usage_logs 불변",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교A 학생: screens_required[4] · dev-rules components 중 화면 4 컴포넌트 표시 (ex-toast 는 제출 전 0개)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교A 교사: screens_required[4] · dev-rules components 중 화면 4 컴포넌트 표시 (ex-toast 는 제출 전 0개)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교A admin: screens_required[4] · dev-rules components 중 화면 4 컴포넌트 표시 (ex-toast 는 제출 전 0개)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교B 교사: screens_required[4] · dev-rules components 중 화면 4 컴포넌트 표시 (ex-toast 는 제출 전 0개)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교A 학생: screens_required[4] · dev-rules components 중 화면 4 컴포넌트 표시 (ex-toast 는 제출 전 0개)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교A 교사: screens_required[4] · dev-rules components 중 화면 4 컴포넌트 표시 (ex-toast 는 제출 전 0개)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교A admin: screens_required[4] · dev-rules components 중 화면 4 컴포넌트 표시 (ex-toast 는 제출 전 0개)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C1",
+      "where": "[C1][S4] 학교B 교사: screens_required[4] · dev-rules components 중 화면 4 컴포넌트 표시 (ex-toast 는 제출 전 0개)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S1] 탭바 개수 = rules.json tab_bar 기준 (화면 1)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S13] 학교A 학생: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S13] 학교A 교사: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S13] 학교A admin: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S13] 학교B 교사: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S13] 학교A 학생: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S13] 학교A 교사: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S13] 학교A admin: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S13] 학교B 교사: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S14] 탭바 개수 = rules.json tab_bar 기준 (화면 14)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S14] 탭바 개수 = rules.json tab_bar 기준 (화면 14)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S2] 학교A 학생: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S2] 학교A 교사: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S2] 학교A admin: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S2] 학교B 교사: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S2] 학교A 학생: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S2] 학교A 교사: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S2] 학교A admin: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S2] 학교B 교사: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S3] 학교A 학생: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S3] 학교A 교사: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S3] 학교A admin: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S3] 학교B 교사: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S3] 학교A 학생: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S3] 학교A 교사: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S3] 학교A admin: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S3] 학교B 교사: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S4] 학교A 학생: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S4] 학교A 교사: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S4] 학교A admin: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S4] 학교B 교사: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S4] 학교A 학생: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S4] 학교A 교사: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S4] 학교A admin: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "C2",
+      "where": "[C2][S4] 학교B 교사: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S1] 학교A 학생 로그인(학교 미선택) 후 화면의 학교명 종류 = 1 · 다른 학교명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S1] 학교A 교사 로그인(학교 미선택) 후 화면의 학교명 종류 = 1 · 다른 학교명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S1] 학교A admin 로그인(학교 미선택) 후 화면의 학교명 종류 = 1 · 다른 학교명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S1] 학교B 교사 로그인(학교 미선택) 후 화면의 학교명 종류 = 1 · 다른 학교명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S1] 학교A 학생 로그인 요청에 다른 학교 neisCode·school_id·학교명·역할을 넣어도 무시 → profiles 학교·역할 그대로 · 화면 학교명 = 자기 학교",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S1] 학교B 교사 로그인 요청에 다른 학교 neisCode·school_id·학교명·역할을 넣어도 무시 → profiles 학교·역할 그대로 · 화면 학교명 = 자기 학교",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S13] 학교A 학생 홈: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S13] 학교A 학생 홈: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S13] 학교A 교사 홈: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S13] 학교A admin 홈: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S13] 학교B 교사 홈: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S14] 학교A 학생 로그인 상태로 /signup 접근 → / · 학교명 종류 = rules.json distinct_school_names · 다른 학교명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S14] 학교B 교사 로그인 상태로 /signup 접근 → / · 학교명 종류 = rules.json distinct_school_names · 다른 학교명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S14] 학교A 학생 로그인 상태로 /signup 접근 → / · 학교명 종류 = rules.json distinct_school_names · 다른 학교명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S14] 학교B 교사 로그인 상태로 /signup 접근 → / · 학교명 종류 = rules.json distinct_school_names · 다른 학교명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S2] 학교A 학생 시약 목록: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S2] 학교A 교사 시약 목록: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S2] 학교A admin 시약 목록: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S2] 학교B 교사 시약 목록: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S2] 학교A 학생 시약 목록: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S2] 학교A 교사 시약 목록: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S2] 학교A admin 시약 목록: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S2] 학교B 교사 시약 목록: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교A 학생 시약 상세: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교A 교사 시약 상세: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교A admin 시약 상세: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교B 교사 시약 상세: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교A 학생 → 학교B 교사 학교 시약 id 직접 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교A 교사 → 학교B 교사 학교 시약 id 직접 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교A admin → 학교B 교사 학교 시약 id 직접 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교B 교사 → 학교A 교사 학교 시약 id 직접 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교A 학생 시약 상세: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교A 교사 시약 상세: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교A admin 시약 상세: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교B 교사 시약 상세: 학교명 종류 = rules.json distinct_school_names · 다른 학교명·다른 학교 시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교A 학생 → 학교B 교사 학교 시약 id 직접 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교A 교사 → 학교B 교사 학교 시약 id 직접 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교A admin → 학교B 교사 학교 시약 id 직접 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S3] 학교B 교사 → 학교A 교사 학교 시약 id 직접 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A 학생 사용 기록 입력(?reagent 자기 학교 시약): 학교명 종류 = rules.json distinct_school_names · 다른 학교명·시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A 학생 사용 기록 입력(?reagent 없음): 학교명 종류 = rules.json distinct_school_names · 다른 학교명·시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A 교사 사용 기록 입력(?reagent 자기 학교 시약): 학교명 종류 = rules.json distinct_school_names · 다른 학교명·시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A 교사 사용 기록 입력(?reagent 없음): 학교명 종류 = rules.json distinct_school_names · 다른 학교명·시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A admin 사용 기록 입력(?reagent 자기 학교 시약): 학교명 종류 = rules.json distinct_school_names · 다른 학교명·시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A admin 사용 기록 입력(?reagent 없음): 학교명 종류 = rules.json distinct_school_names · 다른 학교명·시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교B 교사 사용 기록 입력(?reagent 자기 학교 시약): 학교명 종류 = rules.json distinct_school_names · 다른 학교명·시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교B 교사 사용 기록 입력(?reagent 없음): 학교명 종류 = rules.json distinct_school_names · 다른 학교명·시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A 학생 ?reagent 없이 진입: 시약 선택 목록 = 자기 학교 시약(RLS) 전부 · 다른 학교 시약 없음",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A 교사 ?reagent 없이 진입: 시약 선택 목록 = 자기 학교 시약(RLS) 전부 · 다른 학교 시약 없음",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A admin ?reagent 없이 진입: 시약 선택 목록 = 자기 학교 시약(RLS) 전부 · 다른 학교 시약 없음",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교B 교사 ?reagent 없이 진입: 시약 선택 목록 = 자기 학교 시약(RLS) 전부 · 다른 학교 시약 없음",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A 학생 → 학교B 교사 학교 시약 id 로 ?reagent 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A 교사 → 학교B 교사 학교 시약 id 로 ?reagent 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A admin → 학교B 교사 학교 시약 id 로 ?reagent 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교B 교사 → 학교A 교사 학교 시약 id 로 ?reagent 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A 학생 사용 기록 입력(?reagent 자기 학교 시약): 학교명 종류 = rules.json distinct_school_names · 다른 학교명·시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A 학생 사용 기록 입력(?reagent 없음): 학교명 종류 = rules.json distinct_school_names · 다른 학교명·시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A 교사 사용 기록 입력(?reagent 자기 학교 시약): 학교명 종류 = rules.json distinct_school_names · 다른 학교명·시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A 교사 사용 기록 입력(?reagent 없음): 학교명 종류 = rules.json distinct_school_names · 다른 학교명·시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A admin 사용 기록 입력(?reagent 자기 학교 시약): 학교명 종류 = rules.json distinct_school_names · 다른 학교명·시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A admin 사용 기록 입력(?reagent 없음): 학교명 종류 = rules.json distinct_school_names · 다른 학교명·시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교B 교사 사용 기록 입력(?reagent 자기 학교 시약): 학교명 종류 = rules.json distinct_school_names · 다른 학교명·시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교B 교사 사용 기록 입력(?reagent 없음): 학교명 종류 = rules.json distinct_school_names · 다른 학교명·시약명 미노출",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A 학생 ?reagent 없이 진입: 시약 선택 목록 = 자기 학교 시약(RLS) 전부 · 다른 학교 시약 없음",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A 교사 ?reagent 없이 진입: 시약 선택 목록 = 자기 학교 시약(RLS) 전부 · 다른 학교 시약 없음",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A admin ?reagent 없이 진입: 시약 선택 목록 = 자기 학교 시약(RLS) 전부 · 다른 학교 시약 없음",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교B 교사 ?reagent 없이 진입: 시약 선택 목록 = 자기 학교 시약(RLS) 전부 · 다른 학교 시약 없음",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A 학생 → 학교B 교사 학교 시약 id 로 ?reagent 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A 교사 → 학교B 교사 학교 시약 id 로 ?reagent 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교A admin → 학교B 교사 학교 시약 id 로 ?reagent 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-ui",
+      "where": "[N1-ui][S4] 학교B 교사 → 학교A 교사 학교 시약 id 로 ?reagent 접근: 404 · 시약명 미노출 · 없는 id 와 같은 응답",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-d",
+      "where": "[N1-d][S1] 화면 1 은 rules.json school_select_only_on 밖 → school-select* 0 · /api/neis 요청 0",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-d",
+      "where": "[N1-d][S1] 화면 1 은 rules.json school_select_only_on 밖 → school-select* 0 · /api/neis 요청 0",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-d",
+      "where": "[N1-d][S14] school-select-sido → school-select-region → school-select-school 순서 강제 · 상위 변경 시 하위 초기화 · 목록 = /api/neis 응답 · 재외한국학교 미포함 · NEIS 직접 호출 0",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-d",
+      "where": "[N1-d][S14] 가입 요청은 학교를 /api/neis 응답의 neis_code 로만 보낸다 (학교명·시/도·지역·역할 미전송)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-d",
+      "where": "[N1-d][S14] school-select-sido → school-select-region → school-select-school 순서 강제 · 상위 변경 시 하위 초기화 · 목록 = /api/neis 응답 · 재외한국학교 미포함 · NEIS 직접 호출 0",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-d",
+      "where": "[N1-d][S14] 가입 요청은 학교를 /api/neis 응답의 neis_code 로만 보낸다 (학교명·시/도·지역·역할 미전송)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-d",
+      "where": "[N1-d][S14] 가입 API: neisCode 누락·빈 값 400",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-d",
+      "where": "[N1-d][S14] 가입 API: 학교명·시/도·지역·school_id·역할을 보내도 neisCode 없이는 400 (같은 오류)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-d",
+      "where": "[N1-d][S14] 가입 API: NEIS 에 없는 가짜·잘못된 neisCode 는 (학교명·역할을 함께 보내도) 가입 거부",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-d",
+      "where": "[N1-d][S14] 가입 API: neisCode 누락·빈 값 400",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-d",
+      "where": "[N1-d][S14] 가입 API: 학교명·시/도·지역·school_id·역할을 보내도 neisCode 없이는 400 (같은 오류)",
+      "actual": "실패",
+      "allowed": "통과"
+    },
+    {
+      "rule": "N1-d",
+      "where": "[N1-d][S14] 가입 API: NEIS 에 없는 가짜·잘못된 neisCode 는 (학교명·역할을 함께 보내도) 가입 거부",
+      "actual": "실패",
+      "allowed": "통과"
+    }
+  ],
+  "logs": {},
+  "report": {
+    "V1": {
+      "screenshots": [
+        "test-results/v1-1-mobile.png"
+      ],
+      "figma_page": "https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2"
+    }
+  }
+}

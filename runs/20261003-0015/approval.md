@@ -10,7 +10,7 @@
 4. 확인 메일 재발송 제한(429) 문구 분리
 5. 가입하기 중복 제출 방지
 
-result:
-reason:
-approver:
-date:
+result: approved
+reason: 미리보기에서 실제 가입 → 확인 메일 → 로그인 확인 후 사용자 승인 (속초고등학교, 첫 가입자 admin)
+approver: scieum (사용자)
+date: 2026-10-03
