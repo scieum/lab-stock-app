@@ -114,9 +114,12 @@ for (const table of SCHOOL_TABLES) {
       expect(own.error).toBeNull();
       const ownIds = (own.data ?? []).map((r) => r.id as string);
       expect(ownIds.length, `${ROLE_LABEL[real.role]} 자기 학교 ${table} 양성 대조군`).toBeGreaterThan(0);
-      const byId = await anonClient().from(table).select("id").in("id", ownIds);
-      expect(byId.error).toBeNull();
-      expect(byId.data ?? [], `anon → ${ROLE_LABEL[real.role]} 학교 ${table} id 직접 조회`).toHaveLength(0);
+      // id 목록은 나눠서 보낸다 (usage_logs 는 지울 수 없어 계속 늘고, 한 번에 보내면 URL 이 서버 한도 16KB 를 넘는다)
+      for (let i = 0; i < ownIds.length; i += 80) {
+        const byId = await anonClient().from(table).select("id").in("id", ownIds.slice(i, i + 80));
+        expect(byId.error).toBeNull();
+        expect(byId.data ?? [], `anon → ${ROLE_LABEL[real.role]} 학교 ${table} id 직접 조회`).toHaveLength(0);
+      }
     }
   });
 }

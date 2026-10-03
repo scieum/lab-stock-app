@@ -77,9 +77,12 @@ for (const { attacker, owner } of PAIRS) {
       expect(bySchool.error).toBeNull();
       expect(bySchool.data ?? []).toHaveLength(0);
 
-      const byId = await a.client.from(table).select("id").in("id", victimIds);
-      expect(byId.error).toBeNull();
-      expect(byId.data ?? []).toHaveLength(0);
+      // id 목록은 나눠서 보낸다 (usage_logs 는 지울 수 없어 계속 늘고, 한 번에 보내면 URL 이 서버 한도 16KB 를 넘는다)
+      for (let i = 0; i < victimIds.length; i += 80) {
+        const byId = await a.client.from(table).select("id").in("id", victimIds.slice(i, i + 80));
+        expect(byId.error).toBeNull();
+        expect(byId.data ?? []).toHaveLength(0);
+      }
 
       // 전체 조회에도 상대 학교 행이 섞이지 않는다 (자기 학교 행만)
       const all = await a.client.from(table).select("id, school_id");
