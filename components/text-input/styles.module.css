@@ -132,3 +132,35 @@
   opacity: 0;
   cursor: pointer;
 }
+
+/* 화면 10: 기간 드롭다운 (값 + 하늘색 펼침 아이콘). select 가 상자 전체를 덮어 어디를 눌러도 열린다 */
+.selectBox {
+  position: relative;
+  padding: 0;
+}
+
+.select {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--button-min-height);
+  padding: var(--space-12) calc(var(--space-16) + var(--icon-md) + var(--space-8)) var(--space-12) var(--space-16);
+  border: 0;
+  border-radius: var(--radius-md);
+  outline: none;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  appearance: none;
+  cursor: pointer;
+}
+
+.selectIcon {
+  position: absolute;
+  top: 50%;
+  right: var(--space-16);
+  transform: translateY(-50%);
+  pointer-events: none;
+}

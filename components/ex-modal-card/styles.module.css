@@ -1,0 +1,116 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-24) var(--space-16);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-none);
+  box-sizing: border-box;
+}
+
+.card:focus {
+  outline: none;
+}
+
+.card:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+/* 모바일: tab-bar 위쪽 선에 붙는 전폭 하단 시트 */
+.sheet {
+  position: fixed;
+  right: 0;
+  bottom: var(--tab-bar-height);
+  left: 0;
+  z-index: 15;
+  max-height: calc(100% - var(--tab-bar-height));
+  overflow-y: auto;
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+}
+
+.amount {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.amountValue {
+  font-size: var(--font-size-32);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.amountUnit {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+}
+
+.fieldLabel {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-tight);
+}
+
+.fieldValue {
+  min-width: 0;
+  margin: 0;
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.close {
+  width: 100%;
+}
+
+/* 데스크탑: 부모(history-layout)가 놓는 자리의 카드 */
+@media (min-width: 1024px) {
+  .card {
+    gap: var(--space-16);
+    padding: var(--space-24);
+  }
+
+  .sheet {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .amountValue {
+    font-size: var(--font-size-28);
+    line-height: var(--line-height-normal);
+  }
+}

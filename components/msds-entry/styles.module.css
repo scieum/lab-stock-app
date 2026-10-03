@@ -5,8 +5,13 @@
   gap: var(--space-8);
 }
 
-.entry > :first-child {
+.entry > [data-component="msds-qr-tile"] {
   align-self: stretch;
+}
+
+/* 화면 10 기록 상세: 버튼만, 왼쪽 정렬 */
+.buttonOnly {
+  align-items: flex-start;
 }
 
 .notice {

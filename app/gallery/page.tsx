@@ -5,8 +5,9 @@ import { ButtonPillSoft } from "@/components/button-pill-soft";
 import { ButtonPrimary } from "@/components/button-primary";
 import { AuthFormCard } from "@/components/ex-auth-form-card";
 import { DataTable, DataTableRow } from "@/components/ex-data-table";
-import { DataTableCell } from "@/components/ex-data-table-cell";
+import { DataRecordRow, DataTableCell } from "@/components/ex-data-table-cell";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
+import { ModalCard } from "@/components/ex-modal-card";
 import { Toast } from "@/components/ex-toast";
 import { FeatureCard } from "@/components/feature-card";
 import { GuestBanner } from "@/components/guest-banner";
@@ -22,6 +23,7 @@ import { QuickAction } from "@/components/quick-action";
 import { ReagentDetailCard } from "@/components/reagent-detail-card";
 import { ReagentRegister } from "@/components/reagent-register";
 import { ReagentRow } from "@/components/reagent-row";
+import { RecordGroup, RecordList } from "@/components/record-group";
 import { ReorderAlertCard } from "@/components/reorder-alert-card";
 import { SchoolSelectRegion } from "@/components/school-select-region";
 import { SchoolSelectSchool } from "@/components/school-select-school";
@@ -31,7 +33,7 @@ import { SegmentedControlActive } from "@/components/segmented-control-active";
 import { StockIntake } from "@/components/stock-intake";
 import { TabBar } from "@/components/tab-bar";
 import { TabItem } from "@/components/tab-item";
-import { TextInput } from "@/components/text-input";
+import { TextInput, TextInputSelect } from "@/components/text-input";
 import styles from "./gallery.module.css";
 
 export const metadata: Metadata = { title: "컴포넌트 갤러리 · Lab_Stock" };
@@ -42,6 +44,30 @@ const usageRows = [
   { date: "2026.10.02", user: "김민지", amount: "5 g", selected: true },
   { date: "2026.09.25", user: "이준호", amount: "8 g" },
   { date: "2026.09.18", user: "박서연", amount: "10 g" },
+];
+
+const historyGroups = [
+  {
+    label: "2026년 10월",
+    rows: [
+      { id: "h-1", date: "10.02", name: "황산구리(II) 오수화물", user: "김민지", amount: "5 g", selected: true },
+      { id: "h-2", date: "10.01", name: "염산 0.1M", user: "이준호", amount: "20 mL" },
+    ],
+  },
+  {
+    label: "2026년 9월",
+    rows: [
+      { id: "h-3", date: "09.30", name: "수산화나트륨", user: "박서연", amount: "12 g" },
+      { id: "h-4", date: "09.25", name: "질산은", user: "정하은", amount: "2 g" },
+    ],
+  },
+];
+
+const periodOptions = [
+  { value: "1m", label: "최근 1개월" },
+  { value: "3m", label: "최근 3개월" },
+  { value: "6m", label: "최근 6개월" },
+  { value: "all", label: "전체" },
 ];
 
 const intakeReagents = [
@@ -195,6 +221,51 @@ export default function GalleryPage() {
               </DataTableRow>
             ))}
           </DataTable>
+        </Item>
+
+        <Item name="ex-data-table-cell (기록 행) · 필터 줄">
+          <SegmentedControl
+            label="기록 범위"
+            options={[
+              { value: "all", label: "전체" },
+              { value: "mine", label: "내 기록" },
+            ]}
+          />
+          <TextInputSelect aria-label="기간" options={periodOptions} defaultValue="1m" />
+          <TextInput icon="search" placeholder="시약명 검색" />
+          <RecordList label="사용 기록 내역">
+            {historyGroups.map((g) => (
+              <RecordGroup key={g.label} label={g.label}>
+                {g.rows.map((r) => (
+                  <DataRecordRow
+                    key={r.id}
+                    date={r.date}
+                    title={r.name}
+                    subtitle={r.user}
+                    amount={r.amount}
+                    selected={r.selected}
+                  />
+                ))}
+              </RecordGroup>
+            ))}
+          </RecordList>
+          <EmptyStateCard title="아직 사용 기록이 없어요" />
+        </Item>
+
+        <Item name="ex-modal-card">
+          <ModalCard
+            sheet={false}
+            title="황산구리(II) 오수화물"
+            amount="5"
+            unit="g"
+            fields={[
+              { label: "사용자", value: "김민지" },
+              { label: "일시", value: "2026.10.02 14:20" },
+              { label: "메모", value: "1반 3조 구리 이온 실험" },
+            ]}
+          >
+            <MsdsEntry variant="button" href="https://example.com/msds" />
+          </ModalCard>
         </Item>
 
         <Item name="msds-entry · msds-qr-tile">
