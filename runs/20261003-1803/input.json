@@ -1,0 +1,5 @@
+{
+  "stages": ["D1", "D2", "D3", "G", "D4"],
+  "screens": [7],
+  "reason": "2차 화면 7 입고·시약 등록 (/intake, 교사·admin)"
+}
