@@ -42,14 +42,17 @@ type Props = {
   pending?: boolean;
   /** 저장 실패 안내 */
   error?: string | null;
-  /** 검색 0건 안내의 "새 시약 등록" — 없으면 버튼을 그리지 않는다 */
+  /** 검색 0건 안내의 "새 시약 등록" — 있으면 콜백(갈래 전환), 없으면 registerHref 링크. 버튼은 항상 그린다 */
   onRegisterNew?: () => void;
+  /** onRegisterNew 가 없을 때 "새 시약 등록" 이 가는 곳 */
+  registerHref?: string;
   /** 모바일에서 하단 버튼 줄을 tab-bar 바로 위에 고정 (갤러리에서는 false) */
   stickyActions?: boolean;
 };
 
 const QUANTITY_ERROR = "1 이상 입력하세요";
 const DEFAULT_PRESETS = [1, 5, 10];
+const DEFAULT_REGISTER_HREF = "/intake?tab=register";
 const numberFmt = new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 2 });
 
 /** 시안 표기: "3병" · "30 g" · "500 mL" */
@@ -85,6 +88,7 @@ export function StockIntake({
   pending,
   error,
   onRegisterNew,
+  registerHref = DEFAULT_REGISTER_HREF,
   stickyActions = true,
 }: Props) {
   const [query, setQuery] = useState(defaultQuery);
@@ -146,6 +150,7 @@ export function StockIntake({
             description="시약명을 확인하거나 새로 등록하세요"
             actionLabel="새 시약 등록"
             onAction={onRegisterNew}
+            actionHref={onRegisterNew ? undefined : registerHref}
           />
         ) : null}
       </div>
