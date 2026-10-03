@@ -9,7 +9,7 @@
 | cabinets | id, school_id, label, door_type(양문형·단문형), shelves(3·4) | 화면 11은 2차, MVP는 시드 |
 | cabinet_slots | id, cabinet_id, side(L·R), shelf, storage_class | storage_class ∈ rules.json cabinet.storage_classes |
 | reagents | id, school_id, name, cas_no, unit, stock, min_stock, msds_url, slot_id, intake_date, storage_class(null 허용) | stock < min_stock → 재고 부족(핑크). storage_class ∈ rules.json cabinet.storage_classes (화면 7 "종류") |
-| usage_logs | id, school_id, reagent_id, user_id, amount, used_at | 화면 4에서 생성, reagents.stock 차감 |
+| usage_logs | id, school_id, reagent_id, user_id, amount, used_at, memo(null 허용, 200자 이하) | 화면 4에서 생성, reagents.stock 차감. memo 는 화면 4 "메모" 입력 → 화면 10 상세 (§7) |
 | intake_logs | id, school_id, reagent_id, user_id, amount, intake_date, created_at | 화면 7에서 생성, reagents.stock 증가 (§6) |
 
 ## 2. RLS (N1)
@@ -64,3 +64,17 @@
 | intake_logs RLS | select: 같은 학교. insert 는 위 함수로만(직접 insert 정책 없음). update·delete 없음 |
 | 데모 학교 | 입고·등록 불가(§5 쓰기 금지 그대로) |
 | 저장 후 | ex-toast "입고를 기록했어요" / "시약을 등록했어요" → 화면 2(/reagents) |
+
+## 7. 사용 기록 내역 (화면 10, 2026-10-03 결정)
+
+| 항목 | 결정 |
+|---|---|
+| 권한 | 학생·교사·admin 모두. 같은 학교의 usage_logs 만 (기존 RLS 그대로, N1). 읽기 전용 화면 — 수정·삭제 없음 |
+| 대상 | 사용 기록만. 입고 기록(intake_logs)은 이 화면에 보여 주지 않는다 (시안 그대로) |
+| 메모 | usage_logs.memo 추가. `record_usage` 가 memo(선택)를 받아 저장 — 빈 문자열은 null, 200자 초과는 거부. 화면 4 에 "메모" 입력(선택 항목) 추가 |
+| 필터 | "전체 / 내 기록"(내 기록 = user_id 가 로그인 사용자), 기간 = 최근 1개월(기본)·3개월·6개월·전체, 시약명 검색(부분 일치) |
+| 목록 | 최신순, 월 그룹 헤더("2026년 10월"). 행 = 날짜 · 시약명 / 사용자 이름 · 사용량+단위. 0건이면 ex-empty-state-card "아직 사용 기록이 없어요" |
+| 사용자 이름 | 같은 학교 사용자의 display_name 만 (기존 private.same_school_display_name 방식). 다른 학교 사용자 이름 노출 0 |
+| 상세 | 행을 누르면 ex-modal-card: 시약명 + 사용량, 사용자 · 일시 · 메모(없으면 "-"), msds-entry "MSDS 보기"(시약에 msds_url 이 있을 때 새 창), "닫기" |
+| 진입 | 탭바 "기록", nav "사용 기록 내역", 홈 "더 보기" → /usage (지금까지는 /usage/new 로 넘겼음) |
+| 데모 학교 | 둘러보기에서는 탭바 "기록" 잠금 그대로 (§5) |

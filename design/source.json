@@ -27,7 +27,9 @@
     "3-guest-mobile": "runs/20261003-1212",
     "3-guest-desktop": "runs/20261003-1212",
     "7-mobile": "runs/20261002-1441",
-    "7-desktop": "runs/20261002-1441"
+    "7-desktop": "runs/20261002-1441",
+    "10-mobile": "runs/20261002-1441",
+    "10-desktop": "runs/20261002-1441"
   },
-  "copied": "2026-10-03 (5차: 화면 7 프레임 추가, rules.json 변동 없음)"
+  "copied": "2026-10-03 (6차: 화면 10 프레임 추가, rules.json 변동 없음)"
 }
