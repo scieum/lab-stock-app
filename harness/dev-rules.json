@@ -10,7 +10,8 @@
     13,
     2,
     3,
-    4
+    4,
+    7
   ],
   "routes": {
     "15": "/",
@@ -20,6 +21,7 @@
     "2": "/reagents",
     "3": "/reagents/[id]",
     "4": "/usage/new",
+    "7": "/intake",
     "13-guest": "/demo",
     "2-guest": "/demo/reagents",
     "3-guest": "/demo/reagents/[id]"
@@ -43,17 +45,20 @@
     ],
     "button-outline": [
       3,
+      7,
       15
     ],
     "button-pill-soft": [
       1,
       3,
+      7,
       13
     ],
     "button-primary": [
       1,
       3,
       4,
+      7,
       14,
       15
     ],
@@ -64,8 +69,12 @@
     "ex-data-table-cell": [
       3
     ],
+    "ex-empty-state-card": [
+      7
+    ],
     "ex-toast": [
-      4
+      4,
+      7
     ],
     "feature-card": [
       15
@@ -103,6 +112,7 @@
       2,
       3,
       4,
+      7,
       13,
       14,
       15
@@ -114,8 +124,12 @@
       3,
       4
     ],
+    "reagent-register": [
+      7
+    ],
     "reagent-row": [
       2,
+      7,
       13
     ],
     "reorder-alert-card": [
@@ -132,28 +146,36 @@
     ],
     "segmented-control": [
       2,
-      3
+      3,
+      7
     ],
     "segmented-control-active": [
       2,
-      3
+      3,
+      7
+    ],
+    "stock-intake": [
+      7
     ],
     "tab-bar": [
       2,
       3,
       4,
+      7,
       13
     ],
     "tab-item": [
       2,
       3,
       4,
+      7,
       13
     ],
     "text-input": [
       1,
       2,
       4,
+      7,
       14
     ]
   },
@@ -324,12 +346,14 @@
     "13-guest": "비로그인 (데모 학교)",
     "2-guest": "비로그인 (데모 학교)",
     "3-guest": "비로그인 (데모 학교)",
-    "guest_note": "랜딩(15) guest-entry \"둘러보기\" → /demo. 로그인 사용자가 /demo 에 오면 / 로 보낸다 (2026-10-03)"
+    "guest_note": "랜딩(15) guest-entry \"둘러보기\" → /demo. 로그인 사용자가 /demo 에 오면 / 로 보낸다 (2026-10-03)",
+    "7": "로그인 후 · 교사·admin만",
+    "7_note": "학생이 /intake 에 오면 / 로 보낸다. 비로그인은 /login (2026-10-03)"
   },
   "guest_screens": [
     13,
     2,
     3
   ],
-  "components_note": "guest-banner·guest-lock 의 [2,3,13] 은 둘러보기(/demo) 버전 화면"
+  "components_note": "guest-banner·guest-lock 의 [2,3,13] 은 둘러보기(/demo) 버전 화면 · 화면 7: stock-intake 는 프레임(기존 시약 입고 갈래), reagent-register·ex-empty-state-card·ex-toast 는 프레임에 없는 상태(새 시약 등록 갈래·검색 0건·저장 직후)라 디자인 s2-spec 화면 7 기준 (2026-10-03)"
 }

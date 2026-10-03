@@ -8,8 +8,9 @@
 | profiles | user_id(auth.users), school_id, role(student·teacher·admin), display_name | 사용자당 1개 |
 | cabinets | id, school_id, label, door_type(양문형·단문형), shelves(3·4) | 화면 11은 2차, MVP는 시드 |
 | cabinet_slots | id, cabinet_id, side(L·R), shelf, storage_class | storage_class ∈ rules.json cabinet.storage_classes |
-| reagents | id, school_id, name, cas_no, unit, stock, min_stock, msds_url, slot_id, intake_date | stock < min_stock → 재고 부족(핑크) |
+| reagents | id, school_id, name, cas_no, unit, stock, min_stock, msds_url, slot_id, intake_date, storage_class(null 허용) | stock < min_stock → 재고 부족(핑크). storage_class ∈ rules.json cabinet.storage_classes (화면 7 "종류") |
 | usage_logs | id, school_id, reagent_id, user_id, amount, used_at | 화면 4에서 생성, reagents.stock 차감 |
+| intake_logs | id, school_id, reagent_id, user_id, amount, intake_date, created_at | 화면 7에서 생성, reagents.stock 증가 (§6) |
 
 ## 2. RLS (N1)
 
@@ -49,3 +50,17 @@
 | 분리 (N1) | 데모 학교는 가입 학교 목록에 나오지 않는다(NEIS 목록에서만 선택, is_demo 학교는 profiles.school_id가 될 수 없음 — check 제약 또는 트리거). 실제 학교 데이터는 anon에게 0행 |
 | 키 (N2) | 둘러보기는 NEIS·Gemini 호출 없음. Supabase anon 키만 사용 |
 | 화면 | /demo(13 둘러보기 홈) · /demo/reagents(2) · /demo/reagents/[id](3). 상단 guest-banner, 쓰기·범위 밖 진입점 guest-lock(탭 시 ex-toast "가입하면 쓸 수 있어요"), 탭바 QR 스캔·기록 잠금 |
+
+## 6. 입고·시약 등록 (화면 7, 2026-10-03 결정)
+
+| 항목 | 결정 |
+|---|---|
+| 권한 | teacher·admin만. 학생은 화면(/intake → /)·DB(RLS·함수) 모두 거부 (R5, R-db) |
+| 기존 시약 입고 | DB 함수 `record_intake(reagent_id, amount, intake_date)` 하나로만 — intake_logs insert + reagents.stock 증가 + reagents.intake_date 갱신을 한 트랜잭션으로. amount ≥ 1, 자기 학교 시약만 |
+| 새 시약 등록 | DB 함수 `register_reagent(name, storage_class, stock, unit, intake_date, msds_url)` — reagents insert + 첫 재고에 대한 intake_logs 1행을 한 트랜잭션으로. school_id 는 호출자의 profiles.school_id (입력으로 받지 않는다) |
+| 종류 | 화면의 "종류" 드롭다운 = storage_class 8종(rules.json cabinet.storage_classes). 필수 |
+| 단위 | 병·mL·g 중 선택 (시안의 단위 suffix 자리) |
+| 시안에 없는 값 | min_stock = 0(재주문 알림 없음), slot_id = null(시약장 칸은 화면 11에서), cas_no = null |
+| intake_logs RLS | select: 같은 학교. insert 는 위 함수로만(직접 insert 정책 없음). update·delete 없음 |
+| 데모 학교 | 입고·등록 불가(§5 쓰기 금지 그대로) |
+| 저장 후 | ex-toast "입고를 기록했어요" / "시약을 등록했어요" → 화면 2(/reagents) |
