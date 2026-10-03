@@ -17,7 +17,7 @@
 - 검색어가 비어 있으면 자기 학교 시약 전체를 보여 줌
 - 단위는 재고량 아래 칩(병·mL·g)으로 선택
 
-result:
-reason:
-approver:
-date:
+result: approved
+reason: 미리보기 확인 후 사용자 승인
+approver: scieum (사용자)
+date: 2026-10-03
