@@ -1,0 +1,5 @@
+{
+  "stages": ["D3", "G", "D4"],
+  "screens": [14],
+  "reason": "가입 학교 연결 실패(register_profile 401) 처리와 중복 제출 방지"
+}

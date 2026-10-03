@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ButtonPrimary } from "@/components/button-primary";
 import { AuthFormCard } from "@/components/ex-auth-form-card";
@@ -45,6 +45,8 @@ export function SignupForm() {
   const [openTerm, setOpenTerm] = useState<TermKey | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // 같은 프레임 안의 연속 클릭·Enter도 막는다 (state 갱신 전에 들어오는 두 번째 제출)
+  const inFlight = useRef(false);
   const [done, setDone] = useState<Done | null>(null);
 
   const allAgreed = agree.terms && agree.privacy;
@@ -52,7 +54,7 @@ export function SignupForm() {
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (submitting) return;
+    if (inFlight.current || submitting) return;
     const fields: SignupFields = {
       neisCode: sel.school,
       displayName,
@@ -67,8 +69,13 @@ export function SignupForm() {
       setError(problem);
       return;
     }
+    inFlight.current = true;
     setSubmitting(true);
     setError(null);
+    const release = () => {
+      inFlight.current = false;
+      setSubmitting(false);
+    };
     try {
       // 학교는 NEIS 학교 코드만 보낸다 (학교명·역할은 서버가 정한다)
       const res = await fetch("/api/auth/signup", {
@@ -83,7 +90,7 @@ export function SignupForm() {
       };
       if (!res.ok || !body.ok) {
         setError(body.error ?? "회원가입에 실패했어요. 잠시 후 다시 시도하세요.");
-        setSubmitting(false);
+        release();
         return;
       }
       if (!body.needsEmailConfirm) {
@@ -95,7 +102,7 @@ export function SignupForm() {
       setDone({ email: email.trim(), needsEmailConfirm: true });
     } catch {
       setError("서버에 연결하지 못했어요. 잠시 후 다시 시도하세요.");
-      setSubmitting(false);
+      release();
     }
   };
 
@@ -293,7 +300,7 @@ export function SignupForm() {
           ) : null}
 
           <div className={styles.actionBar}>
-            <ButtonPrimary type="submit" fullWidth disabled={submitting}>
+            <ButtonPrimary type="submit" fullWidth disabled={submitting} aria-busy={submitting}>
               {submitting ? "가입하는 중…" : "가입하기"}
             </ButtonPrimary>
           </div>
