@@ -16,6 +16,10 @@ export type SelectFieldProps = {
   disabled?: boolean;
   defaultOpen?: boolean;
   name?: string;
+  /** 라벨 옆 "필수" */
+  required?: boolean;
+  /** form = 폼 입력 모양 (화면 7 종류): 진한 라벨, 하늘색 펼침 아이콘, 고른 뒤에도 회색 상자 */
+  tone?: "default" | "form";
 };
 
 /**
@@ -32,7 +36,10 @@ export function SelectField({
   disabled,
   defaultOpen = false,
   name,
+  required,
+  tone = "default",
 }: SelectFieldProps) {
+  const form = tone === "form";
   const [inner, setInner] = useState(defaultValue ?? "");
   const [open, setOpen] = useState(defaultOpen);
   const current = value ?? inner;
@@ -57,13 +64,16 @@ export function SelectField({
   };
 
   return (
-    <div ref={rootRef} className={styles.field}>
-      <span id={labelId} className={styles.label}>
-        {label}
-      </span>
+    <div ref={rootRef} className={[styles.field, form ? styles.form : ""].join(" ").trim()}>
+      <div className={styles.labelRow}>
+        <span id={labelId} className={styles.label}>
+          {label}
+        </span>
+        {required ? <span className={styles.required}>필수</span> : null}
+      </div>
       <button
         type="button"
-        className={[styles.box, selected ? styles.selected : "", open ? styles.open : ""].join(" ").trim()}
+        className={[styles.box, selected && !form ? styles.selected : "", open ? styles.open : ""].filter(Boolean).join(" ")}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
@@ -76,8 +86,11 @@ export function SelectField({
       >
         <span className={selected ? styles.value : styles.placeholder}>{selected ? selected.label : placeholder}</span>
         <span className={styles.trail}>
-          {selected ? <Icon name="check" className={styles.check} /> : null}
-          <Icon name={open ? "chevron-up" : "chevron-down"} className={open ? styles.chevronOpen : styles.chevron} />
+          {selected && !form ? <Icon name="check" className={styles.check} /> : null}
+          <Icon
+            name={open ? "chevron-up" : "chevron-down"}
+            className={open || form ? styles.chevronOpen : styles.chevron}
+          />
         </span>
       </button>
       {name ? <input type="hidden" name={name} value={current} /> : null}

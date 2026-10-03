@@ -23,3 +23,16 @@
   outline: var(--border-width) solid var(--color-highlight);
   outline-offset: var(--space-4);
 }
+
+/* 화면 7: 스테퍼 양끝 원형 버튼 */
+.circle {
+  width: var(--control-height);
+  padding: 0;
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-regular);
+}
+
+.button:disabled {
+  color: var(--color-text-placeholder);
+  cursor: not-allowed;
+}

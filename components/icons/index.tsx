@@ -22,7 +22,9 @@ export type IconName =
   | "eye-off"
   | "building"
   | "map-pin"
-  | "bell";
+  | "bell"
+  | "close"
+  | "info";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: (
@@ -136,6 +138,15 @@ const PATHS: Record<IconName, React.ReactNode> = {
     </>
   ),
   // 시안 15 feature-card icon-bell (재고 부족 알림)
+  // 시안 7 selected-reagent icon-close
+  close: <path d="m6 6 12 12M18 6 6 18" />,
+  // 시안 7 intake-preview icon-info
+  info: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5.5M12 7.5h.01" />
+    </>
+  ),
   bell: (
     <>
       <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15Z" />

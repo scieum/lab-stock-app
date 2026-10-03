@@ -1,0 +1,81 @@
+/* 화면 7 reagent-register (시안 프레임 없음 — 디자인 s2-spec 화면 7 기준)
+ * 세로 폼, 입력 사이 16. 하단 버튼은 stock-intake 와 같은 자리(모바일: tab-bar 바로 위 고정, 데스크톱: 폼 아래 폭 240)
+ */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+/* 고정된 하단 버튼 줄만큼 비워 둔다 */
+.sticky {
+  padding-bottom: calc(var(--space-12) + var(--control-height) + var(--space-16) + var(--border-width));
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+.stockField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.units {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+/* 안내 문구는 검정 (핑크 금지) */
+.error {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.actions {
+  display: flex;
+}
+
+.sticky .actions {
+  position: fixed;
+  right: 0;
+  bottom: var(--tab-bar-height);
+  left: 0;
+  z-index: 10;
+  padding: var(--space-12) var(--space-16) var(--space-16);
+  border-top: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.primary {
+  flex: 1;
+}
+
+@media (min-width: 1024px) {
+  .root {
+    max-width: calc(var(--side-column-width) * 1.6);
+  }
+
+  .sticky {
+    padding-bottom: var(--space-0);
+  }
+
+  .sticky .actions {
+    position: static;
+    padding: var(--space-0);
+    border-top: 0;
+  }
+
+  .primary {
+    flex: 0 0 calc(var(--control-height) * 5);
+  }
+}

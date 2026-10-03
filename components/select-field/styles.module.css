@@ -10,6 +10,30 @@
   line-height: var(--line-height-tight);
 }
 
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.required {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-tight);
+}
+
+/* 화면 7 폼: text-input 의 진한 라벨과 같은 모양 */
+.form {
+  gap: var(--space-8);
+}
+
+.form .label {
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
 .box {
   display: flex;
   align-items: center;
