@@ -126,7 +126,9 @@ export async function ownReagents(s: Session): Promise<ReagentRow[]> {
 }
 
 /** 다른 테스트가 잠깐 넣었다 지우는 임시 시약 이름 (tempReagent · insert 시도) */
-const TEMP_REAGENT_PREFIXES = ["R-db-", "N1-db-"];
+/** 화면 7 화면(e2e) 테스트가 만드는 임시 시약 이름 접두사 (screen-7-*.spec.ts) */
+export const S7_UI_TEMP_PREFIX = "S7-ui-";
+const TEMP_REAGENT_PREFIXES = ["R-db-", "N1-db-", S7_UI_TEMP_PREFIX];
 
 /**
  * 시약 칸 고르기. 임시 시약(무작위 uuid 라 id 순서 어디에나 끼어듦)은 빼고 센다 —
