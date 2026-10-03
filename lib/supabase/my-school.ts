@@ -19,3 +19,21 @@ export async function getSessionSchool(): Promise<{ signedIn: boolean; school: M
 export async function getMySchool(): Promise<MySchool | null> {
   return (await getSessionSchool()).school;
 }
+
+/**
+ * 로그인 후 공통 셸에 필요한 값 — 자기 학교 + 교사·admin 여부(nav 의 교사·admin 전용 링크 표시용).
+ * 프로필을 읽지 못하면 staff=false (학생과 같이 취급 — 전용 링크를 숨긴다).
+ */
+export async function getShellContext(): Promise<{ school: MySchool; staff: boolean } | null> {
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const uid = claims?.claims?.sub;
+  if (!uid) return null;
+  const [school, profile] = await Promise.all([
+    supabase.from("schools").select("id, name").maybeSingle(),
+    supabase.from("profiles").select("role").eq("user_id", uid).maybeSingle(),
+  ]);
+  if (school.error || !school.data) return null;
+  const role = profile.data?.role;
+  return { school: school.data, staff: role === "teacher" || role === "admin" };
+}

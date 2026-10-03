@@ -27,7 +27,7 @@ export type StockIntakeValues = {
 };
 
 type Props = {
-  /** 우리 학교 시약 (검색은 이 목록 안에서 이름으로 거른다) */
+  /** 우리 학교 시약, 이름순 (검색은 이 목록 안에서 이름으로 거른다. 검색어가 비면 전체를 보여 준다) */
   reagents: IntakeReagent[];
   /** 입고일 기본값 = 오늘 (YYYY-MM-DD). 서버에서 학교 시간대로 계산해 넘긴다 */
   defaultIntakeDate: string;
@@ -99,8 +99,10 @@ export function StockIntake({
   const quantityErrorId = useId();
 
   const q = query.trim().toLowerCase();
-  const results = q ? reagents.filter((r) => r.name.toLowerCase().includes(q)) : [];
   const selected = reagents.find((r) => r.id === selectedId) ?? null;
+  // 검색어가 있으면 이름으로 거른다. 비어 있으면 전체(넘겨받은 순서 = 이름순)를 보여 주되,
+  // 이미 고른 시약이 있으면 그 한 줄만 남겨 수량 입력이 목록 아래로 멀리 밀리지 않게 한다(X 로 선택을 풀면 다시 전체).
+  const results = q ? reagents.filter((r) => r.name.toLowerCase().includes(q)) : selected ? [selected] : reagents;
 
   const amount = parseQuantity(quantity);
   const quantityValid = amount !== null && amount >= 1;
@@ -131,7 +133,7 @@ export function StockIntake({
           onChange={(e) => setQuery(e.target.value)}
         />
         {results.length > 0 ? (
-          <ul className={styles.results} aria-label="검색 결과">
+          <ul className={styles.results} aria-label={q ? "검색 결과" : "시약 목록"}>
             {results.map((r) => (
               <li key={r.id}>
                 <ReagentRow
