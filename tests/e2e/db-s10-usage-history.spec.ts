@@ -322,15 +322,6 @@ test(`[R-db][S4] record_usage 메모 공백만 → memo null (기록·차감은 
   expect(c.row?.memo).toBeNull();
 });
 
-test(`[R-db][S4] record_usage 메모 탭·줄바꿈·공백뿐(공백 문자만) → memo null (기록·차감은 정상)`, async ({}, info) => {
-  const fx = await fixture(info);
-  const c = fx.calls.wsOnlyMemo;
-  expect(c.memoArg).toMatch(/[\t\n]/);
-  expect(c.memoArg?.trim()).toBe("");
-  expectSaved(c, await signIn(c.role), fx);
-  expect(c.row?.memo).toBeNull();
-});
-
 test(`[R-db][S4] record_usage 메모 없는 호출(reagent_id·amount 만) → 그대로 동작, memo null`, async ({}, info) => {
   const fx = await fixture(info);
   const c = fx.calls.noMemoArg;
@@ -853,4 +844,15 @@ test(`[R-db][S10] usage_history p_limit: 준 수만큼만(최신부터), 큰 값
   expect(huge.length).toBeGreaterThanOrEqual(Math.min(total, dflt.length));
   expect(new Set(idsOf(huge)).size, "행 중복 없음").toBe(huge.length);
   expect(dflt.length, "기본 호출도 자기 학교 기록 수 이하").toBeLessThanOrEqual((await allRows(s, "usage_logs", "id")).length);
+});
+
+// 파일 맨 끝에 둔다: 실패하면 워커가 새로 떠서 고정 기록(7행)을 다시 만드는데, 마지막 테스트면 다시 만들 일이 없다
+// (usage_logs 는 지울 수 없으므로 실패 한 번이 잔여 행을 늘리지 않게).
+test(`[R-db][S4] record_usage 메모 탭·줄바꿈·공백뿐(공백 문자만) → memo null (기록·차감은 정상)`, async ({}, info) => {
+  const fx = await fixture(info);
+  const c = fx.calls.wsOnlyMemo;
+  expect(c.memoArg).toMatch(/[\t\n]/);
+  expect(c.memoArg?.trim()).toBe("");
+  expectSaved(c, await signIn(c.role), fx);
+  expect(c.row?.memo).toBeNull();
 });
