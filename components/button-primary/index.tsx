@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { LinkPending } from "@/components/link-pending";
+import { linkPrefetch } from "@/lib/link-prefetch";
 import styles from "./styles.module.css";
 
 type Props = {
@@ -12,8 +14,9 @@ export function ButtonPrimary({ children, href, fullWidth, className, type = "bu
   const cls = [styles.button, fullWidth ? styles.full : "", className ?? ""].join(" ").trim();
   if (href) {
     return (
-      <Link data-component="button-primary" href={href} className={cls}>
+      <Link data-component="button-primary" href={href} prefetch={linkPrefetch(href)} className={cls}>
         {children}
+        <LinkPending />
       </Link>
     );
   }

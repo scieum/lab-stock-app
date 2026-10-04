@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { BadgeLowStock } from "@/components/badge-low-stock";
 import { Icon } from "@/components/icons";
+import { LinkPending } from "@/components/link-pending";
+import { linkPrefetch } from "@/lib/link-prefetch";
 import styles from "./styles.module.css";
 
 type Props = {
@@ -55,8 +57,9 @@ export function ReagentRow({ title, body, caption, lowStock, href, selected, onS
   }
   if (href) {
     return (
-      <Link data-component="reagent-row" href={href} className={cls} aria-current={selected ? "true" : undefined}>
+      <Link data-component="reagent-row" href={href} prefetch={linkPrefetch(href)} className={cls} aria-current={selected ? "true" : undefined}>
         {content}
+        <LinkPending />
       </Link>
     );
   }

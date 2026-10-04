@@ -1,5 +1,5 @@
 import "server-only";
-import { createClient } from "./server";
+import { getServerClient, getServerSession } from "./server";
 import { REMOVED_USER_NAME } from "@/lib/users-rules";
 import { formatAmount, formatUsedAt } from "@/lib/format";
 
@@ -25,21 +25,18 @@ function slotCapacity(doorType: string, shelves: number): number {
  * 세션·프로필이 없으면 null.
  */
 export async function getHomeData(): Promise<HomeData | null> {
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const uid = claims?.claims?.sub;
-  if (!uid) return null;
-
-  const [profile, reagents, cabinets, slots, recent] = await Promise.all([
-    supabase.from("profiles").select("role").eq("user_id", uid).maybeSingle(),
+  const supabase = await getServerClient();
+  // 세션 검증(요청당 1회, layout 과 공유)과 데이터 조회를 같이 보낸다 — 결과는 세션이 확인된 뒤에만 쓴다 (행은 RLS 가 거른다)
+  const [me, reagents, cabinets, slots, recent] = await Promise.all([
+    getServerSession(),
     supabase.from("reagents").select("id, name, unit, stock, min_stock").order("name"),
     supabase.from("cabinets").select("id, door_type, shelves"),
     supabase.from("cabinet_slots").select("id", { count: "exact", head: true }),
     supabase.rpc("recent_usage", { p_limit: 3 }),
   ]);
-  if (profile.error || !profile.data) return null;
+  if (me.kind !== "member") return null;
 
-  const role = (["student", "teacher", "admin"] as const).find((r) => r === profile.data!.role) ?? "student";
+  const role = me.role;
   const rows = reagents.data ?? [];
   const cabs = cabinets.data ?? [];
   const now = new Date();

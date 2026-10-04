@@ -62,3 +62,9 @@
 .button:disabled .icon {
   color: var(--color-text-placeholder);
 }
+
+/* 누른 즉시 반응 — 누르는 동안·이동 중(서버 응답 대기)인 버튼 */
+.button:active:not(:disabled),
+.button:has([data-pending]) {
+  opacity: var(--pressed-opacity);
+}

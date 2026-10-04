@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Icon, type IconName } from "@/components/icons";
+import { LinkPending } from "@/components/link-pending";
+import { linkPrefetch } from "@/lib/link-prefetch";
 import styles from "./styles.module.css";
 
 type Props = {
@@ -53,8 +55,9 @@ export function ButtonPillSoft({
   }
   if (href) {
     return (
-      <Link data-component="button-pill-soft" href={href} className={cls}>
+      <Link data-component="button-pill-soft" href={href} prefetch={linkPrefetch(href)} className={cls}>
         {content}
+        <LinkPending />
       </Link>
     );
   }

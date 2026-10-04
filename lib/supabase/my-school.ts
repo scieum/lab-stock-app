@@ -1,5 +1,5 @@
 import "server-only";
-import { createClient } from "./server";
+import { getServerSession } from "./server";
 
 export type MySchool = { id: string; name: string };
 
@@ -8,41 +8,14 @@ export type MySchool = { id: string; name: string };
  * signedIn=false 면 school=null. 로그인됐어도 프로필·학교가 없으면 school=null.
  */
 export async function getSessionSchool(): Promise<{ signedIn: boolean; school: MySchool | null }> {
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  if (!claims?.claims?.sub) return { signedIn: false, school: null };
-  const { data, error } = await supabase.from("schools").select("id, name").maybeSingle();
-  return { signedIn: true, school: error || !data ? null : data };
+  const me = await getServerSession();
+  if (me.kind === "signed-out") return { signedIn: false, school: null };
+  return { signedIn: true, school: me.kind === "member" ? me.school : null };
 }
 
 /** 로그인 사용자의 자기 학교. 로그인 안 됐거나 프로필이 없으면 null. */
 export async function getMySchool(): Promise<MySchool | null> {
   return (await getSessionSchool()).school;
-}
-
-export type ShellContext =
-  /** staff = 교사·admin, admin = admin — nav 의 역할 전용 링크 표시용 */
-  | { kind: "member"; school: MySchool; staff: boolean; admin: boolean }
-  /** 로그인은 됐지만 프로필이 없다 (내보낸 계정, d7 §8) — 앱 화면 대신 "소속 학교가 없어요" 안내(경로 /) */
-  | { kind: "no-school" };
-
-/**
- * 로그인 후 공통 셸에 필요한 값 — 자기 학교 + 교사·admin 여부(nav 의 역할 전용 링크 표시용).
- * 세션이 없거나 학교를 읽지 못하면 null. 프로필 조회가 오류면 staff·admin=false (학생과 같이 취급 — 전용 링크를 숨긴다).
- */
-export async function getShellContext(): Promise<ShellContext | null> {
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const uid = claims?.claims?.sub;
-  if (!uid) return null;
-  const [school, profile] = await Promise.all([
-    supabase.from("schools").select("id, name").maybeSingle(),
-    supabase.from("profiles").select("role").eq("user_id", uid).maybeSingle(),
-  ]);
-  if (!profile.error && !profile.data) return { kind: "no-school" };
-  if (school.error || !school.data) return null;
-  const role = profile.data?.role;
-  return { kind: "member", school: school.data, staff: role === "teacher" || role === "admin", admin: role === "admin" };
 }
 
 export type Membership =
@@ -57,18 +30,10 @@ export type Membership =
 /**
  * 세션의 소속 판별 (publishable 키 + 세션, RLS: profiles 자기 행·schools 자기 학교만).
  * 프로필 조회가 오류 없이 0행일 때만 "no-school" 이다.
+ * 요청당 한 번만 읽는다 (lib/supabase/server.ts getServerSession, React cache) — layout·page 가 같이 쓴다.
  */
 export async function getMembership(): Promise<Membership> {
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const uid = claims?.claims?.sub;
-  if (!uid) return { kind: "signed-out" };
-  const profile = await supabase.from("profiles").select("role, school_id").eq("user_id", uid).maybeSingle();
-  if (profile.error) return { kind: "unavailable" };
-  const me = profile.data;
-  if (!me) return { kind: "no-school" };
-  const school = await supabase.from("schools").select("id, name").eq("id", me.school_id).maybeSingle();
-  if (school.error || !school.data) return { kind: "unavailable" };
-  const role = (["student", "teacher", "admin"] as const).find((r) => r === me.role) ?? "student";
-  return { kind: "member", school: school.data, role };
+  const me = await getServerSession();
+  if (me.kind === "member") return { kind: "member", school: me.school, role: me.role };
+  return { kind: me.kind };
 }

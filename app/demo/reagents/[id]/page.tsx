@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { ReagentDetailView } from "@/app/(app)/reagents/[id]/detail-view";
+import { ReagentDetailView } from "@/app/(app)/(member)/reagents/[id]/detail-view";
 import { getDemoReagentDetail } from "@/lib/supabase/demo-data";
 
 export const dynamic = "force-dynamic";

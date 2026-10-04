@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { LinkPending } from "@/components/link-pending";
+import { linkPrefetch } from "@/lib/link-prefetch";
 import styles from "./styles.module.css";
 
 type Props = {
@@ -13,8 +15,9 @@ export function ButtonOutline({ children, href, shape = "pill", className, type 
   const cls = [styles.button, shape === "circle" ? styles.circle : "", className ?? ""].filter(Boolean).join(" ");
   if (href) {
     return (
-      <Link data-component="button-outline" href={href} className={cls}>
+      <Link data-component="button-outline" href={href} prefetch={linkPrefetch(href)} className={cls}>
         {children}
+        <LinkPending />
       </Link>
     );
   }

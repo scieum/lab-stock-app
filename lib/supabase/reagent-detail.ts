@@ -1,5 +1,5 @@
 import "server-only";
-import { createClient } from "./server";
+import { getServerClient, getServerSession } from "./server";
 import { recordUserName } from "@/lib/users-rules";
 import { formatDateDots, formatStock } from "@/lib/format";
 import { isLowStock, type Role } from "@/lib/types";
@@ -62,18 +62,14 @@ function slotLabel(doorType: string, side: string, shelf: number): string {
  * 다른 학교 시약은 RLS 로 0행이 되어 없는 id 와 똑같이 not-found.
  */
 export async function getReagentDetail(id: string): Promise<ReagentDetailResult> {
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const uid = claims?.claims?.sub;
-  if (!uid) return { kind: "signed-out" };
+  if (!UUID_RE.test(id)) {
+    return (await getServerSession()).kind === "member" ? { kind: "not-found" } : { kind: "signed-out" };
+  }
 
-  const profile = await supabase.from("profiles").select("role").eq("user_id", uid).maybeSingle();
-  if (profile.error || !profile.data) return { kind: "signed-out" };
-  const role = (["student", "teacher", "admin"] as const).find((r) => r === profile.data!.role) ?? "student";
-
-  if (!UUID_RE.test(id)) return { kind: "not-found" };
-
-  const [reagentRes, usageRes] = await Promise.all([
+  const supabase = await getServerClient();
+  // 세션 검증(요청당 1회, layout 과 공유)과 조회를 같이 보낸다 — 결과는 세션이 확인된 뒤에만 쓴다 (행은 RLS 가 거른다)
+  const [me, reagentRes, usageRes] = await Promise.all([
+    getServerSession(),
     supabase
       .from("reagents")
       .select(
@@ -83,6 +79,8 @@ export async function getReagentDetail(id: string): Promise<ReagentDetailResult>
       .maybeSingle(),
     supabase.rpc("reagent_usage", { p_reagent_id: id, p_limit: 5 }),
   ]);
+  if (me.kind !== "member") return { kind: "signed-out" };
+  const role = me.role;
   const r = reagentRes.data;
   if (reagentRes.error || !r) return { kind: "not-found" };
 
