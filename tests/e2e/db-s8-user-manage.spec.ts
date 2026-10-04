@@ -186,24 +186,85 @@ interface TempUser {
   id: string;
   email: string;
   password: string;
-  client: SupabaseClient;
 }
 
 interface TempSchool {
   id: string;
   neis: string;
-  admin: TempUser;
+  admin: TempUser & { client: SupabaseClient };
 }
 
-/** 일회용 로그인 계정 (admin createUser + email_confirm — signUp 을 부르지 않아 메일이 나가지 않는다) */
+/** 성공 경로 테스트 한 건의 시간 한도 (Auth 요청 한도에 걸리면 기다렸다 다시 로그인하므로 넉넉히) */
+const SUCCESS_TIMEOUT = 420_000;
+/** 로그인 재시도: 한도(IP 당 5분 창)가 다시 찰 때까지 기다리는 간격·총 한도 */
+const LOGIN_RETRY_WAIT_MS = 11_000;
+const LOGIN_RETRY_TOTAL_MS = 300_000;
+
+type AuthErr = { status?: number; code?: string; message?: string } | null;
+const isRateLimited = (e: AuthErr): boolean =>
+  Boolean(e) && (e?.status === 429 || e?.code === "over_request_rate_limit" || /rate limit/i.test(e?.message ?? ""));
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** 비밀번호 로그인 (한도에 걸리면 기다렸다 다시 — 다른 오류는 그대로 돌려준다) */
+async function passwordLogin(email: string, password: string): Promise<{ client: SupabaseClient; error: AuthErr }> {
+  const deadline = Date.now() + LOGIN_RETRY_TOTAL_MS;
+  for (;;) {
+    const client = anonClient();
+    const signed = await client.auth.signInWithPassword({ email, password });
+    if (!signed.error) return { client, error: null };
+    if (!isRateLimited(signed.error) || Date.now() > deadline) return { client, error: signed.error };
+    await sleep(LOGIN_RETRY_WAIT_MS);
+  }
+}
+
+/**
+ * 일회용 계정의 로그인 세션 (publishable 키 클라이언트 — 판정 대상 호출은 이 세션으로 한다).
+ * 이 스펙은 일회용 계정을 수십 개 만들기 때문에 비밀번호 로그인만 쓰면 Supabase Auth 의 로그인 요청 한도
+ * (IP 당 5분 창)를 넘기고, 같은 한도를 쓰는 공용 계정 로그인·다른 스펙까지 실패시킨다. 그래서
+ * 1) service role 이 만든 일회용 로그인 토큰(generateLink — 메일을 보내지 않는다)을 verifyOtp 로 바꿔 세션을 얻고
+ *    (토큰 확인 한도는 로그인 한도와 따로 센다),
+ * 2) 그것이 안 되면 비밀번호 로그인, 둘 다 한도에 걸리면 기다렸다 다시 한다.
+ * 어느 쪽이든 결과는 그 사용자의 authenticated 세션이다 (service role 권한이 섞이지 않는다).
+ */
+const sessions = new Map<string, SupabaseClient>();
+async function sessionOf(u: TempUser): Promise<SupabaseClient> {
+  const cached = sessions.get(u.id);
+  if (cached) return cached;
+  const deadline = Date.now() + LOGIN_RETRY_TOTAL_MS;
+  let last: AuthErr = null;
+  for (;;) {
+    const client = anonClient();
+    const link = await service().auth.admin.generateLink({ type: "magiclink", email: u.email });
+    const tokenHash = link.data?.properties?.hashed_token;
+    if (!link.error && tokenHash) {
+      const v = await client.auth.verifyOtp({ token_hash: tokenHash, type: "magiclink" });
+      if (!v.error && v.data.user?.id === u.id) {
+        sessions.set(u.id, client);
+        return client;
+      }
+      last = v.error;
+    } else {
+      last = link.error;
+    }
+    const pw = anonClient();
+    const signed = await pw.auth.signInWithPassword({ email: u.email, password: u.password });
+    if (!signed.error && signed.data.user?.id === u.id) {
+      sessions.set(u.id, pw);
+      return pw;
+    }
+    if (!isRateLimited(signed.error) || Date.now() > deadline) {
+      throw new Error(`일회용 계정 로그인 실패: 토큰 확인 = ${last?.message ?? "-"}, 비밀번호 = ${signed.error?.message ?? "-"}`);
+    }
+    await sleep(LOGIN_RETRY_WAIT_MS);
+  }
+}
+
+/** 일회용 계정 (admin createUser + email_confirm — signUp 을 부르지 않아 메일이 나가지 않는다). 로그인은 sessionOf 로 필요할 때만. */
 async function tempUser(info: TestInfo, email = tempEmail(info)): Promise<TempUser> {
   const password = randomBytes(18).toString("base64url");
   const made = await service().auth.admin.createUser({ email, password, email_confirm: true });
   expect(made.error, `일회용 계정 생성: ${made.error?.message}`).toBeNull();
-  const client = anonClient();
-  const signed = await client.auth.signInWithPassword({ email, password });
-  expect(signed.error, `일회용 계정 로그인: ${signed.error?.message}`).toBeNull();
-  return { id: made.data.user!.id, email, password, client };
+  return { id: made.data.user!.id, email, password };
 }
 
 /** 가입의 학교 연결 단계와 같은 호출 (lib/server/onboard → register_profile, service_role 전용) */
@@ -227,7 +288,7 @@ async function tempSchool(info: TestInfo): Promise<TempSchool> {
   expect(res.error, `일회용 학교 첫 가입: ${res.error?.message}`).toBeNull();
   const prof = firstRow(res.data);
   expect(prof?.role, "학교의 첫 가입자는 admin (d7 §4)").toBe("admin");
-  return { id: prof!.school_id as string, neis, admin };
+  return { id: prof!.school_id as string, neis, admin: { ...admin, client: await sessionOf(admin) } };
 }
 
 /** 일회용 학교에 멤버 추가 (초대 없음 → student) */
@@ -294,12 +355,25 @@ async function sweep(project: string): Promise<{ users: number; schools: number;
 }
 
 test.afterAll(async ({}, info) => {
-  // 거부 테스트는 초대를 만들지 않아야 한다 — 학교 A admin 이 보는 이 프로젝트 접두사 초대 0
-  const leaked = await adminInvites(`${EMAIL_PREFIX}${info.project.name}-%`);
+  info.setTimeout(300_000);
+  // 정리가 먼저다: 아래 확인(공용 계정 로그인)이 실패해도 일회용 계정·학교가 남지 않게 한다.
+  // 거부 테스트는 초대를 만들지 않아야 한다 — 정리 전에 학교 A 에 남은 이 프로젝트 접두사 초대를 세어 둔다 (0 이어야 함).
+  let leakedBeforeSweep: Row[] | null = null;
+  let left: Awaited<ReturnType<typeof sweep>> | null = null;
   if (HAS_SERVICE) {
-    const left = await sweep(info.project.name);
-    expect(left, "일회용 계정·학교·초대 잔여물").toEqual({ users: 0, schools: 0, invites: 0, profiles: 0 });
+    const admin = await signIn("admin").catch(() => null);
+    if (admin) {
+      const r = await service()
+        .from("invites")
+        .select("id, email")
+        .eq("school_id", admin.schoolId)
+        .like("email", `${EMAIL_PREFIX}${info.project.name}-%`);
+      if (!r.error) leakedBeforeSweep = (r.data ?? []) as Row[];
+    }
+    left = await sweep(info.project.name);
   }
+  const leaked = leakedBeforeSweep ?? (await adminInvites(`${EMAIL_PREFIX}${info.project.name}-%`));
+  if (left) expect(left, "일회용 계정·학교·초대 잔여물").toEqual({ users: 0, schools: 0, invites: 0, profiles: 0 });
   expect(leaked, "거부되어야 하는 초대가 학교 A 에 남음").toHaveLength(0);
   // 공용 계정 4개는 그대로
   for (const role of ["student", "teacher", "admin", "schoolB"] as Role[]) {
@@ -930,9 +1004,10 @@ test.describe("성공 경로 (일회용 학교)", () => {
   test.skip(!HAS_SERVICE, NO_SERVICE_REASON);
 
   test(`[R-db][S8] admin change_member_role 성공: student → teacher → admin → student 가 그대로 반영`, async ({}, info) => {
-    test.setTimeout(120_000);
+    test.setTimeout(SUCCESS_TIMEOUT);
     const school = await tempSchool(info);
     const m = await addMember(school, info);
+    const mClient = await sessionOf(m);
     const start = await profileByService(m.id);
     for (const role of ["teacher", "admin", "student"] as const) {
       const res = await rpc(school.admin.client, "change_member_role", changeArgs(m.id, role));
@@ -943,7 +1018,7 @@ test.describe("성공 경로 (일회용 학교)", () => {
       // 바뀌는 것은 role 뿐
       expect(await profileByService(m.id)).toEqual({ ...start, role });
       // 대상 본인 세션에서도 새 역할
-      const own = await m.client.from("profiles").select("role").eq("user_id", m.id).single();
+      const own = await mClient.from("profiles").select("role").eq("user_id", m.id).single();
       expect(own.data?.role).toBe(role);
     }
     // 호출한 admin 은 그대로
@@ -951,20 +1026,21 @@ test.describe("성공 경로 (일회용 학교)", () => {
   });
 
   test(`[R-db][S8] admin 2명이면 한 명 강등 가능, 1명 남으면 last admin 거부 (강등된 사람은 더 이상 호출 불가)`, async ({}, info) => {
-    test.setTimeout(120_000);
+    test.setTimeout(SUCCESS_TIMEOUT);
     const school = await tempSchool(info);
     const m = await addMember(school, info);
+    const mClient = await sessionOf(m);
     const up = await rpc(school.admin.client, "change_member_role", changeArgs(m.id, "admin"));
     expect(up.error, `승격: ${up.error?.message}`).toBeNull();
 
     // admin 2명: 새 admin 이 원래 admin 을 teacher 로
-    const down = await rpc(m.client, "change_member_role", changeArgs(school.admin.id, "teacher"));
+    const down = await rpc(mClient, "change_member_role", changeArgs(school.admin.id, "teacher"));
     expect(down.error, `admin 2명일 때 강등: ${down.error?.message}`).toBeNull();
     expect((await profileByService(school.admin.id))?.role).toBe("teacher");
 
     // admin 1명: 자기 강등 거부
     for (const role of ["student", "teacher"]) {
-      const last = await rpc(m.client, "change_member_role", changeArgs(m.id, role));
+      const last = await rpc(mClient, "change_member_role", changeArgs(m.id, role));
       expectRejected(last, `마지막 admin → ${role}`, "23514", "last admin");
       expect((await profileByService(m.id))?.role).toBe("admin");
     }
@@ -982,18 +1058,18 @@ test.describe("성공 경로 (일회용 학교)", () => {
     );
     expect((await profileByService(m.id))?.role).toBe("admin");
     // admin 은 다른 admin 을 내보낼 수 있다(2명일 때): 다시 2명으로 만든 뒤 한 명 내보내기
-    const again = await rpc(m.client, "change_member_role", changeArgs(school.admin.id, "admin"));
+    const again = await rpc(mClient, "change_member_role", changeArgs(school.admin.id, "admin"));
     expect(again.error).toBeNull();
-    const out = await rpc(m.client, "remove_member", removeArgs(school.admin.id));
+    const out = await rpc(mClient, "remove_member", removeArgs(school.admin.id));
     expect(out.error, `admin 2명일 때 다른 admin 내보내기: ${out.error?.message}`).toBeNull();
     expect(await profileByService(school.admin.id)).toBeNull();
     // 남은 1명은 본인 내보내기 거부
-    expectRejected(await rpc(m.client, "remove_member", removeArgs(m.id)), "마지막 admin 본인 내보내기", "22023", "cannot remove self");
+    expectRejected(await rpc(mClient, "remove_member", removeArgs(m.id)), "마지막 admin 본인 내보내기", "22023", "cannot remove self");
     expect((await profileByService(m.id))?.role).toBe("admin");
   });
 
   test(`[R-db][S8] 같은 역할로 change_member_role 은 성공·변화 없음 (마지막 admin 의 admin → admin 포함)`, async ({}, info) => {
-    test.setTimeout(120_000);
+    test.setTimeout(SUCCESS_TIMEOUT);
     const school = await tempSchool(info);
     const m = await addMember(school, info);
     const before = await profileByService(m.id);
@@ -1009,18 +1085,19 @@ test.describe("성공 경로 (일회용 학교)", () => {
   });
 
   test(`[R-db][S8] remove_member 성공: profiles 행 삭제·로그인 계정 존속·반환값, 내보낸 사용자 세션은 업무 테이블 0행`, async ({}, info) => {
-    test.setTimeout(120_000);
+    test.setTimeout(SUCCESS_TIMEOUT);
     const school = await tempSchool(info);
     const m = await addMember(school, info);
+    const mClient = await sessionOf(m);
     // 대조군: 일회용 학교에 시약 1개 (admin 이 직접 insert — d7 §2), 멤버가 볼 수 있다
     const made = await school.admin.client
       .from("reagents")
       .insert({ school_id: school.id, name: "S8 임시 시약", unit: "g", stock: 1, min_stock: 0 })
       .select("id");
     expect(made.error, `대조군 시약: ${made.error?.message}`).toBeNull();
-    const seenBefore = await m.client.from("reagents").select("id");
+    const seenBefore = await mClient.from("reagents").select("id");
     expect(seenBefore.data ?? [], "내보내기 전 멤버가 보는 시약 (양성 대조군)").toHaveLength(1);
-    const schoolBefore = await m.client.from("schools").select("id");
+    const schoolBefore = await mClient.from("schools").select("id");
     expect((schoolBefore.data ?? []).map((s) => s.id)).toEqual([school.id]);
 
     const before = await profileByService(m.id);
@@ -1036,18 +1113,18 @@ test.describe("성공 경로 (일회용 학교)", () => {
     const user = await service().auth.admin.getUserById(m.id);
     expect(user.error).toBeNull();
     expect(user.data.user?.email).toBe(m.email);
-    const relogin = await anonClient().auth.signInWithPassword({ email: m.email, password: m.password });
-    expect(relogin.error, "내보낸 계정도 로그인은 된다").toBeNull();
+    const relogin = await passwordLogin(m.email, m.password);
+    expect(relogin.error, `내보낸 계정도 로그인은 된다: ${relogin.error?.message}`).toBeNull();
 
     // 내보낸 사용자의 (기존) 세션: 프로필·학교·업무 테이블 0행, 쓰기 함수 거부
-    const own = await m.client.from("profiles").select("user_id");
+    const own = await mClient.from("profiles").select("user_id");
     expect(own.error ? [] : own.data ?? []).toHaveLength(0);
     for (const table of ["schools", "reagents", "usage_logs", "cabinets", "cabinet_slots", "intake_logs", "invites"]) {
-      const r = await m.client.from(table).select("id");
+      const r = await mClient.from(table).select("id");
       expect(r.error ? [] : r.data ?? [], `내보낸 사용자 ${table}`).toHaveLength(0);
     }
-    expectRejected(await rpc(m.client, "change_member_role", changeArgs(school.admin.id, "student")), "내보낸 사용자 change_member_role", "42501");
-    expectRejected(await rpc(m.client, "invite_members", inviteArgs([tempEmail(info)], "student")), "내보낸 사용자 invite_members", "42501");
+    expectRejected(await rpc(mClient, "change_member_role", changeArgs(school.admin.id, "student")), "내보낸 사용자 change_member_role", "42501");
+    expectRejected(await rpc(mClient, "invite_members", inviteArgs([tempEmail(info)], "student")), "내보낸 사용자 invite_members", "42501");
     // 두 번 내보내기 → member not found
     expectRejected(await rpc(school.admin.client, "remove_member", removeArgs(m.id)), "이미 내보낸 사용자", "P0002", "member not found");
     // 다른 멤버·admin 은 그대로
@@ -1055,7 +1132,7 @@ test.describe("성공 경로 (일회용 학교)", () => {
   });
 
   test(`[R-db][S8] invite_members 성공: 소문자·trim·중복 제거, invited_by·accepted_at null, 재초대는 already invited`, async ({}, info) => {
-    test.setTimeout(120_000);
+    test.setTimeout(SUCCESS_TIMEOUT);
     const school = await tempSchool(info);
     const a = tempEmail(info);
     const b = tempEmail(info);
@@ -1108,7 +1185,7 @@ test.describe("성공 경로 (일회용 학교)", () => {
   });
 
   test(`[N1-db][S8] invites select 는 자기 학교 admin 만: 다른 학교 admin·같은 학교 학생·교사·anon 0행, 직접 update·delete 0행`, async ({}, info) => {
-    test.setTimeout(180_000);
+    test.setTimeout(SUCCESS_TIMEOUT);
     const x = await tempSchool(info);
     const y = await tempSchool(info);
     const ex = tempEmail(info);
@@ -1129,8 +1206,8 @@ test.describe("성공 경로 (일회용 학교)", () => {
     const teacher = await addMember(x, info);
     expect((await rpc(x.admin.client, "change_member_role", changeArgs(teacher.id, "teacher"))).error).toBeNull();
     const outsiders: [string, SupabaseClient][] = [
-      ["X 학생", student.client],
-      ["X 교사", teacher.client],
+      ["X 학생", await sessionOf(student)],
+      ["X 교사", await sessionOf(teacher)],
       ["anon", anonClient()],
     ];
     for (const role of ["student", "teacher", "admin", "schoolB"] as Role[]) outsiders.push([ROLE_LABEL[role], (await signIn(role)).client]);
@@ -1164,7 +1241,7 @@ test.describe("성공 경로 (일회용 학교)", () => {
 
   for (const inviteRole of INVITE_ROLES) {
     test(`[R-db][S14] 초대(${inviteRole})된 이메일이 그 학교에 가입하면 role = ${inviteRole}, 초대 accepted_at·accepted_user_id 채워짐`, async ({}, info) => {
-      test.setTimeout(120_000);
+      test.setTimeout(SUCCESS_TIMEOUT);
       const school = await tempSchool(info);
       const email = tempEmail(info);
       // 대소문자·공백이 달라도 같은 이메일로 본다
@@ -1199,7 +1276,7 @@ test.describe("성공 경로 (일회용 학교)", () => {
   }
 
   test(`[R-db][S14] 초대 없는 가입은 student, 학교의 첫 가입자는 admin (다른 사람의 초대는 그대로 대기)`, async ({}, info) => {
-    test.setTimeout(120_000);
+    test.setTimeout(SUCCESS_TIMEOUT);
     const school = await tempSchool(info); // 첫 가입자 admin 은 tempSchool 안에서 확인
     expect((await profileByService(school.admin.id))?.role).toBe("admin");
     const invited = tempEmail(info);
@@ -1214,7 +1291,7 @@ test.describe("성공 경로 (일회용 학교)", () => {
   });
 
   test(`[N1-db][S14] 다른 학교의 초대는 영향 없음: Y 초대(teacher)가 있어도 X 가입은 student, Y 초대는 대기 그대로`, async ({}, info) => {
-    test.setTimeout(180_000);
+    test.setTimeout(SUCCESS_TIMEOUT);
     const x = await tempSchool(info);
     const y = await tempSchool(info);
     const email = tempEmail(info);
@@ -1239,7 +1316,7 @@ test.describe("성공 경로 (일회용 학교)", () => {
   });
 
   test(`[R-db][S14] 내보낸 뒤 다시 등록: 초대가 있으면 초대 역할, 없으면 student (전에 admin 이었어도)`, async ({}, info) => {
-    test.setTimeout(180_000);
+    test.setTimeout(SUCCESS_TIMEOUT);
     const school = await tempSchool(info);
     const m = await addMember(school, info);
     expect((await rpc(school.admin.client, "change_member_role", changeArgs(m.id, "admin"))).error).toBeNull();
