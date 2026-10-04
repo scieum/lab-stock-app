@@ -18,7 +18,7 @@
 - 한 번에 최근 200건까지만 보여 주고, 넘으면 "기간을 줄이거나 시약명으로 검색" 안내
 - 데스크탑 nav 는 기존 공통 링크 그대로(시안의 사용자 관리·판매처 설정 링크는 아직 없는 화면)
 
-result:
-reason:
-approver:
-date:
+result: approved
+reason: 미리보기 확인 후 사용자 승인
+approver: scieum (사용자)
+date: 2026-10-04
