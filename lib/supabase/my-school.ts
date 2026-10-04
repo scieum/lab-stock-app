@@ -37,3 +37,31 @@ export async function getShellContext(): Promise<{ school: MySchool; staff: bool
   const role = profile.data?.role;
   return { school: school.data, staff: role === "teacher" || role === "admin" };
 }
+
+export type Membership =
+  /** 세션 없음 → /login (또는 랜딩) */
+  | { kind: "signed-out" }
+  /** 로그인은 됐지만 프로필이 없다 — 학교에서 내보낸 계정 (d7 §8). "소속 학교가 없어요" 안내 + 로그아웃만 */
+  | { kind: "no-school" }
+  /** 프로필·학교를 읽지 못했다 (일시 오류) — 내보낸 계정으로 단정하지 않는다 */
+  | { kind: "unavailable" }
+  | { kind: "member"; school: MySchool; role: "student" | "teacher" | "admin" };
+
+/**
+ * 세션의 소속 판별 (publishable 키 + 세션, RLS: profiles 자기 행·schools 자기 학교만).
+ * 프로필 조회가 오류 없이 0행일 때만 "no-school" 이다.
+ */
+export async function getMembership(): Promise<Membership> {
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const uid = claims?.claims?.sub;
+  if (!uid) return { kind: "signed-out" };
+  const profile = await supabase.from("profiles").select("role, school_id").eq("user_id", uid).maybeSingle();
+  if (profile.error) return { kind: "unavailable" };
+  const me = profile.data;
+  if (!me) return { kind: "no-school" };
+  const school = await supabase.from("schools").select("id, name").eq("id", me.school_id).maybeSingle();
+  if (school.error || !school.data) return { kind: "unavailable" };
+  const role = (["student", "teacher", "admin"] as const).find((r) => r === me.role) ?? "student";
+  return { kind: "member", school: school.data, role };
+}

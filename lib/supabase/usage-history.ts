@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "./server";
+import { recordUserName } from "@/lib/users-rules";
 import {
   USAGE_HISTORY_LIMIT,
   normalizeUsageQuery,
@@ -27,7 +28,7 @@ export type UsageRecord = {
   reagentId: string;
   reagentName: string;
   msdsUrl: string | null;
-  /** 같은 학교 사용자의 display_name. 읽지 못하면 "-" */
+  /** 같은 학교 사용자의 display_name. 내보낸 사용자(프로필 없음)는 "삭제된 사용자", 이름이 비었으면 "-" */
   userName: string;
   isMine: boolean;
 };
@@ -83,7 +84,7 @@ export async function getUsageHistory(filter: UsageHistoryFilter = {}): Promise<
         reagentId: u.reagent_id,
         reagentName: u.reagent_name,
         msdsUrl: u.msds_url ?? null,
-        userName: u.user_name || "-",
+        userName: recordUserName(u.user_name as string | null),
         isMine: u.is_mine === true,
       })),
       truncated: rows.length >= USAGE_HISTORY_LIMIT,

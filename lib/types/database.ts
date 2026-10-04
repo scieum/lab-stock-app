@@ -137,6 +137,47 @@ export type Database = {
           },
         ]
       }
+      invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_user_id: string | null
+          email: string
+          id: string
+          invited_at: string
+          invited_by: string | null
+          role: string
+          school_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_user_id?: string | null
+          email: string
+          id?: string
+          invited_at?: string
+          invited_by?: string | null
+          role: string
+          school_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_user_id?: string | null
+          email?: string
+          id?: string
+          invited_at?: string
+          invited_by?: string | null
+          role?: string
+          school_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invites_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -315,6 +356,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      change_member_role: {
+        Args: { p_role: string; p_user_id: string }
+        Returns: {
+          created_at: string
+          display_name: string
+          role: string
+          school_id: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       demo_reagent_usage: {
         Args: { p_limit?: number; p_reagent_id: string }
         Returns: {
@@ -335,6 +392,25 @@ export type Database = {
           used_at: string
           user_name: string
         }[]
+      }
+      invite_members: {
+        Args: { p_emails: string[]; p_role: string }
+        Returns: {
+          accepted_at: string | null
+          accepted_user_id: string | null
+          email: string
+          id: string
+          invited_at: string
+          invited_by: string | null
+          role: string
+          school_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "invites"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       pending_signup_user: { Args: { p_email: string }; Returns: string }
       reagent_usage: {
@@ -445,6 +521,22 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "reagents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      remove_member: {
+        Args: { p_user_id: string }
+        Returns: {
+          created_at: string
+          display_name: string
+          role: string
+          school_id: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
           isOneToOne: true
           isSetofReturn: false
         }

@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "./server";
+import { REMOVED_USER_NAME } from "@/lib/users-rules";
 import { formatAmount, formatUsedAt } from "@/lib/format";
 
 export type Role = "student" | "teacher" | "admin";
@@ -56,7 +57,8 @@ export async function getHomeData(): Promise<HomeData | null> {
       id: u.id,
       reagentId: u.reagent_id,
       reagentName: u.reagent_name,
-      body: [u.user_name, formatAmount(Number(u.amount), u.unit)].filter(Boolean).join(" · "),
+      // 내보낸 사용자(프로필 없음)는 이름이 null → "삭제된 사용자" (d7 §8)
+      body: [(u.user_name as string | null) ?? REMOVED_USER_NAME, formatAmount(Number(u.amount), u.unit)].filter(Boolean).join(" · "),
       caption: formatUsedAt(new Date(u.used_at), now),
     })),
   };
