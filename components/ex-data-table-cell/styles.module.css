@@ -91,3 +91,145 @@
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-normal);
 }
+
+/* 화면 8: 멤버·초대 대기 행. 모바일 = 2줄(이름/보조줄) + 오른쪽 끝, 데스크탑 = 표처럼 3열 */
+.entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-12);
+  row-gap: var(--space-4);
+  width: 100%;
+  min-height: var(--button-min-height);
+  padding: var(--space-12) var(--space-16);
+  border: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.entryButton {
+  cursor: pointer;
+}
+
+.entryButton:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: calc(var(--border-width) * -1);
+}
+
+.entrySelf {
+  background: var(--color-highlight-soft);
+}
+
+.entryMain {
+  display: flex;
+  grid-column: 1;
+  grid-row: 1;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.entryName {
+  overflow: hidden;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entryEmail {
+  display: block;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.entryBadge {
+  flex-shrink: 0;
+  padding: var(--space-4) var(--space-8);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.entrySub {
+  display: flex;
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+}
+
+.entryRole {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.entryEnd {
+  display: flex;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.entryNote {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.entryStatus {
+  color: var(--color-text);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.entryChevron {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex-shrink: 0;
+  color: var(--color-highlight);
+}
+
+@media (min-width: 1024px) {
+  .entry {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--space-16);
+  }
+
+  .entrySub {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .entryEnd {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  /* 데스크탑: 역할 = pill (본인 행은 흰 pill) */
+  .entryRole {
+    padding: var(--space-4) var(--space-12);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-muted);
+    color: var(--color-text);
+    font-size: var(--font-size-12);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .entrySelf .entryRole {
+    background: var(--color-surface);
+  }
+}

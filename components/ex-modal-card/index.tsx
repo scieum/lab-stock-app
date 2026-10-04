@@ -12,6 +12,8 @@ export type ModalCardField = {
 type Props = {
   /** 상단 제목 (시약명, heading-3) */
   title: string;
+  /** 제목 아래 안내 한 줄 (화면 8: "역할을 고르고 변경을 누르세요", body-sm 회색) */
+  description?: string;
   /** 제목 아래 큰 숫자 (사용량, display) */
   amount?: React.ReactNode;
   /** 숫자 옆 단위 (g · mL · 병) */
@@ -23,6 +25,11 @@ type Props = {
   /** 닫기 버튼·Esc 로 부른다. 없으면 카드가 스스로 사라진다 */
   onClose?: () => void;
   closeLabel?: string;
+  /**
+   * true = 기본 닫기 버튼을 그리지 않는다 (화면 8 초대·역할 변경·삭제 확인: 본문 children 이 자기 버튼을 가진다).
+   * Esc 로 닫히는 것은 그대로다.
+   */
+  hideClose?: boolean;
   /** true(기본) = 모바일에서 tab-bar 위쪽 선에 붙는 하단 시트. false = 항상 제자리(갤러리) */
   sheet?: boolean;
   /**
@@ -38,12 +45,14 @@ type Props = {
  */
 export function ModalCard({
   title,
+  description,
   amount,
   unit,
   fields = [],
   children,
   onClose,
   closeLabel = "닫기",
+  hideClose = false,
   sheet = true,
   modal = true,
 }: Props) {
@@ -91,12 +100,13 @@ export function ModalCard({
       aria-modal={modal ? "true" : undefined}
       aria-labelledby={titleId}
       tabIndex={-1}
-      className={[styles.card, sheet ? styles.sheet : ""].join(" ").trim()}
+      className={[styles.card, sheet ? styles.sheet : "", hideClose ? styles.plain : ""].filter(Boolean).join(" ")}
     >
       <div className={styles.summary}>
         <h2 id={titleId} className={styles.title}>
           {title}
         </h2>
+        {description ? <p className={styles.description}>{description}</p> : null}
         {amount !== undefined && amount !== null ? (
           <p className={styles.amount}>
             <span className={styles.amountValue}>{amount}</span>
@@ -115,9 +125,11 @@ export function ModalCard({
         </dl>
       ) : null}
       {children}
-      <ButtonOutline className={styles.close} onClick={close}>
-        {closeLabel}
-      </ButtonOutline>
+      {hideClose ? null : (
+        <ButtonOutline className={styles.close} onClick={close}>
+          {closeLabel}
+        </ButtonOutline>
+      )}
     </div>
   );
 }

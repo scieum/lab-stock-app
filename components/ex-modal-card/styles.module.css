@@ -44,6 +44,20 @@
   overflow-wrap: anywhere;
 }
 
+.description {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+/* 화면 8: 닫기 버튼 없이 본문(children)이 버튼을 가진 시트 — 시안 간격 16, 아래 여백 32 */
+.plain {
+  gap: var(--space-16);
+  padding-bottom: var(--space-32);
+}
+
 .amount {
   display: flex;
   align-items: baseline;
@@ -101,6 +115,10 @@
   .card {
     gap: var(--space-16);
     padding: var(--space-24);
+  }
+
+  .plain {
+    padding-bottom: var(--space-24);
   }
 
   .sheet {

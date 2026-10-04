@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { BadgeLowStock } from "@/components/badge-low-stock";
 import { ButtonOutline } from "@/components/button-outline";
 import { ButtonPillSoft } from "@/components/button-pill-soft";
@@ -34,6 +35,8 @@ import { StockIntake } from "@/components/stock-intake";
 import { TabBar } from "@/components/tab-bar";
 import { TabItem } from "@/components/tab-item";
 import { TextInput, TextInputSelect } from "@/components/text-input";
+import { UserManage } from "@/components/user-manage";
+import { sampleInvites, sampleMemberCounts, sampleMembers } from "./users/sample";
 import styles from "./gallery.module.css";
 
 export const metadata: Metadata = { title: "컴포넌트 갤러리 · Lab_Stock" };
@@ -365,6 +368,19 @@ export default function GalleryPage() {
             <span>사용 기록 입력</span>
             <GuestLock />
           </div>
+        </Item>
+
+        <Item name="user-manage">
+          <UserManage
+            schoolName={SAMPLE_SCHOOL}
+            members={sampleMembers}
+            invites={sampleInvites}
+            counts={sampleMemberCounts}
+            selectedId="m-2"
+          />
+          <Link href="/gallery/users" className={styles.more}>
+            초대 · 역할 변경 · 삭제 확인 시트 보기 (/gallery/users)
+          </Link>
         </Item>
 
         <Item name="tab-bar · tab-item">
