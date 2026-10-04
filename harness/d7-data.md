@@ -35,7 +35,7 @@
 
 ## 4. 가입·로그인 흐름 (2026-10-02)
 
-1. 회원가입(14): `/api/neis/*`로 학교 선택 → Supabase Auth signUp(개인 이메일·비밀번호) → 서버(lib/server)가 schools upsert(neis_code) + profiles insert(school_id, role = 그 학교 첫 사용자면 admin, 아니면 student)
+1. 회원가입(14): `/api/neis/*`로 학교 선택 → Supabase Auth signUp(개인 이메일·비밀번호) → 서버(lib/server)가 schools upsert(neis_code) + profiles insert(school_id, role = 그 학교 첫 사용자면 admin, 아니면 student — 단 그 학교에 이 이메일의 대기 초대가 있으면 초대 역할, §8)
 2. 로그인(1): signInWithPassword(이메일·비밀번호)만. 학교는 profiles.school_id에서 읽는다 — 로그인 화면에서 학교를 받지 않는다(받은 값으로 학교를 바꿀 수 없게).
 3. 비밀번호 찾기: Supabase 비밀번호 재설정 메일.
 
@@ -78,3 +78,19 @@
 | 상세 | 행을 누르면 ex-modal-card: 시약명 + 사용량, 사용자 · 일시 · 메모(없으면 "-"), msds-entry "MSDS 보기"(시약에 msds_url 이 있을 때 새 창), "닫기" |
 | 진입 | 탭바 "기록", nav "사용 기록 내역", 홈 "더 보기" → /usage (지금까지는 /usage/new 로 넘겼음) |
 | 데모 학교 | 둘러보기에서는 탭바 "기록" 잠금 그대로 (§5) |
+
+## 8. 사용자 관리 (화면 8, 2026-10-04 결정)
+
+| 항목 | 결정 |
+|---|---|
+| 권한 | admin만. 학생·교사는 화면(/users → /)·DB(RLS·함수) 모두 거부 (R6, R-db). 같은 학교 사용자만 보이고 바꿀 수 있다 (N1) |
+| 멤버 목록 | 같은 학교 profiles: 이름·역할, 본인 행 "나" 표시. 헤더 "{학교명} 사용자 N명" + "학생 a · 교사 b · admin c". 이름 검색(부분 일치). 멤버의 이메일은 보여 주지 않는다 |
+| 역할 변경 | DB 함수 `change_member_role(user_id, role)` 하나로만 — admin 호출, 대상은 같은 학교, role ∈ student·teacher·admin. 학교의 마지막 admin 은 다른 역할로 바꿀 수 없다("admin이 최소 1명 있어야 해요"). profiles 직접 update 로 역할을 바꾸는 길은 막는다(기존 profiles_update_admin 정책이 이 함수 밖의 역할 변경을 허용하지 않게) |
+| 사용자 삭제 | = 학교에서 내보내기. DB 함수 `remove_member(user_id)` — admin 호출, 대상은 같은 학교, 본인과 마지막 admin 은 불가. profiles 행만 지운다(로그인 계정은 남음). 그 사람의 usage_logs·intake_logs 는 보존, 이름은 "삭제된 사용자"로 표시 |
+| 내보낸 계정 | 로그인하면 앱 화면 대신 "소속 학교가 없어요" 안내와 로그아웃만. 같은 이메일로 회원가입(14)을 다시 하면 프로필을 새로 만들어 다시 들어올 수 있다(초대가 있으면 초대 역할, 없으면 학생) |
+| 초대 | `invites` 테이블: id, school_id, email(소문자), role(student·teacher), invited_by, invited_at, accepted_at(null = 대기). 메일은 보내지 않는다 — admin 이 "초대 링크 복사"로 회원가입 주소를 직접 전달. 같은 학교에 이미 멤버인 이메일·이미 대기 중인 이메일은 거부. 한 번에 여러 명 초대("N명 초대") |
+| 초대 수락 | 회원가입(14)에서 그 이메일이 그 학교에 가입하면 `register_profile` 이 대기 초대의 역할을 붙이고 accepted_at 을 채운다. 초대가 없으면 기존 규칙(그 학교 첫 가입자 admin, 이후 학생). 초대는 다른 학교 가입에는 영향 없음. 초대 역할에 admin 은 없다 |
+| 초대 대기 목록 | accepted_at 이 null 인 초대: 이메일 · 초대일 · "대기". 초대 취소는 시안에 없어 이번에는 만들지 않는다 |
+| invites RLS | select·insert: 같은 학교 admin 만(함수로만 쓰기). 학생·교사·anon·다른 학교 0행 |
+| 데모 학교 | 사용자 관리 없음(§5 쓰기 금지 그대로, 데모 학교로 가입 불가) |
+| 저장 후 | ex-toast "N명을 초대했어요" / "역할을 바꿨어요" / "사용자를 삭제했어요" → 목록 갱신 |
