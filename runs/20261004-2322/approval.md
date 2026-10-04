@@ -24,7 +24,7 @@
 - 내보낸 사용자의 재가입(회원가입 화면 경유) — 테스트 학교는 실제 NEIS 학교가 아니라 가입 API 를 통과할 수 없음. DB 수준 재등록은 검증됨
 - 내보낸 사용자가 남긴 기록의 "삭제된 사용자" 표시 — 테스트 잔여물 문제로 생략
 
-result:
-reason:
-approver:
-date:
+result: approved
+reason: 미리보기 확인 후 사용자 승인
+approver: scieum (사용자)
+date: 2026-10-05
