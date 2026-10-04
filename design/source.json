@@ -1,8 +1,8 @@
 {
   "repo": "https://github.com/scieum/harness",
-  "commit": "f132520",
+  "commit": "4cda6e3",
   "path": "harness/rules.json",
-  "sha256": "2fb25605b713fae3e9447afed0c22c8648157193caae18fc68b3b0d7ad1d6f1d",
+  "sha256": "b37b1c7688191e68f9cb96832f80b9425bdce3bf98a79f7e26539549aa9def79",
   "figma_file": "https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2",
   "figma_page": "00 최신 시안",
   "frames_from_runs": {
@@ -31,7 +31,13 @@
     "10-mobile": "runs/20261002-1441",
     "10-desktop": "runs/20261002-1441",
     "8-mobile": "runs/20261002-1441",
-    "8-desktop": "runs/20261002-1441"
+    "8-desktop": "runs/20261002-1441",
+    "11-mobile": "runs/20261004-2256",
+    "11-desktop": "runs/20261004-2256",
+    "11-empty-mobile": "runs/20261004-2256",
+    "11-empty-desktop": "runs/20261004-2256",
+    "11-delete-mobile": "runs/20261004-2256",
+    "11-delete-desktop": "runs/20261004-2256"
   },
-  "copied": "2026-10-04 (7차: 화면 8 프레임 추가, rules.json 변동 없음)"
+  "copied": "2026-10-05 (8차: rules.json 1.14 — 학교당 시약장 여러 개, 화면 11 프레임 + 상태 프레임 empty·delete)"
 }

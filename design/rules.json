@@ -1,5 +1,5 @@
 {
-  "version": "1.13",
+  "version": "1.14",
   "sources": [
     "docs/design.md",
     "docs/story-service.md",
@@ -13,7 +13,8 @@
     "2026-10-02 화면 13 홈 추가",
     "2026-10-02 로그인/회원가입 분리 (화면 14)",
     "2026-10-03 화면 15 랜딩 추가",
-    "2026-10-03 둘러보기(guest) 모드"
+    "2026-10-03 둘러보기(guest) 모드",
+    "2026-10-04 학교당 시약장 여러 개"
   ],
   "colors": {
     "allowed": [
@@ -174,7 +175,9 @@
       14,
       15
     ],
-    "guest_name_pattern": "^([1-9]|1[0-5])-guest-(mobile|desktop)$"
+    "guest_name_pattern": "^([1-9]|1[0-5])-guest-(mobile|desktop)$",
+    "variant_name_pattern": "^([1-9]|1[0-5])-(empty|delete)-(mobile|desktop)$",
+    "variant_note": "같은 화면의 다른 상태 프레임. input.json variants {\"11\": [\"empty\",\"delete\"]} 로 요청 (2026-10-04)"
   },
   "s1": {
     "refs_per_screen": [
@@ -230,10 +233,11 @@
     "R7": {
       "role": "학생",
       "components": [
-        "cabinet-edit"
+        "cabinet-edit",
+        "cabinet-add"
       ],
       "max": 0,
-      "source": "2026-10-02 화면 11"
+      "source": "2026-10-02 화면 11 · 2026-10-04 cabinet-add 추가"
     }
   },
   "never": {
@@ -371,7 +375,8 @@
       "cabinet-shelf-select",
       "cabinet-slot",
       "storage-class-chip",
-      "mix-warning"
+      "mix-warning",
+      "cabinet-switcher"
     ],
     "12": [
       "qr-scan",
@@ -431,7 +436,16 @@
       ]
     ],
     "warning_color": "#d6246a",
-    "source": "2026-10-02 사용자 결정 (혼재 경고 = 핑크 #d6246a, 재고 부족과 같은 \"결정이 필요한 신호\")"
+    "source": "2026-10-02 사용자 결정 (혼재 경고 = 핑크 #d6246a, 재고 부족과 같은 \"결정이 필요한 신호\")",
+    "multiple": true,
+    "default_name": "{n}번 시약장",
+    "unassigned_label": "칸 없음",
+    "on_delete": "그 시약장의 시약은 slot 배치 해제(\"칸 없음\"), 시약 행은 삭제하지 않음",
+    "manage_roles": [
+      "교사",
+      "admin"
+    ],
+    "multiple_source": "2026-10-04 사용자 결정 (개발 세션 요청)"
   },
   "tab_bar": {
     "component": "tab-bar",
@@ -504,5 +518,18 @@
       "school-select-school"
     ],
     "source": "2026-10-03 사용자 결정: 비회원 둘러보기 (데모 학교 읽기 전용)"
+  },
+  "variants": {
+    "11": {
+      "empty": [
+        "ex-empty-state-card",
+        "cabinet-add"
+      ],
+      "delete": [
+        "ex-modal-card",
+        "cabinet-switcher"
+      ]
+    },
+    "source": "2026-10-04 여러 시약장: 빈 상태(교사 기준)·삭제 확인 상태 필수 컴포넌트 (C1)"
   }
 }
