@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { isUuid } from "@/lib/supabase/usage-entry";
 import { formatStock } from "@/lib/format";
+import { checkUsageMemo } from "@/lib/usage-history-rules";
 
 export type RecordUsageResult =
   | { ok: true; stock: number }
@@ -26,16 +27,27 @@ function parseAmount(raw: string): number | string {
  * 사용 기록 저장 — 로그인 세션 클라이언트로 DB 함수 public.record_usage 하나만 호출한다
  * (usage_logs insert 와 reagents.stock 차감은 그 함수 안에서 한 트랜잭션).
  */
-export async function recordUsageAction(reagentId: string, rawAmount: string): Promise<RecordUsageResult> {
+export async function recordUsageAction(
+  reagentId: string,
+  rawAmount: string,
+  rawMemo?: string | null,
+): Promise<RecordUsageResult> {
   if (!isUuid(reagentId)) return { ok: false, error: NOT_FOUND };
   const amount = parseAmount(rawAmount);
   if (typeof amount === "string") return { ok: false, error: amount };
+  // 메모는 선택 — 비우면 인자를 보내지 않는다 (DB 기본값 null)
+  const memo = checkUsageMemo(rawMemo);
+  if (!memo.ok) return { ok: false, error: memo.error };
 
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   if (!claims?.claims?.sub) return { ok: false, error: "다시 로그인해 주세요" };
 
-  const { error } = await supabase.rpc("record_usage", { reagent_id: reagentId, amount });
+  const { error } = await supabase.rpc("record_usage", {
+    reagent_id: reagentId,
+    amount,
+    ...(memo.value ? { memo: memo.value } : {}),
+  });
 
   const current = await supabase.from("reagents").select("stock, unit").eq("id", reagentId).maybeSingle();
   const stock = current.data ? Number(current.data.stock) : undefined;
@@ -51,6 +63,7 @@ export async function recordUsageAction(reagentId: string, rawAmount: string): P
           stock,
         };
       case "22023":
+        // 사용량·메모 길이는 위에서 먼저 걸러지므로 여기까지 오는 22023 은 사용량 쪽
         return { ok: false, error: "사용량은 0보다 커야 해요", stock };
       case "P0002":
         return { ok: false, error: NOT_FOUND };

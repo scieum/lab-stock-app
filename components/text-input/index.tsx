@@ -74,3 +74,38 @@ export function TextInput({
     </div>
   );
 }
+
+export type TextInputSelectOption = { value: string; label: string };
+
+type SelectProps = {
+  /** 위 라벨 (없으면 상자만 — 이때는 aria-label 을 넘긴다) */
+  label?: string;
+  options: TextInputSelectOption[];
+} & Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "children">;
+
+/** 드롭다운 입력 상자 (화면 10 기간): 회색 상자 + 값 + 하늘색 펼침 아이콘 */
+export function TextInputSelect({ label, options, id, className, ...rest }: SelectProps) {
+  const autoId = useId();
+  const selectId = id ?? autoId;
+  return (
+    <div data-component="text-input" className={[styles.field, className ?? ""].filter(Boolean).join(" ")}>
+      {label ? (
+        <div className={styles.labelRow}>
+          <label htmlFor={selectId} className={styles.label}>
+            {label}
+          </label>
+        </div>
+      ) : null}
+      <div className={[styles.box, styles.selectBox].join(" ")}>
+        <select id={selectId} className={styles.select} {...rest}>
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <Icon name="chevron-down" className={[styles.icon, styles.selectIcon].join(" ")} />
+      </div>
+    </div>
+  );
+}
