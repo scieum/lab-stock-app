@@ -7,7 +7,8 @@ import styles from "./shell.module.css";
 
 // 시안 13-desktop nav-links 순서
 // staffOnly = 교사·admin 에게만 보인다 (s2-spec 화면 7: 학생 nav 에는 입고 진입 링크가 없다)
-const LINKS: { label: string; href: string; staffOnly?: boolean }[] = [
+// adminOnly = admin 에게만 보인다 (s2-spec 화면 8: 학생·교사 nav 에는 사용자 관리 진입 링크가 없다)
+const LINKS: { label: string; href: string; staffOnly?: boolean; adminOnly?: boolean }[] = [
   { label: "홈", href: "/" },
   { label: "시약 목록", href: "/reagents" },
   { label: "사용 기록 내역", href: "/usage" },
@@ -15,6 +16,7 @@ const LINKS: { label: string; href: string; staffOnly?: boolean }[] = [
   { label: "QR 스캔", href: "/scan" },
   { label: "재주문 알림", href: "/reorder" },
   { label: "입고·시약 등록", href: "/intake", staffOnly: true },
+  { label: "사용자 관리", href: "/users", adminOnly: true },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -23,6 +25,8 @@ function isActive(pathname: string, href: string) {
 
 function activeTab(pathname: string): TabKey | undefined {
   if (pathname === "/") return "home";
+  // s2-spec 화면 8: 모바일 활성 탭 = "홈" (홈 quick-action "사용자 관리"로 들어온다)
+  if (isActive(pathname, "/users")) return "home";
   if (isActive(pathname, "/reagents")) return "reagents";
   // s2-spec 화면 7: 모바일 활성 탭 = "시약"
   if (isActive(pathname, "/intake")) return "reagents";
@@ -55,6 +59,8 @@ function sectionTitle(pathname: string): string | undefined {
   if (isActive(pathname, "/intake")) return "입고·시약 등록";
   // 시안 10-mobile: 워드마크 + "사용 기록 내역" (/usage/new 는 하위 화면이라 subPage 가 먼저 잡는다)
   if (/^\/usage\/?$/.test(pathname)) return "사용 기록 내역";
+  // 시안 8-mobile: 워드마크 + "사용자 관리"
+  if (isActive(pathname, "/users")) return "사용자 관리";
   return undefined;
 }
 
@@ -62,15 +68,17 @@ type Props = {
   schoolName: string;
   /** 교사·admin 여부 — false 면 staffOnly 링크를 그리지 않는다 */
   staff?: boolean;
+  /** admin 여부 — false 면 adminOnly 링크를 그리지 않는다 */
+  admin?: boolean;
   children: React.ReactNode;
 };
 
-export function AppShell({ schoolName, staff = false, children }: Props) {
+export function AppShell({ schoolName, staff = false, admin = false, children }: Props) {
   const pathname = usePathname();
   const sub = subPage(pathname);
   const links: NavLinkItem[] | undefined = sub
     ? sub.links
-    : LINKS.filter((l) => staff || !l.staffOnly).map((l) => ({
+    : LINKS.filter((l) => (staff || !l.staffOnly) && (admin || !l.adminOnly)).map((l) => ({
         label: l.label,
         href: l.href,
         active: isActive(pathname, l.href),

@@ -73,6 +73,8 @@ type RoleChangeBodyProps = {
   isLastAdmin?: boolean;
   /** 저장 중 — 버튼 비활성 */
   pending?: boolean;
+  /** 저장 실패 안내 (서버 문구) */
+  error?: string | null;
   /** "변경" — 고른 역할을 넘긴다 (지금 역할과 같을 수 있다) */
   onSubmit?: (role: Role) => void;
   /** "사용자 삭제" — 삭제 확인을 띄운다 */
@@ -80,7 +82,7 @@ type RoleChangeBodyProps = {
 };
 
 /** 역할 변경 시트 본문: 라디오 3행 + 전폭 "변경" + "사용자 삭제" */
-export function RoleChangeBody({ currentRole, isSelf, isLastAdmin, pending, onSubmit, onDelete }: RoleChangeBodyProps) {
+export function RoleChangeBody({ currentRole, isSelf, isLastAdmin, pending, error, onSubmit, onDelete }: RoleChangeBodyProps) {
   const [role, setRole] = useState<Role>(currentRole);
   const hintId = useId();
   return (
@@ -96,6 +98,11 @@ export function RoleChangeBody({ currentRole, isSelf, isLastAdmin, pending, onSu
       {isLastAdmin ? (
         <p id={hintId} className={styles.hint}>
           {LAST_ADMIN_HINT}
+        </p>
+      ) : null}
+      {error ? (
+        <p className={styles.error} role="alert">
+          {error}
         </p>
       ) : null}
       <ButtonPrimary type="submit" className={styles.wide} disabled={isLastAdmin || pending}>
@@ -125,14 +132,26 @@ type InviteBodyProps = {
   defaultEmails?: string[];
   defaultRole?: InviteRole;
   pending?: boolean;
+  /** 초대 실패 안내 (서버 문구 — 어떤 이메일이 문제인지 포함) */
+  error?: string | null;
   /** "초대 링크 복사" — 가입 주소를 복사한다 (메일은 보내지 않는다) */
   onCopyLink?: () => void;
+  /** 복사 결과 안내 (예: "링크를 복사했어요") */
+  linkNotice?: string | null;
   /** "N명 초대" */
   onSubmit?: (invite: InviteSubmit) => void;
 };
 
 /** 초대 시트 본문: 안내문 + "초대 링크 복사" + 이메일 입력(여러 개) + 역할 "학생 / 교사" + 전폭 "N명 초대" */
-export function InviteBody({ defaultEmails = [], defaultRole = "student", pending, onCopyLink, onSubmit }: InviteBodyProps) {
+export function InviteBody({
+  defaultEmails = [],
+  defaultRole = "student",
+  pending,
+  error: submitError,
+  onCopyLink,
+  linkNotice,
+  onSubmit,
+}: InviteBodyProps) {
   const [emails, setEmails] = useState<string[]>(defaultEmails);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | undefined>(undefined);
@@ -165,10 +184,13 @@ export function InviteBody({ defaultEmails = [], defaultRole = "student", pendin
       }}
     >
       <p className={styles.guide}>초대 링크를 전달하세요. 아래 이메일로 가입하면 고른 역할이 붙어요</p>
-      <div>
+      <div className={styles.copyRow}>
         <ButtonPillSoft icon="external" onClick={onCopyLink}>
           초대 링크 복사
         </ButtonPillSoft>
+        <span className={styles.copyNotice} role="status">
+          {linkNotice ?? ""}
+        </span>
       </div>
       <div className={styles.emailRow}>
         <TextInput
@@ -217,6 +239,11 @@ export function InviteBody({ defaultEmails = [], defaultRole = "student", pendin
         value={role}
         onChange={(v) => setRole(v === "teacher" ? "teacher" : "student")}
       />
+      {submitError ? (
+        <p className={styles.error} role="alert">
+          {submitError}
+        </p>
+      ) : null}
       <ButtonPrimary type="submit" className={styles.wide} disabled={emails.length === 0 || pending}>
         {emails.length}명 초대
       </ButtonPrimary>
@@ -225,8 +252,10 @@ export function InviteBody({ defaultEmails = [], defaultRole = "student", pendin
 }
 
 type SheetProps = {
-  /** Esc 로 부른다 */
+  /** Esc · 닫기(×) 로 부른다 */
   onClose?: () => void;
+  /** true = 오른쪽 위 닫기(×) 버튼 (화면에서 쓴다 — 터치 기기에서 닫는 길) */
+  closeIcon?: boolean;
   /** true(기본) = 모바일에서 tab-bar 위에 붙는 하단 시트. false = 제자리(갤러리) */
   sheet?: boolean;
   modal?: boolean;
@@ -238,12 +267,13 @@ type RoleChangeSheetProps = SheetProps & {
 } & RoleChangeBodyProps;
 
 /** ② 역할 변경 시트 (ex-modal-card) */
-export function RoleChangeSheet({ name, onClose, sheet, modal, ...body }: RoleChangeSheetProps) {
+export function RoleChangeSheet({ name, onClose, closeIcon, sheet, modal, ...body }: RoleChangeSheetProps) {
   return (
     <ModalCard
       title={`${name}의 역할`}
       description="역할을 고르고 변경을 누르세요"
       hideClose
+      closeIcon={closeIcon}
       onClose={onClose}
       sheet={sheet}
       modal={modal}
@@ -254,16 +284,20 @@ export function RoleChangeSheet({ name, onClose, sheet, modal, ...body }: RoleCh
 }
 
 /** ① 초대 시트 (ex-modal-card) */
-export function InviteSheet({ onClose, sheet, modal, ...body }: SheetProps & InviteBodyProps) {
+export function InviteSheet({ onClose, closeIcon, sheet, modal, ...body }: SheetProps & InviteBodyProps) {
   return (
-    <ModalCard title="사용자 초대" hideClose onClose={onClose} sheet={sheet} modal={modal}>
+    <ModalCard title="사용자 초대" hideClose closeIcon={closeIcon} onClose={onClose} sheet={sheet} modal={modal}>
       <InviteBody {...body} />
     </ModalCard>
   );
 }
 
-type DeleteConfirmProps = SheetProps & {
+type DeleteConfirmProps = Omit<SheetProps, "closeIcon"> & {
+  /** 지울 사용자 이름 — 있으면 제목 아래에 누구를 지우는지 한 줄 보여 준다 */
+  name?: string;
   pending?: boolean;
+  /** 삭제 실패 안내 (서버 문구) */
+  error?: string | null;
   /** "취소" */
   onCancel?: () => void;
   /** "삭제" */
@@ -271,9 +305,21 @@ type DeleteConfirmProps = SheetProps & {
 };
 
 /** ③ 삭제 확인 카드 (ex-modal-card): "이 사용자를 삭제할까요?" + "취소" + "삭제" */
-export function DeleteConfirm({ pending, onCancel, onConfirm, onClose, sheet, modal }: DeleteConfirmProps) {
+export function DeleteConfirm({ name, pending, error, onCancel, onConfirm, onClose, sheet, modal }: DeleteConfirmProps) {
   return (
-    <ModalCard title="이 사용자를 삭제할까요?" hideClose onClose={onClose ?? onCancel} sheet={sheet} modal={modal}>
+    <ModalCard
+      title="이 사용자를 삭제할까요?"
+      description={name ? `${name} · 사용·입고 기록은 남아요` : undefined}
+      hideClose
+      onClose={onClose ?? onCancel}
+      sheet={sheet}
+      modal={modal}
+    >
+      {error ? (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      ) : null}
       <div className={styles.confirm}>
         <ButtonOutline className={styles.confirmButton} disabled={pending} onClick={onCancel}>
           취소

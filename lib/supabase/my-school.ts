@@ -20,11 +20,17 @@ export async function getMySchool(): Promise<MySchool | null> {
   return (await getSessionSchool()).school;
 }
 
+export type ShellContext =
+  /** staff = 교사·admin, admin = admin — nav 의 역할 전용 링크 표시용 */
+  | { kind: "member"; school: MySchool; staff: boolean; admin: boolean }
+  /** 로그인은 됐지만 프로필이 없다 (내보낸 계정, d7 §8) — 앱 화면 대신 "소속 학교가 없어요" 안내(경로 /) */
+  | { kind: "no-school" };
+
 /**
- * 로그인 후 공통 셸에 필요한 값 — 자기 학교 + 교사·admin 여부(nav 의 교사·admin 전용 링크 표시용).
- * 프로필을 읽지 못하면 staff=false (학생과 같이 취급 — 전용 링크를 숨긴다).
+ * 로그인 후 공통 셸에 필요한 값 — 자기 학교 + 교사·admin 여부(nav 의 역할 전용 링크 표시용).
+ * 세션이 없거나 학교를 읽지 못하면 null. 프로필 조회가 오류면 staff·admin=false (학생과 같이 취급 — 전용 링크를 숨긴다).
  */
-export async function getShellContext(): Promise<{ school: MySchool; staff: boolean } | null> {
+export async function getShellContext(): Promise<ShellContext | null> {
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   const uid = claims?.claims?.sub;
@@ -33,9 +39,10 @@ export async function getShellContext(): Promise<{ school: MySchool; staff: bool
     supabase.from("schools").select("id, name").maybeSingle(),
     supabase.from("profiles").select("role").eq("user_id", uid).maybeSingle(),
   ]);
+  if (!profile.error && !profile.data) return { kind: "no-school" };
   if (school.error || !school.data) return null;
   const role = profile.data?.role;
-  return { school: school.data, staff: role === "teacher" || role === "admin" };
+  return { kind: "member", school: school.data, staff: role === "teacher" || role === "admin", admin: role === "admin" };
 }
 
 export type Membership =
