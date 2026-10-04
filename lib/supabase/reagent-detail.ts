@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "./server";
+import { recordUserName } from "@/lib/users-rules";
 import { formatDateDots, formatStock } from "@/lib/format";
 import { isLowStock, type Role } from "@/lib/types";
 
@@ -114,7 +115,7 @@ export async function getReagentDetail(id: string): Promise<ReagentDetailResult>
       usage: (usageRes.data ?? []).map((u) => ({
         id: u.id,
         date: formatDateDots(SEOUL_DATE.format(new Date(u.used_at))),
-        user: u.user_name || "-",
+        user: recordUserName(u.user_name as string | null),
         amount: formatStock(Number(u.amount), r.unit),
       })),
     },

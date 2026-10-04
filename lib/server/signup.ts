@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { signupProblem, type SignupFields } from "@/lib/auth/signup-rules";
 import type { Database } from "@/lib/types/database";
-import type { Role } from "@/lib/types";
+import type { NeisSchool, Role } from "@/lib/types";
 import { NeisError } from "./neis";
 import { findPendingSignupUser, ProfileExistsError, RegisterProfileError, registerProfile } from "./onboard";
 import { verifyNeisSchool } from "./schools";
@@ -75,11 +75,49 @@ async function deleteAuthUser(admin: SupabaseClient<Database>, userId: string, s
 }
 
 /**
+ * 이미 있는 계정의 재가입 (d7 §8 "내보낸 계정"): 학교에서 내보내져 프로필이 없는 계정이
+ * 같은 이메일로 회원가입을 다시 하면 프로필을 새로 만든다.
+ * - 반드시 비밀번호 검증(signInWithPassword) 뒤에만, 그 로그인으로 확인된 사용자 id 로만 프로필을 만든다
+ *   (남의 이메일로 프로필을 만들 수 없다). 이메일 미확인 계정은 로그인이 거부되어 여기서 끝난다.
+ * - 프로필이 이미 있으면(23505) 학교를 바꾸지 않고 "이미 가입된 이메일" 로 끝낸다.
+ * - 비밀번호가 틀렸을 때와 프로필이 이미 있을 때의 응답은 같다 (계정 상태를 더 드러내지 않는다).
+ * - 기존 계정이므로 실패해도 auth 사용자를 지우지 않는다. 로그아웃은 이 세션만(scope local).
+ */
+async function rejoinExistingAccount(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  admin: SupabaseClient<Database>,
+  email: string,
+  password: string,
+  school: NeisSchool,
+  displayName: string,
+): Promise<SignupResult> {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error || !data.user || !data.session) {
+    if (error?.status === 429 || error?.code === "over_request_rate_limit") return fail(429, MSG_RATE);
+    return fail(409, MSG_EXISTS);
+  }
+  const localSignOut = () => supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+  try {
+    const profile = await registerProfile(data.user.id, school, displayName, admin);
+    return { ok: true, needsEmailConfirm: false, role: profile.role as Role };
+  } catch (e) {
+    await localSignOut();
+    if (e instanceof ProfileExistsError) return fail(409, MSG_EXISTS);
+    const info = e instanceof RegisterProfileError ? e.info : toAdminErrorInfo(e);
+    logSignup("재가입 학교 연결(register_profile)", adminErrorTag(info));
+    if (e instanceof MissingServiceRoleError || isAdminConfigError(info)) return fail(503, MSG_CONFIG);
+    return fail(500, MSG_LINK_FAILED);
+  }
+}
+
+/**
  * 회원가입 (d7 §4-1)
  * 1) 입력 검사 → 2) 서버 설정(service role) 확인: 키가 있고 실제로 service role 로 인정되는지
  *    (service_role 전용 DB 함수 pending_signup_user 호출 1회 — 같은 이메일의 가입 미완료 사용자도 함께 찾는다)
  * 3) neisCode를 NEIS로 다시 조회해 학교 확정 → 4) 가입 미완료(미확인 + 프로필 없음) 같은 이메일 사용자 정리
  * 5) Supabase Auth signUp(개인 이메일·비밀번호, 세션 쿠키) → 6) register_profile(학교 upsert + 역할 결정 + 프로필)
+ *    역할은 DB 가 정한다: 첫 가입자 admin, 그 학교에 이 이메일의 대기 초대가 있으면 초대 역할, 아니면 student (d7 §8).
+ *    5)에서 이미 있는 계정이면 rejoinExistingAccount (비밀번호 검증 후, 프로필이 없을 때만 새 프로필).
  * 클라이언트가 보낸 학교명·역할은 받지 않는다. 6)이 실패하면 방금 만든 auth 사용자를 지운다.
  * 응답에는 정리 여부·계정 존재 여부를 따로 드러내지 않는다.
  */
@@ -125,12 +163,18 @@ export async function signUpWithSchool(f: SignupFields, origin: string): Promise
       emailRedirectTo: `${origin}/auth/confirm`,
     },
   });
-  if (error) return authErrorMessage(error.code, error.status);
+  if (error) {
+    // 이미 있는 계정 → 비밀번호가 맞고 프로필이 없을 때만 재가입 (d7 §8)
+    if (error.code === "user_already_exists" || error.code === "email_exists") {
+      return rejoinExistingAccount(supabase, admin, email, f.password, school, f.displayName);
+    }
+    return authErrorMessage(error.code, error.status);
+  }
 
   const user = data.user;
   // 이메일 확인이 켜진 프로젝트에서 이미 있는 이메일이면 identities가 빈 가짜 사용자가 온다
   if (!user || (Array.isArray(user.identities) && user.identities.length === 0)) {
-    return fail(409, MSG_EXISTS);
+    return rejoinExistingAccount(supabase, admin, email, f.password, school, f.displayName);
   }
 
   try {

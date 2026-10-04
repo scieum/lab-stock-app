@@ -44,6 +44,20 @@
   overflow-wrap: anywhere;
 }
 
+.description {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+/* 화면 8: 닫기 버튼 없이 본문(children)이 버튼을 가진 시트 — 시안 간격 16, 아래 여백 32 */
+.plain {
+  gap: var(--space-16);
+  padding-bottom: var(--space-32);
+}
+
 .amount {
   display: flex;
   align-items: baseline;
@@ -96,6 +110,45 @@
   width: 100%;
 }
 
+/* 오른쪽 위 작은 닫기(×) — 화면 8 시트. 누름 영역 44, 제목은 그만큼 비켜 준다 */
+.withIconClose {
+  position: relative;
+}
+
+.withIconClose.sheet {
+  position: fixed;
+}
+
+.withIconClose .summary {
+  padding-right: var(--button-min-height);
+}
+
+.iconClose {
+  position: absolute;
+  top: var(--space-12);
+  right: var(--space-8);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.iconClose:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.iconCloseIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+}
+
 /* 데스크탑: 부모(history-layout)가 놓는 자리의 카드 */
 @media (min-width: 1024px) {
   .card {
@@ -103,10 +156,25 @@
     padding: var(--space-24);
   }
 
+  .plain {
+    padding-bottom: var(--space-24);
+  }
+
   .sheet {
     position: static;
     max-height: none;
     overflow-y: visible;
+  }
+
+  /* 제자리 카드 — 하단 시트의 위치 값(bottom 등)이 밀어 올리지 않게 푼다 */
+  .withIconClose.sheet {
+    position: relative;
+    inset: auto;
+  }
+
+  .iconClose {
+    top: var(--space-16);
+    right: var(--space-16);
   }
 
   .amountValue {

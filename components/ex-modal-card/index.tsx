@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { ButtonOutline } from "@/components/button-outline";
+import { Icon } from "@/components/icons";
 import styles from "./styles.module.css";
 
 export type ModalCardField = {
@@ -12,6 +13,8 @@ export type ModalCardField = {
 type Props = {
   /** 상단 제목 (시약명, heading-3) */
   title: string;
+  /** 제목 아래 안내 한 줄 (화면 8: "역할을 고르고 변경을 누르세요", body-sm 회색) */
+  description?: string;
   /** 제목 아래 큰 숫자 (사용량, display) */
   amount?: React.ReactNode;
   /** 숫자 옆 단위 (g · mL · 병) */
@@ -23,6 +26,16 @@ type Props = {
   /** 닫기 버튼·Esc 로 부른다. 없으면 카드가 스스로 사라진다 */
   onClose?: () => void;
   closeLabel?: string;
+  /**
+   * true = 기본 닫기 버튼을 그리지 않는다 (화면 8 초대·역할 변경·삭제 확인: 본문 children 이 자기 버튼을 가진다).
+   * Esc 로 닫히는 것은 그대로다.
+   */
+  hideClose?: boolean;
+  /**
+   * true = 카드 오른쪽 위에 작은 닫기(×) 버튼을 둔다 (화면 8 시트: 시안에 닫기 버튼이 없어 Esc 를 못 쓰는
+   * 터치 기기·읽기 도구에서 닫을 길이 필요하다). 기본 false.
+   */
+  closeIcon?: boolean;
   /** true(기본) = 모바일에서 tab-bar 위쪽 선에 붙는 하단 시트. false = 항상 제자리(갤러리) */
   sheet?: boolean;
   /**
@@ -38,12 +51,15 @@ type Props = {
  */
 export function ModalCard({
   title,
+  description,
   amount,
   unit,
   fields = [],
   children,
   onClose,
   closeLabel = "닫기",
+  hideClose = false,
+  closeIcon = false,
   sheet = true,
   modal = true,
 }: Props) {
@@ -91,12 +107,15 @@ export function ModalCard({
       aria-modal={modal ? "true" : undefined}
       aria-labelledby={titleId}
       tabIndex={-1}
-      className={[styles.card, sheet ? styles.sheet : ""].join(" ").trim()}
+      className={[styles.card, sheet ? styles.sheet : "", hideClose ? styles.plain : "", closeIcon ? styles.withIconClose : ""]
+        .filter(Boolean)
+        .join(" ")}
     >
       <div className={styles.summary}>
         <h2 id={titleId} className={styles.title}>
           {title}
         </h2>
+        {description ? <p className={styles.description}>{description}</p> : null}
         {amount !== undefined && amount !== null ? (
           <p className={styles.amount}>
             <span className={styles.amountValue}>{amount}</span>
@@ -115,9 +134,16 @@ export function ModalCard({
         </dl>
       ) : null}
       {children}
-      <ButtonOutline className={styles.close} onClick={close}>
-        {closeLabel}
-      </ButtonOutline>
+      {hideClose ? null : (
+        <ButtonOutline className={styles.close} onClick={close}>
+          {closeLabel}
+        </ButtonOutline>
+      )}
+      {closeIcon ? (
+        <button type="button" className={styles.iconClose} aria-label={closeLabel} onClick={close}>
+          <Icon name="close" className={styles.iconCloseIcon} />
+        </button>
+      ) : null}
     </div>
   );
 }

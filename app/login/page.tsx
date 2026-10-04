@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { getMembership } from "@/lib/supabase/my-school";
 import { ButtonPillSoft } from "@/components/button-pill-soft";
 import { NavPill } from "@/components/nav-pill";
 import { LoginForm } from "./login-form";
@@ -27,6 +29,9 @@ function noticeOf(q: Query): string | null {
 /** 화면 1 — 로그인 (시안 1-mobile · 1-desktop). 로그인 전 화면이라 tab-bar 없음. 학교 선택 없음(d7 §4-2). */
 export default async function LoginPage({ searchParams }: Props) {
   const q = await searchParams;
+  // 프로필이 없는 세션(내보낸 계정)이 앱 화면에서 밀려 여기로 오면 / 의 "소속 학교가 없어요" 안내로 보낸다
+  // (그 안내의 로그아웃을 거쳐야 다시 로그인·가입할 수 있다). 그 밖의 경우는 그대로 로그인 화면.
+  if ((await getMembership()).kind === "no-school") redirect("/");
   return (
     <div className={styles.page}>
       <NavPill />

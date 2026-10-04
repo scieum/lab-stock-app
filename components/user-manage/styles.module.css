@@ -1,0 +1,352 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+  color: var(--color-text);
+}
+
+/* 헤더: 모바일 = (제목·인원 | 초대) 아래 검색, 데스크탑 = 제목·인원 | 검색 | 초대 한 줄 */
+.header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "text invite"
+    "search search";
+  align-items: center;
+  column-gap: var(--space-12);
+  row-gap: var(--space-16);
+}
+
+.headerText {
+  display: flex;
+  grid-area: text;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.heading {
+  margin: 0;
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.counts {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.search {
+  grid-area: search;
+  min-width: 0;
+}
+
+.header .invite {
+  grid-area: invite;
+  height: var(--button-min-height);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.list {
+  overflow: hidden;
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+/* 데스크탑 표 머리글 (이름 · 역할 · 역할 변경) */
+.tableHeader {
+  display: none;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: block;
+  min-width: 0;
+}
+
+.item + .item {
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+/* ---------- 시트 본문 (ex-modal-card 안) ---------- */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.wide {
+  width: 100%;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  min-height: var(--button-min-height);
+  padding: var(--space-12) var(--space-16);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.optionSelected {
+  border-color: var(--color-highlight);
+  background: var(--color-highlight-soft);
+}
+
+.optionDisabled {
+  cursor: not-allowed;
+}
+
+.option:has(.optionInput:focus-visible) {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: var(--space-4);
+}
+
+/* 실제 라디오: 행 전체를 덮어 어디를 눌러도 선택된다 (모양은 .radio 가 그린다) */
+.optionInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+
+.optionLabel {
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.optionSelected .optionLabel {
+  font-weight: var(--font-weight-semibold);
+}
+
+.optionDisabled:not(.optionSelected) .optionLabel {
+  color: var(--color-text-muted);
+}
+
+.radio {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-md);
+  height: var(--icon-md);
+  border: var(--border-width) solid var(--color-text-placeholder);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  box-sizing: border-box;
+}
+
+.optionSelected .radio {
+  border-color: var(--color-highlight);
+}
+
+.radioDot {
+  display: block;
+  width: 50%;
+  height: 50%;
+  border-radius: var(--radius-pill);
+  background: var(--color-highlight);
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.guide {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.emailRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-8);
+}
+
+.emailInput {
+  flex: 1;
+}
+
+/* 라벨 한 줄(13 × 1.5) + 라벨·상자 간격만큼 내려 입력 상자와 나란히 둔다 */
+.emailAdd {
+  margin-top: calc(var(--font-size-13) * var(--line-height-normal) + var(--space-4));
+}
+
+.emails {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.email {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: 0 0 0 var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.emailText {
+  min-width: 0;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.emailRemove {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.emailRemove:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.emailRemoveIcon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+}
+
+.copyRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.copyNotice {
+  min-width: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.copyNotice:empty {
+  display: none;
+}
+
+/* 저장 실패 안내 — 흑백만 (강조색을 쓰지 않는다) */
+.error {
+  margin: 0;
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.confirm {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.confirm .confirmButton {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .header {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr) auto;
+    grid-template-areas: "text search invite";
+    column-gap: var(--space-16);
+  }
+
+  .header .invite {
+    height: var(--control-height);
+    padding: 0 var(--space-24);
+  }
+
+  .tableHeader {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--space-16);
+    padding: var(--space-12) var(--space-16);
+    border-bottom: var(--border-width) solid var(--color-border);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-12);
+    font-weight: var(--font-weight-regular);
+    line-height: var(--line-height-normal);
+  }
+}

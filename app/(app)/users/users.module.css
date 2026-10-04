@@ -1,0 +1,72 @@
+/* 화면 8 사용자 관리
+ * 모바일(8-mobile): user-manage 한 열. 제목은 nav-pill 안(nav-title).
+ *                   시트(ex-modal-card)는 tab-bar 위쪽 선에 붙는 하단 시트 (컴포넌트가 고정 배치)
+ * 데스크톱(8-desktop): screen-title → manage-layout(user-manage 832 + 32 + ex-modal-card 448), 사이 24
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+  /* 하단 시트가 열려 있으면 그 높이만큼 비워 마지막 행·유의사항까지 시트 위로 올릴 수 있다 (값은 화면이 잰다) */
+  padding-bottom: var(--users-sheet-space, var(--space-0));
+}
+
+/* 모바일에서는 nav-pill 의 제목이 대신한다 (화면에는 안 보이고 읽기 도구에는 남긴다) */
+.title {
+  position: absolute;
+  width: var(--border-width);
+  height: var(--border-width);
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  color: var(--color-text);
+  font-size: var(--font-size-28);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.main {
+  min-width: 0;
+}
+
+.side {
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .page {
+    gap: var(--space-24);
+    padding-bottom: var(--space-0);
+  }
+
+  .title {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+
+  /* 시안 manage-layout: 832 + 32 + 448 = 13 : 7 */
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 13fr) minmax(0, 7fr);
+    align-items: start;
+    gap: var(--space-32);
+  }
+
+  /* 긴 목록을 내려도 시트가 같이 따라온다 */
+  .side {
+    position: sticky;
+    top: var(--space-24);
+  }
+}
