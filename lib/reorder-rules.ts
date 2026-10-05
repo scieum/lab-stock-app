@@ -1,5 +1,5 @@
 // 화면 6 재주문 알림 규칙 (harness/d7-data.md §11). 화면 표시 문구와 정렬만 — 알림 대상·날짜는 DB 가 정한다.
-import { formatDateTimeDots, formatStock } from "@/lib/format";
+import { formatDateTimeDots, formatStock } from "./format";
 
 /** 알림 대상: 재고가 필요량(min_stock)보다 적은 시약 (홈의 재고 부족과 같은 기준) */
 export function isReorderNeeded(stock: number, minStock: number): boolean {
