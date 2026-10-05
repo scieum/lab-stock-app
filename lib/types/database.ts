@@ -1,4 +1,6 @@
 // Supabase generate_typescript_types 결과 (프로젝트 kammofjdizvtvmbadmma). 직접 고치지 말고 다시 생성한다.
+// 예외: supabase/migrations/20261005130000_cabinet_settings.sql 분(cabinet_slots.storage_classes · storage_class null 허용 ·
+// add_cabinet · rename_cabinet · save_cabinet_layout · delete_cabinet)은 적용 전이라 손으로 맞췄다 — 적용 후 다시 생성한다.
 export type Json =
   | string
   | number
@@ -22,7 +24,8 @@ export type Database = {
           school_id: string
           shelf: number
           side: string
-          storage_class: string
+          storage_class: string | null
+          storage_classes: string[]
         }
         Insert: {
           cabinet_id: string
@@ -30,7 +33,8 @@ export type Database = {
           school_id: string
           shelf: number
           side: string
-          storage_class: string
+          storage_class?: string | null
+          storage_classes?: string[]
         }
         Update: {
           cabinet_id?: string
@@ -38,7 +42,8 @@ export type Database = {
           school_id?: string
           shelf?: number
           side?: string
-          storage_class?: string
+          storage_class?: string | null
+          storage_classes?: string[]
         }
         Relationships: [
           {
@@ -356,6 +361,50 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_cabinet: {
+        Args: never
+        Returns: {
+          created_at: string
+          door_type: string
+          id: string
+          label: string
+          school_id: string
+          shelves: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cabinets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      delete_cabinet: { Args: { p_cabinet_id: string }; Returns: Json }
+      rename_cabinet: {
+        Args: { p_cabinet_id: string; p_label: string }
+        Returns: {
+          created_at: string
+          door_type: string
+          id: string
+          label: string
+          school_id: string
+          shelves: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cabinets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      save_cabinet_layout: {
+        Args: {
+          p_cabinet_id: string
+          p_door_type: string
+          p_shelves: number
+          p_slots: Json
+        }
+        Returns: Json
+      }
       change_member_role: {
         Args: { p_role: string; p_user_id: string }
         Returns: {

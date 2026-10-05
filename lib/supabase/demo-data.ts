@@ -1,6 +1,7 @@
 import "server-only";
 import { createAnonClient } from "./anon";
 import { formatAmount, formatDateDots, formatStock, formatUsedAt } from "@/lib/format";
+import { slotLabel as classesLabel, slotRowClasses } from "@/lib/cabinet-rules";
 import { isLowStock } from "@/lib/types";
 import type { HomeData } from "./home-data";
 import type { ReagentListItem } from "./reagents-data";
@@ -48,7 +49,7 @@ export async function getDemoHomeData(): Promise<DemoHomeData> {
   const [reagents, cabinets, slots, recent] = await Promise.all([
     supabase.from("reagents").select("id, name, unit, stock, min_stock").eq("school_id", DEMO_SCHOOL_ID).order("name"),
     supabase.from("cabinets").select("id, door_type, shelves").eq("school_id", DEMO_SCHOOL_ID),
-    supabase.from("cabinet_slots").select("id", { count: "exact", head: true }).eq("school_id", DEMO_SCHOOL_ID),
+    supabase.from("cabinet_slots").select("id", { count: "exact", head: true }).not("storage_class", "is", null).eq("school_id", DEMO_SCHOOL_ID),
     supabase.rpc("demo_recent_usage", { p_limit: 3 }),
   ]);
   const rows = reagents.data ?? [];
@@ -116,7 +117,7 @@ export async function getDemoReagentDetail(id: string): Promise<DemoReagentDetai
     supabase
       .from("reagents")
       .select(
-        "id, name, cas_no, unit, stock, min_stock, msds_url, intake_date, slot:cabinet_slots(side, shelf, storage_class, cabinet:cabinets(label, door_type))",
+        "id, name, cas_no, unit, stock, min_stock, msds_url, intake_date, slot:cabinet_slots(*, cabinet:cabinets(label, door_type))",
       )
       .eq("school_id", DEMO_SCHOOL_ID)
       .eq("id", id)
@@ -142,7 +143,7 @@ export async function getDemoReagentDetail(id: string): Promise<DemoReagentDetai
     },
     location:
       slot && cabinet
-        ? { cabinet: cabinet.label, slot: slotLabel(cabinet.door_type, slot.side, slot.shelf), storageClass: slot.storage_class }
+        ? { cabinet: cabinet.label, slot: slotLabel(cabinet.door_type, slot.side, slot.shelf), storageClass: classesLabel(slotRowClasses(slot)) }
         : null,
     usage: (usageRes.data ?? []).map((u) => ({
       id: u.id,

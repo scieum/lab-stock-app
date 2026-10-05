@@ -174,3 +174,71 @@ export function checkCabinetName(label: string): Checked<string> {
   if ([...value].length > CABINET_NAME_MAX) return { ok: false, error: `이름은 ${CABINET_NAME_MAX}자까지 쓸 수 있어요` };
   return { ok: true, value };
 }
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** 시약장 id 모양 (cabinets.id = uuid) */
+export function isCabinetId(v: unknown): v is string {
+  return typeof v === "string" && UUID_RE.test(v);
+}
+
+export function isDoorType(v: unknown): v is DoorType {
+  return (DOOR_TYPES as readonly unknown[]).includes(v);
+}
+
+export function isShelfCount(v: unknown): v is ShelfCount {
+  return (SHELF_COUNTS as readonly unknown[]).includes(v);
+}
+
+export type CabinetLayoutInput = { doorType: unknown; shelves: unknown; slots: unknown };
+export type CabinetLayout = {
+  doorType: DoorType;
+  shelves: ShelfCount;
+  /** 격자의 모든 칸 (위 단부터, 좌 → 우). 분류는 규칙 순서 */
+  slots: { side: SlotSide; shelf: number; classes: StorageClass[] }[];
+};
+
+/**
+ * 설정 저장 입력 검사 (d7 §9 설정 저장 — DB 함수 save_cabinet_layout 과 같은 규칙).
+ * 문 형태·단 수가 규칙 안이고, 칸은 그 격자 안에서 한 번씩만, 분류는 8종 안에서 칸마다 중복 없이.
+ * 목록에 없는 칸은 미지정으로 채워 격자 전체를 돌려준다.
+ */
+export function checkCabinetLayout(input: CabinetLayoutInput): Checked<CabinetLayout> {
+  if (!isDoorType(input.doorType)) return { ok: false, error: "문 형태를 선택해 주세요" };
+  if (!isShelfCount(input.shelves)) return { ok: false, error: "단 수를 선택해 주세요" };
+  const { doorType, shelves } = input;
+  if (!Array.isArray(input.slots)) return { ok: false, error: "칸 설정을 확인해 주세요" };
+
+  const keys = slotKeys(doorType, shelves);
+  const valid = new Set(keys.map(slotId));
+  const given = new Map<string, StorageClass[]>();
+  for (const raw of input.slots as unknown[]) {
+    if (typeof raw !== "object" || raw === null) return { ok: false, error: "칸 설정을 확인해 주세요" };
+    const { side, shelf, classes } = raw as { side?: unknown; shelf?: unknown; classes?: unknown };
+    if ((side !== "L" && side !== "R") || typeof shelf !== "number" || !Number.isInteger(shelf) || !Array.isArray(classes)) {
+      return { ok: false, error: "칸 설정을 확인해 주세요" };
+    }
+    const id = slotId({ side, shelf });
+    if (!valid.has(id) || given.has(id)) return { ok: false, error: "칸 설정을 확인해 주세요" };
+    const list = classes as unknown[];
+    if (!list.every((c): c is StorageClass => typeof c === "string" && isStorageClass(c)) || new Set(list).size !== list.length) {
+      return { ok: false, error: "보관 분류를 확인해 주세요" };
+    }
+    given.set(id, sortClasses(list));
+  }
+  return {
+    ok: true,
+    value: { doorType, shelves, slots: keys.map((k) => ({ ...k, classes: given.get(slotId(k)) ?? [] })) },
+  };
+}
+
+/**
+ * DB 칸 행의 분류 목록 — storage_classes(여러 개)가 있으면 그것, 없으면 예전 단일 열 storage_class.
+ * (storage_classes 열은 20261005130000_cabinet_settings 마이그레이션에서 생긴다 — 적용 전 DB 도 읽을 수 있게)
+ */
+export function slotRowClasses(row: { storage_classes?: unknown; storage_class?: unknown }): StorageClass[] {
+  if (Array.isArray(row.storage_classes)) {
+    return sortClasses(row.storage_classes.filter((c): c is string => typeof c === "string"));
+  }
+  return typeof row.storage_class === "string" ? sortClasses([row.storage_class]) : [];
+}

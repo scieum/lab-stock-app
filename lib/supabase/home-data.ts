@@ -31,7 +31,7 @@ export async function getHomeData(): Promise<HomeData | null> {
     getServerSession(),
     supabase.from("reagents").select("id, name, unit, stock, min_stock").order("name"),
     supabase.from("cabinets").select("id, door_type, shelves"),
-    supabase.from("cabinet_slots").select("id", { count: "exact", head: true }),
+    supabase.from("cabinet_slots").select("id", { count: "exact", head: true }).not("storage_class", "is", null),
     supabase.rpc("recent_usage", { p_limit: 3 }),
   ]);
   if (me.kind !== "member") return null;
