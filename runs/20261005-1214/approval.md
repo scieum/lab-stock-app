@@ -25,7 +25,7 @@
 - 시약을 칸에 넣는 기능(시안에 없음) — 새 시약은 모두 "칸 없음"
 - 시약장 QR 인쇄(화면 12 QR 스캔의 전제) — 시안에 없음
 
-result:
-reason:
-approver:
-date:
+result: approved
+reason: 미리보기 확인 후 사용자 승인 ("결정이 필요한 것" 두 항목은 답 없음 — 현재 동작 그대로 두고 따로 확인)
+approver: scieum (사용자)
+date: 2026-10-05
