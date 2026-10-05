@@ -133,9 +133,10 @@ export function VendorRegister({
             <EmptyStateCard
               title="등록한 판매처가 없어요"
               description="자주 주문하는 판매처를 등록해 두세요"
-              actionLabel="판매처 등록"
-              onAction={() => change({ mode: "create" })}
-            />
+            >
+              {/* 화면 9 의 버튼은 button-primary·button-outline 뿐이다 (dev-rules components) — 카드 기본 pill 버튼을 쓰지 않는다 */}
+              <ButtonOutline onClick={() => change({ mode: "create" })}>판매처 등록</ButtonOutline>
+            </EmptyStateCard>
           )
         ) : (
           <ul className={styles.list} aria-labelledby={headingId}>
