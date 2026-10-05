@@ -638,6 +638,7 @@ export type Database = {
         }
         Returns: Json
       }
+      save_reorder_basis: { Args: { p_items: Json }; Returns: Json }
       usage_history: {
         Args: {
           p_limit?: number
