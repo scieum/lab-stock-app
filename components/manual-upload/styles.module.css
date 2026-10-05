@@ -54,3 +54,263 @@
 .action {
   display: flex;
 }
+
+/* ───────── 화면 5: 업로드 영역 (시안 5 manual-upload: 묶음 사이 12, 바탕 없음) ───────── */
+.upload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+  color: var(--color-text);
+}
+
+/* upload-guide: body-lg 17/300 */
+.uploadGuide {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-light);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+/* upload-preview: 연회색 바탕, radius 16, 안쪽 16 */
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  min-width: 0;
+  min-height: calc(var(--space-8) * 19);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  box-shadow: var(--shadow-none);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.tile[data-dragging],
+.tile:has(.fileInput:focus-visible) {
+  border-color: var(--color-highlight);
+}
+
+/* 실제 파일 입력: 보이지 않지만 Tab 으로 닿고 Enter·Space 로 열린다 */
+.fileInput {
+  position: absolute;
+  width: var(--border-width);
+  height: var(--border-width);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.drop {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  padding: var(--space-16);
+  text-align: center;
+  cursor: pointer;
+}
+
+/* 누른 즉시 반응 */
+.tile:not([data-locked]) .drop:active {
+  opacity: var(--pressed-opacity);
+}
+
+.tile[data-locked] .drop {
+  cursor: not-allowed;
+}
+
+.uploadIcon {
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+  flex-shrink: 0;
+  color: var(--color-highlight);
+}
+
+.dropTitle {
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.dropHint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.preview {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  min-width: 0;
+  padding: var(--space-16);
+}
+
+/* manual-page: 흰 종이 96x88 + doc-line 6줄 */
+.docPage {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: var(--space-8);
+  width: calc(var(--space-48) * 2);
+  padding: var(--space-12);
+  background: var(--color-surface);
+  box-sizing: border-box;
+}
+
+.docLine {
+  display: block;
+  height: var(--space-4);
+  background: var(--color-border-strong);
+}
+
+.l1 {
+  width: 78%;
+}
+
+.l2,
+.l4 {
+  width: 100%;
+}
+
+.l3 {
+  width: 89%;
+}
+
+.l5 {
+  width: 67%;
+}
+
+.l6 {
+  width: 83%;
+}
+
+/* 이미지 썸네일: 비율 유지 */
+.thumb {
+  display: block;
+  max-width: 100%;
+  height: calc(var(--space-8) * 11);
+  object-fit: contain;
+}
+
+.fileActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.fileAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-8);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+}
+
+.fileAction:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.fileAction:active:not(:disabled):not([data-disabled]) {
+  opacity: var(--pressed-opacity);
+}
+
+.fileAction:disabled,
+.fileAction[data-disabled] {
+  color: var(--color-text-placeholder);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* 오류 안내 (핑크 아님 — text-input 오류와 같은 모양) */
+.fileError {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+/* extract-progress: 트랙 연하늘 4 + 막대 하늘, 아래 문구 12 회색 */
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.progressTrack {
+  position: relative;
+  height: var(--progress-height);
+  border-radius: var(--radius-pill);
+  background: var(--color-highlight-soft);
+  overflow: hidden;
+}
+
+/* 실제 진행률을 알 수 없어 막대(시안 폭 60%)가 왼쪽에서 오른쪽으로 흐른다 */
+.progressBar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 60%;
+  border-radius: var(--radius-pill);
+  background: var(--color-highlight);
+  animation: manual-upload-flow 1.4s ease-in-out infinite;
+}
+
+.progressLabel {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+@keyframes manual-upload-flow {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(167%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progressBar {
+    animation: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* 시안 5-desktop upload-preview 240 */
+  .tile {
+    min-height: calc(var(--space-48) * 5);
+  }
+}

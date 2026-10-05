@@ -14,8 +14,10 @@ type Props = {
   unitTone?: "chip" | "plain";
   /** strong = 진한 라벨(화면 7 폼) */
   labelTone?: "default" | "strong";
-  /** compact = 스테퍼 가운데 수량 칸 (좁은 여백, 굵은 값) */
-  density?: "default" | "compact";
+  /** compact = 스테퍼 가운데 수량 칸 (좁은 여백, 굵은 값) · cell = 표 셀 안 작은 입력 (화면 5 사용량, 13 글자·안쪽 4·8) */
+  density?: "default" | "compact" | "cell";
+  /** 사용자가 고친 칸 = 연하늘 바탕 (화면 5 추출 결과) */
+  edited?: boolean;
   /** 입력 아래 안내 문구 (오류) */
   error?: string;
   /** 상자 안 뒤쪽 요소 (예: 비밀번호 보기 버튼) */
@@ -36,6 +38,7 @@ export function TextInput({
   error,
   trailing,
   counter,
+  edited,
   id,
   className,
   ...rest
@@ -47,7 +50,7 @@ export function TextInput({
   const describedBy = [error ? errorId : "", counter ? counterId : ""].filter(Boolean).join(" ") || undefined;
   const cls = [styles.field, labelTone === "strong" ? styles.strong : "", className ?? ""].filter(Boolean).join(" ");
   return (
-    <div data-component="text-input" className={cls}>
+    <div data-component="text-input" data-edited={edited ? "" : undefined} className={cls}>
       {label ? (
         <div className={styles.labelRow}>
           <label htmlFor={inputId} className={styles.label}>
@@ -56,7 +59,16 @@ export function TextInput({
           {required ? <span className={styles.required}>필수</span> : null}
         </div>
       ) : null}
-      <div className={[styles.box, density === "compact" ? styles.compact : ""].join(" ").trim()}>
+      <div
+        className={[
+          styles.box,
+          density === "compact" ? styles.compact : "",
+          density === "cell" ? styles.cell : "",
+          edited ? styles.edited : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
         {icon === "search" ? <Icon name="search" className={styles.icon} /> : null}
         <input
           id={inputId}

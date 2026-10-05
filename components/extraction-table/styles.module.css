@@ -1,0 +1,265 @@
+/* 시안 5 extraction-table: 제목 줄 + 표 틀, 사이 12 */
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+  color: var(--color-text);
+}
+
+/* table-header: 제목 18/700 + 닫기 15/600 회색 */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  min-width: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.close {
+  flex-shrink: 0;
+  min-height: var(--button-min-height);
+  margin: calc(var(--space-12) * -1) 0;
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+}
+
+.close:focus-visible,
+.remove:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.close:active,
+.remove:active:not(:disabled) {
+  opacity: var(--pressed-opacity);
+}
+
+/* table-body: 흰 바탕 + 연회색 테두리, radius 16 */
+.body {
+  min-width: 0;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-none);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+/* 좁은 폭(390)에서 단위 선택이 들어가게 시안(110·84·56·108)보다 단위 칸을 넓힌다 */
+.colName {
+  width: 27%;
+}
+
+.colAmount {
+  width: 22%;
+}
+
+.colUnit {
+  width: 21%;
+}
+
+.colRequired {
+  width: 30%;
+}
+
+/* 머리행: 연회색 바탕 + 아래 선 */
+.headRow > * {
+  border-bottom: var(--border-width) solid var(--color-border);
+  background: var(--color-surface-muted);
+}
+
+.headRow > :first-child {
+  border-top-left-radius: var(--radius-md);
+}
+
+.headRow > :last-child {
+  border-top-right-radius: var(--radius-md);
+}
+
+/* 행 묶음(4열 + 보조 줄) 사이 선 */
+.group + .group > .mainRow > * {
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.name {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.required {
+  display: block;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* 단위 선택: 셀 안 작은 선택 상자 (사용량 입력과 같은 높이) */
+.unitBox {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+.unitSelect {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  padding: var(--space-4) calc(var(--space-4) + var(--icon-sm)) var(--space-4) var(--space-8);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-md);
+  outline: none;
+  background: var(--color-surface-input);
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  appearance: none;
+  cursor: pointer;
+}
+
+.unitSelect:focus-visible {
+  border-color: var(--color-highlight);
+}
+
+.unitSelect:disabled {
+  cursor: not-allowed;
+}
+
+.unitIcon {
+  position: absolute;
+  top: 50%;
+  right: var(--space-4);
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+/* 보조 줄 (시안에 없는 요소): 우리 학교 시약 선택 + 삭제, 그 아래 안내 */
+.detail {
+  padding: 0 var(--space-8) var(--space-12);
+}
+
+.link {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.linkSelect {
+  flex: 1;
+  min-width: 0;
+}
+
+.remove {
+  flex-shrink: 0;
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-8);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+}
+
+.remove:disabled {
+  color: var(--color-text-placeholder);
+  cursor: not-allowed;
+}
+
+.notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+  min-width: 0;
+}
+
+.note,
+.warn {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin: 0;
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.note {
+  color: var(--color-text-muted);
+}
+
+/* 저장을 막는 행 안내 (핑크 아님 — 진한 글자 + 경고 아이콘) */
+.warn {
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.noteIcon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  flex-shrink: 0;
+  margin-top: calc((var(--font-size-12) * var(--line-height-normal) - var(--icon-sm)) / 2);
+}
+
+/* 연결되지 않은 행: 저장에서 빠지는 것이 보이게 시약명·필요량을 흐리게 */
+.group[data-status="unlinked"] .name,
+.group[data-status="unlinked"] .required {
+  color: var(--color-text-placeholder);
+}
+
+.empty {
+  margin: 0;
+  padding: var(--space-24) var(--space-16);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+  text-align: center;
+}
+
+@media (min-width: 1024px) {
+  .colName {
+    width: 36%;
+  }
+
+  .colAmount {
+    width: 20%;
+  }
+
+  .colUnit {
+    width: 16%;
+  }
+
+  .colRequired {
+    width: 28%;
+  }
+}

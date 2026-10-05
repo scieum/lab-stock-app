@@ -1,0 +1,23 @@
+/* 시안 5 badge-overlay: 반투명 회색 pill, 안쪽 4·8, 글자 12/600 흰색 */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-width: 0;
+  padding: var(--space-4) var(--space-8);
+  border-radius: var(--radius-pill);
+  background: var(--color-badge-overlay);
+  color: var(--color-on-primary);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  box-shadow: var(--shadow-none);
+  box-sizing: border-box;
+}
+
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
