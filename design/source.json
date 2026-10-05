@@ -41,7 +41,9 @@
     "6-mobile": "runs/20261002-1441",
     "6-desktop": "runs/20261002-1441",
     "9-mobile": "runs/20261002-1441",
-    "9-desktop": "runs/20261002-1441"
+    "9-desktop": "runs/20261002-1441",
+    "5-mobile": "runs/20261002-1441",
+    "5-desktop": "runs/20261002-1441"
   },
   "copied": "2026-10-05 (8차: rules.json 1.14 — 학교당 시약장 여러 개, 화면 11 프레임 + 상태 프레임 empty·delete)"
 }
