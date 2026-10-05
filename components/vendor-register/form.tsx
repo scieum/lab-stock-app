@@ -31,6 +31,8 @@ type Props = {
   pending?: boolean;
   /** 저장 실패 안내 (서버 문구 — 예: 같은 이름의 판매처가 있어요) */
   error?: string | null;
+  /** 서버가 알려 준 문제 칸 — 있으면 error 를 그 입력 아래에 보여 준다 (입력을 고치면 사라진다) */
+  errorField?: VendorField | null;
   /** "저장" — 검사를 통과한 값만 넘긴다 (빈 값은 null, 웹사이트는 https:// 보정) */
   onSubmit?: (value: VendorValue) => void;
   /** 닫기(×) — 폼을 닫고 목록으로 돌아가는 길. 없으면 버튼을 그리지 않는다 */
@@ -50,6 +52,7 @@ export function VendorForm({
   defaultValues,
   pending = false,
   error,
+  errorField,
   onSubmit,
   onClose,
   sticky = true,
@@ -59,9 +62,15 @@ export function VendorForm({
   const [contact, setContact] = useState(defaultValues?.contact ?? "");
   const [website, setWebsite] = useState(defaultValues?.website ?? "");
   const [fieldError, setFieldError] = useState<{ field: VendorField; error: string } | null>(null);
+  // 서버 필드 오류는 입력을 고치면 접는다 (다시 저장하면 새 결과를 보여 준다)
+  const [edited, setEdited] = useState(false);
   const titleId = useId();
 
-  const errorOf = (field: VendorField) => (fieldError?.field === field ? fieldError.error : undefined);
+  const onField = errorField === "name" || errorField === "contact" || errorField === "website" ? errorField : null;
+  const serverFieldError = error && onField && !edited ? error : null;
+  const generalError = error && !onField ? error : null;
+  const errorOf = (field: VendorField) =>
+    fieldError?.field === field ? fieldError.error : serverFieldError && onField === field ? serverFieldError : undefined;
   const title = mode === "edit" ? "판매처 수정" : "판매처 등록";
 
   return (
@@ -78,6 +87,7 @@ export function VendorForm({
           return;
         }
         setFieldError(null);
+        setEdited(false);
         onSubmit?.(checked.value);
       }}
     >
@@ -103,6 +113,7 @@ export function VendorForm({
         onChange={(e) => {
           setName(e.target.value);
           setFieldError(null);
+          setEdited(true);
         }}
       />
       <TextInput
@@ -117,6 +128,7 @@ export function VendorForm({
         onChange={(e) => {
           setContact(e.target.value);
           setFieldError(null);
+          setEdited(true);
         }}
       />
       <TextInput
@@ -130,11 +142,12 @@ export function VendorForm({
         onChange={(e) => {
           setWebsite(e.target.value);
           setFieldError(null);
+          setEdited(true);
         }}
       />
-      {error || errorOf("note") ? (
+      {generalError || errorOf("note") ? (
         <p className={styles.error} role="alert">
-          {error || errorOf("note")}
+          {generalError || errorOf("note")}
         </p>
       ) : null}
       <div className={styles.formActions}>

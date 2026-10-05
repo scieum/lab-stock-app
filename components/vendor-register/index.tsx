@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 import { ButtonOutline } from "@/components/button-outline";
 import { ButtonPrimary } from "@/components/button-primary";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
-import { vendorInfo, type VendorValue } from "@/lib/vendor-rules";
+import { vendorInfo, type VendorField, type VendorValue } from "@/lib/vendor-rules";
 import { VendorForm } from "./form";
 import { VendorRowMenu } from "./row-menu";
 import styles from "./styles.module.css";
@@ -69,6 +69,8 @@ type Props = {
   pending?: boolean;
   /** 저장 실패 안내 (서버 문구) */
   error?: string | null;
+  /** 서버가 알려 준 문제 칸 — 있으면 error 를 폼의 그 입력 아래에 보여 준다 */
+  errorField?: VendorField | null;
   /** 바꾸면 열려 있는 폼의 입력을 처음 값으로 되돌린다 (같은 폼을 연 채로 다시 시작할 때) */
   resetKey?: string | number;
   /** 더보기 메뉴를 처음부터 펼쳐 둘 행 (갤러리) */
@@ -94,6 +96,7 @@ export function VendorRegister({
   onDelete,
   pending = false,
   error,
+  errorField,
   resetKey,
   defaultMenuOpenId = null,
   sticky = true,
@@ -174,6 +177,7 @@ export function VendorRegister({
             defaultValues={editing ?? undefined}
             pending={pending}
             error={error}
+            errorField={errorField}
             sticky={sticky}
             autoFocus={opened}
             onClose={() => change(null)}

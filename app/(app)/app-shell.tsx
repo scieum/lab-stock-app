@@ -8,15 +8,17 @@ import styles from "./shell.module.css";
 // 시안 13-desktop nav-links 순서
 // staffOnly = 교사·admin 에게만 보인다 (s2-spec 화면 7: 학생 nav 에는 입고 진입 링크가 없다)
 // adminOnly = admin 에게만 보인다 (s2-spec 화면 8: 학생·교사 nav 에는 사용자 관리 진입 링크가 없다)
+// 재주문 알림 = 교사·admin (s2-spec 화면 6: 학생 nav 에 진입 링크 없음), 판매처 설정 = admin (화면 9)
 const LINKS: { label: string; href: string; staffOnly?: boolean; adminOnly?: boolean }[] = [
   { label: "홈", href: "/" },
   { label: "시약 목록", href: "/reagents" },
   { label: "사용 기록 내역", href: "/usage" },
   { label: "시약장 설정", href: "/cabinets" },
   { label: "QR 스캔", href: "/scan" },
-  { label: "재주문 알림", href: "/reorder" },
+  { label: "재주문 알림", href: "/reorder", staffOnly: true },
   { label: "입고·시약 등록", href: "/intake", staffOnly: true },
   { label: "사용자 관리", href: "/users", adminOnly: true },
+  { label: "판매처 설정", href: "/vendors", adminOnly: true },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -32,6 +34,8 @@ function activeTab(pathname: string): TabKey | undefined {
   if (isActive(pathname, "/intake")) return "reagents";
   // s2-spec 화면 11 (run 20261004-2256): 모바일 활성 탭 = "시약" (11 · 11-empty · 11-delete 모두)
   if (isActive(pathname, "/cabinets")) return "reagents";
+  // s2-spec 화면 6 · 9: 모바일 활성 탭 = "시약"
+  if (isActive(pathname, "/reorder") || isActive(pathname, "/vendors")) return "reagents";
   if (isActive(pathname, "/scan")) return "scan";
   if (isActive(pathname, "/usage")) return "records";
   return undefined;
@@ -40,16 +44,16 @@ function activeTab(pathname: string): TabKey | undefined {
 type SubPage = { title: string; backHref: string; links?: { label: string; href: string; active?: boolean }[] };
 
 /** 하위 화면 (시안: nav-pill = 뒤로가기 + 제목 + 학교명. 화면 4 데스크톱은 링크 2개) */
-function subPage(pathname: string): SubPage | undefined {
+function subPage(pathname: string, staff: boolean): SubPage | undefined {
   if (/^\/reagents\/[^/]+\/?$/.test(pathname)) return { title: "시약 상세", backHref: "/reagents" };
   if (/^\/usage\/new\/?$/.test(pathname)) {
-    // 시안 4-desktop nav-links: 시약 목록(활성) · 재주문 알림
+    // 시안 4-desktop nav-links: 시약 목록(활성) · 재주문 알림 (재주문 알림은 교사·admin 만 — 학생 nav 에는 없다)
     return {
       title: "사용 기록",
       backHref: "/reagents",
       links: [
         { label: "시약 목록", href: "/reagents", active: true },
-        { label: "재주문 알림", href: "/reorder" },
+        ...(staff ? [{ label: "재주문 알림", href: "/reorder" }] : []),
       ],
     };
   }
@@ -65,6 +69,9 @@ function sectionTitle(pathname: string): string | undefined {
   if (isActive(pathname, "/users")) return "사용자 관리";
   // 시안 11-mobile: 워드마크 + "시약장 설정"
   if (isActive(pathname, "/cabinets")) return "시약장 설정";
+  // 시안 6-mobile · 9-mobile: 워드마크 + 제목
+  if (isActive(pathname, "/reorder")) return "재주문 알림";
+  if (isActive(pathname, "/vendors")) return "판매처 설정";
   return undefined;
 }
 
@@ -93,7 +100,7 @@ async function logout() {
 
 export function AppShell({ schoolName, staff = false, admin = false, children }: Props) {
   const pathname = usePathname();
-  const sub = subPage(pathname);
+  const sub = subPage(pathname, staff);
   const links: NavLinkItem[] | undefined = sub
     ? sub.links
     : LINKS.filter((l) => (staff || !l.staffOnly) && (admin || !l.adminOnly)).map((l) => ({

@@ -28,6 +28,11 @@
   padding-bottom: calc(var(--space-12) + var(--control-height) + var(--space-16) + var(--border-width));
 }
 
+/* 목록: 마지막 행의 더보기 메뉴를 고정 줄 위로 올릴 수 있게 메뉴 높이만큼 더 비운다 */
+.sticky:not(.formOpen) {
+  padding-bottom: calc(var(--space-12) + var(--control-height) * 3 + var(--space-16) + var(--border-width));
+}
+
 .srOnly {
   position: absolute;
   width: var(--border-width);
@@ -157,6 +162,9 @@
   border-radius: var(--radius-md);
   background: var(--color-surface);
   box-shadow: var(--shadow-none);
+  /* 펼칠 때 화면 안으로 들이는 여유: 하단 고정 줄(12 + 48 + 16) + tab-bar + 8 */
+  scroll-margin-bottom: calc(var(--tab-bar-height) + var(--control-height) + var(--space-32) + var(--space-4));
+  scroll-margin-top: var(--space-8);
 }
 
 .menuItem {
@@ -305,8 +313,13 @@
     gap: var(--space-32);
   }
 
-  .sticky {
+  .sticky,
+  .sticky:not(.formOpen) {
     padding-bottom: var(--space-0);
+  }
+
+  .menu {
+    scroll-margin-bottom: var(--space-16);
   }
 
   .listColumn,

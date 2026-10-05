@@ -23,13 +23,18 @@ export function VendorRowMenu({ name, defaultOpen = false, disabled, onEdit, onD
   const wrapRef = useRef<HTMLSpanElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const menuRef = useRef<HTMLDivElement>(null);
   // 처음부터 펼친 예시(defaultOpen)는 포커스를 가져가지 않는다
   const focusOnOpen = useRef(false);
   const menuId = useId();
   const buttonId = `${menuId}-button`;
 
   useEffect(() => {
-    if (open && focusOnOpen.current) itemRefs.current[0]?.focus({ preventScroll: true });
+    if (open && focusOnOpen.current) {
+      // 마지막 행의 메뉴가 하단 고정 줄·tab-bar 뒤에 가려지지 않게 (여유는 .menu 의 scroll-margin)
+      menuRef.current?.scrollIntoView({ block: "nearest" });
+      itemRefs.current[0]?.focus({ preventScroll: true });
+    }
     focusOnOpen.current = false;
   }, [open]);
 
@@ -112,7 +117,7 @@ export function VendorRowMenu({ name, defaultOpen = false, disabled, onEdit, onD
         <Icon name="more" className={styles.moreIcon} />
       </button>
       {open ? (
-        <div id={menuId} role="menu" aria-labelledby={buttonId} className={styles.menu}>
+        <div ref={menuRef} id={menuId} role="menu" aria-labelledby={buttonId} className={styles.menu}>
           <button
             ref={(el) => {
               itemRefs.current[0] = el;
