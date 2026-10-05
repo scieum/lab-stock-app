@@ -37,7 +37,11 @@
     "11-empty-mobile": "runs/20261004-2256",
     "11-empty-desktop": "runs/20261004-2256",
     "11-delete-mobile": "runs/20261004-2256",
-    "11-delete-desktop": "runs/20261004-2256"
+    "11-delete-desktop": "runs/20261004-2256",
+    "6-mobile": "runs/20261002-1441",
+    "6-desktop": "runs/20261002-1441",
+    "9-mobile": "runs/20261002-1441",
+    "9-desktop": "runs/20261002-1441"
   },
   "copied": "2026-10-05 (8차: rules.json 1.14 — 학교당 시약장 여러 개, 화면 11 프레임 + 상태 프레임 empty·delete)"
 }

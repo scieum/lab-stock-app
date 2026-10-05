@@ -8,7 +8,8 @@
 | profiles | user_id(auth.users), school_id, role(student·teacher·admin), display_name | 사용자당 1개 |
 | cabinets | id, school_id, label, door_type(양문형·단문형), shelves(3·4) | 학교당 여러 개 (화면 11, §9). label 기본값 "{n}번 시약장" |
 | cabinet_slots | id, cabinet_id, side(L·R), shelf, 보관 분류 여러 개(0개 = 미지정) | 분류 ∈ rules.json cabinet.storage_classes. 한 칸에 여러 분류 가능 (화면 11, §9) — 기존 단일 storage_class 에서 확장 |
-| reagents | id, school_id, name, cas_no, unit, stock, min_stock, msds_url, slot_id, intake_date, storage_class(null 허용) | stock < min_stock → 재고 부족(핑크). storage_class ∈ rules.json cabinet.storage_classes (화면 7 "종류") |
+| reagents | id, school_id, name, cas_no, unit, stock, min_stock, msds_url, slot_id, intake_date, storage_class(null 허용), reorder_per_group·reorder_groups·low_stock_since(null 허용, §11) | stock < min_stock → 재고 부족(핑크). storage_class ∈ rules.json cabinet.storage_classes (화면 7 "종류") |
+| vendors | id, school_id(null = 공통), name, contact, website, note, created_at | 화면 9 (§12) |
 | usage_logs | id, school_id, reagent_id, user_id, amount, used_at, memo(null 허용, 200자 이하) | 화면 4에서 생성, reagents.stock 차감. memo 는 화면 4 "메모" 입력 → 화면 10 상세 (§7) |
 | intake_logs | id, school_id, reagent_id, user_id, amount, intake_date, created_at | 화면 7에서 생성, reagents.stock 증가 (§6) |
 
@@ -112,6 +113,34 @@
 | 시약 배치 | 시약을 칸에 넣는 화면은 시안에 아직 없다 — 화면 11 은 칸의 분류만 다룬다. 새로 등록한 시약은 모두 "칸 없음" (화면 7 결정 그대로) |
 | 데모 학교 | 둘러보기에는 화면 11 없음. 데모 학교 시약장 쓰기 금지(§5) 그대로 |
 | 저장 후 | ex-toast "시약장 설정을 저장했어요" / "이름을 바꿨어요" / "{이름}을 추가했어요" / "{이름}을 삭제했어요" |
+
+## 11. 재주문 알림 (화면 6, 2026-10-05 결정)
+
+| 항목 | 결정 |
+|---|---|
+| 권한 | 교사·admin만. 학생은 화면(/reorder → /)·진입 링크 모두 없음 (R2: 학생의 reorder-alert-card·vendor-link = 0) |
+| 알림 대상 | 같은 학교 시약 중 `stock < min_stock` (홈의 재고 부족과 같은 기준). 부족한 정도가 큰 순 |
+| 재주문 기준 | `reagents.min_stock` = 필요량. 기준의 근거(1반 1회 실험량 × 조 수)는 `reagents.reorder_per_group`(1조 사용량)·`reorder_groups`(조 수)에 둔다(null 허용) — 화면 5(실험 매뉴얼)가 채운다. 값이 있으면 카드에 "1반 1회 실험량 {per_group} {unit} × {groups}조 기준", 없으면 "재주문 기준 {min_stock} {unit}" |
+| 알림 날짜 | `reagents.low_stock_since`(timestamptz, null 허용): 재고가 기준 아래로 내려간 시각. stock·min_stock 이 바뀔 때 DB 가 맞춘다(아래로 내려가면 그 시각, 다시 기준 이상이면 null, 이미 부족한 상태가 이어지면 유지). 카드에 "YYYY.MM.DD 알림"(한국 시간). 이 열을 추가할 때 이미 부족한 기존 시약은 추가 시각으로 채운다 |
+| 카드 | reorder-alert-card: badge-low-stock "재고 부족" + 시약명 + "필요량 {min_stock} {unit} / 현재 재고 {stock} {unit}" + 기준 문구 + 알림 날짜 + vendor-link "판매처 연결" |
+| 판매처 연결 | vendor-link → ex-modal-card: 판매처 목록(우리 학교 판매처 먼저, 그다음 공통 목록; 행 = 판매처명 + 부가 정보) 중 하나를 고르고 "확인" → 그 판매처의 웹사이트를 새 창으로 연다(2026-10-05 사용자 결정). 아무것도 저장하지 않는다. 웹사이트가 없는 판매처를 고르면 "확인" 비활성 + 연락처 안내. 판매처가 하나도 없으면 안내 문구(admin 에게는 판매처 등록으로 가는 길) |
+| 판매처 등록 진입 | vendor-register: 목록 아래 "판매처 등록" → 화면 9. admin 에게만 보인다(R3) |
+| 매뉴얼 진입 | manual-upload: 재주문 기준 안내 박스("필요량 = 1반 1회 실험량 × 조 수") + "실험 매뉴얼 올리기" → 화면 5(`/manual`, 다음 run). 교사·admin만 (R1) |
+| 0건 | ex-empty-state-card "재고가 부족한 시약이 없어요" |
+| 데모 학교 | 둘러보기에는 화면 6 없음 |
+
+## 12. 판매처 설정 (화면 9, 2026-10-05 결정)
+
+| 항목 | 결정 |
+|---|---|
+| 권한 | admin만. 학생·교사는 화면(/vendors → /)·진입 링크 없음 (R3: vendor-register 는 admin 만). 판매처 읽기는 교사·admin(화면 6 의 판매처 연결에 필요), 학생·anon 0행 |
+| 테이블 | `vendors`: id, school_id(null = 공통 목록), name(1~40자), contact(연락처, null 허용 40자), website(null 또는 http(s):// 로 시작, 300자), note(부가 정보, null 허용 60자), created_at. 같은 학교 안 이름 중복 불가(대소문자·공백 무시) |
+| 우리 학교 판매처 | school_id = 자기 학교. admin 이 등록·수정·삭제. 다른 학교 0행 (N1) |
+| 공통 목록 | school_id = null. 모든 학교의 교사·admin 이 읽기만. 화면·API 로는 쓸 수 없다(마이그레이션 seed 로만). 처음 seed(2026-10-05 사용자 지정): 11번가(https://www.11st.co.kr), G마켓(https://www.gmarket.co.kr), 오피스안(https://officeahn.com), 퍼스트과학(https://firstsci.co.kr) |
+| 쓰기 방식 | RLS 정책으로 직접 insert·update·delete(자기 학교 + admin + 데모 학교 아님). 값 검증은 테이블 제약으로. school_id 를 다른 학교·null 로 넣거나 바꿀 수 없다 |
+| 화면 | segmented-control "우리 학교 판매처 / 공통 목록", 판매처명 검색, 목록 행(판매처명 + 부가 정보 = 연락처 · note, 더보기 "수정"·"삭제"), "판매처 등록" → 폼(판매처명 필수, 연락처, 웹사이트 주소) → 저장. 삭제는 확인 카드 "이 판매처를 삭제할까요?". 0건이면 ex-empty-state-card "등록한 판매처가 없어요". 공통 목록 탭은 보기 전용 2열 |
+| 저장 후 | ex-toast "판매처를 저장했어요" / "판매처를 삭제했어요", 방금 등록·수정한 행 강조 |
+| 데모 학교 | 판매처 쓰기 금지(§5), 둘러보기에는 화면 9 없음 |
 
 ## 10. 로그아웃 (2026-10-05 결정)
 
