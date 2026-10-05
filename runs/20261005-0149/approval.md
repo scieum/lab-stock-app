@@ -19,7 +19,7 @@
 ## 배포에서만 확인 가능한 것
 - 함수가 실제로 서울 리전에서 도는지 (Vercel 프로젝트 설정의 Function Region 과 충돌 여부)
 
-result:
-reason:
-approver:
-date:
+result: approved
+reason: 미리보기 확인 후 사용자 승인
+approver: scieum (사용자)
+date: 2026-10-05
