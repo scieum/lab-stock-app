@@ -19,8 +19,11 @@ type Props = {
   descriptionTone?: "default" | "strong";
   /** 안내 아래 보조 한 줄 (화면 11 삭제 확인: "시약 정보와 재고는 지워지지 않아요", caption 회색) */
   caption?: string;
-  /** roomy = 안쪽 여백 24 · 묶음 사이 24 · 글자 사이 8 (시안 11-delete 확인 카드). 기본은 기존 간격 */
-  density?: "default" | "roomy";
+  /**
+   * roomy = 안쪽 여백 24 · 묶음 사이 24 · 글자 사이 8 (시안 11-delete 확인 카드).
+   * tight = 닫기 버튼 없는 카드(hideClose)도 안쪽 24·16(데스크탑 24) · 묶음 사이 12 (시안 6 판매처 연결). 기본은 기존 간격
+   */
+  density?: "default" | "roomy" | "tight";
   /** 제목 아래 큰 숫자 (사용량, display) */
   amount?: React.ReactNode;
   /** 숫자 옆 단위 (g · mL · 병) */
@@ -122,6 +125,7 @@ export function ModalCard({
         hideClose ? styles.plain : "",
         closeIcon ? styles.withIconClose : "",
         density === "roomy" ? styles.roomy : "",
+        density === "tight" ? styles.tight : "",
       ]
         .filter(Boolean)
         .join(" ")}

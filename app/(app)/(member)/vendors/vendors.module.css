@@ -1,0 +1,83 @@
+/* 화면 9 판매처 설정
+ * 모바일(9-mobile): segmented-control → 검색 → vendor-register(목록, 사이 8), 사이 16. 제목은 nav-pill 안(nav-title).
+ *                   "판매처 등록"·"저장" 은 tab-bar 바로 위 고정(컴포넌트), 삭제 확인은 tab-bar 위 하단 시트
+ * 데스크톱(9-desktop): screen-title → toolbar(탭 400 + 16 + 검색) → vendor-register(목록 + 32 + 폼 448), 사이 24.
+ *                     삭제 확인은 화면 오른쪽 아래 카드(화면 6 판매처 연결과 같은 자리)
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+  /* 삭제 확인 카드가 열려 있으면 그 높이만큼 비운다 (값은 화면이 잰다) */
+  padding-bottom: var(--vendors-sheet-space, var(--space-0));
+}
+
+/* 모바일에서는 nav-pill 의 제목이 대신한다 (화면에는 안 보이고 읽기 도구에는 남긴다) */
+.title {
+  position: absolute;
+  width: var(--border-width);
+  height: var(--border-width);
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  color: var(--color-text);
+  font-size: var(--font-size-28);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.tabs,
+.search,
+.dock {
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .page {
+    gap: var(--space-24);
+  }
+
+  .title {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+
+  .toolbar {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .tabs {
+    flex: 0 0 var(--side-column-width);
+  }
+
+  .search {
+    flex: 1;
+  }
+
+  .dock {
+    position: fixed;
+    right: var(--space-64);
+    bottom: var(--space-32);
+    z-index: 15;
+    width: calc(var(--side-column-width) + var(--space-48) + var(--space-32));
+    max-width: calc(100% - var(--space-64) * 2);
+  }
+
+  .dock:empty {
+    display: none;
+  }
+}

@@ -1,0 +1,354 @@
+/**
+ * 판매처 등록 (화면 6 진입 버튼 · 화면 9 "우리 학교 판매처" 블록)
+ * 모바일(9-mobile): 목록 한 줄(사이 8), "판매처 등록"·"저장" 은 tab-bar 바로 위 고정(12 + 48 + 16)
+ * 데스크탑(9-desktop): 목록 칸 + 폼 칸(448) 2열, 사이 32. 목록과 버튼 사이 16, 버튼 폭 240
+ */
+
+/* ---------- 화면 6: 진입 버튼 ---------- */
+.entry {
+  display: flex;
+}
+
+.entry .entryButton {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---------- 화면 9: 블록 ---------- */
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+  color: var(--color-text);
+}
+
+/* 고정된 하단 버튼 줄만큼 비워 둔다 */
+.sticky {
+  padding-bottom: calc(var(--space-12) + var(--control-height) + var(--space-16) + var(--border-width));
+}
+
+/* 목록: 마지막 행의 더보기 메뉴를 고정 줄 위로 올릴 수 있게 메뉴 높이만큼 더 비운다 */
+.sticky:not(.formOpen) {
+  padding-bottom: calc(var(--space-12) + var(--control-height) * 3 + var(--space-16) + var(--border-width));
+}
+
+.srOnly {
+  position: absolute;
+  width: var(--border-width);
+  height: var(--border-width);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.listColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+/* 모바일: 폼이 열리면 목록 자리에 폼이 온다 */
+.formOpen .listColumn {
+  display: none;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 시안 vendor-row: 회색 바탕, radius 16, 안쪽 16, 사이 12 */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-width: 0;
+  padding: var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+/* 방금 등록·수정한 행 */
+.rowFresh {
+  background: var(--color-highlight-soft);
+}
+
+.rowBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.rowName {
+  overflow: hidden;
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowInfo {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- 더보기 메뉴 ---------- */
+.menuWrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+/* 아이콘 20, 누름 영역 44 — 행 높이가 늘지 않게 바깥 여백으로 되돌린다 */
+.moreButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+  margin: calc(var(--space-12) * -1);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  cursor: pointer;
+}
+
+.moreButton:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+/* 누른 즉시 반응 */
+.moreButton:active:not(:disabled) {
+  opacity: var(--pressed-opacity);
+}
+
+.moreButton:disabled {
+  cursor: not-allowed;
+}
+
+.moreIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  color: var(--color-highlight);
+}
+
+/* 작은 메뉴: 더보기 아래 오른쪽 맞춤, 흰 바탕 + 테두리 (그림자 없음) */
+.menu {
+  position: absolute;
+  top: calc(100% + var(--space-16));
+  right: calc(var(--space-8) * -1);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: calc(var(--control-height) * 2);
+  padding: var(--space-8);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-none);
+  /* 펼칠 때 화면 안으로 들이는 여유: 하단 고정 줄(12 + 48 + 16) + tab-bar + 8 */
+  scroll-margin-bottom: calc(var(--tab-bar-height) + var(--control-height) + var(--space-32) + var(--space-4));
+  scroll-margin-top: var(--space-8);
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-12);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.menuItem:hover,
+.menuItem:focus-visible {
+  background: var(--color-surface-muted);
+}
+
+.menuItem:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+/* 누른 즉시 반응 */
+.menuItem:active {
+  opacity: var(--pressed-opacity);
+}
+
+/* ---------- "판매처 등록" 줄 ---------- */
+.listActions {
+  display: flex;
+}
+
+.listActions .registerButton {
+  flex: 1;
+  min-width: 0;
+}
+
+.sticky .listActions,
+.formSticky .formActions {
+  position: fixed;
+  right: 0;
+  bottom: var(--tab-bar-height);
+  left: 0;
+  z-index: 10;
+  padding: var(--space-12) var(--space-16) var(--space-16);
+  border-top: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+}
+
+/* ---------- 등록·수정 폼 ---------- */
+.formColumn {
+  min-width: 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.formHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: var(--button-min-height);
+}
+
+.formTitle {
+  margin: 0;
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}
+
+/* 닫기(×) — 폼을 닫고 목록으로 돌아가는 길 (시안에 없어 작게 둔다). 누름 영역 44 */
+.formClose {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.formClose:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.formClose:active {
+  opacity: var(--pressed-opacity);
+}
+
+.formCloseIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+}
+
+.formActions {
+  display: flex;
+}
+
+/* 저장·삭제 실패 안내 — 흑백만 (강조색을 쓰지 않는다) */
+.error {
+  margin: 0;
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- 삭제 확인 (ex-modal-card 안) ---------- */
+.confirm {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.confirm .confirmButton {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .root {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--space-32);
+  }
+
+  .sticky,
+  .sticky:not(.formOpen) {
+    padding-bottom: var(--space-0);
+  }
+
+  .menu {
+    scroll-margin-bottom: var(--space-16);
+  }
+
+  .listColumn,
+  .formOpen .listColumn {
+    display: flex;
+    flex: 1;
+  }
+
+  .sticky .listActions,
+  .formSticky .formActions {
+    position: static;
+    padding: var(--space-0);
+    border-top: 0;
+  }
+
+  .listActions .registerButton {
+    flex: 0 0 calc(var(--control-height) * 5);
+  }
+
+  /* 시안 vendor-form: 흰 바탕 + 회색 테두리, radius 24, 안쪽 24, 폭 448 */
+  .formColumn {
+    flex: 0 0 calc(var(--side-column-width) + var(--space-48));
+  }
+
+  .form {
+    padding: var(--space-24);
+    border: var(--border-width) solid var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-sizing: border-box;
+  }
+}

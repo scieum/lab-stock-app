@@ -219,9 +219,12 @@ export type Database = {
           created_at: string
           id: string
           intake_date: string
+          low_stock_since: string | null
           min_stock: number
           msds_url: string | null
           name: string
+          reorder_groups: number | null
+          reorder_per_group: number | null
           school_id: string
           slot_id: string | null
           stock: number
@@ -233,9 +236,12 @@ export type Database = {
           created_at?: string
           id?: string
           intake_date?: string
+          low_stock_since?: string | null
           min_stock?: number
           msds_url?: string | null
           name: string
+          reorder_groups?: number | null
+          reorder_per_group?: number | null
           school_id: string
           slot_id?: string | null
           stock?: number
@@ -247,9 +253,12 @@ export type Database = {
           created_at?: string
           id?: string
           intake_date?: string
+          low_stock_since?: string | null
           min_stock?: number
           msds_url?: string | null
           name?: string
+          reorder_groups?: number | null
+          reorder_per_group?: number | null
           school_id?: string
           slot_id?: string | null
           stock?: number
@@ -347,6 +356,44 @@ export type Database = {
           },
           {
             foreignKeyName: "usage_logs_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendors: {
+        Row: {
+          contact: string | null
+          created_at: string
+          id: string
+          name: string
+          note: string | null
+          school_id: string | null
+          website: string | null
+        }
+        Insert: {
+          contact?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          note?: string | null
+          school_id?: string | null
+          website?: string | null
+        }
+        Update: {
+          contact?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          note?: string | null
+          school_id?: string | null
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendors_school_id_fkey"
             columns: ["school_id"]
             isOneToOne: false
             referencedRelation: "schools"
@@ -530,9 +577,12 @@ export type Database = {
           created_at: string
           id: string
           intake_date: string
+          low_stock_since: string | null
           min_stock: number
           msds_url: string | null
           name: string
+          reorder_groups: number | null
+          reorder_per_group: number | null
           school_id: string
           slot_id: string | null
           stock: number

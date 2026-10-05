@@ -23,6 +23,7 @@ import { GuestLock } from "@/components/guest-lock";
 import { CabinetSummaryCard, HomeSummary, StockSummaryCard } from "@/components/home-summary";
 import { LandingCta } from "@/components/landing-cta";
 import { LandingHero } from "@/components/landing-hero";
+import { ManualUpload } from "@/components/manual-upload";
 import { MixWarning } from "@/components/mix-warning";
 import { MsdsEntry } from "@/components/msds-entry";
 import { MsdsQrTile } from "@/components/msds-qr-tile";
@@ -44,6 +45,8 @@ import { TabBar } from "@/components/tab-bar";
 import { TabItem } from "@/components/tab-item";
 import { TextInput, TextInputSelect } from "@/components/text-input";
 import { UserManage } from "@/components/user-manage";
+import { VendorLink } from "@/components/vendor-link";
+import { VendorRegisterEntry } from "@/components/vendor-register";
 import { mixWarnings } from "@/lib/cabinet-rules";
 import { sampleCabinets } from "./cabinets/sample";
 import { sampleInvites, sampleMemberCounts, sampleMembers } from "./users/sample";
@@ -315,6 +318,24 @@ export default function GalleryPage() {
 
         <Item name="reorder-alert-card">
           <ReorderAlertCard count={3} href="/reorder" />
+        </Item>
+
+        <Item name="manual-upload">
+          <ManualUpload href="/manual" />
+          <Link href="/gallery/reorder" className={styles.more}>
+            재주문 알림 상태 보기 — 알림 카드 · 판매처 연결 모달 · 0건 · 교사/admin (/gallery/reorder)
+          </Link>
+        </Item>
+
+        <Item name="vendor-link">
+          <VendorLink />
+        </Item>
+
+        <Item name="vendor-register">
+          <VendorRegisterEntry href="/vendors" />
+          <Link href="/gallery/vendors" className={styles.more}>
+            판매처 설정 상태 보기 — 목록 · 검색 · 더보기 메뉴 · 등록/수정 폼 · 삭제 확인 · 공통 목록 (/gallery/vendors)
+          </Link>
         </Item>
 
         <Item name="stock-intake">

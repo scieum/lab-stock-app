@@ -10,13 +10,16 @@ import { getHomeData, type HomeData, type Role } from "@/lib/supabase/home-data"
 import styles from "./home.module.css";
 
 // 시안 13 quick-action — 역할별 2칸 (탭과 겹치는 QR·시약 목록·사용 기록 내역은 두지 않는다)
+// 교사·admin 은 "시약장 설정" 1칸을 더 둔다 (시안 예외, 사용자 결정 2026-10-05: 모바일에서 화면 11 로 다시 들어갈 길).
+// 진입 링크일 뿐이라 entry(역할 규칙이 세는 이름)는 붙이지 않는다 — 학생의 "시약장 보기" 와 같다.
 const USAGE_NEW: QuickActionItem = { label: "사용 기록 입력", href: "/usage/new", icon: "pen" };
 const CABINETS: QuickActionItem = { label: "시약장 보기", href: "/cabinets", icon: "cabinet" };
+const CABINET_SETTINGS: QuickActionItem = { label: "시약장 설정", href: "/cabinets", icon: "cabinet" };
 const INTAKE: QuickActionItem = { label: "입고", href: "/intake", icon: "intake", entry: "stock-intake" };
 const QUICK_ACTIONS: Record<Role, QuickActionItem[]> = {
   student: [USAGE_NEW, CABINETS],
-  teacher: [USAGE_NEW, INTAKE],
-  admin: [INTAKE, { label: "사용자 관리", href: "/users", icon: "users", entry: "user-manage" }],
+  teacher: [USAGE_NEW, INTAKE, CABINET_SETTINGS],
+  admin: [INTAKE, { label: "사용자 관리", href: "/users", icon: "users", entry: "user-manage" }, CABINET_SETTINGS],
 };
 // 시안 13-guest quick-action: 학생과 같은 2칸, 둘 다 guest-lock (쓰기·범위 밖 진입점)
 const GUEST_QUICK_ACTIONS: QuickActionItem[] = [
@@ -82,7 +85,7 @@ export function HomeView({ data, role }: HomeViewProps) {
         <div className={styles.column}>
           {staff ? (
             <div className={styles.reorder}>
-              <ReorderAlertCard count={data.lowStock.length} href="/reagents?filter=low-stock" />
+              <ReorderAlertCard count={data.lowStock.length} href="/reorder" />
             </div>
           ) : null}
           <section className={[styles.card, styles.recent].join(" ")} aria-labelledby="recent-usage-heading">
