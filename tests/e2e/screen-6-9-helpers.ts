@@ -55,7 +55,7 @@ export const VENDORS_NAV = "판매처 설정";
 export const GUIDE_TEXT = "필요량 = 1반 1회 실험량 × 조 수";
 export const BASIS_WORD = "재주문 기준";
 export const MANUAL_BUTTON = "실험 매뉴얼 올리기";
-/** d7 §11 "매뉴얼 진입": 화면 5 (다음 run) */
+/** d7 §11 "매뉴얼 진입": 화면 5 (dev-rules routes["5"] — 실제 화면, 도착 확인은 screen-5-structure) */
 export const MANUAL_HREF = "/manual";
 export const BADGE_TEXT = "재고 부족";
 export const LINK_BUTTON = "판매처 연결";
