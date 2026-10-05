@@ -1,3 +1,4 @@
+import { Children, isValidElement } from "react";
 import { ButtonOutline } from "@/components/button-outline";
 import styles from "./styles.module.css";
 
@@ -12,6 +13,15 @@ type Props = {
   busy?: boolean;
   /** 관리 줄 아래: 문 형태·단 수 선택, 배치도, 분류 칩 묶음, mix-warning, 저장 버튼 */
   children?: React.ReactNode;
+  /**
+   * 배치도 + 범례. 넘기면 "나란한 배치"가 된다 (시안 11-desktop cabinet-main):
+   * 모바일은 관리 줄 → selects → board → children 한 열(시안 11-mobile 그대로),
+   * 데스크톱은 왼쪽 열 = board, 오른쪽 테두리 카드 = 관리 줄 · selects · children.
+   * DOM 순서는 두 폭 모두 모바일 순서다.
+   */
+  board?: React.ReactNode;
+  /** 문 형태·단 수 선택 (board 를 넘길 때 — 관리 줄 바로 아래) */
+  selects?: React.ReactNode;
   /** 읽기 도구용 이름 */
   label?: string;
 };
@@ -21,9 +31,10 @@ type Props = {
  * 맨 위 관리 줄 = button-outline "이름 바꾸기" + 조용한 텍스트 동작 "삭제"(핑크 아님), 그 아래 children.
  * 모바일은 테두리 없는 세로 묶음, 데스크톱은 테두리 카드 (시안 11-desktop).
  */
-export function CabinetEdit({ onRename, onDelete, busy = false, children, label = "시약장 편집" }: Props) {
+export function CabinetEdit({ onRename, onDelete, busy = false, children, board, selects, label = "시약장 편집" }: Props) {
+  const split = board !== undefined;
   return (
-    <section data-component="cabinet-edit" className={styles.edit} aria-label={label}>
+    <section data-component="cabinet-edit" className={[styles.edit, split ? styles.split : ""].filter(Boolean).join(" ")} aria-label={label}>
       <div className={styles.manage}>
         <ButtonOutline className={styles.rename} disabled={busy} onClick={onRename}>
           이름 바꾸기
@@ -32,7 +43,21 @@ export function CabinetEdit({ onRename, onDelete, busy = false, children, label 
           삭제
         </button>
       </div>
-      {children}
+      {split ? (
+        <>
+          {selects ? <div className={styles.segment}>{selects}</div> : null}
+          <div className={styles.board}>{board}</div>
+          {/* 조각마다 카드의 한 토막 — 아무것도 그리지 않는 조각(mix-warning 0줄)은 CSS(:empty)가 숨긴다 */}
+          {Children.toArray(children).map((child, i) => (
+            <div key={isValidElement(child) && child.key != null ? child.key : i} className={styles.segment}>
+              {child}
+            </div>
+          ))}
+          <div className={styles.foot} aria-hidden="true" />
+        </>
+      ) : (
+        children
+      )}
     </section>
   );
 }

@@ -1,0 +1,159 @@
+/* 화면 11 시약장 설정
+ * 모바일(11-mobile): cabinet-switcher → cabinet-header → cabinet-edit(관리 줄 · selects · 배치도 · 범례 · 분류 칩 · mix-warning)
+ *                    → unassigned-list, 사이 16. 저장 줄은 tab-bar 바로 위 고정. 제목은 nav-pill 안(nav-title)
+ * 데스크톱(11-desktop): switcher → header → cabinet-main(배치도 열 840 + 32 + 편집 카드 440) → 칸 없음 목록, 사이 24
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+/* 고정된 저장 줄(안쪽 16 + 버튼 48 + 16)만큼 비워 마지막 행이 가려지지 않게 한다 */
+.withSave {
+  padding-bottom: calc(var(--control-height) + var(--space-32));
+}
+
+/* 저장 줄에 안내 한 줄이 더 있을 때 */
+.withNotice {
+  padding-bottom: calc(var(--control-height) + var(--space-64));
+}
+
+/* 화면 제목은 nav-pill(모바일 제목 · 데스크톱 현재 섹션 표시)이 대신한다 — 읽기 도구에만 남긴다 */
+.title {
+  position: absolute;
+  width: var(--border-width);
+  height: var(--border-width);
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.pageTitle,
+.cabinetTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+}
+
+.cabinetMeta {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+/* 학생(보기 전용): 배치도 → 범례 → mix-warning */
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.unassigned {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+.sectionTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+/* 실패 안내 (핑크 아님 — 재고·안전 신호가 아니다) */
+.error {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+/* 빈 상태 (시안 11-empty empty-area: 남는 높이 가운데에 카드) */
+.emptyArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-12);
+  min-height: calc(100dvh - var(--tab-bar-height) - var(--control-height) * 4);
+}
+
+.emptyCard {
+  width: 100%;
+}
+
+/* 이름 시트 · 삭제 확인 — 모바일은 카드가 tab-bar 위 하단 시트로 스스로 붙는다 */
+.dialog {
+  display: contents;
+}
+
+@media (min-width: 1024px) {
+  .page {
+    gap: var(--space-24);
+  }
+
+  .withSave,
+  .withNotice {
+    padding-bottom: var(--space-0);
+  }
+
+  .header {
+    gap: var(--space-12);
+  }
+
+  .cabinetMeta {
+    font-size: var(--font-size-13);
+  }
+
+  /* 배치도 열 폭 = 시안 layout-column 840 / 1312 */
+  .view,
+  .unassigned {
+    width: calc((100% - var(--space-32)) * 21 / 32);
+  }
+
+  .emptyArea {
+    min-height: calc(100dvh - var(--control-height) * 5);
+  }
+
+  /* 시안 11-empty-desktop: 카드 폭 480 */
+  .emptyCard {
+    width: calc(var(--space-48) * 10);
+    max-width: 100%;
+  }
+
+  /* 시안 11-delete-desktop: 화면 가운데 카드(폭 480), 딤 없음 — 카드 밖은 누름이 그대로 지나간다 */
+  .dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    display: grid;
+    place-items: center;
+    padding: var(--space-24);
+    pointer-events: none;
+  }
+
+  .dialog > * {
+    width: calc(var(--space-48) * 10);
+    max-width: 100%;
+    pointer-events: auto;
+  }
+}
