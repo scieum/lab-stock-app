@@ -13,7 +13,8 @@
     4,
     7,
     10,
-    8
+    8,
+    11
   ],
   "routes": {
     "15": "/",
@@ -26,6 +27,7 @@
     "7": "/intake",
     "10": "/usage",
     "8": "/users",
+    "11": "/cabinets",
     "13-guest": "/demo",
     "2-guest": "/demo/reagents",
     "3-guest": "/demo/reagents/[id]"
@@ -52,6 +54,7 @@
       7,
       8,
       10,
+      11,
       15
     ],
     "button-pill-soft": [
@@ -68,8 +71,27 @@
       4,
       7,
       8,
+      11,
       14,
       15
+    ],
+    "cabinet-add": [
+      11
+    ],
+    "cabinet-door-select": [
+      11
+    ],
+    "cabinet-edit": [
+      11
+    ],
+    "cabinet-shelf-select": [
+      11
+    ],
+    "cabinet-slot": [
+      11
+    ],
+    "cabinet-switcher": [
+      11
     ],
     "ex-auth-form-card": [
       1,
@@ -83,16 +105,19 @@
     "ex-empty-state-card": [
       7,
       8,
-      10
+      10,
+      11
     ],
     "ex-modal-card": [
       8,
-      10
+      10,
+      11
     ],
     "ex-toast": [
       4,
       7,
-      8
+      8,
+      11
     ],
     "feature-card": [
       15
@@ -119,6 +144,9 @@
     "landing-hero": [
       15
     ],
+    "mix-warning": [
+      11
+    ],
     "msds-entry": [
       3,
       10
@@ -134,6 +162,7 @@
       7,
       8,
       10,
+      11,
       13,
       14,
       15
@@ -151,6 +180,7 @@
     "reagent-row": [
       2,
       7,
+      11,
       13
     ],
     "reorder-alert-card": [
@@ -182,6 +212,9 @@
     "stock-intake": [
       7
     ],
+    "storage-class-chip": [
+      11
+    ],
     "tab-bar": [
       2,
       3,
@@ -189,6 +222,7 @@
       7,
       8,
       10,
+      11,
       13
     ],
     "tab-item": [
@@ -198,6 +232,7 @@
       7,
       8,
       10,
+      11,
       13
     ],
     "text-input": [
@@ -207,6 +242,7 @@
       7,
       8,
       10,
+      11,
       14
     ],
     "user-manage": [
@@ -385,12 +421,15 @@
     "7_note": "학생이 /intake 에 오면 / 로 보낸다. 비로그인은 /login (2026-10-03)",
     "10": "로그인 후 · 모든 역할 (같은 학교 기록만)",
     "8": "로그인 후 · admin만",
-    "8_note": "학생·교사가 /users 에 오면 / 로 보낸다. 비로그인은 /login (2026-10-04)"
+    "8_note": "학생·교사가 /users 에 오면 / 로 보낸다. 비로그인은 /login (2026-10-04)",
+    "11": "로그인 후 · 모든 역할 (편집·추가·삭제는 교사·admin, 학생은 보기만)",
+    "11_note": "활성 시약장은 ?c={cabinet id} (없거나 자기 학교 것이 아니면 첫 시약장). 시약장 0개면 빈 상태 (2026-10-05)",
+    "logout": "로그인 후 모든 화면의 nav-pill 학교명을 누르면 열리는 메뉴의 \"로그아웃\" → POST /api/auth/logout → /login. 시안에 없는 요소(사용자 결정 2026-10-05, d2 §5) — 새 data-component 이름을 만들지 않는다"
   },
   "guest_screens": [
     13,
     2,
     3
   ],
-  "components_note": "guest-banner·guest-lock 의 [2,3,13] 은 둘러보기(/demo) 버전 화면 · 화면 7: stock-intake 는 프레임(기존 시약 입고 갈래), reagent-register·ex-empty-state-card·ex-toast 는 프레임에 없는 상태(새 시약 등록 갈래·검색 0건·저장 직후)라 디자인 s2-spec 화면 7 기준 (2026-10-03) · 화면 10: ex-modal-card 는 프레임에 있는 기록 상세, ex-empty-state-card 는 프레임에 없는 상태(필터 결과 0건)라 s2-spec 화면 10 기준. 화면 4 는 시안의 \"메모\" 입력(text-input)을 추가 (2026-10-03) · 화면 8: user-manage 는 화면 본문 블록(홈 quick-action 의 진입은 entry 속성, 화면 13 기존 방식). 프레임은 역할 변경 시트가 열린 상태 — 초대 시트(segmented-control·button-pill-soft)·삭제 확인·검색 0건(ex-empty-state-card)·저장 직후(ex-toast)는 프레임에 없는 상태라 s2-spec 화면 8 기준 (2026-10-04)"
+  "components_note": "guest-banner·guest-lock 의 [2,3,13] 은 둘러보기(/demo) 버전 화면 · 화면 7: stock-intake 는 프레임(기존 시약 입고 갈래), reagent-register·ex-empty-state-card·ex-toast 는 프레임에 없는 상태(새 시약 등록 갈래·검색 0건·저장 직후)라 디자인 s2-spec 화면 7 기준 (2026-10-03) · 화면 10: ex-modal-card 는 프레임에 있는 기록 상세, ex-empty-state-card 는 프레임에 없는 상태(필터 결과 0건)라 s2-spec 화면 10 기준. 화면 4 는 시안의 \"메모\" 입력(text-input)을 추가 (2026-10-03) · 화면 8: user-manage 는 화면 본문 블록(홈 quick-action 의 진입은 entry 속성, 화면 13 기존 방식). 프레임은 역할 변경 시트가 열린 상태 — 초대 시트(segmented-control·button-pill-soft)·삭제 확인·검색 0건(ex-empty-state-card)·저장 직후(ex-toast)는 프레임에 없는 상태라 s2-spec 화면 8 기준 (2026-10-04) · 화면 11: 프레임 11(기본)·11-empty(시약장 0개: ex-empty-state-card + cabinet-add)·11-delete(삭제 확인: ex-modal-card + button-outline 2). 이름 바꾸기 시트(ex-modal-card·text-input)와 저장 직후(ex-toast)는 프레임에 없는 상태라 디자인 run 20261004-2256 s2-spec 화면 11 기준. cabinet-add 는 button-pill-soft 모양이지만 data-component 는 cabinet-add (2026-10-05)"
 }

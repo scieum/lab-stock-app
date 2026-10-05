@@ -6,8 +6,8 @@
 |---|---|---|
 | schools | id, neis_code(SD_SCHUL_CODE, unique, 데모 학교는 null), office_code(ATPT_OFCDC_SC_CODE), name, sido, region, is_demo(boolean, 기본 false) | 회원가입(14)에서 그 학교 첫 가입 시 생성 |
 | profiles | user_id(auth.users), school_id, role(student·teacher·admin), display_name | 사용자당 1개 |
-| cabinets | id, school_id, label, door_type(양문형·단문형), shelves(3·4) | 화면 11은 2차, MVP는 시드 |
-| cabinet_slots | id, cabinet_id, side(L·R), shelf, storage_class | storage_class ∈ rules.json cabinet.storage_classes |
+| cabinets | id, school_id, label, door_type(양문형·단문형), shelves(3·4) | 학교당 여러 개 (화면 11, §9). label 기본값 "{n}번 시약장" |
+| cabinet_slots | id, cabinet_id, side(L·R), shelf, 보관 분류 여러 개(0개 = 미지정) | 분류 ∈ rules.json cabinet.storage_classes. 한 칸에 여러 분류 가능 (화면 11, §9) — 기존 단일 storage_class 에서 확장 |
 | reagents | id, school_id, name, cas_no, unit, stock, min_stock, msds_url, slot_id, intake_date, storage_class(null 허용) | stock < min_stock → 재고 부족(핑크). storage_class ∈ rules.json cabinet.storage_classes (화면 7 "종류") |
 | usage_logs | id, school_id, reagent_id, user_id, amount, used_at, memo(null 허용, 200자 이하) | 화면 4에서 생성, reagents.stock 차감. memo 는 화면 4 "메모" 입력 → 화면 10 상세 (§7) |
 | intake_logs | id, school_id, reagent_id, user_id, amount, intake_date, created_at | 화면 7에서 생성, reagents.stock 증가 (§6) |
@@ -19,7 +19,7 @@
 - 역할 제한 (R-db):
   - usage_logs insert: 모든 역할 (자기 user_id만)
   - reagents insert·update(stock 증가): teacher·admin만
-  - cabinets·cabinet_slots 변경: teacher·admin만 (R7)
+  - cabinets·cabinet_slots 변경: teacher·admin만 (R7) — 화면 11 부터는 §9 의 DB 함수로만
 - 재고 차감은 DB 함수(`record_usage`) 하나로만 — 사용 기록 insert와 stock 차감을 한 트랜잭션으로
 
 ## 3. 서버 API (N2)
@@ -94,3 +94,27 @@
 | invites RLS | select·insert: 같은 학교 admin 만(함수로만 쓰기). 학생·교사·anon·다른 학교 0행 |
 | 데모 학교 | 사용자 관리 없음(§5 쓰기 금지 그대로, 데모 학교로 가입 불가) |
 | 저장 후 | ex-toast "N명을 초대했어요" / "역할을 바꿨어요" / "사용자를 삭제했어요" → 목록 갱신 |
+
+## 9. 시약장 설정 (화면 11, 2026-10-05 결정 — design/rules.json cabinet 1.14)
+
+| 항목 | 결정 |
+|---|---|
+| 권한 | 보기: 학생·교사·admin 모두(같은 학교 시약장만, N1). 추가·이름 바꾸기·삭제·문 형태·단 수·칸 분류 편집: 교사·admin만 (rules.json cabinet.manage_roles, R7: 학생 화면의 cabinet-edit·cabinet-add = 0, R-db) |
+| 여러 시약장 | 학교당 여러 개(rules.json cabinet.multiple). 화면의 활성 시약장은 `?c={id}`. 0개면 빈 상태(11-empty) |
+| 추가 | DB 함수 `add_cabinet()` — 교사·admin. 이름 = 다음 번호 "{n}번 시약장"(n = 그 학교에서 쓰지 않은 가장 작은 번호가 아니라 지금까지의 최대 번호 + 1), 기본 양문형·4단, 칸은 모두 미지정. 학교당 최대 20개 |
+| 이름 바꾸기 | DB 함수 `rename_cabinet(cabinet_id, label)` — 교사·admin, 자기 학교. trim 후 1~20자, 같은 학교에 같은 이름 불가 |
+| 설정 저장 | DB 함수 `save_cabinet_layout(cabinet_id, door_type, shelves, slots)` 하나로만 — 문 형태·단 수·칸별 분류(여러 개)를 한 트랜잭션으로 저장. door_type ∈ cabinet.door_types, shelves ∈ cabinet.shelves, 분류 ∈ cabinet.storage_classes. 칸 = (side L·R, shelf 1~shelves), 단문형은 한쪽만 |
+| 칸 줄이기 | 양문형→단문형·4단→3단으로 사라지는 칸: 그 칸의 분류는 지우고, 그 칸에 배치된 시약은 삭제하지 않고 slot 배치만 해제("칸 없음"). 화면은 저장 전에 "이 변경으로 시약 N종이 '칸 없음'이 돼요" 를 저장 버튼 위에 안내 (2026-10-04 사용자 결정) |
+| 삭제 | DB 함수 `delete_cabinet(cabinet_id)` — 교사·admin, 자기 학교. 그 시약장의 칸을 지우고 배치된 시약은 "칸 없음"으로(시약 행·재고는 그대로, rules.json cabinet.on_delete). 확인 카드에 배치된 시약 수 표시 |
+| 직접 쓰기 | cabinets·cabinet_slots 의 직접 insert·update·delete 는 위 함수 밖에서 할 수 없게 한다(기존 teacher·admin 직접 쓰기 정책을 함수 경유로 좁힘). 학생·다른 학교·anon·데모 학교 쓰기 거부 |
+| 혼재 경고 | 같은 칸에 rules.json cabinet.incompatible 조합이 있으면 mix-warning 한 줄씩("{칸}: {A}과 {B}는 섞이면 위험해요. 다른 칸에 나눠 보관하세요"). 저장은 막지 않는다(경고만). 학생에게도 보기 전용으로 표시 |
+| 칸 없음 시약 | 화면 아래 "칸 없음 시약 (N)": 그 학교에서 slot 배치가 없는 시약(어느 시약장을 보고 있든 같은 목록). 행을 누르면 시약 상세(화면 3) |
+| 시약 배치 | 시약을 칸에 넣는 화면은 시안에 아직 없다 — 화면 11 은 칸의 분류만 다룬다. 새로 등록한 시약은 모두 "칸 없음" (화면 7 결정 그대로) |
+| 데모 학교 | 둘러보기에는 화면 11 없음. 데모 학교 시약장 쓰기 금지(§5) 그대로 |
+| 저장 후 | ex-toast "시약장 설정을 저장했어요" / "이름을 바꿨어요" / "{이름}을 추가했어요" / "{이름}을 삭제했어요" |
+
+## 10. 로그아웃 (2026-10-05 결정)
+
+- 로그인 후 모든 화면의 nav-pill 학교명을 누르면 작은 메뉴가 열리고 "로그아웃" 1개가 있다. 누르면 `POST /api/auth/logout` → `/login`.
+- 시안에 없는 요소다(사용자 결정). 새 `data-component` 이름을 만들지 않고, 메뉴는 nav-pill 안의 일반 버튼·목록으로 만든다. 학교 전환 기능은 두지 않는다(메뉴에 학교 목록 없음).
+- 둘러보기(/demo)·로그인 전 화면에는 없다.
