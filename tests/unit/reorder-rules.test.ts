@@ -4,7 +4,7 @@
 //         구현에서 읽지 않는다.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   isReorderNeeded,
   reorderAlertDateText,
@@ -14,10 +14,6 @@ import {
   sortByShortage,
 } from "../../lib/reorder-rules";
 import { ROOT } from "./helpers";
-
-// lib/reorder-rules.ts 는 lib 에서 혼자 "@/lib/format" 별칭으로 가져온다. vitest.config.ts 에는 "@/" 별칭이 없어
-// 그대로는 이 파일을 불러올 수 없다 — 별칭을 실제 모듈(lib/format.ts)로 이어 준다. 동작을 바꾸는 가짜가 아니다.
-vi.mock("@/lib/format", async () => await import("../../lib/format"));
 
 // ---------- 시안 프레임 6-desktop 의 알림 카드 2건 ----------
 type FrameNode = { name: string; path: string[]; text: { characters: string } | null };
