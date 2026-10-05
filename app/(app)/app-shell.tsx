@@ -38,6 +38,8 @@ function activeTab(pathname: string): TabKey | undefined {
   if (isActive(pathname, "/reorder") || isActive(pathname, "/vendors")) return "reagents";
   if (isActive(pathname, "/scan")) return "scan";
   if (isActive(pathname, "/usage")) return "records";
+  // s2-spec 화면 5: 모바일 활성 탭 = "기록" (명세 표기 그대로)
+  if (isActive(pathname, "/manual")) return "records";
   return undefined;
 }
 
@@ -55,6 +57,15 @@ function subPage(pathname: string, staff: boolean): SubPage | undefined {
         { label: "시약 목록", href: "/reagents", active: true },
         ...(staff ? [{ label: "재주문 알림", href: "/reorder" }] : []),
       ],
+    };
+  }
+  // 화면 5 실험 매뉴얼: 화면 6(재주문 알림)의 하위 화면 — 뒤로가기는 화면 6, 데스크톱 nav 는 "재주문 알림"을 현재 섹션으로 표시.
+  // 학생은 이 화면에 오지 못한다(page 가 / 로 보낸다) — 그래도 학생 nav 에는 재주문 알림 링크를 그리지 않는다
+  if (/^\/manual\/?$/.test(pathname)) {
+    return {
+      title: "실험 매뉴얼",
+      backHref: "/reorder",
+      links: staff ? [{ label: "재주문 알림", href: "/reorder", active: true }] : undefined,
     };
   }
   return undefined;
