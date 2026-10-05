@@ -20,7 +20,7 @@
 - 재주문 기준(min_stock)은 아직 화면에서 정할 수 없음 — 새로 등록한 시약은 기준이 0 이라 알림이 뜨지 않음. 기준을 채우는 화면 5(실험 매뉴얼)가 다음 run
 - "실험 매뉴얼 올리기" 버튼은 화면 5 가 만들어질 때까지 없는 화면(404)으로 감
 
-result:
-reason:
-approver:
-date:
+result: approved
+reason: 미리보기 확인 후 사용자 승인
+approver: scieum (사용자)
+date: 2026-10-05
