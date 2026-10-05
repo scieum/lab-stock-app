@@ -15,6 +15,12 @@ type Props = {
   title: string;
   /** 제목 아래 안내 한 줄 (화면 8: "역할을 고르고 변경을 누르세요", body-sm 회색) */
   description?: string;
+  /** default = 회색 안내(기본), strong = 기본 글자색 안내 (화면 11 삭제 확인: "배치된 시약 6개는 …") */
+  descriptionTone?: "default" | "strong";
+  /** 안내 아래 보조 한 줄 (화면 11 삭제 확인: "시약 정보와 재고는 지워지지 않아요", caption 회색) */
+  caption?: string;
+  /** roomy = 안쪽 여백 24 · 묶음 사이 24 · 글자 사이 8 (시안 11-delete 확인 카드). 기본은 기존 간격 */
+  density?: "default" | "roomy";
   /** 제목 아래 큰 숫자 (사용량, display) */
   amount?: React.ReactNode;
   /** 숫자 옆 단위 (g · mL · 병) */
@@ -52,6 +58,9 @@ type Props = {
 export function ModalCard({
   title,
   description,
+  descriptionTone = "default",
+  caption,
+  density = "default",
   amount,
   unit,
   fields = [],
@@ -107,7 +116,13 @@ export function ModalCard({
       aria-modal={modal ? "true" : undefined}
       aria-labelledby={titleId}
       tabIndex={-1}
-      className={[styles.card, sheet ? styles.sheet : "", hideClose ? styles.plain : "", closeIcon ? styles.withIconClose : ""]
+      className={[
+        styles.card,
+        sheet ? styles.sheet : "",
+        hideClose ? styles.plain : "",
+        closeIcon ? styles.withIconClose : "",
+        density === "roomy" ? styles.roomy : "",
+      ]
         .filter(Boolean)
         .join(" ")}
     >
@@ -115,7 +130,10 @@ export function ModalCard({
         <h2 id={titleId} className={styles.title}>
           {title}
         </h2>
-        {description ? <p className={styles.description}>{description}</p> : null}
+        {description ? (
+          <p className={descriptionTone === "strong" ? styles.descriptionStrong : styles.description}>{description}</p>
+        ) : null}
+        {caption ? <p className={styles.caption}>{caption}</p> : null}
         {amount !== undefined && amount !== null ? (
           <p className={styles.amount}>
             <span className={styles.amountValue}>{amount}</span>

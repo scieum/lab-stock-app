@@ -2,6 +2,7 @@ import "server-only";
 import { getServerClient, getServerSession } from "./server";
 import { recordUserName } from "@/lib/users-rules";
 import { formatDateDots, formatStock } from "@/lib/format";
+import { slotLabel as classesLabel, slotRowClasses } from "@/lib/cabinet-rules";
 import { isLowStock, type Role } from "@/lib/types";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -73,7 +74,7 @@ export async function getReagentDetail(id: string): Promise<ReagentDetailResult>
     supabase
       .from("reagents")
       .select(
-        "id, name, cas_no, unit, stock, min_stock, msds_url, intake_date, slot:cabinet_slots(side, shelf, storage_class, cabinet:cabinets(label, door_type))",
+        "id, name, cas_no, unit, stock, min_stock, msds_url, intake_date, slot:cabinet_slots(*, cabinet:cabinets(label, door_type))",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -107,7 +108,7 @@ export async function getReagentDetail(id: string): Promise<ReagentDetailResult>
           ? {
               cabinet: cabinet.label,
               slot: slotLabel(cabinet.door_type, slot.side, slot.shelf),
-              storageClass: slot.storage_class,
+              storageClass: classesLabel(slotRowClasses(slot)),
             }
           : null,
       usage: (usageRes.data ?? []).map((u) => ({

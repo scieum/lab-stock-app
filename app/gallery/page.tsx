@@ -4,6 +4,12 @@ import { BadgeLowStock } from "@/components/badge-low-stock";
 import { ButtonOutline } from "@/components/button-outline";
 import { ButtonPillSoft } from "@/components/button-pill-soft";
 import { ButtonPrimary } from "@/components/button-primary";
+import { CabinetAdd } from "@/components/cabinet-add";
+import { CabinetDoorSelect } from "@/components/cabinet-door-select";
+import { CabinetEdit, CabinetSelects } from "@/components/cabinet-edit";
+import { CabinetShelfSelect } from "@/components/cabinet-shelf-select";
+import { CabinetLayout, CabinetLegend, CabinetSlot } from "@/components/cabinet-slot";
+import { CabinetSwitcher } from "@/components/cabinet-switcher";
 import { AuthFormCard } from "@/components/ex-auth-form-card";
 import { DataTable, DataTableRow } from "@/components/ex-data-table";
 import { DataRecordRow, DataTableCell } from "@/components/ex-data-table-cell";
@@ -17,6 +23,7 @@ import { GuestLock } from "@/components/guest-lock";
 import { CabinetSummaryCard, HomeSummary, StockSummaryCard } from "@/components/home-summary";
 import { LandingCta } from "@/components/landing-cta";
 import { LandingHero } from "@/components/landing-hero";
+import { MixWarning } from "@/components/mix-warning";
 import { MsdsEntry } from "@/components/msds-entry";
 import { MsdsQrTile } from "@/components/msds-qr-tile";
 import { NavPill } from "@/components/nav-pill";
@@ -32,10 +39,13 @@ import { SchoolSelectSido } from "@/components/school-select-sido";
 import { SegmentedControl } from "@/components/segmented-control";
 import { SegmentedControlActive } from "@/components/segmented-control-active";
 import { StockIntake } from "@/components/stock-intake";
+import { StorageClassChip, StorageClassPicker } from "@/components/storage-class-chip";
 import { TabBar } from "@/components/tab-bar";
 import { TabItem } from "@/components/tab-item";
 import { TextInput, TextInputSelect } from "@/components/text-input";
 import { UserManage } from "@/components/user-manage";
+import { mixWarnings } from "@/lib/cabinet-rules";
+import { sampleCabinets } from "./cabinets/sample";
 import { sampleInvites, sampleMemberCounts, sampleMembers } from "./users/sample";
 import styles from "./gallery.module.css";
 
@@ -80,6 +90,9 @@ const intakeReagents = [
 ];
 
 const storageClasses = ["유기", "산", "염기", "산화제", "인화성", "무기염", "독성", "기타"];
+
+const cabinet = sampleCabinets[0];
+const cabinetWarnings = mixWarnings(cabinet.slots, cabinet.doorType, cabinet.shelves).map((w) => w.text);
 
 function Item({ name, children }: { name: string; children: React.ReactNode }) {
   return (
@@ -381,6 +394,45 @@ export default function GalleryPage() {
           <Link href="/gallery/users" className={styles.more}>
             초대 · 역할 변경 · 삭제 확인 시트 보기 (/gallery/users)
           </Link>
+        </Item>
+
+        <Item name="cabinet-switcher · cabinet-add">
+          <CabinetSwitcher
+            items={sampleCabinets.map((c) => ({ id: c.id, label: c.label, href: `/gallery/cabinets?c=${c.id}` }))}
+            activeId={cabinet.id}
+          >
+            <CabinetAdd />
+          </CabinetSwitcher>
+          <Link href="/gallery/cabinets" className={styles.more}>
+            시약장 설정 상태 보기 — 기본 · 학생 · 빈 상태 · 삭제 확인 · 이름 시트 · 로그아웃 메뉴 (/gallery/cabinets)
+          </Link>
+        </Item>
+
+        <Item name="cabinet-edit · cabinet-door-select · cabinet-shelf-select">
+          <CabinetEdit>
+            <CabinetSelects>
+              <CabinetDoorSelect defaultValue={cabinet.doorType} />
+              <CabinetShelfSelect defaultValue={cabinet.shelves} />
+            </CabinetSelects>
+          </CabinetEdit>
+        </Item>
+
+        <Item name="cabinet-slot (배치도 · 범례)">
+          <CabinetLayout doorType={cabinet.doorType} shelves={cabinet.shelves} slots={cabinet.slots} readOnly />
+          <CabinetLegend />
+          <CabinetSlot name="1단" classes={[]} />
+        </Item>
+
+        <Item name="storage-class-chip">
+          <StorageClassPicker slotName="좌1단" selected={["산", "염기"]} />
+          <div className={styles.row}>
+            <StorageClassChip label="미지정" readOnly />
+            <StorageClassChip label="선택 칸" readOnly selected />
+          </div>
+        </Item>
+
+        <Item name="mix-warning">
+          <MixWarning lines={cabinetWarnings} />
         </Item>
 
         <Item name="tab-bar · tab-item">

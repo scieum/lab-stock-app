@@ -501,6 +501,14 @@ export async function sessionFor(u: TempUser): Promise<AuthSession> {
   }
 }
 
+/**
+ * 워커가 기억해 둔 일회용 계정 세션을 잊는다 — 다음 sessionFor·contextFor 가 새 세션을 만든다.
+ * 로그아웃 테스트용: 로그아웃은 그 계정의 세션을 서버에서 끝내므로(signOut 기본 scope = global) 끝난 세션을 다시 심지 않게 한다.
+ */
+export function forgetSession(userId: string): void {
+  sessions.delete(userId);
+}
+
 /** 일회용 계정 세션의 supabase-js 클라이언트 (publishable 키 + RLS) — 준비용 호출(같은 학교 admin 으로 초대·역할 지정)에 쓴다 */
 export async function clientFor(u: TempUser): Promise<SupabaseClient> {
   const s = await sessionFor(u);

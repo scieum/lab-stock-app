@@ -34,3 +34,27 @@
 .action {
   margin-top: var(--space-12);
 }
+
+/* 시안 11-empty: 흰 바탕 + 테두리, radius 24, 안쪽 24, 아이콘 32, 제목 18/700 */
+.outlined {
+  gap: var(--space-8);
+  padding: var(--space-24);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.outlined .icon {
+  width: var(--space-32);
+  height: var(--space-32);
+  margin-bottom: var(--space-8);
+}
+
+.outlined .title {
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-bold);
+}
+
+.outlined .action {
+  margin-top: var(--space-8);
+}

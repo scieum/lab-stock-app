@@ -30,6 +30,8 @@ function activeTab(pathname: string): TabKey | undefined {
   if (isActive(pathname, "/reagents")) return "reagents";
   // s2-spec 화면 7: 모바일 활성 탭 = "시약"
   if (isActive(pathname, "/intake")) return "reagents";
+  // s2-spec 화면 11 (run 20261004-2256): 모바일 활성 탭 = "시약" (11 · 11-empty · 11-delete 모두)
+  if (isActive(pathname, "/cabinets")) return "reagents";
   if (isActive(pathname, "/scan")) return "scan";
   if (isActive(pathname, "/usage")) return "records";
   return undefined;
@@ -61,6 +63,8 @@ function sectionTitle(pathname: string): string | undefined {
   if (/^\/usage\/?$/.test(pathname)) return "사용 기록 내역";
   // 시안 8-mobile: 워드마크 + "사용자 관리"
   if (isActive(pathname, "/users")) return "사용자 관리";
+  // 시안 11-mobile: 워드마크 + "시약장 설정"
+  if (isActive(pathname, "/cabinets")) return "시약장 설정";
   return undefined;
 }
 
@@ -72,6 +76,20 @@ type Props = {
   admin?: boolean;
   children: React.ReactNode;
 };
+
+/**
+ * 로그아웃 (d7 §10): 세션 쿠키를 지운 뒤 /login 으로 문서 전체를 새로 연다 —
+ * 라우터가 쥐고 있던 화면(자기 학교 데이터)이 남지 않는다. 실패하면 던져서 메뉴가 안내를 보여 준다.
+ */
+async function logout() {
+  const res = await fetch("/api/auth/logout", { method: "POST" });
+  if (!res.ok) throw new Error("logout failed");
+  // 일부러 라우터 이동(router.push)이 아닌 문서 이동 — 라우터 캐시까지 비운다
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+  window.location.assign("/login");
+  // 문서가 바뀔 때까지 메뉴를 "진행 중"으로 둔다 (다시 누르지 못하게)
+  await new Promise<never>(() => {});
+}
 
 export function AppShell({ schoolName, staff = false, admin = false, children }: Props) {
   const pathname = usePathname();
@@ -92,6 +110,7 @@ export function AppShell({ schoolName, staff = false, admin = false, children }:
           title={sub?.title}
           backHref={sub?.backHref}
           sectionTitle={sub ? undefined : sectionTitle(pathname)}
+          onLogout={logout}
         />
         <main className={styles.main}>{children}</main>
       </div>

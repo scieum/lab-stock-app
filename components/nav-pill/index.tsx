@@ -3,6 +3,7 @@ import { Icon } from "@/components/icons";
 import { LinkPending } from "@/components/link-pending";
 import { linkPrefetch } from "@/lib/link-prefetch";
 import { NavLinkLocked } from "./locked-link";
+import { SchoolMenu } from "./school-menu";
 import styles from "./styles.module.css";
 
 export type NavLinkItem = {
@@ -25,10 +26,15 @@ type Props = {
   sectionTitle?: string;
   /** 데스크톱 상단 링크 (모바일에서는 숨김 — 모바일은 tab-bar) */
   links?: NavLinkItem[];
+  /**
+   * 있으면 학교명이 버튼이 되고, 누르면 "로그아웃" 1개짜리 메뉴가 열린다 (d7 §10 — 로그인 후 화면만).
+   * 없으면 학교명은 지금처럼 글자다 (로그인 전 화면 · 둘러보기 · 소속 학교 없음 안내).
+   */
+  onLogout?: () => void | Promise<void>;
 };
 
 /** 상단 내비게이션 stadium pill */
-export function NavPill({ title, backHref, schoolName, endTitle, links, sectionTitle }: Props) {
+export function NavPill({ title, backHref, schoolName, endTitle, links, sectionTitle, onLogout }: Props) {
   return (
     <header data-component="nav-pill" className={styles.nav}>
       <div className={styles.left}>
@@ -81,7 +87,13 @@ export function NavPill({ title, backHref, schoolName, endTitle, links, sectionT
           </nav>
         ) : null}
       </div>
-      {schoolName ? <span className={styles.school}>{schoolName}</span> : null}
+      {schoolName ? (
+        onLogout ? (
+          <SchoolMenu schoolName={schoolName} onLogout={onLogout} />
+        ) : (
+          <span className={styles.school}>{schoolName}</span>
+        )
+      ) : null}
       {endTitle ? <span className={styles.endTitle}>{endTitle}</span> : null}
     </header>
   );

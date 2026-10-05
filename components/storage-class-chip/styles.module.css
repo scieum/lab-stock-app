@@ -1,0 +1,97 @@
+/* 시안 11 storage-class-chip: pill, 위아래 8 · 좌우 16, 라벨 12/600(데스크톱 13). 미선택 = 회색 채움.
+ * 선택 여부로 크기가 흔들리지 않게 투명 테두리를 둔다 */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: var(--space-8) var(--space-16);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  white-space: nowrap;
+}
+
+.selected {
+  border-color: var(--color-highlight);
+  background: var(--color-highlight-soft);
+}
+
+.toggle {
+  cursor: pointer;
+}
+
+.toggle:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: calc(var(--border-width) * 2);
+}
+
+.toggle:disabled {
+  cursor: not-allowed;
+}
+
+.toggle:disabled:not(.selected) {
+  color: var(--color-text-muted);
+}
+
+/* 누른 즉시 반응 */
+.toggle:active:not(:disabled) {
+  opacity: var(--pressed-opacity);
+}
+
+/* 범례 칩 (시안 legend-chip: 위아래 4 · 좌우 12, 12/600) */
+.legend {
+  padding: var(--space-4) var(--space-12);
+}
+
+/* 칩 묶음 (시안 slot-class-picker: 사이 8) */
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.pickerHeader {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-8);
+}
+
+.pickerTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.hint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+@media (min-width: 1024px) {
+  .chip:not(.legend) {
+    font-size: var(--font-size-13);
+    line-height: var(--line-height-normal);
+  }
+
+  .pickerTitle {
+    font-size: var(--font-size-15);
+  }
+}

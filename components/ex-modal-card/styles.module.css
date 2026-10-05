@@ -52,10 +52,36 @@
   line-height: var(--line-height-normal);
 }
 
+.descriptionStrong {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.caption {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
 /* 화면 8: 닫기 버튼 없이 본문(children)이 버튼을 가진 시트 — 시안 간격 16, 아래 여백 32 */
 .plain {
   gap: var(--space-16);
   padding-bottom: var(--space-32);
+}
+
+/* 화면 11: 삭제 확인·이름 시트 — 시안 11-delete: 안쪽 24, 글자 묶음과 버튼 사이 24, 글자 사이 8 */
+.card.roomy {
+  gap: var(--space-24);
+  padding: var(--space-24);
+}
+
+.roomy .summary {
+  gap: var(--space-8);
 }
 
 .amount {
