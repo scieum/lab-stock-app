@@ -1,9 +1,10 @@
 {
-  "stage": "D2",
+  "stage": "D3",
   "retries": 0,
   "baseline_hash": "9a49757407ca93ffcd4f20f9381072bbacbd8797aeb897ed07b4cdd74383acb2",
   "passed": [
-    "D1"
+    "D1",
+    "D2"
   ],
   "screens_passed": []
 }
