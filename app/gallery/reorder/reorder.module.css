@@ -1,0 +1,26 @@
+/* 화면 6 갤러리 예시 배치 (시안 6-mobile content: 안내 박스 → 알림 목록 → "판매처 등록", 사이 16) */
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.alertColumn {
+  min-width: 0;
+}
+
+.note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}

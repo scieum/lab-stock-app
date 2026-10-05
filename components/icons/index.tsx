@@ -26,7 +26,8 @@ export type IconName =
   | "close"
   | "info"
   | "plus"
-  | "warning";
+  | "warning"
+  | "more";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: (
@@ -158,6 +159,8 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <path d="M12 10v4.5M12 17.2h.01" />
     </>
   ),
+  // 시안 9 vendor-row icon-more (가로 점 3개)
+  more: <path d="M5.5 12h.01M12 12h.01M18.5 12h.01" strokeWidth={3} />,
   bell: (
     <>
       <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15Z" />

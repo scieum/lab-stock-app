@@ -84,6 +84,12 @@
   gap: var(--space-8);
 }
 
+/* 화면 6: 판매처 연결 — 시안 6 ex-modal-card: 안쪽 24·16, 묶음 사이 12 (데스크탑 안쪽 24) */
+.card.tight {
+  gap: var(--space-12);
+  padding: var(--space-24) var(--space-16);
+}
+
 .amount {
   display: flex;
   align-items: baseline;
@@ -184,6 +190,10 @@
 
   .plain {
     padding-bottom: var(--space-24);
+  }
+
+  .card.tight {
+    padding: var(--space-24);
   }
 
   .sheet {

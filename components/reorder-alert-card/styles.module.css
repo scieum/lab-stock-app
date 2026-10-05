@@ -35,3 +35,62 @@
   font-size: var(--font-size-15);
   line-height: var(--line-height-normal);
 }
+
+/* ---------- 화면 6: 알림 1건 카드 (시안 6 reorder-alert-card: 안쪽 24, 사이 8) ---------- */
+.item {
+  min-width: 0;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.badgeRow {
+  display: flex;
+}
+
+.name {
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.basis {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.date {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.listItem {
+  display: block;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-16);
+  }
+}

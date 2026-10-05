@@ -1,0 +1,26 @@
+/* 화면 9 갤러리 예시 배치 (시안 9-mobile content: 사이 16 · 9-desktop toolbar: 탭 400 + 검색, 사이 16) */
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+/* 더보기 메뉴가 펼쳐질 자리 */
+.menuStage {
+  min-height: calc(var(--control-height) * 9);
+}
+
+/* 목록 옆에 폼 칸(448)이 놓이는 예시가 좁아지지 않게 한 줄에 하나씩 */
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-32);
+}
