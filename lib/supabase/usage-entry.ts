@@ -1,5 +1,5 @@
 import "server-only";
-import { createClient } from "./server";
+import { getServerClient, getServerSession, type ServerSession } from "./server";
 import { formatDateDots } from "@/lib/format";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -36,36 +36,41 @@ export type UsageEntryResult =
  * 화면 4 사용 기록 입력 — 로그인 세션(publishable 키 + 쿠키)으로 읽어 RLS 가 자기 학교 행만 돌려준다.
  */
 export async function getUsageEntry(reagentId: string | undefined): Promise<UsageEntryResult> {
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const uid = claims?.claims?.sub;
-  if (!uid) return { kind: "signed-out" };
-
-  const profile = await supabase.from("profiles").select("display_name").eq("user_id", uid).maybeSingle();
-  if (profile.error || !profile.data) return { kind: "signed-out" };
-
-  const base = {
-    userName: profile.data.display_name || "-",
+  const base = (me: Extract<ServerSession, { kind: "member" }>) => ({
+    userName: me.displayName || "-",
     today: formatDateDots(SEOUL_DATE.format(new Date())),
-  };
+  });
 
+  if (reagentId !== undefined && !isUuid(reagentId)) {
+    return (await getServerSession()).kind === "member" ? { kind: "not-found" } : { kind: "signed-out" };
+  }
+
+  const supabase = await getServerClient();
+  // 세션 검증(요청당 1회, layout 과 공유)과 조회를 같이 보낸다 — 결과는 세션이 확인된 뒤에만 쓴다 (행은 RLS 가 거른다)
   if (reagentId !== undefined) {
-    if (!isUuid(reagentId)) return { kind: "not-found" };
-    const { data, error } = await supabase
-      .from("reagents")
-      .select("id, name, unit, stock")
-      .eq("id", reagentId)
-      .maybeSingle();
+    const [me, { data, error }] = await Promise.all([
+      getServerSession(),
+      supabase.from("reagents").select("id, name, unit, stock").eq("id", reagentId).maybeSingle(),
+    ]);
+    if (me.kind !== "member") return { kind: "signed-out" };
     if (error || !data) return { kind: "not-found" };
     return {
       kind: "ok",
-      data: { ...base, reagent: { id: data.id, name: data.name, unit: data.unit, stock: Number(data.stock) }, options: [] },
+      data: {
+        ...base(me),
+        reagent: { id: data.id, name: data.name, unit: data.unit, stock: Number(data.stock) },
+        options: [],
+      },
     };
   }
 
-  const { data } = await supabase.from("reagents").select("id, name").order("name");
+  const [me, { data }] = await Promise.all([
+    getServerSession(),
+    supabase.from("reagents").select("id, name").order("name"),
+  ]);
+  if (me.kind !== "member") return { kind: "signed-out" };
   return {
     kind: "ok",
-    data: { ...base, reagent: null, options: (data ?? []).map((r) => ({ value: r.id, label: r.name })) },
+    data: { ...base(me), reagent: null, options: (data ?? []).map((r) => ({ value: r.id, label: r.name })) },
   };
 }

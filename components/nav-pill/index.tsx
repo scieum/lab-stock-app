@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/icons";
+import { LinkPending } from "@/components/link-pending";
+import { linkPrefetch } from "@/lib/link-prefetch";
 import { NavLinkLocked } from "./locked-link";
 import styles from "./styles.module.css";
 
@@ -33,7 +35,7 @@ export function NavPill({ title, backHref, schoolName, endTitle, links, sectionT
         {title ? (
           <span className={styles.titleGroup}>
             {backHref ? (
-              <Link href={backHref} className={styles.back} aria-label="뒤로">
+              <Link href={backHref} prefetch={linkPrefetch(backHref)} className={styles.back} aria-label="뒤로">
                 <Icon name="back" className={styles.backIcon} />
               </Link>
             ) : null}
@@ -41,7 +43,7 @@ export function NavPill({ title, backHref, schoolName, endTitle, links, sectionT
           </span>
         ) : backHref ? (
           <span className={styles.titleGroup}>
-            <Link href={backHref} className={styles.back} aria-label="뒤로">
+            <Link href={backHref} prefetch={linkPrefetch(backHref)} className={styles.back} aria-label="뒤로">
               <Icon name="back" className={styles.backIcon} />
             </Link>
             <span className={styles.wordmark}>Lab_Stock</span>
@@ -67,10 +69,12 @@ export function NavPill({ title, backHref, schoolName, endTitle, links, sectionT
                 <Link
                   key={l.href}
                   href={l.href}
+                  prefetch={linkPrefetch(l.href)}
                   className={l.active ? styles.linkActive : styles.link}
                   aria-current={l.active ? "page" : undefined}
                 >
                   {l.label}
+                  <LinkPending />
                 </Link>
               ),
             )}

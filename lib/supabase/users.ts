@@ -1,5 +1,5 @@
 import "server-only";
-import { createClient } from "./server";
+import { createClient, getServerClient, getServerSession } from "./server";
 import {
   checkInvite,
   countMembers,
@@ -71,19 +71,16 @@ function toInviteRole(v: string): InviteRole {
  * 멤버의 이메일은 읽지 않는다 (d7 §8).
  */
 export async function getUserManage(): Promise<UserManageResult> {
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const uid = claims?.claims?.sub;
-  if (!uid) return { kind: "signed-out" };
+  // 역할을 먼저 본다 (요청당 1회 읽은 세션, layout 과 공유) — admin 이 아니면 멤버·초대를 읽지 않는다
+  const me = await getServerSession();
+  if (me.kind === "signed-out" || me.kind === "unavailable") return { kind: "signed-out" };
+  if (me.kind === "no-school") return { kind: "no-school" };
+  if (me.role !== "admin") return { kind: "forbidden" };
+  const uid = me.userId;
+  const schoolId = me.school.id;
 
-  const me = await supabase.from("profiles").select("role, school_id").eq("user_id", uid).maybeSingle();
-  if (me.error) return { kind: "signed-out" };
-  if (!me.data) return { kind: "no-school" };
-  if (me.data.role !== "admin") return { kind: "forbidden" };
-  const schoolId = me.data.school_id;
-
-  const [school, members, invites] = await Promise.all([
-    supabase.from("schools").select("name").eq("id", schoolId).maybeSingle(),
+  const supabase = await getServerClient();
+  const [members, invites] = await Promise.all([
     supabase
       .from("profiles")
       .select("user_id, display_name, role, created_at")
@@ -98,14 +95,12 @@ export async function getUserManage(): Promise<UserManageResult> {
       .order("invited_at", { ascending: false })
       .order("email", { ascending: true }),
   ]);
-  if (school.error || !school.data) return { kind: "signed-out" };
-
   const rows = members.data ?? [];
   const counts = countMembers(rows.map((m) => m.role));
   return {
     kind: "ok",
     data: {
-      schoolName: school.data.name,
+      schoolName: me.school.name,
       counts,
       members: rows.map((m) => {
         const role: MemberRole = isMemberRole(m.role) ? m.role : "student";

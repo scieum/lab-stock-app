@@ -1,5 +1,5 @@
 import "server-only";
-import { createClient } from "./server";
+import { getServerClient, getServerSession } from "./server";
 import { recordUserName } from "@/lib/users-rules";
 import {
   USAGE_HISTORY_LIMIT,
@@ -49,17 +49,15 @@ export type UsageHistoryResult = { kind: "ok"; data: UsageHistory } | { kind: "s
  * 함수는 SECURITY INVOKER 라 usage_logs·reagents RLS 가 자기 학교 행만 돌려준다 (service role 미사용).
  */
 export async function getUsageHistory(filter: UsageHistoryFilter = {}): Promise<UsageHistoryResult> {
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  if (!claims?.claims?.sub) return { kind: "signed-out" };
-
   const onlyMine = filter.onlyMine === true;
   const period = toUsagePeriod(filter.period);
   const query = normalizeUsageQuery(filter.query);
   const since = usagePeriodSince(period);
 
-  const [school, history] = await Promise.all([
-    supabase.from("schools").select("name").maybeSingle(),
+  const supabase = await getServerClient();
+  // 세션 검증(요청당 1회, layout 과 공유)과 내역 조회를 같이 보낸다 — 결과는 세션이 확인된 뒤에만 쓴다 (행은 RLS 가 거른다)
+  const [me, history] = await Promise.all([
+    getServerSession(),
     supabase.rpc("usage_history", {
       p_only_mine: onlyMine,
       p_limit: USAGE_HISTORY_LIMIT,
@@ -67,13 +65,13 @@ export async function getUsageHistory(filter: UsageHistoryFilter = {}): Promise<
       ...(query ? { p_query: query } : {}),
     }),
   ]);
-  if (school.error || !school.data) return { kind: "signed-out" };
+  if (me.kind !== "member") return { kind: "signed-out" };
 
   const rows = history.data ?? [];
   return {
     kind: "ok",
     data: {
-      schoolName: school.data.name,
+      schoolName: me.school.name,
       filter: { onlyMine, period, query: query ?? "" },
       records: rows.map((u) => ({
         id: u.id,

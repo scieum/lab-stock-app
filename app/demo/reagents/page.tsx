@@ -1,5 +1,5 @@
-import { ReagentBrowser, type ReagentFilter } from "@/app/(app)/reagents/reagent-browser";
-import styles from "@/app/(app)/reagents/reagents.module.css";
+import { ReagentBrowser, type ReagentFilter } from "@/app/(app)/(member)/reagents/(list)/reagent-browser";
+import styles from "@/app/(app)/(member)/reagents/(list)/reagents.module.css";
 import { getDemoReagentList } from "@/lib/supabase/demo-data";
 
 export const dynamic = "force-dynamic";

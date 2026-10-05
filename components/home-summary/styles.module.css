@@ -129,3 +129,11 @@
   font-size: var(--font-size-15);
   line-height: var(--line-height-normal);
 }
+
+/* 누른 즉시 반응 — 누르는 동안·이동 중(서버 응답 대기)인 링크 */
+a.chipLink:active,
+a.chipLink:has([data-pending]),
+a.headerLink:active,
+a.headerLink:has([data-pending]) {
+  opacity: var(--pressed-opacity);
+}

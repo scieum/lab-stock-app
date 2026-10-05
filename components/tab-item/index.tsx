@@ -4,6 +4,8 @@ import Link from "next/link";
 import { GuestLock } from "@/components/guest-lock";
 import { useGuestToast } from "@/components/guest-lock/toast";
 import { Icon } from "@/components/icons";
+import { LinkPending } from "@/components/link-pending";
+import { linkPrefetch } from "@/lib/link-prefetch";
 import styles from "./styles.module.css";
 
 type Props = {
@@ -36,11 +38,13 @@ export function TabItem({ label, href, icon, active, locked }: Props) {
     <Link
       data-component="tab-item"
       href={href}
+      prefetch={linkPrefetch(href)}
       className={active ? styles.itemActive : styles.item}
       aria-current={active ? "page" : undefined}
     >
       <Icon name={icon} className={styles.icon} />
       <span className={styles.label}>{label}</span>
+      <LinkPending />
     </Link>
   );
 }

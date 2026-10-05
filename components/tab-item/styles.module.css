@@ -26,6 +26,28 @@
   color: var(--color-highlight);
 }
 
+/* 누른 즉시 반응 — 누르는 동안·이동 중(서버 응답 대기)인 탭은 활성 모양, 그동안 원래 활성 탭은 비활성 모양.
+ * aria-current 는 실제 경로가 바뀔 때만 옮겨 간다 */
+a.item:active,
+a.item:has([data-pending]) {
+  color: var(--color-text);
+}
+
+a.item:active .icon,
+a.item:has([data-pending]) .icon {
+  color: var(--color-highlight);
+}
+
+.itemActive:has(~ a.item [data-pending]),
+a.item:has([data-pending]) ~ .itemActive {
+  color: var(--color-text-muted);
+}
+
+.itemActive:has(~ a.item [data-pending]) .icon,
+a.item:has([data-pending]) ~ .itemActive .icon {
+  color: var(--color-text-muted);
+}
+
 .label {
   font-size: var(--font-size-12);
   font-weight: var(--font-weight-semibold);

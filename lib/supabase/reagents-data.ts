@@ -1,5 +1,5 @@
 import "server-only";
-import { createClient } from "./server";
+import { getServerClient, getServerSession } from "./server";
 import { formatDateDots, formatStock } from "@/lib/format";
 import { isLowStock, type Role } from "@/lib/types";
 
@@ -19,20 +19,16 @@ export type ReagentListData = { role: Role; items: ReagentListItem[] };
  * 세션·프로필이 없으면 null.
  */
 export async function getReagentList(): Promise<ReagentListData | null> {
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const uid = claims?.claims?.sub;
-  if (!uid) return null;
-
-  const [profile, reagents] = await Promise.all([
-    supabase.from("profiles").select("role").eq("user_id", uid).maybeSingle(),
+  const supabase = await getServerClient();
+  // 세션 검증(요청당 1회, layout 과 공유)과 목록 조회를 같이 보낸다 — 결과는 세션이 확인된 뒤에만 쓴다 (행은 RLS 가 거른다)
+  const [me, reagents] = await Promise.all([
+    getServerSession(),
     supabase.from("reagents").select("id, name, cas_no, unit, stock, min_stock, intake_date").order("name"),
   ]);
-  if (profile.error || !profile.data) return null;
+  if (me.kind !== "member") return null;
 
-  const role = (["student", "teacher", "admin"] as const).find((r) => r === profile.data!.role) ?? "student";
   return {
-    role,
+    role: me.role,
     items: (reagents.data ?? []).map((r) => ({
       id: r.id,
       name: r.name,

@@ -67,7 +67,10 @@
   color: var(--color-highlight);
 }
 
-a.row:hover {
+/* 누른 즉시 반응 — 누르는 동안·이동 중(서버 응답 대기)인 행 */
+a.row:hover,
+a.row:active,
+a.row:has([data-pending]) {
   background: var(--color-highlight-soft);
 }
 

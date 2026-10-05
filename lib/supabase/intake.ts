@@ -1,5 +1,5 @@
 import "server-only";
-import { createClient } from "./server";
+import { createClient, getServerClient, getServerSession } from "./server";
 import {
   checkRecordIntake,
   checkRegisterReagent,
@@ -44,24 +44,17 @@ export type RegisterReagentResult =
   | { ok: true; reagentId: string }
   | { ok: false; error: string };
 
-function toRole(v: string): Role {
-  return (["student", "teacher", "admin"] as const).find((r) => r === v) ?? "student";
-}
-
 /**
  * 화면 7 입고·시약 등록 — 로그인 세션(publishable 키 + 쿠키)으로 읽어 RLS 가 자기 학교 행만 돌려준다.
  */
 export async function getIntakeEntry(): Promise<IntakeEntryResult> {
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const uid = claims?.claims?.sub;
-  if (!uid) return { kind: "signed-out" };
-
-  const profile = await supabase.from("profiles").select("role").eq("user_id", uid).maybeSingle();
-  if (profile.error || !profile.data) return { kind: "signed-out" };
-  const role = toRole(profile.data.role);
+  // 역할을 먼저 본다 (요청당 1회 읽은 세션, layout 과 공유) — 학생이면 시약 목록을 읽지 않는다
+  const me = await getServerSession();
+  if (me.kind !== "member") return { kind: "signed-out" };
+  const role: Role = me.role;
   if (role === "student") return { kind: "forbidden" };
 
+  const supabase = await getServerClient();
   const { data } = await supabase.from("reagents").select("id, name, stock, unit").order("name");
   return {
     kind: "ok",

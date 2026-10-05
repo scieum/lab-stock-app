@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { LinkPending } from "@/components/link-pending";
+import { linkPrefetch } from "@/lib/link-prefetch";
 import { BadgeLowStock } from "@/components/badge-low-stock";
 import { Icon } from "@/components/icons";
 import styles from "./styles.module.css";
@@ -39,8 +41,9 @@ export function StockSummaryCard({
           {items.map((it) => (
             <li key={`${it.name}-${it.amount}`} className={styles.chip}>
               {it.href ? (
-                <Link href={it.href} className={styles.chipLink}>
+                <Link href={it.href} prefetch={linkPrefetch(it.href)} className={styles.chipLink}>
                   {it.name} · {it.amount}
+                  <LinkPending />
                 </Link>
               ) : (
                 `${it.name} · ${it.amount}`
@@ -82,8 +85,9 @@ export function CabinetSummaryCard({
   return (
     <div className={styles.card}>
       {href ? (
-        <Link href={href} className={styles.headerLink}>
+        <Link href={href} prefetch={linkPrefetch(href)} className={styles.headerLink}>
           {title}
+          <LinkPending />
         </Link>
       ) : (
         <div className={styles.headerLink}>{title}</div>

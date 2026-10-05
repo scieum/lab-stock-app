@@ -20,6 +20,12 @@
   outline: var(--border-width) solid var(--color-highlight);
 }
 
+/* 누른 즉시 반응 — 누르는 동안·이동 중(서버 응답 대기)인 칸 */
+.item:active,
+.item:has([data-pending]) {
+  opacity: var(--pressed-opacity);
+}
+
 .iconBg {
   display: inline-flex;
   align-items: center;

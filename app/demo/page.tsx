@@ -1,4 +1,4 @@
-import { HomeView } from "@/app/(app)/home-screen";
+import { HomeView } from "@/app/(app)/(home)/home-screen";
 import { getDemoHomeData } from "@/lib/supabase/demo-data";
 
 export const dynamic = "force-dynamic";

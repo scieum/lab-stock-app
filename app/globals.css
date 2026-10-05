@@ -6,6 +6,11 @@
   box-sizing: border-box;
 }
 
+/* 누른 즉시 반응(:active · 이동 중)의 눌린 모양 — 색을 새로 쓰지 않고 투명도만 */
+:root {
+  --pressed-opacity: 0.6;
+}
+
 html,
 body {
   margin: 0;

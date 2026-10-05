@@ -1,0 +1,35 @@
+/* 본문 자리 표시 — 회색 면(surface-muted)만, 글자 없음. 간격은 목록 화면과 같은 16 */
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.bar,
+.block {
+  display: block;
+  background: var(--color-surface-muted);
+}
+
+.bar {
+  height: var(--control-height);
+  border-radius: var(--radius-pill);
+}
+
+.block {
+  height: var(--tab-bar-height);
+  border-radius: var(--radius-md);
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}

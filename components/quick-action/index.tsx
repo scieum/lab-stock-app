@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/icons";
+import { LinkPending } from "@/components/link-pending";
+import { linkPrefetch } from "@/lib/link-prefetch";
 import { QuickActionLocked } from "./locked-item";
 import styles from "./styles.module.css";
 
@@ -24,11 +26,12 @@ export function QuickAction({ items }: { items: QuickActionItem[] }) {
         it.locked ? (
           <QuickActionLocked key={it.href} label={it.label} icon={it.icon} />
         ) : (
-          <Link key={it.href} href={it.href} className={styles.item} data-component={it.entry}>
+          <Link key={it.href} href={it.href} prefetch={linkPrefetch(it.href)} className={styles.item} data-component={it.entry}>
             <span className={styles.iconBg}>
               <Icon name={it.icon} className={styles.icon} />
             </span>
             <span className={styles.label}>{it.label}</span>
+            <LinkPending />
           </Link>
         ),
       )}
