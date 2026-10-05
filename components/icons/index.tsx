@@ -24,7 +24,9 @@ export type IconName =
   | "map-pin"
   | "bell"
   | "close"
-  | "info";
+  | "info"
+  | "plus"
+  | "warning";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: (
@@ -145,6 +147,15 @@ const PATHS: Record<IconName, React.ReactNode> = {
     <>
       <circle cx="12" cy="12" r="9" />
       <path d="M12 11v5.5M12 7.5h.01" />
+    </>
+  ),
+  // 시안 11 cabinet-add icon-plus
+  plus: <path d="M12 5v14M5 12h14" />,
+  // 시안 11 cabinet-slot · mix-warning icon-warning (세모 + 느낌표)
+  warning: (
+    <>
+      <path d="M12 4 2.8 19.5h18.4Z" />
+      <path d="M12 10v4.5M12 17.2h.01" />
     </>
   ),
   bell: (

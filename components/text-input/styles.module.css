@@ -117,6 +117,15 @@
   line-height: var(--line-height-normal);
 }
 
+/* 화면 11 이름 시트: 상자 아래 오른쪽 글자 수 (caption 회색) */
+.counter {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-tight);
+  text-align: right;
+}
+
 /* 날짜 입력: 브라우저 기본 달력 아이콘 대신 시안의 달력 아이콘을 보여 주고, 상자 어디를 눌러도 달력이 열린다 */
 .box:has(.input[type="date"]) {
   position: relative;

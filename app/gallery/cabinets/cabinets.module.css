@@ -1,0 +1,68 @@
+/* 화면 11 갤러리 예시 배치 (시안 11-mobile content: 사이 16) */
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.pageTitle,
+.cabinetTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.cabinetMeta {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.unassigned {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.sectionTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+/* 메뉴가 펼쳐질 자리 */
+.menuStage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-height: calc(var(--control-height) * 3);
+}
+
+@media (min-width: 1024px) {
+  .header {
+    gap: var(--space-12);
+  }
+
+  .cabinetMeta {
+    font-size: var(--font-size-13);
+  }
+}

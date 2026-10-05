@@ -1,0 +1,13 @@
+/* 시안 11: 라벨 + option-group 세로, 사이 4 (데스크톱 8) */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .field {
+    gap: var(--space-8);
+  }
+}

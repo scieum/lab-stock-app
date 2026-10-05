@@ -1,0 +1,156 @@
+/* 시안 11 cabinet-edit
+ * 모바일(11-mobile): 테두리 없는 세로 묶음, 사이 16
+ * 데스크톱(11-desktop): 흰 바탕 + 테두리 카드, radius 24, 안쪽 24, 사이 24
+ */
+.edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+/* 관리 줄 (시안 cabinet-manage: 높이 44, 왼쪽 "이름 바꾸기" · 오른쪽 "삭제") */
+.manage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.manage .rename {
+  height: var(--button-min-height);
+}
+
+/* 조용한 텍스트 동작 (시안 text-action-delete: 채움·테두리 없음, 좌우 12, 15/600 기본색, 누름 영역 44) */
+.delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: var(--button-min-height);
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-12);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+}
+
+.delete:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.delete:disabled {
+  color: var(--color-text-placeholder);
+  cursor: not-allowed;
+}
+
+/* 누른 즉시 반응 */
+.delete:active:not(:disabled) {
+  opacity: var(--pressed-opacity);
+}
+
+/* 문 형태 · 단 수 (시안 cabinet-selects: 모바일 2열 사이 12) */
+.selects {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-12);
+}
+
+/* 저장 줄 */
+.saveBar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.saveBar > :is(button, a) {
+  width: 100%;
+}
+
+/* 모바일: tab-bar 바로 위 고정 (시안 save-bar: 흰 바탕, 안쪽 16) */
+.sticky {
+  position: fixed;
+  right: 0;
+  bottom: var(--tab-bar-height);
+  left: 0;
+  z-index: 10;
+  padding: var(--space-16);
+  background: var(--color-surface);
+}
+
+.notice {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+/* 이름 시트 */
+.sheetForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.sheetActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.sheetActions .sheetButton {
+  width: 100%;
+}
+
+/* 삭제 확인 (시안 modal-actions: 가로 2버튼, 사이 12) */
+.confirmBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.confirm {
+  display: flex;
+  gap: var(--space-12);
+}
+
+.confirm .confirmButton {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 실패 안내 (핑크 아님) */
+.sheetError {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+@media (min-width: 1024px) {
+  .edit {
+    gap: var(--space-24);
+    padding: var(--space-24);
+    border: var(--border-width) solid var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+  }
+
+  .selects {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-24);
+  }
+
+  .sticky {
+    position: static;
+    padding: var(--space-0);
+  }
+}

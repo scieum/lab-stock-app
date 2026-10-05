@@ -12,6 +12,8 @@ type Props = {
   /** 보조 (입고일 · 시각) */
   caption?: string;
   lowStock?: boolean;
+  /** 오른쪽 끝 보조 글자 (화면 11 "칸 없음" — caption 회색). 있으면 링크 행이어도 화살표 대신 이 글자를 둔다 */
+  trailingCaption?: string;
   /** 있으면 행 전체가 링크 + 오른쪽 화살표 */
   href?: string;
   /** 선택·활성 행 (하늘색 연한 바탕) */
@@ -21,7 +23,7 @@ type Props = {
 };
 
 /** 시약 목록·최근 사용 기록 행 (회색 바탕, radius 16) */
-export function ReagentRow({ title, body, caption, lowStock, href, selected, onSelect }: Props) {
+export function ReagentRow({ title, body, caption, lowStock, trailingCaption, href, selected, onSelect }: Props) {
   const cls = [styles.row, selected ? styles.selected : ""].join(" ").trim();
   const content = (
     <>
@@ -38,7 +40,8 @@ export function ReagentRow({ title, body, caption, lowStock, href, selected, onS
           </div>
         ) : null}
       </div>
-      {href && !onSelect ? <Icon name="chevron-right" className={styles.chevron} /> : null}
+      {trailingCaption ? <span className={styles.trailing}>{trailingCaption}</span> : null}
+      {href && !onSelect && !trailingCaption ? <Icon name="chevron-right" className={styles.chevron} /> : null}
       {onSelect && selected ? <Icon name="check" className={styles.check} /> : null}
     </>
   );

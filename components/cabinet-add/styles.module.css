@@ -1,0 +1,47 @@
+/* 시안 11 cabinet-add: 127×44, 회색 채움, pill, 좌우 16, 아이콘 16 + 8 + 라벨 15/600 */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  flex-shrink: 0;
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-16);
+  border: 0;
+  border-radius: var(--radius-button);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.icon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  flex-shrink: 0;
+  color: var(--color-highlight);
+}
+
+.button:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: var(--space-4);
+}
+
+.button:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.button:disabled .icon {
+  color: var(--color-text-placeholder);
+}
+
+/* 누른 즉시 반응 — 누르는 동안·추가 요청 중 */
+.button:active:not(:disabled),
+.pending {
+  opacity: var(--pressed-opacity);
+}

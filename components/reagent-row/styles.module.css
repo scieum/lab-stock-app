@@ -60,6 +60,16 @@
   line-height: var(--line-height-tight);
 }
 
+/* 화면 11: 오른쪽 끝 "칸 없음" (시안 slot-unassigned, caption 회색) */
+.trailing {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-tight);
+  white-space: nowrap;
+}
+
 .chevron {
   width: var(--icon-md);
   height: var(--icon-md);

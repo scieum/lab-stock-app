@@ -1,0 +1,79 @@
+/* 시안 11 select-label(caption 회색) + option-group(회색 pill 통, 안쪽 4, 사이 4) */
+.label {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-tight);
+}
+
+.group {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+}
+
+/* option: 위아래 8 · 좌우 12, 미선택 = 회색 글자 15/400. 선택 여부로 크기가 흔들리지 않게 투명 테두리 */
+.option {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: var(--space-8) var(--space-12);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* 라디오 입력은 pill 전체를 덮는 투명한 누름 영역 */
+.input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border-radius: var(--radius-pill);
+  opacity: 0;
+  cursor: inherit;
+}
+
+/* 선택 = 연하늘 바탕 + 하늘색 테두리, 글자는 기본색 15/600 */
+.option:has(.input:checked) {
+  border-color: var(--color-highlight);
+  background: var(--color-highlight-soft);
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.option:has(.input:focus-visible) {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: calc(var(--border-width) * 2);
+}
+
+.option:has(.input:disabled) {
+  cursor: not-allowed;
+}
+
+.option:has(.input:disabled:not(:checked)) {
+  color: var(--color-text-placeholder);
+}
+
+/* 누른 즉시 반응 */
+.option:has(.input:active:not(:disabled):not(:checked)) {
+  opacity: var(--pressed-opacity);
+}
+
+@media (min-width: 1024px) {
+  .label {
+    font-size: var(--font-size-13);
+    line-height: var(--line-height-normal);
+  }
+}

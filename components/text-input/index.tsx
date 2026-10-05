@@ -20,6 +20,8 @@ type Props = {
   error?: string;
   /** 상자 안 뒤쪽 요소 (예: 비밀번호 보기 버튼) */
   trailing?: React.ReactNode;
+  /** 상자 아래 오른쪽 글자 수 ("6/20", caption 회색 — 화면 11 이름 시트). 세는 것은 부르는 쪽이 한다 */
+  counter?: string;
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "required">;
 
 /** 입력 상자 (회색 바탕, radius 16). 라벨이 있으면 라벨 + 필수 표시 + 상자. */
@@ -33,6 +35,7 @@ export function TextInput({
   density = "default",
   error,
   trailing,
+  counter,
   id,
   className,
   ...rest
@@ -40,6 +43,8 @@ export function TextInput({
   const autoId = useId();
   const inputId = id ?? autoId;
   const errorId = `${inputId}-error`;
+  const counterId = `${inputId}-counter`;
+  const describedBy = [error ? errorId : "", counter ? counterId : ""].filter(Boolean).join(" ") || undefined;
   const cls = [styles.field, labelTone === "strong" ? styles.strong : "", className ?? ""].filter(Boolean).join(" ");
   return (
     <div data-component="text-input" className={cls}>
@@ -59,7 +64,7 @@ export function TextInput({
           required={required}
           aria-label={label ? undefined : rest.placeholder}
           aria-invalid={error ? true : undefined}
-          aria-describedby={error ? errorId : undefined}
+          aria-describedby={describedBy}
           {...rest}
         />
         {icon === "calendar" ? <Icon name="calendar" className={styles.icon} /> : null}
@@ -69,6 +74,11 @@ export function TextInput({
       {error ? (
         <p id={errorId} role="alert" className={styles.error}>
           {error}
+        </p>
+      ) : null}
+      {counter ? (
+        <p id={counterId} className={styles.counter}>
+          {counter}
         </p>
       ) : null}
     </div>
