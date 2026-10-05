@@ -2,6 +2,9 @@
 // 기준: harness/d7-data.md §2 (reagents insert·stock 증가 / cabinets·cabinet_slots 변경 = teacher·admin,
 //       usage_logs insert = 자기 user_id, 재고 차감 = record_usage 하나), design/rules.json roles.
 // 바꾼 데이터는 전부 원상복구한다 (임시 행 삭제, stock 절대값 복원). record_usage 성공 로그 1행은 남는다.
+// 시약장(cabinets·cabinet_slots): d7 §9 (화면 11) 부터 직접 insert·update·delete 는 교사·admin 도 거부되고 DB 함수로만 바꾼다.
+// 공용 학교 A 에는 임시 시약장을 만들지 않는다 (학교 A 시약장·칸 구성을 그대로 비교하는 스펙·화면 11 e2e 와 병렬 실행에서 경합) —
+// 여기서는 "거부되어야 하는 직접 쓰기"만 하고, 함수로 추가·저장·삭제가 되는지는 db-s11-cabinets.spec.ts 가 일회용 학교에서 본다.
 import { test, expect } from "@playwright/test";
 import {
   REAGENT_SLOT,
@@ -31,21 +34,37 @@ async function oldestSlot(s: Session): Promise<Record<string, unknown>> {
   return r.data as Record<string, unknown>;
 }
 
-/** 교사 계정으로 임시 시약장 생성 (칸 insert 시험용 — unique 충돌이 아닌 RLS 로만 거부되게 빈 시약장) */
-async function tempCabinet(staff: Session, tag: string): Promise<string> {
-  const r = await staff.client
-    .from("cabinets")
-    .insert({ school_id: staff.schoolId, label: `R-db-${tag}`, door_type: "양문형", shelves: 3 })
-    .select("id")
-    .single();
-  expect(r.error, "교사 임시 시약장 생성").toBeNull();
-  return r.data!.id as string;
+/** 자기 학교 시약장·칸 전체 (id 순) — 거부 호출 앞뒤로 그대로인지 비교한다 */
+async function cabinetState(s: Session): Promise<{ cabinets: unknown[]; slots: unknown[] }> {
+  const cabinets = await s.client.from("cabinets").select("*").order("id");
+  const slots = await s.client.from("cabinet_slots").select("*").order("id");
+  expect(cabinets.error, "자기 학교 cabinets 조회").toBeNull();
+  expect(slots.error, "자기 학교 cabinet_slots 조회").toBeNull();
+  return { cabinets: cabinets.data ?? [], slots: slots.data ?? [] };
 }
 
-async function dropCabinet(staff: Session, id: string): Promise<void> {
-  const r = await staff.client.from("cabinets").delete().eq("id", id).select("id");
+/** 가장 오래된 시약장에서 아직 칸 행이 없는 자리 (없으면 L1 — 어느 쪽이든 권한 오류 42501 이 먼저여야 한다) */
+async function freeCell(s: Session, cab: Record<string, unknown>): Promise<{ side: string; shelf: number }> {
+  const r = await s.client.from("cabinet_slots").select("side, shelf").eq("cabinet_id", cab.id as string);
   expect(r.error).toBeNull();
-  expect(r.data ?? []).toHaveLength(1);
+  const taken = new Set((r.data ?? []).map((x) => `${x.side}${x.shelf}`));
+  const sides = cab.door_type === "단문형" ? ["L"] : ["L", "R"];
+  for (const side of sides) {
+    for (let shelf = 1; shelf <= Number(cab.shelves); shelf++) {
+      if (!taken.has(`${side}${shelf}`)) return { side, shelf };
+    }
+  }
+  return { side: "L", shelf: 1 };
+}
+
+/**
+ * 비상 정리: 거부되어야 할 직접 insert 가 구현 결함으로 성공했을 때만 그 시약장을 delete_cabinet 으로 지운다.
+ * 정상이라면 대상이 0개라 아무 호출도 하지 않는다.
+ */
+async function dropLeakedCabinets(staff: Session, label: string): Promise<number> {
+  const leaked = await staff.client.from("cabinets").select("id").eq("label", label);
+  for (const row of leaked.data ?? []) await staff.client.rpc("delete_cabinet", { p_cabinet_id: row.id as string });
+  return (leaked.data ?? []).length;
 }
 
 async function tempReagent(staff: Session, tag: string): Promise<string> {
@@ -109,10 +128,9 @@ test(`[R-db][S*] 학생 cabinets insert 거부`, async ({}, info) => {
     .from("cabinets")
     .insert({ school_id: st.schoolId, label, door_type: "단문형", shelves: 3 })
     .select("id");
-  const leaked = await t.client.from("cabinets").select("id").eq("label", label);
-  for (const row of leaked.data ?? []) await dropCabinet(t, row.id as string);
+  const leaked = await dropLeakedCabinets(t, label);
   expect(res.error, "학생 cabinets insert 는 오류여야 함").not.toBeNull();
-  expect(leaked.data ?? []).toHaveLength(0);
+  expect(leaked).toBe(0);
 });
 
 test(`[R-db][S*] 학생 cabinets update 0행`, async () => {
@@ -122,27 +140,29 @@ test(`[R-db][S*] 학생 cabinets update 0행`, async () => {
   const res = await st.client.from("cabinets").update({ label: "R-db-침범" }).eq("id", cab.id as string).select("id");
   const after = await t.client.from("cabinets").select("*").eq("id", cab.id as string).single();
   if (after.data && after.data.label !== cab.label) {
-    await t.client.from("cabinets").update({ label: cab.label }).eq("id", cab.id as string);
+    // 비상 복구 (구현 결함으로 바뀐 경우만): 직접 update 는 막혀 있으므로 rename_cabinet 으로 되돌린다
+    await t.client.rpc("rename_cabinet", { p_cabinet_id: cab.id as string, p_label: cab.label as string });
   }
   expect(res.error ? [] : res.data ?? []).toHaveLength(0);
   expect(after.data).toEqual(cab);
 });
 
-test(`[R-db][S*] 학생 cabinet_slots insert 거부`, async ({}, info) => {
+test(`[R-db][S*] 학생 cabinet_slots insert 거부`, async () => {
   const st = await signIn("student");
   const t = await signIn("teacher");
-  const cabId = await tempCabinet(t, uniqueTag(info));
-  try {
+  // 학교 A 의 기존 시약장을 겨눈다 (임시 시약장을 만들지 않는다). 빈 자리를 골라 unique 충돌이 아닌 권한으로 거부되는지 본다.
+  const cab = await oldestCabinet(t);
+  const cell = await freeCell(t, cab);
+  const before = await cabinetState(t);
+  for (const patch of [{ storage_class: "산" }, { storage_classes: ["산"] }, {}]) {
     const res = await st.client
       .from("cabinet_slots")
-      .insert({ school_id: st.schoolId, cabinet_id: cabId, side: "L", shelf: 1, storage_class: "산" })
+      .insert({ school_id: st.schoolId, cabinet_id: cab.id as string, ...cell, ...patch })
       .select("id");
-    const leaked = await t.client.from("cabinet_slots").select("id").eq("cabinet_id", cabId);
     expect(res.error, "학생 cabinet_slots insert 는 오류여야 함").not.toBeNull();
-    expect(leaked.data ?? []).toHaveLength(0);
-  } finally {
-    await dropCabinet(t, cabId);
+    expect(res.error?.code, `권한 오류여야 함 (${res.error?.message})`).toBe("42501");
   }
+  expect(await cabinetState(t), "학교 A 시약장·칸 그대로").toEqual(before);
 });
 
 test(`[R-db][S*] 학생 cabinet_slots update 0행`, async () => {
@@ -156,11 +176,9 @@ test(`[R-db][S*] 학생 cabinet_slots update 0행`, async () => {
     .eq("id", slot.id as string)
     .select("id");
   const after = await t.client.from("cabinet_slots").select("*").eq("id", slot.id as string).single();
-  if (after.data && after.data.storage_class !== slot.storage_class) {
-    await t.client.from("cabinet_slots").update({ storage_class: slot.storage_class }).eq("id", slot.id as string);
-  }
+  // 직접 update 는 교사도 막혀 있어(d7 §9) 여기서 되돌릴 수 없다 — 값이 바뀌었다면 아래 단언이 실패로 알린다.
   expect(res.error ? [] : res.data ?? []).toHaveLength(0);
-  expect(after.data).toEqual(slot);
+  expect(after.data, "칸 값 그대로 (바뀌었다면 seed 복구 필요)").toEqual(slot);
 });
 
 test(`[R-db][S*] 학생이 다른 user_id 로 usage_logs insert 거부`, async () => {
@@ -194,31 +212,59 @@ for (const role of ["teacher", "admin"] as Role[]) {
     }
   });
 
-  test(`[R-db][S*] ${ROLE_LABEL[role]} cabinets·cabinet_slots insert·update·delete 허용`, async ({}, info) => {
+  test(`[R-db][S*] ${ROLE_LABEL[role]} cabinets·cabinet_slots 직접 insert·update·delete 거부 (d7 §9: 함수로만, 값 그대로)`, async ({}, info) => {
     const s = await signIn(role);
-    const cabId = await tempCabinet(s, uniqueTag(info));
-    try {
-      const cu = await s.client.from("cabinets").update({ shelves: 4 }).eq("id", cabId).select("shelves");
-      expect(cu.error).toBeNull();
-      expect(cu.data ?? []).toHaveLength(1);
+    expect(["teacher", "admin"]).toContain(s.profileRole);
+    const before = await cabinetState(s);
+    const cab = await oldestCabinet(s);
+    const slot = await oldestSlot(s);
+    const cell = await freeCell(s, cab);
+    const label = `R-db-${uniqueTag(info)}`;
 
-      const si = await s.client
-        .from("cabinet_slots")
-        .insert({ school_id: s.schoolId, cabinet_id: cabId, side: "L", shelf: 1, storage_class: "산" })
-        .select("id")
-        .single();
-      expect(si.error).toBeNull();
+    const ci = await s.client
+      .from("cabinets")
+      .insert({ school_id: s.schoolId, label, door_type: "양문형", shelves: 3 })
+      .select("id");
+    const leaked = await dropLeakedCabinets(s, label);
+    expect(ci.error, "cabinets 직접 insert 는 오류여야 함").not.toBeNull();
+    expect(leaked, "직접 insert 로 생긴 시약장").toBe(0);
 
-      const su = await s.client
-        .from("cabinet_slots")
-        .update({ storage_class: "염기" })
-        .eq("id", si.data!.id as string)
-        .select("storage_class");
-      expect(su.error).toBeNull();
-      expect(su.data ?? []).toHaveLength(1);
-    } finally {
-      await dropCabinet(s, cabId);
+    const cu = await s.client.from("cabinets").update({ label }).eq("id", cab.id as string).select("id");
+    if (!cu.error && (cu.data ?? []).length) {
+      await s.client.rpc("rename_cabinet", { p_cabinet_id: cab.id as string, p_label: cab.label as string }); // 비상 복구
     }
+    expect(cu.error ? [] : cu.data ?? [], "cabinets 직접 update 로 바뀐 행").toHaveLength(0);
+    const cs = await s.client
+      .from("cabinets")
+      .update({ shelves: cab.shelves === 4 ? 3 : 4 })
+      .eq("id", cab.id as string)
+      .select("id");
+    expect(cs.error ? [] : cs.data ?? [], "cabinets 직접 update(shelves) 로 바뀐 행").toHaveLength(0);
+
+    const si = await s.client
+      .from("cabinet_slots")
+      .insert({ school_id: s.schoolId, cabinet_id: cab.id as string, ...cell, storage_class: "산" })
+      .select("id");
+    expect(si.error, "cabinet_slots 직접 insert 는 오류여야 함").not.toBeNull();
+    expect(si.error?.code, `권한 오류여야 함 (${si.error?.message})`).toBe("42501");
+
+    const other = slot.storage_class === "기타" ? "독성" : "기타";
+    for (const patch of [{ storage_class: other }, { storage_classes: [other] }]) {
+      const su = await s.client.from("cabinet_slots").update(patch).eq("id", slot.id as string).select("id");
+      expect(su.error ? [] : su.data ?? [], "cabinet_slots 직접 update 로 바뀐 행").toHaveLength(0);
+    }
+
+    // delete 는 없는 id 로 먼저 (막혀 있는지 확인), 그 다음 실제 행 — 칸 먼저, 시약장은 마지막
+    for (const table of ["cabinet_slots", "cabinets"] as const) {
+      const ghost = await s.client.from(table).delete().eq("id", "00000000-0000-4000-8000-000000000000").select("id");
+      expect(ghost.error, `${table} 직접 delete 는 오류여야 함 (delete 권한 없음)`).not.toBeNull();
+    }
+    const sd = await s.client.from("cabinet_slots").delete().eq("id", slot.id as string).select("id");
+    expect(sd.error ? [] : sd.data ?? [], "cabinet_slots 직접 delete 로 지워진 행").toHaveLength(0);
+    const cd = await s.client.from("cabinets").delete().eq("id", cab.id as string).select("id");
+    expect(cd.error ? [] : cd.data ?? [], "cabinets 직접 delete 로 지워진 행").toHaveLength(0);
+
+    expect(await cabinetState(s), "학교 A 시약장·칸 그대로").toEqual(before);
   });
 }
 
