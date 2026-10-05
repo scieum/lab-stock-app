@@ -170,6 +170,10 @@ export async function waitContent(page: Page, screen: number): Promise<void> {
   };
   const m = marker[screen];
   if (!m) throw new Error(`waitContent: 화면 ${screen} 표식 없음`);
+  // 주소가 먼저다: 표식 컴포넌트는 다른 화면에도 있다(화면 2 의 segmented-control, 화면 13 의 reagent-row).
+  // 링크를 누른 직후 — 전환이 커밋되기 전 — 에는 출발 화면이 "표식 보임 · 자리 표시 0" 을 이미 만족하므로,
+  // 도착 화면의 주소가 될 때까지 기다린 뒤에 본문을 본다 (주소는 새 화면 트리와 같은 커밋에서 바뀐다).
+  await expect.poll(() => new URL(page.url()).pathname, { message: `화면 ${screen} 경로`, timeout: 45_000 }).toBe(routeOf(screen));
   await expect(page.locator(m).first(), `화면 ${screen} 본문`).toBeVisible({ timeout: 45_000 });
   await expect(page.locator(BUSY), "자리 표시는 본문으로 바뀐다").toHaveCount(0);
   expect(new URL(page.url()).pathname, `화면 ${screen} 경로`).toBe(routeOf(screen));
