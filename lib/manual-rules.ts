@@ -201,27 +201,93 @@ export type ManualReagent = {
   minStock: number;
 };
 
+/*
+ * 자동 연결 규칙 (d7 §13 "이름이 같거나 비슷한 것" 을 좁게 해석한다).
+ *
+ * 원칙: 자동 연결은 "같은 물질임이 표기 차이로만 설명되는 경우"에만 한다.
+ *       잘못 연결하면 엉뚱한 시약에 재주문 기준이 저장되므로, 애매하면 연결하지 않는다(사용자가 표에서 직접 고른다).
+ *
+ * 견주는 값 두 가지:
+ *   열쇠(reagentNameKey)  공백·대소문자·문장부호·농도 표기·끝의 "용액/수용액"을 무시한 이름
+ *   핵심 이름(coreNameKey) 열쇠에서 "물질을 바꾸지 않는" 꾸밈말·표기까지 떼어 낸 이름
+ *
+ * 떼는 것 (양쪽 이름 모두에서):
+ *   - 농도 표기: 숫자 + M·N·mol/L·%·wt%·w/v%·v/v%·ppm·몰·몰농도·노르말, 괄호 안 농도 "(0.1M)"
+ *   - 앞 꾸밈말: 묽은·진한·무수·정제·고체·액체·분말·결정·포화 (여러 개 겹쳐도 됨)
+ *   - 뒤 표기: 용액·수용액, 수화물(수화물·일~십이수화물·"5수화물"·"n수화물"·"·5H2O")
+ *   - 등급 표기: EP·GR·CP(뒤에 "급"·"등급" 가능), 1급·일급·특급(앞에 "시약" 가능), 시약급, 시약용
+ *
+ * 떼지 않는 것 (다르면 다른 시약):
+ *   - 산화수 괄호 "(I)"·"(II)"·"(III)"… — 이름의 일부다. 열쇠 안에 "<ii>" 토큰으로 남긴다.
+ *     서로 다르면 연결하지 않고, 한쪽에만 있어도 연결하지 않는다("산화구리" ↔ "산화구리(II)" 미연결).
+ *   - 그 밖의 모든 글자. "한쪽 이름이 다른 쪽을 포함한다"는 것만으로는 연결하지 않는다
+ *     ("황산" ↔ "황산구리", "질산" ↔ "질산은", "나트륨" ↔ "수산화나트륨", "에탄올" ↔ "에탄올아민" 미연결).
+ *   - "무수" 뒤의 이름이 "산"으로 끝날 때의 "무수" — 산 무수물은 다른 물질이다("무수아세트산" ≠ "아세트산").
+ *   - 떼고 남는 이름이 2자 미만이 되는 경우("정제수" 를 "수" 로 만들지 않는다. 그래서 "분말 철" ↔ "철" 도 미연결).
+ *
+ * 한계:
+ *   - 별칭·화학식·영문명은 잇지 못한다("가성소다" ↔ "수산화나트륨", "NaOH", "에탄올" ↔ "ethanol").
+ *   - 산화수는 괄호 안 로마 숫자(I~X)만 알아본다("황산구리 II", "황산구리(2)" 는 그냥 다른 글자로 본다 → 미연결 쪽).
+ *   - 농도 표기는 앞 글자와 띄어 쓰거나 괄호에 넣은 것만 알아본다("염산0.1M" 은 못 지운다 → 미연결 쪽).
+ *   - 농도만 다른 시약("염산 0.1M" ↔ "염산 1M")은 같은 물질로 보아 연결한다(농도까지 같은 후보가 있으면 그것이 먼저).
+ */
+
 // 농도 표기: 숫자 + M · N · mol/L · % · wt% · ppm · 몰 · 노르말 (뒤에 "수용액"·"용액"이 붙어도 됨)
 const CONC = String.raw`(?:약\s*)?\d+(?:\.\d+)?\s*(?:mol\/l|wt\s*%|w\/v\s*%|v\/v\s*%|ppm|%|m|n|몰농도|몰|노르말)`;
 const CONC_IN_PARENS = new RegExp(String.raw`[(（\[]\s*${CONC}\s*(?:수용액|용액)?\s*[)）\]]`, "g");
 const CONC_TOKEN = new RegExp(String.raw`(?<![a-z가-힣\d.])${CONC}(?![a-z가-힣\d])`, "g");
+// 산화수 괄호: (I)~(X). NFKC 뒤라 "Ⅱ"·전각 괄호도 여기로 온다
+const OXIDATION = /[(\[]\s*(viii|vii|vi|iv|ix|iii|ii|i|v|x)\s*[)\]]/g;
+// 공백·문장부호 ("<" ">" 는 산화수 토큰이라 남긴다)
+const PUNCT = /[\s()[\]{}\-·ㆍ,./_:;'"]/g;
+// "·5H2O" 류 (가운뎃점·마침표·별표 뒤)
+const HYDRATE_FORMULA = /[·ㆍ‧・•.*]\s*\d*\s*h2o(?![a-z\d])/g;
+// 등급 표기
+const GRADE = /(?<![a-z\d])(?:ep|gr|cp)(?:\s*(?:등급|급))?(?![a-z\d])|(?:시약\s*)?(?:(?<![\d.])1\s*급|일급|특급)|시약급|시약용/g;
+// 뒤 표기 (앞에 2자 이상 남을 때만)
+const CORE_SUFFIX = /(?<=.{2})(?:수용액|용액|(?:[일이삼사오육칠팔구]|십[일이]?|\d+|n)?수화물)$/;
+// 앞 꾸밈말 (뒤에 2자 이상 남을 때만). "무수"는 따로 본다
+const CORE_PREFIX = /^(?:묽은|진한|정제|고체|액체|분말|결정|포화)(?=.{2})/;
+const ANHYDROUS = /^무수(?=.{2})/;
+
+/** NFKC·소문자, 산화수 괄호 → "<ii>" 토큰, 농도 표기 제거 (공백·문장부호는 아직 남아 있다) */
+function baseName(name: string): string {
+  return name
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(OXIDATION, "<$1>")
+    .replace(CONC_IN_PARENS, " ")
+    .replace(CONC_TOKEN, " ");
+}
 
 /**
  * 시약명을 견주는 열쇠로 만든다.
  * 1) 전각→반각(NFKC), 소문자
- * 2) 괄호 안이 농도 표기뿐이면 괄호째 지운다: "염산(0.1M)" → "염산". "(II)" 같은 다른 괄호 내용은 남긴다
- * 3) 홀로 있는 농도 표기를 지운다: "염산 0.1M"·"에탄올 95%" → "염산"·"에탄올"
- * 4) 공백과 문장부호( ( ) [ ] - · , . / )를 지운다: "황산구리(II) 오수화물" → "황산구리ii오수화물"
- * 5) 끝의 "수용액"·"용액"을 지운다(남는 글자가 있을 때만): "수산화나트륨 수용액" → "수산화나트륨"
+ * 2) 산화수 괄호는 이름의 일부로 남긴다: "(II)" → "<ii>" ("황산구리(II)" 와 "황산구리(I)"·"황산구리" 는 서로 다른 열쇠)
+ * 3) 괄호 안이 농도 표기뿐이면 괄호째 지운다: "염산(0.1M)" → "염산"
+ * 4) 홀로 있는 농도 표기를 지운다: "염산 0.1M"·"에탄올 95%" → "염산"·"에탄올"
+ * 5) 공백과 문장부호( ( ) [ ] - · , . / )를 지운다: "황산구리(II) 오수화물" → "황산구리<ii>오수화물"
+ * 6) 끝의 "수용액"·"용액"을 지운다(남는 글자가 있을 때만): "수산화나트륨 수용액" → "수산화나트륨"
  */
 export function reagentNameKey(name: string): string {
-  return name
-    .normalize("NFKC")
-    .toLowerCase()
-    .replace(CONC_IN_PARENS, " ")
-    .replace(CONC_TOKEN, " ")
-    .replace(/[\s()[\]{}\-·ㆍ,./_:;'"]/g, "")
+  return baseName(name)
+    .replace(PUNCT, "")
     .replace(/(.)(?:수용액|용액)$/, "$1");
+}
+
+/** 핵심 이름: 열쇠에서 등급·수화물·용액 표기와 앞 꾸밈말까지 뗀 것 (무엇을 떼는지는 위 규칙 주석) */
+function coreNameKey(name: string): string {
+  let s = baseName(name).replace(HYDRATE_FORMULA, " ").replace(GRADE, " ").replace(PUNCT, "");
+  // 뒤 표기를 먼저 다 떼고(용액·수화물이 겹칠 수 있다), 그다음 앞 꾸밈말을 뗀다
+  for (let next = s.replace(CORE_SUFFIX, ""); next !== s; next = s.replace(CORE_SUFFIX, "")) s = next;
+  for (;;) {
+    let next = s.replace(CORE_PREFIX, "");
+    // 산 무수물("무수아세트산")은 다른 물질이라 "무수"를 떼지 않는다
+    if (next === s && ANHYDROUS.test(s) && !s.endsWith("산")) next = s.replace(ANHYDROUS, "");
+    if (next === s) break;
+    s = next;
+  }
+  return s;
 }
 
 /** 농도는 남기고 공백·대소문자만 무시한 열쇠 (같은 이름 후보가 여럿일 때 농도까지 같은 것을 먼저 고른다) */
@@ -229,26 +295,35 @@ function rawNameKey(name: string): string {
   return name.normalize("NFKC").toLowerCase().replace(/\s/g, "");
 }
 
-/** 포함 관계로 볼 최소 길이와 길이 비율 (짧은 쪽 ÷ 긴 쪽) */
-export const MATCH_MIN_KEY_LENGTH = 2;
-export const MATCH_MIN_RATIO = 0.5;
+/** 이름에 적힌 농도 표기만 모은 것: "묽은 염산(0.1M)" → "0.1m", 없으면 "" */
+function concKey(name: string): string {
+  const s = name.normalize("NFKC").toLowerCase();
+  const found = [...(s.match(CONC_IN_PARENS) ?? []), ...(s.replace(CONC_IN_PARENS, " ").match(CONC_TOKEN) ?? [])];
+  return found
+    .map((m) => m.replace(/[\s()[\]약]|수용액|용액/g, ""))
+    .sort()
+    .join("|");
+}
 
 /**
  * 추출한 시약명 → 우리 학교 시약 하나 (없으면 null). 사용자가 표에서 바꿀 수 있는 "제안"이다.
+ * 무엇을 같은 이름으로 보는지는 위 "자동 연결 규칙" 주석.
  *
- * 견주는 값은 reagentNameKey (공백·대소문자·농도 표기 무시).
- * 1순위 완전 일치: 열쇠가 같은 시약.
- * 2순위 포함 관계: 한쪽 열쇠가 다른 쪽을 포함하고, 짧은 쪽이 2자 이상이며 길이 비율(짧은 쪽 ÷ 긴 쪽)이 0.5 이상.
- *        ("염산" ↔ "묽은 염산" 은 연결, "황산" ↔ "황산구리(II) 오수화물" 은 연결하지 않음)
- * 3순위 없음: null.
+ * 1순위 완전 일치: 열쇠(reagentNameKey)가 같은 시약.
+ * 2순위 핵심 이름 일치: 허용된 꾸밈말·표기를 뗀 핵심 이름이 같은 시약
+ *        ("염산" ↔ "묽은 염산", "황산구리(II)" ↔ "황산구리(II) 오수화물" 은 연결,
+ *         "황산" ↔ "황산구리", "황산구리(II)" ↔ "황산구리(I)", "산화구리" ↔ "산화구리(II)" 는 연결하지 않음)
+ * 3순위 없음: null. (포함 관계만으로는 연결하지 않는다)
  *
  * 같은 순위에 후보가 여럿이면 가장 가까운 것:
- *   ① 농도까지 같은 이름(공백·대소문자만 무시) → ② 열쇠 길이 차이가 작은 것 → ③ 이름 가나다순 → ④ id 순.
+ *   ① 농도까지 같은 이름(공백·대소문자만 무시) → ② 농도 표기가 같은 것 → ③ 꾸밈말 차이가 적은 것(열쇠 길이 차이)
+ *   → ④ 이름 가나다순 → ⑤ id 순.
  */
 export function matchReagent<T extends Pick<ManualReagent, "id" | "name">>(name: string, reagents: readonly T[]): T | null {
   const key = reagentNameKey(name);
   if (key === "") return null;
   const raw = rawNameKey(name);
+  const conc = concKey(name);
 
   const pick = (candidates: { r: T; k: string }[]): T | null => {
     if (candidates.length === 0) return null;
@@ -256,6 +331,9 @@ export function matchReagent<T extends Pick<ManualReagent, "id" | "name">>(name:
       const ra = rawNameKey(a.r.name) === raw ? 0 : 1;
       const rb = rawNameKey(b.r.name) === raw ? 0 : 1;
       if (ra !== rb) return ra - rb;
+      const ca = concKey(a.r.name) === conc ? 0 : 1;
+      const cb = concKey(b.r.name) === conc ? 0 : 1;
+      if (ca !== cb) return ca - cb;
       const da = Math.abs(a.k.length - key.length);
       const db = Math.abs(b.k.length - key.length);
       if (da !== db) return da - db;
@@ -270,14 +348,9 @@ export function matchReagent<T extends Pick<ManualReagent, "id" | "name">>(name:
   const exact = pick(keyed.filter((c) => c.k === key));
   if (exact) return exact;
 
-  return pick(
-    keyed.filter((c) => {
-      const [short, long] = c.k.length <= key.length ? [c.k, key] : [key, c.k];
-      if (short.length < MATCH_MIN_KEY_LENGTH) return false;
-      if (short.length / long.length < MATCH_MIN_RATIO) return false;
-      return long.includes(short);
-    }),
-  );
+  const core = coreNameKey(name);
+  if (core === "") return null;
+  return pick(keyed.filter((c) => coreNameKey(c.r.name) === core));
 }
 
 /* ───────── 추출 결과 → 확인 표의 행 ───────── */
