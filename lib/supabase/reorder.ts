@@ -34,6 +34,8 @@ export type ReorderVendor = {
   name: string;
   contact: string | null;
   website: string | null;
+  /** 검색 주소 틀 (vendors.search_url, `{q}` = 시약 이름) — 공통 목록 4곳만 있다 (d7 §11 검색어 자동 입력) */
+  searchUrl: string | null;
   note: string | null;
   /** 공통 목록(school_id = null) 여부 */
   common: boolean;
@@ -87,7 +89,7 @@ export async function getReorderScreen(): Promise<ReorderScreenResult> {
       .order("name"),
     supabase
       .from("vendors")
-      .select("id, school_id, name, contact, website, note")
+      .select("id, school_id, name, contact, website, search_url, note")
       .or(`school_id.eq.${schoolId},school_id.is.null`)
       .order("name"),
   ]);
@@ -119,7 +121,15 @@ export async function getReorderScreen(): Promise<ReorderScreenResult> {
     (vendors.data ?? [])
       // 다른 학교 행은 RLS 가 이미 걸렀다 — 한 번 더 확인
       .filter((v) => v.school_id === null || v.school_id === schoolId)
-      .map((v) => ({ id: v.id, name: v.name, contact: v.contact, website: v.website, note: v.note, schoolId: v.school_id })),
+      .map((v) => ({
+        id: v.id,
+        name: v.name,
+        contact: v.contact,
+        website: v.website,
+        searchUrl: v.search_url,
+        note: v.note,
+        schoolId: v.school_id,
+      })),
   );
 
   return {

@@ -383,6 +383,7 @@ export type Database = {
           name: string
           note: string | null
           school_id: string | null
+          search_url: string | null
           website: string | null
         }
         Insert: {
@@ -392,6 +393,7 @@ export type Database = {
           name: string
           note?: string | null
           school_id?: string | null
+          search_url?: string | null
           website?: string | null
         }
         Update: {
@@ -401,6 +403,7 @@ export type Database = {
           name?: string
           note?: string | null
           school_id?: string | null
+          search_url?: string | null
           website?: string | null
         }
         Relationships: [

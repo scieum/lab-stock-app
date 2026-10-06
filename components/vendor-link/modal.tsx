@@ -6,7 +6,7 @@ import { ButtonPillSoft } from "@/components/button-pill-soft";
 import { ButtonPrimary } from "@/components/button-primary";
 import { ModalCard } from "@/components/ex-modal-card";
 import { Icon } from "@/components/icons";
-import { isOpenableWebsite, vendorInfo } from "@/lib/vendor-rules";
+import { isOpenableUrl, isOpenableWebsite, vendorInfo } from "@/lib/vendor-rules";
 import styles from "./styles.module.css";
 
 /** 판매처 연결 목록의 한 줄 (우리 학교 판매처 먼저, 그다음 공통 목록 — 순서는 넘기는 쪽이 정한다) */
@@ -15,16 +15,19 @@ export type VendorLinkOption = {
   name: string;
   contact?: string | null;
   website?: string | null;
+  /** 검색 주소 틀 (vendors.search_url) — "확인" 때 화면 쪽이 vendorSearchUrl 로 시약 이름 검색 주소를 만든다 */
+  searchUrl?: string | null;
   note?: string | null;
 };
 
 /**
- * 판매처 웹사이트를 새 창으로 연다 (d7 §11 — 아무것도 저장하지 않는다).
- * http(s) 주소가 아니면 열지 않고 false.
+ * 판매처 주소(웹사이트 또는 vendorSearchUrl 로 만든 검색 결과 주소)를 새 창으로 연다 (d7 §11 — 아무것도 저장하지 않는다).
+ * http(s) 주소가 아니면 열지 않고 false. 검색 주소는 인코딩한 시약 이름 때문에 300자를 넘을 수 있어 길이는 보지 않는다
+ * (웹사이트 300자 제한은 테이블 제약이 지킨다).
  */
-export function openVendorWebsite(website: string | null | undefined): boolean {
-  if (!isOpenableWebsite(website)) return false;
-  window.open(website, "_blank", "noopener,noreferrer");
+export function openVendorWebsite(url: string | null | undefined): boolean {
+  if (!isOpenableUrl(url)) return false;
+  window.open(url, "_blank", "noopener,noreferrer");
   return true;
 }
 
