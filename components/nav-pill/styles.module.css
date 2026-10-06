@@ -67,6 +67,11 @@
   color: var(--color-highlight);
 }
 
+/* desktopWordmark: 모바일 = 뒤로가기 + 제목, 데스크톱 = 워드마크 (시안 1.15 3-mobile · 3-desktop) */
+.desktopOnly {
+  display: none;
+}
+
 .backIcon {
   width: var(--icon-md);
   height: var(--icon-md);
@@ -154,6 +159,14 @@ a.link:has([data-pending]) ~ .linkActive::after {
 
   .sectionTitle {
     display: none;
+  }
+
+  .mobileOnly {
+    display: none;
+  }
+
+  .desktopOnly {
+    display: inline;
   }
 
   .links {

@@ -24,6 +24,8 @@ type Props = {
   reagents: readonly SlotSheetReagent[];
   /** true = 교사·admin: 행마다 "빼기" + children(slot-assign) 자리. false = 학생: 목록만 */
   canEdit?: boolean;
+  /** 있으면 시약 행(이름 부분)이 그 시약 상세로 가는 링크 (화면 11 → 화면 3) */
+  hrefOf?: (reagentId: string) => string;
   /** "빼기" — 그 시약을 "칸 없음"으로 (place_reagent null, D2) */
   onRemove?: (reagentId: string) => void;
   /** 빼는 중인 시약 (그 행의 "빼기" 비활성) */
@@ -41,7 +43,18 @@ type Props = {
  * 제목 "좌 2단" + 그 칸의 분류 칩(보기 전용) → "이 칸의 시약 (N)" + reagent-row(시약명 · 재고량 · 분류),
  * 교사·admin 은 행마다 조용한 텍스트 동작 "빼기" 와 아래 slot-assign. 학생은 목록만.
  */
-export function SlotSheet({ title, classes, reagents, canEdit = false, onRemove, pendingId = null, onClose, sheet = true, children }: Props) {
+export function SlotSheet({
+  title,
+  classes,
+  reagents,
+  canEdit = false,
+  hrefOf,
+  onRemove,
+  pendingId = null,
+  onClose,
+  sheet = true,
+  children,
+}: Props) {
   const sorted = sortClasses(classes);
   return (
     <SheetPanel
@@ -68,6 +81,7 @@ export function SlotSheet({ title, classes, reagents, canEdit = false, onRemove,
                 title={r.name}
                 body={r.amount}
                 caption={r.storageClass ?? undefined}
+                href={hrefOf ? hrefOf(r.id) : undefined}
                 action={
                   canEdit ? (
                     <SheetTextAction

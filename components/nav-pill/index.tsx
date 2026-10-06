@@ -18,6 +18,11 @@ type Props = {
   /** 하위 화면 제목 (있으면 뒤로가기 + 제목, 없으면 워드마크) */
   title?: string;
   backHref?: string;
+  /**
+   * true = 뒤로가기 + 제목은 모바일에서만, 데스크톱은 워드마크 + links (시안 1.15 3-desktop: 뒤로가기·제목은 본문 page-header).
+   * 없으면 두 폭 모두 뒤로가기 + 제목
+   */
+  desktopWordmark?: boolean;
   /** 자기 학교 이름 (로그인 후) */
   schoolName?: string;
   /** 오른쪽 끝 제목 (예: 회원가입 — 왼쪽은 뒤로가기 + 워드마크) */
@@ -35,19 +40,26 @@ type Props = {
 };
 
 /** 상단 내비게이션 stadium pill */
-export function NavPill({ title, backHref, schoolName, endTitle, links, sectionTitle, onLogout }: Props) {
+export function NavPill({ title, backHref, desktopWordmark = false, schoolName, endTitle, links, sectionTitle, onLogout }: Props) {
   return (
     <header data-component="nav-pill" className={styles.nav}>
       <div className={styles.left}>
         {title ? (
-          <span className={styles.titleGroup}>
-            {backHref ? (
-              <Link href={backHref} prefetch={linkPrefetch(backHref)} className={styles.back} aria-label="뒤로">
-                <Icon name="back" className={styles.backIcon} />
+          <>
+            <span className={[styles.titleGroup, desktopWordmark ? styles.mobileOnly : ""].filter(Boolean).join(" ")}>
+              {backHref ? (
+                <Link href={backHref} prefetch={linkPrefetch(backHref)} className={styles.back} aria-label="뒤로">
+                  <Icon name="back" className={styles.backIcon} />
+                </Link>
+              ) : null}
+              <span className={styles.title}>{title}</span>
+            </span>
+            {desktopWordmark ? (
+              <Link href="/" className={[styles.wordmark, styles.desktopOnly].join(" ")}>
+                Lab_Stock
               </Link>
             ) : null}
-            <span className={styles.title}>{title}</span>
-          </span>
+          </>
         ) : backHref ? (
           <span className={styles.titleGroup}>
             <Link href={backHref} prefetch={linkPrefetch(backHref)} className={styles.back} aria-label="뒤로">

@@ -1,6 +1,7 @@
 /* 화면 3 시약 상세
- * 모바일: 카드 → MSDS → 탭 → 표, 사이 16. 하단 버튼 줄은 tab-bar 바로 위에 고정 (시안 bottom-actions 390×77)
- * 데스크톱: detail-layout = 요약 열 400 + 정보 열, 사이 32. 하단 버튼 줄은 정보 열 안 (위 테두리 + 위 여백 16)
+ * 로그인(디자인 1.15 3-mobile · 3-desktop): 한 열(.column) — 카드 → 탭 → 표 → MSDS, 사이 24.
+ *   모바일 하단 버튼 줄("사용 기록" + "입고"/"목록")은 tab-bar 바로 위 고정, 데스크톱은 폭 720 가운데 열 안(page-header 가 맨 위).
+ * 둘러보기(3-guest): 모바일 카드 → MSDS → 탭 → 표, 사이 16 / 데스크톱 detail-layout = 요약 열 400 + 정보 열, 사이 32.
  */
 
 .page {
@@ -14,6 +15,45 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-16);
+}
+
+/* 로그인 화면 한 열 */
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  min-width: 0;
+}
+
+/* 데스크톱 page-header (뒤로가기 + "시약 상세" 24/700) — 모바일은 nav-pill 이 보여 준다 */
+.pageHeader {
+  display: none;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-highlight);
+}
+
+.back:active {
+  opacity: var(--pressed-opacity);
+}
+
+.backIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+}
+
+.pageTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-24);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
 }
 
 .summary,
@@ -62,9 +102,29 @@
   flex: 1;
 }
 
+/* 로그인 화면 버튼 줄: "사용 기록"(왼쪽) · "입고"/"목록"(오른쪽) 같은 폭 (시안 3-mobile bottom-actions · 3-desktop page-actions) */
+.columnActions > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.columnActions .intake > * {
+  width: 100%;
+}
+
 @media (min-width: 1024px) {
   .page {
     padding-bottom: var(--space-0);
+  }
+
+  .column {
+    width: 100%;
+    max-width: calc(var(--space-48) * 15);
+    margin: 0 auto;
+  }
+
+  .pageHeader {
+    display: flex;
   }
 
   .layout {
@@ -88,5 +148,14 @@
 
   .primary {
     flex: 0 1 calc(var(--side-column-width) * 0.6);
+  }
+
+  .columnActions .primary {
+    flex: 1;
+  }
+
+  .columnActions {
+    padding: var(--space-0);
+    border-top: 0;
   }
 }

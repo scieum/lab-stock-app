@@ -10,7 +10,6 @@ import {
   isStorageClass,
   slotId as slotKeyId,
   slotKeys,
-  slotLabel as classesLabel,
   slotRowClasses,
   type DoorType,
   type SlotSide,
@@ -43,6 +42,8 @@ export type ReagentPlacement = {
   cabinet: { id: string; number: number; label: string; doorType: DoorType };
   slot: { side: SlotSide; shelf: number };
   slotId: string;
+  /** 그 칸의 보관 분류 (정보 표 "보관 분류") */
+  classes: StorageClass[];
 };
 
 /** 재주문 기준 (화면 3 reorder-threshold) */
@@ -83,8 +84,6 @@ export type ReagentDetail = {
     /** 시약 분류 (배치 경고용, 없으면 null) */
     storageClass: StorageClass | null;
   };
-  /** 보관 위치 문구용 (예전 표시 — 시약장 칸이 지정되지 않았으면 null) */
-  location: { cabinet: string; slot: string; storageClass: string } | null;
   /** 보관 위치 구조 (d7 §14) */
   placement: ReagentPlacement | null;
   threshold: ReagentThreshold;
@@ -117,11 +116,6 @@ function safeUrl(v: string | null): string | null {
   }
 }
 
-function slotLabel(doorType: string, side: string, shelf: number): string {
-  if (doorType === "양문형") return `${side === "L" ? "왼쪽" : "오른쪽"} ${shelf}단`;
-  return `${shelf}단`;
-}
-
 function toClass(v: unknown): StorageClass | null {
   return typeof v === "string" && isStorageClass(v) ? v : null;
 }
@@ -141,25 +135,16 @@ type SlotJoin = {
   cabinet: { id: string; number?: number | null; label: string; door_type: string } | null;
 } | null;
 
-/** 조인 결과 → 예전 문구(location)·구조(placement). 화면 3 회원·둘러보기 공용 */
-export function toPlacement(slot: SlotJoin): {
-  location: ReagentDetail["location"];
-  placement: ReagentPlacement | null;
-} {
+/** 조인 결과(시약 → 칸 → 시약장) → 보관 위치 구조. 칸이 없으면 null ("칸 없음"). 화면 3 회원·둘러보기 공용 */
+export function toPlacement(slot: SlotJoin): ReagentPlacement | null {
   const cabinet = slot?.cabinet ?? null;
-  if (!slot || !cabinet) return { location: null, placement: null };
+  if (!slot || !cabinet) return null;
   const doorType = isDoorType(cabinet.door_type) ? cabinet.door_type : DEFAULT_DOOR_TYPE;
   return {
-    location: {
-      cabinet: cabinet.label,
-      slot: slotLabel(cabinet.door_type, slot.side, slot.shelf),
-      storageClass: classesLabel(slotRowClasses(slot)),
-    },
-    placement: {
-      cabinet: { id: cabinet.id, number: typeof cabinet.number === "number" ? cabinet.number : 0, label: cabinet.label, doorType },
-      slot: { side: slot.side === "R" ? "R" : "L", shelf: slot.shelf },
-      slotId: slot.id,
-    },
+    cabinet: { id: cabinet.id, number: typeof cabinet.number === "number" ? cabinet.number : 0, label: cabinet.label, doorType },
+    slot: { side: slot.side === "R" ? "R" : "L", shelf: slot.shelf },
+    slotId: slot.id,
+    classes: slotRowClasses(slot),
   };
 }
 
@@ -195,7 +180,7 @@ export async function getReagentDetail(id: string): Promise<ReagentDetailResult>
   const r = reagentRes.data;
   if (reagentRes.error || !r) return { kind: "not-found" };
 
-  const { location, placement } = toPlacement(r.slot as SlotJoin);
+  const placement = toPlacement(r.slot as SlotJoin);
   const staff = role === "teacher" || role === "admin";
 
   return {
@@ -214,7 +199,6 @@ export async function getReagentDetail(id: string): Promise<ReagentDetailResult>
         msdsUrl: safeUrl(r.msds_url),
         storageClass: toClass(r.storage_class),
       },
-      location,
       placement,
       threshold: {
         minStock: Number(r.min_stock),

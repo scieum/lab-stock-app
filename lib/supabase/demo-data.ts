@@ -121,7 +121,7 @@ export async function getDemoReagentDetail(id: string): Promise<DemoReagentDetai
   ]);
   const r = reagentRes.data;
   if (reagentRes.error || !r) return null;
-  const { location, placement } = toPlacement(r.slot);
+  const placement = toPlacement(r.slot);
   const num = (v: unknown) => (v === null || v === undefined || !Number.isFinite(Number(v)) ? null : Number(v));
 
   return {
@@ -137,7 +137,6 @@ export async function getDemoReagentDetail(id: string): Promise<DemoReagentDetai
       msdsUrl: safeUrl(r.msds_url),
       storageClass: typeof r.storage_class === "string" && isStorageClass(r.storage_class) ? r.storage_class : null,
     },
-    location,
     placement,
     threshold: {
       minStock: Number(r.min_stock),
