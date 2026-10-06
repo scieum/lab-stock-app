@@ -41,6 +41,7 @@ import {
   todayDigits,
   waitIntake,
 } from "./screen-7-helpers";
+import { AUTO_INTAKE_PERCENT, autoFromIntake } from "./reorder-auto-helpers";
 
 test.describe.configure({ mode: "default" });
 
@@ -160,7 +161,7 @@ test(`[C1][S${SCREEN}] ${ROLE_LABEL.teacher} 입고 중복 제출 방지: "입�
 STAFF.forEach((role, i) => {
   const storageClass = STORAGE_CLASSES[(i * 3 + 1) % STORAGE_CLASSES.length];
   const unit = UNITS[(i + 1) % UNITS.length];
-  test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]} 새 시약 등록 저장(종류 ${storageClass} · 단위 ${unit}): ${TOAST} "${TOAST_REGISTER}" → ${routeOf(AFTER_SAVE_SCREEN)} · reagents 자기 학교 1행(min_stock 0 · slot·cas 없음) · intake_logs 첫 재고 1행 · 입고 갈래 목록에 표시 (끝나면 삭제)`, async ({ browser }, info) => {
+  test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]} 새 시약 등록 저장(종류 ${storageClass} · 단위 ${unit}): ${TOAST} "${TOAST_REGISTER}" → ${routeOf(AFTER_SAVE_SCREEN)} · reagents 자기 학교 1행(min_stock 자동 = 첫 재고 × ${AUTO_INTAKE_PERCENT}% · 근거 입고 · slot·cas 없음) · intake_logs 첫 재고 1행 · 입고 갈래 목록에 표시 (끝나면 삭제)`, async ({ browser }, info) => {
     test.setTimeout(180_000);
     const name = tempName(info, GROUP);
     const stock = 7;
@@ -185,7 +186,11 @@ STAFF.forEach((role, i) => {
       expect(r.storage_class, "storage_class = 종류").toBe(storageClass);
       expect(r.unit, "unit").toBe(unit);
       expect(r.stock, "stock = 재고량").toBe(stock);
-      expect(r.min_stock, "min_stock = 0 (d7 §6)").toBe(0);
+      // d7 §11-1: 첫 재고 입고 → 자동 기준 = 마지막 입고량 × 비율, 근거 'intake'
+      expect(
+        [r.min_stock, r.min_stock_source, r.min_stock_auto_basis],
+        "min_stock = 첫 재고 × 입고 비율 · 출처 'auto' · 근거 'intake' (d7 §11-1)",
+      ).toEqual([autoFromIntake(stock), "auto", "intake"]);
       expect(r.slot_id, "slot_id = null (d7 §6)").toBeNull();
       expect(r.cas_no, "cas_no = null (d7 §6)").toBeNull();
       expect(r.msds_url, "MSDS 주소 비움 → null").toBeNull();

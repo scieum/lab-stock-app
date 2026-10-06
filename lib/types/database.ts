@@ -224,6 +224,8 @@ export type Database = {
           intake_date: string
           low_stock_since: string | null
           min_stock: number
+          min_stock_auto_basis: string | null
+          min_stock_source: string
           msds_url: string | null
           name: string
           reorder_groups: number | null
@@ -241,6 +243,8 @@ export type Database = {
           intake_date?: string
           low_stock_since?: string | null
           min_stock?: number
+          min_stock_auto_basis?: string | null
+          min_stock_source?: string
           msds_url?: string | null
           name: string
           reorder_groups?: number | null
@@ -258,6 +262,8 @@ export type Database = {
           intake_date?: string
           low_stock_since?: string | null
           min_stock?: number
+          min_stock_auto_basis?: string | null
+          min_stock_source?: string
           msds_url?: string | null
           name?: string
           reorder_groups?: number | null
@@ -590,6 +596,8 @@ export type Database = {
           intake_date: string
           low_stock_since: string | null
           min_stock: number
+          min_stock_auto_basis: string | null
+          min_stock_source: string
           msds_url: string | null
           name: string
           reorder_groups: number | null
@@ -641,6 +649,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      reset_reorder_threshold: { Args: { p_reagent_id: string }; Returns: Json }
       save_cabinet_layout: {
         Args: {
           p_cabinet_id: string

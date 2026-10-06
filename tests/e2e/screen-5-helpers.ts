@@ -533,7 +533,7 @@ const storageClasses = (JSON.parse(readFileSync(join(root, "design", "rules.json
 export type NamedSpec = { name: string; unit: string; stock: number; min?: number; perGroup?: number; groups?: number };
 
 /**
- * 준비: 이름을 정한 임시 시약 (admin 세션 — register_reagent 는 min_stock 0 으로 시작, d7 §6).
+ * 준비: 이름을 정한 임시 시약 (admin 세션 — register_reagent 는 자동 기준 = 첫 재고 × 입고 비율 · 근거 'intake' 로 시작, d7 §11-1).
  * min 을 주면 같은 세션으로 기존 재주문 기준을 미리 넣는다.
  */
 export async function prepNamed(f: Fx, spec: NamedSpec): Promise<TempReagent> {

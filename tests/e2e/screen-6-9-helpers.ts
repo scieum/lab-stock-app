@@ -501,7 +501,7 @@ const storageClasses = (JSON.parse(readFileSync(join(process.cwd(), "design", "r
 export type ReagentSpec = { tag: string; stock: number; min: number; unit?: string; perGroup?: number; groups?: number };
 
 /**
- * 준비: 임시 시약 (admin 세션 — register_reagent 는 min_stock 0 으로 시작, d7 §6) → 같은 세션으로 min_stock·기준 열을 정한다.
+ * 준비: 임시 시약 (admin 세션 — register_reagent 는 자동 기준 = 첫 재고 × 입고 비율로 시작, d7 §11-1) → 같은 세션으로 min_stock·기준 열을 정한다.
  * low_stock_since 는 DB 가 맞춘다 (d7 §11). 돌려주는 값은 로그인 세션으로 다시 읽은 행.
  */
 export async function prepReagent(f: Fx, spec: ReagentSpec): Promise<DbReagent> {
@@ -586,7 +586,7 @@ export async function sharedSnapshot(): Promise<string[]> {
   const [common, own, reagents] = await Promise.all([
     sb.from("vendors").select("*").is("school_id", null).order("id"),
     sb.from("vendors").select("*").in("school_id", ids).order("id"),
-    sb.from("reagents").select("id, school_id, name, unit, min_stock, reorder_per_group, reorder_groups").in("school_id", ids).order("id"),
+    sb.from("reagents").select("id, school_id, name, unit, min_stock, reorder_per_group, reorder_groups, min_stock_source").in("school_id", ids).order("id"),
   ]);
   for (const q of [common, own, reagents]) if (q.error) throw new Error(`대조 조회 실패: ${q.error.message}`);
   return [
@@ -594,7 +594,8 @@ export async function sharedSnapshot(): Promise<string[]> {
     ...(own.data ?? []).map((v) => `vendor|${JSON.stringify(v)}`),
     ...(reagents.data ?? [])
       .filter((r) => !FOREIGN_TEMP.some((p) => String(r.name).startsWith(p)))
-      .map((r) => `reagent|${r.school_id}|${r.id}|${r.name}|${r.unit}|${r.min_stock}|${r.reorder_per_group}|${r.reorder_groups}`),
+      // 출처가 'auto' 인 시약의 min_stock 은 다른 스펙의 사용·입고 기록으로 DB 가 다시 계산한다(d7 §11-1) — 값 대신 출처만 견준다
+      .map((r) => `reagent|${r.school_id}|${r.id}|${r.name}|${r.unit}|${r.min_stock_source === "auto" ? "auto" : r.min_stock}|${r.reorder_per_group}|${r.reorder_groups}|${r.min_stock_source}`),
   ];
 }
 

@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import {
   placeReagentAt,
+  resetReorderThreshold,
   setReorderThreshold,
   type PlaceReagentResult,
+  type ResetReorderThresholdResult,
   type SetReorderThresholdResult,
 } from "@/lib/supabase/reagent-detail";
 
@@ -36,6 +38,18 @@ export async function placeReagentAtAction(input: unknown): Promise<PlaceReagent
  */
 export async function setReorderThresholdAction(input: unknown): Promise<SetReorderThresholdResult> {
   const result = await setReorderThreshold({ reagentId: field(input, "reagentId"), minStock: field(input, "minStock") });
+  if (!result.ok) return result;
+  revalidatePath("/", "layout");
+  return result;
+}
+
+/**
+ * "자동으로 돌리기" (d7 §11-1). reagentId 만 꺼내 lib/supabase 가 형식을 다시 보고,
+ * 교사·admin·자기 학교·데모 거부는 DB 함수 reset_reorder_threshold 가 본다. 출처 'auto' + 자동 값으로 다시 계산.
+ * 재고 부족 배지·홈 재고 요약·화면 6 알림이 바뀌므로 전체를 다시 받게 한다.
+ */
+export async function resetReorderThresholdAction(input: unknown): Promise<ResetReorderThresholdResult> {
+  const result = await resetReorderThreshold({ reagentId: field(input, "reagentId") });
   if (!result.ok) return result;
   revalidatePath("/", "layout");
   return result;

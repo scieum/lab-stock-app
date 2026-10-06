@@ -15,7 +15,14 @@ import {
   type SlotSide,
   type StorageClass,
 } from "@/lib/cabinet-rules";
-import { checkThreshold, THRESHOLD_MAX } from "@/lib/reorder-rules";
+import {
+  checkThreshold,
+  THRESHOLD_MAX,
+  toAutoBasis,
+  toThresholdSource,
+  type AutoBasis,
+  type ThresholdSource,
+} from "@/lib/reorder-rules";
 import { isLowStock, type Role } from "@/lib/types";
 import { placeReagent, placeReagentAt, type PlaceReagentResult } from "./cabinets";
 
@@ -52,6 +59,10 @@ export type ReagentThreshold = {
   perGroup: number | null;
   groups: number | null;
   unit: string;
+  /** 기준의 출처 (reagents.min_stock_source, d7 §11-1) */
+  source: ThresholdSource;
+  /** 자동 값의 근거 (reagents.min_stock_auto_basis) — source 가 'auto' 일 때만 값, 그 밖은 null */
+  autoBasis: AutoBasis;
 };
 
 /**
@@ -98,6 +109,11 @@ export type ReagentDetailResult =
   | { kind: "not-found" }
   /** 세션·프로필 없음 */
   | { kind: "signed-out" };
+
+/** "자동으로 돌리기" 결과 (reset_reorder_threshold, d7 §11-1) */
+export type ResetReorderThresholdResult =
+  | { ok: true; reagentId: string; minStock: number; previousMinStock: number | null }
+  | { ok: false; error: string };
 
 export type SetReorderThresholdResult =
   | { ok: true; reagentId: string; minStock: number; previousMinStock: number | null }
@@ -165,7 +181,7 @@ export async function getReagentDetail(id: string): Promise<ReagentDetailResult>
     supabase
       .from("reagents")
       .select(
-        "id, name, cas_no, unit, stock, min_stock, msds_url, intake_date, storage_class, reorder_per_group, reorder_groups, slot:cabinet_slots(*, cabinet:cabinets(*))",
+        "id, name, cas_no, unit, stock, min_stock, msds_url, intake_date, storage_class, reorder_per_group, reorder_groups, min_stock_source, min_stock_auto_basis, slot:cabinet_slots(*, cabinet:cabinets(*))",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -200,12 +216,7 @@ export async function getReagentDetail(id: string): Promise<ReagentDetailResult>
         storageClass: toClass(r.storage_class),
       },
       placement,
-      threshold: {
-        minStock: Number(r.min_stock),
-        perGroup: numOrNull(r.reorder_per_group),
-        groups: numOrNull(r.reorder_groups),
-        unit: r.unit,
-      },
+      threshold: toThreshold(r),
       picker: staff
         ? buildPicker(r.id, cabinetsRes.data ?? [], slotsRes.data ?? [], placedRes.data ?? [])
         : null,
@@ -216,6 +227,29 @@ export async function getReagentDetail(id: string): Promise<ReagentDetailResult>
         amount: formatStock(Number(u.amount), r.unit),
       })),
     },
+  };
+}
+
+/** reagents 행 → 재주문 기준 (화면 3 회원·둘러보기 공용, d7 §11-1) */
+export function toThreshold(r: {
+  min_stock: unknown;
+  reorder_per_group: unknown;
+  reorder_groups: unknown;
+  unit: string;
+  min_stock_source?: unknown;
+  min_stock_auto_basis?: unknown;
+}): ReagentThreshold {
+  const minStock = Number(r.min_stock);
+  const perGroup = numOrNull(r.reorder_per_group);
+  const groups = numOrNull(r.reorder_groups);
+  const source = toThresholdSource(r.min_stock_source, { minStock, perGroup, groups });
+  return {
+    minStock,
+    perGroup,
+    groups,
+    unit: r.unit,
+    source,
+    autoBasis: source === "auto" ? toAutoBasis(r.min_stock_auto_basis) : null,
   };
 }
 
@@ -299,6 +333,40 @@ export async function setReorderThreshold(input: { reagentId: unknown; minStock:
     ok: true,
     reagentId: input.reagentId,
     minStock: min ?? checked.value,
+    previousMinStock: numOrNull(obj.previous_min_stock),
+  };
+}
+
+/**
+ * "자동으로 돌리기" (d7 §11-1) — DB 함수 public.reset_reorder_threshold 하나만 호출한다.
+ * 출처를 'auto' 로 바꾸고 근거 열을 비운 뒤 자동 값(최근 4주 사용량 ÷ 2, 없으면 마지막 입고량 × 20%)으로 다시 계산한다.
+ * 교사·admin·자기 학교·데모 거부는 DB 가 본다.
+ */
+export async function resetReorderThreshold(input: { reagentId: unknown }): Promise<ResetReorderThresholdResult> {
+  if (typeof input.reagentId !== "string" || !UUID_RE.test(input.reagentId)) {
+    return { ok: false, error: REAGENT_NOT_FOUND };
+  }
+
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  if (!claims?.claims?.sub) return { ok: false, error: SIGNED_OUT };
+
+  const { data, error } = await supabase.rpc("reset_reorder_threshold", { p_reagent_id: input.reagentId });
+  if (error) {
+    switch (error.code) {
+      case "P0002":
+        return { ok: false, error: REAGENT_NOT_FOUND };
+      case "42501":
+        return { ok: false, error: error.message === "not authenticated" ? SIGNED_OUT : THRESHOLD_STAFF_ONLY };
+      default:
+        return { ok: false, error: SAVE_FAILED };
+    }
+  }
+  const obj = data && typeof data === "object" && !Array.isArray(data) ? data : {};
+  return {
+    ok: true,
+    reagentId: input.reagentId,
+    minStock: numOrNull(obj.min_stock) ?? 0,
     previousMinStock: numOrNull(obj.previous_min_stock),
   };
 }

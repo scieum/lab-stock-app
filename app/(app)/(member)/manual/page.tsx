@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "실험 매뉴얼 · Lab_Stock" };
  * 비로그인 → /login, 학생 → / (시약을 읽지도, 화면을 그리지도 않는다 — getManualScreen 이 역할을 먼저 본다).
  * 프로필이 없는 세션(내보낸 계정)도 / 로 — 거기서 "소속 학교가 없어요" 안내를 본다.
  * 이 세그먼트에는 loading 경계를 두지 않는다 — 역할 판정이 HTTP 3xx 로 나가야 한다 (/reorder·/intake 와 같다).
- * 화면에는 자동 연결·선택 칸·"기존 기준" 표시에 쓰는 값(id·이름·단위·지금 기준)만 내려보낸다.
+ * 화면에는 자동 연결·선택 칸·"기존 기준" 표시에 쓰는 값(id·이름·단위·지금 기준·기준 출처)만 내려보낸다.
  */
 export default async function ManualPage() {
   const result = await getManualScreen();
@@ -21,7 +21,7 @@ export default async function ManualPage() {
 
   return (
     <ManualScreen
-      reagents={result.data.reagents.map((r) => ({ id: r.id, name: r.name, unit: r.unit, minStock: r.minStock }))}
+      reagents={result.data.reagents.map((r) => ({ id: r.id, name: r.name, unit: r.unit, minStock: r.minStock, source: r.source }))}
     />
   );
 }

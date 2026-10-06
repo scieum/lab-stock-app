@@ -20,6 +20,7 @@ import { join } from "node:path";
 import { test, expect, type TestInfo } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ROLE_LABEL, anonClient, signIn, type Role, type Session } from "./db-helpers";
+import { autoFromIntake, autoFromUsage, withoutAutoDrift } from "./reorder-auto-helpers";
 import {
   HAS_SERVICE,
   NO_RESIDUE,
@@ -345,7 +346,8 @@ async function newVendor(admin: SupabaseClient, schoolId: string, patch: Row = {
 // ---------- reagents 호출 (일회용 학교) ----------
 
 const INTAKE_DATE = "2026-09-15";
-const REAGENT_COLS = "id, school_id, name, unit, stock, min_stock, reorder_per_group, reorder_groups, low_stock_since";
+const REAGENT_COLS =
+  "id, school_id, name, unit, stock, min_stock, reorder_per_group, reorder_groups, low_stock_since, min_stock_source, min_stock_auto_basis";
 
 type Reagent = {
   id: string;
@@ -356,6 +358,8 @@ type Reagent = {
   reorder_per_group: number | null;
   reorder_groups: number | null;
   low_stock_since: string | null;
+  min_stock_source: string;
+  min_stock_auto_basis: string | null;
 };
 
 function toReagent(r: Row): Reagent {
@@ -368,10 +372,12 @@ function toReagent(r: Row): Reagent {
     reorder_per_group: r.reorder_per_group === null ? null : Number(r.reorder_per_group),
     reorder_groups: r.reorder_groups === null ? null : Number(r.reorder_groups),
     low_stock_since: (r.low_stock_since as string | null) ?? null,
+    min_stock_source: r.min_stock_source as string,
+    min_stock_auto_basis: (r.min_stock_auto_basis as string | null) ?? null,
   };
 }
 
-/** 임시 시약: register_reagent (d7 §6 — min_stock 0 으로 시작) */
+/** 임시 시약: register_reagent (d7 §6 · §11-1 — 자동 기준 = 첫 입고량 × 20% 로 시작) */
 async function newReagent(c: SupabaseClient, stock: number): Promise<Reagent> {
   const res = await c.rpc("register_reagent", {
     p_name: `S69-시약-${tag()}`,
@@ -409,6 +415,13 @@ async function useReagent(c: SupabaseClient, id: string, amount: number): Promis
 async function intakeReagent(c: SupabaseClient, id: string, amount: number): Promise<void> {
   const res = await c.rpc("record_intake", { p_reagent_id: id, p_amount: amount, p_intake_date: INTAKE_DATE });
   expect(res.error, `record_intake(${amount}): ${res.error?.code} ${res.error?.message}`).toBeNull();
+}
+
+/** 화면 6 알림 대상 (d7 §11: stock < min_stock) 으로 이 계정에게 보이는 시약 id */
+async function alertIdsOf(c: SupabaseClient): Promise<string[]> {
+  const r = await c.from("reagents").select("id, stock, min_stock");
+  expect(r.error, `reagents 조회: ${r.error?.message}`).toBeNull();
+  return ((r.data ?? []) as Row[]).filter((x) => Number(x.stock) < Number(x.min_stock)).map((x) => x.id as string);
 }
 
 /** d7 §11 "아래로 내려가면 그 시각": 방금 일어난 일의 시각 — 테스트 시계와의 차이가 작다 */
@@ -461,15 +474,17 @@ test.afterAll(async ({}, info) => {
   // 공용 학교 A·B·데모 학교의 reagents(전체 열)·vendors(전체)는 그대로
   if (sharedBefore) {
     const before = sharedBefore;
+    // 출처가 'auto' 인 공용 시약의 기준 값은 다른 스펙의 사용·입고 기록으로 DB 가 다시 계산한다(d7 §11-1) — 그 값만 빼고 견준다(출처는 견준다)
+    const stable = (x: Shared) => ({ ...x, reagentsA: x.reagentsA.map(withoutAutoDrift), reagentsB: x.reagentsB.map(withoutAutoDrift) });
     let after: Shared = await sharedRead();
-    for (let i = 0; i < 30 && JSON.stringify(after) !== JSON.stringify(before); i++) {
+    for (let i = 0; i < 30 && JSON.stringify(stable(after)) !== JSON.stringify(stable(before)); i++) {
       await sleep(2_000);
       after = await sharedRead();
     }
     expect(after.vendors, "공통 목록 + 학교 A·B·데모 vendors").toEqual(before.vendors);
-    expect(after.reagentsDemo, "데모 학교 reagents").toEqual(before.reagentsDemo);
-    expect(after.reagentsA, "학교 A reagents").toEqual(before.reagentsA);
-    expect(after.reagentsB, "학교 B reagents").toEqual(before.reagentsB);
+    expect(after.reagentsDemo, "데모 학교 reagents (자동 다시 계산에서 빠짐 — 전체 열)").toEqual(before.reagentsDemo);
+    expect(stable(after).reagentsA, "학교 A reagents (자동 기준 값 제외)").toEqual(stable(before).reagentsA);
+    expect(stable(after).reagentsB, "학교 B reagents (자동 기준 값 제외)").toEqual(stable(before).reagentsB);
   }
 });
 
@@ -862,18 +877,26 @@ test.describe("일회용 학교", () => {
 
   // ---------- 재주문: low_stock_since ----------
 
-  test(`[R-db][S6] low_stock_since 전이: 등록 직후 null → stock = min_stock 은 null → 부족해지면 그 시각 → 더 줄어도(record_usage·직접 update) 유지 → record_intake 로 기준 이상이면 null → 다시 부족해지면 새 시각`, async ({}, info) => {
+  test(`[R-db][S6] low_stock_since 전이: 등록 직후(자동 기준 = 입고량 × 20%) null → stock = min_stock(직접 지정 → 'manual') 은 null → 부족해지면 그 시각 → 더 줄어도(record_usage·직접 update) 유지 → record_intake 로 기준 이상이면 null → 다시 부족해지면 새 시각`, async ({}, info) => {
     const f = await fresh(info);
     const c = f.teacher;
 
-    // 등록 직후: min_stock 0 (d7 §6) → 부족 아님
+    // 등록 직후: 자동 기준 = 첫 입고량 × 20% (d7 §6 · §11-1) < 재고 → 부족 아님
     let r = await newReagent(c, 10);
     const id = r.id;
-    expect(r, "등록 직후").toMatchObject({ stock: 10, min_stock: 0, low_stock_since: null, reorder_per_group: null, reorder_groups: null });
+    expect(r, "등록 직후").toMatchObject({
+      stock: 10,
+      min_stock: autoFromIntake(10),
+      low_stock_since: null,
+      reorder_per_group: null,
+      reorder_groups: null,
+      min_stock_source: "auto",
+      min_stock_auto_basis: "intake",
+    });
 
-    // stock = min_stock 은 부족이 아니다 (d7 §11: stock < min_stock)
+    // stock = min_stock 은 부족이 아니다 (d7 §11: stock < min_stock). 직접 지정한 기준 → 출처 'manual' (사용·입고로 다시 계산되지 않는다)
     r = await patchReagent(c, id, { min_stock: 10 }, "min_stock = stock");
-    expect(r, "stock = min_stock").toMatchObject({ stock: 10, min_stock: 10, low_stock_since: null });
+    expect(r, "stock = min_stock").toMatchObject({ stock: 10, min_stock: 10, low_stock_since: null, min_stock_source: "manual", min_stock_auto_basis: null });
 
     // 기준을 stock 보다 크게 → 부족해진 시각
     r = await patchReagent(c, id, { min_stock: 12 }, "min_stock > stock");
@@ -909,7 +932,7 @@ test.describe("일회용 학교", () => {
     expect(r, "record_intake(4) 뒤 (10 < 11)").toMatchObject({ stock: 10, min_stock: 11, low_stock_since: since1 });
     await intakeReagent(c, id, 1);
     r = await readReagent(c, id);
-    expect(r, "record_intake(1) 뒤 (11 = 11)").toMatchObject({ stock: 11, min_stock: 11, low_stock_since: null });
+    expect(r, "record_intake(1) 뒤 (11 = 11)").toMatchObject({ stock: 11, min_stock: 11, low_stock_since: null, min_stock_source: "basis" });
 
     // 다시 부족해지면 새 시각 (예전 시각이 되살아나지 않는다)
     await sleep(TICK_MS);
@@ -930,6 +953,46 @@ test.describe("일회용 학교", () => {
     // 대조 조회: 다른 시약은 영향 없음
     const other = await newReagent(f.admin, 5);
     expect(other.low_stock_since, "새로 등록한 다른 시약").toBeNull();
+    expect(other.min_stock, "새로 등록한 다른 시약의 자동 기준은 자기 입고량만 본다").toBe(autoFromIntake(5));
+  });
+
+  test(`[R-db][S6] low_stock_since 는 자동 기준 값의 변화도 따라간다: 사용 기록으로 자동 값이 재고를 넘으면 그 시각(재고 변화 없이도), 입고로 재고가 기준 이상이면 null`, async ({}, info) => {
+    const f = await fresh(info);
+    const c = f.teacher;
+    const r0 = await newReagent(c, 10);
+    expect(r0, "등록 직후 자동 기준").toMatchObject({ min_stock: autoFromIntake(10), min_stock_source: "auto", low_stock_since: null });
+
+    // 사용 4: 재고 6, 자동 값 = 4 ÷ 2 = 2 (사용량 근거) → 부족 아님
+    await useReagent(c, r0.id, 4);
+    let r = await readReagent(c, r0.id);
+    expect(r, "record_usage(4) 뒤").toMatchObject({ stock: 6, min_stock: autoFromUsage([4]), min_stock_auto_basis: "usage", low_stock_since: null });
+
+    // 학생 사용 5: 재고 1, 자동 값 = 9 ÷ 2 = 4.5 → 부족해진 시각
+    await sleep(TICK_MS);
+    await useReagent(f.student, r0.id, 5);
+    r = await readReagent(c, r0.id);
+    expect(r, "학생 record_usage(5) 뒤").toMatchObject({ stock: 1, min_stock: autoFromUsage([4, 5]), min_stock_source: "auto", min_stock_auto_basis: "usage" });
+    const t1 = expectNearNow(r.low_stock_since, "자동 기준이 재고를 넘음");
+    const since1 = r.low_stock_since;
+    expect(await alertIdsOf(f.admin), "화면 6 알림 대상 (교사·admin)").toContain(r0.id);
+
+    // 입고 100: 재고 101, 자동 값은 사용량 근거 그대로(사용 기록이 있으면 사용량 우선) → 부족 풀림
+    await intakeReagent(c, r0.id, 100);
+    r = await readReagent(c, r0.id);
+    expect(r, "record_intake(100) 뒤").toMatchObject({ stock: 101, min_stock: autoFromUsage([4, 5]), min_stock_auto_basis: "usage", low_stock_since: null });
+
+    // 재고는 그대로인데 자동 값만 오르는 경우: 다른 시약(재고 넉넉)의 기록은 이 시약 값에 닿지 않는다
+    const big = await newReagent(c, 1000);
+    await useReagent(c, big.id, 999);
+    expect(await readReagent(c, r0.id), "다른 시약의 사용 기록 뒤 이 시약 그대로").toEqual(r);
+
+    // 자동 값이 재고를 다시 넘으면 새 시각 (예전 시각이 되살아나지 않는다)
+    await sleep(TICK_MS);
+    await useReagent(c, r0.id, 100);
+    r = await readReagent(c, r0.id);
+    expect(r, "record_usage(100) 뒤").toMatchObject({ stock: 1, min_stock: autoFromUsage([4, 5, 100]) });
+    const t2 = expectNearNow(r.low_stock_since, "다시 부족");
+    expect(t2, `새 시각(${r.low_stock_since}) > 예전 시각(${since1})`).toBeGreaterThan(t1);
   });
 
   test(`[R-db][S6] low_stock_since 를 API 로 직접 써도(과거 날짜·null·미래) 계산값으로 덮임 — update·insert 모두`, async ({}, info) => {
@@ -987,7 +1050,9 @@ test.describe("일회용 학교", () => {
     expect(made, "등록 직후 기준 열은 null (d7 §11 null 허용)").toMatchObject({ reorder_per_group: null, reorder_groups: null });
 
     let r = await patchReagent(f.teacher, id, { reorder_per_group: 2.5, reorder_groups: 6 }, "교사 기준 열 update");
-    expect(r).toMatchObject({ reorder_per_group: 2.5, reorder_groups: 6, stock: 10, min_stock: 0, low_stock_since: null });
+    // 기준 값(min_stock)은 등록 때의 자동 값 그대로, 근거 열을 직접 쓰면 출처는 'basis' (d7 §11-1 · 직접 update 가드)
+    expect(made.min_stock, "전제: 등록 직후 자동 기준").toBe(autoFromIntake(10));
+    expect(r).toMatchObject({ reorder_per_group: 2.5, reorder_groups: 6, stock: 10, min_stock: made.min_stock, low_stock_since: null, min_stock_source: "basis", min_stock_auto_basis: null });
     r = await patchReagent(f.admin, id, { reorder_per_group: 3, reorder_groups: 8 }, "admin 기준 열 update");
     expect(r).toMatchObject({ reorder_per_group: 3, reorder_groups: 8 });
     const kept = r;
@@ -1010,7 +1075,7 @@ test.describe("일회용 학교", () => {
     r = await patchReagent(f.teacher, id, { reorder_per_group: 0.01, reorder_groups: 1 }, "경계값");
     expect(r).toMatchObject({ reorder_per_group: 0.01, reorder_groups: 1 });
     r = await patchReagent(f.teacher, id, { reorder_per_group: null, reorder_groups: null }, "null 로 비우기");
-    expect(r).toMatchObject({ reorder_per_group: null, reorder_groups: null });
+    expect(r, "근거 열을 비우면 직접 정한 기준 → 'manual'").toMatchObject({ reorder_per_group: null, reorder_groups: null, min_stock_source: "manual" });
   });
 
   // ---------- 재주문: 학교 분리 ----------

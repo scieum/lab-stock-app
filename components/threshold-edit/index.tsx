@@ -5,7 +5,7 @@ import { ButtonOutline } from "@/components/button-outline";
 import { ButtonPrimary } from "@/components/button-primary";
 import { Icon } from "@/components/icons";
 import { TextInput } from "@/components/text-input";
-import { THRESHOLD_ZERO_HINT, checkThreshold } from "@/lib/reorder-rules";
+import { RESET_AUTO_LABEL, THRESHOLD_ZERO_HINT, checkThreshold } from "@/lib/reorder-rules";
 import styles from "./styles.module.css";
 
 type ButtonProps = {
@@ -30,6 +30,11 @@ type FormProps = {
   error?: string | null;
   /** true = 열리자마자 입력으로 포커스 (연필을 눌러 열었을 때). 처음부터 열린 상태(갤러리)는 false */
   autoFocus?: boolean;
+  /**
+   * "자동으로 돌리기" (d7 §11-1, 시안에 없는 추가) — 있으면 안내 아래 글자 버튼을 그린다.
+   * 부르는 쪽이 출처가 'auto' 가 아닐 때만 넘긴다 (자동이면 숨김).
+   */
+  onResetAuto?: () => void;
 };
 
 type Props = ButtonProps | FormProps;
@@ -38,6 +43,7 @@ type Props = ButtonProps | FormProps;
  * 재주문 기준 직접 입력 (디자인 1.15 threshold-edit, d7 §14 — 교사·admin 만, R5: 학생 0개).
  * mode="button": reorder-threshold 값 오른쪽 연필 버튼(누름 영역 44, 아이콘 하늘색).
  * mode="form": 값 자리의 숫자 text-input(단위 suffix) + 안내 "0이면 재주문 알림을 보내지 않아요" + button-primary "저장" · button-outline "취소".
+ * 출처가 자동이 아니면 안내 아래 글자 버튼 "자동으로 돌리기"(d7 §11-1 — 시안에 없는 추가, reset_reorder_threshold).
  * 빈 값·음수·숫자 아님·소수 4자리 이상은 입력 아래 기본색 안내(핑크 아님)로 막는다 (lib/reorder-rules checkThreshold).
  */
 export function ThresholdEdit(props: Props) {
@@ -53,7 +59,16 @@ export function ThresholdEdit(props: Props) {
   return <ThresholdForm {...props} />;
 }
 
-function ThresholdForm({ defaultValue = "", unit, onSave, onCancel, pending = false, error, autoFocus = false }: FormProps) {
+function ThresholdForm({
+  defaultValue = "",
+  unit,
+  onSave,
+  onCancel,
+  onResetAuto,
+  pending = false,
+  error,
+  autoFocus = false,
+}: FormProps) {
   const [value, setValue] = useState(defaultValue);
   const [touched, setTouched] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -104,6 +119,18 @@ function ThresholdForm({ defaultValue = "", unit, onSave, onCancel, pending = fa
         }}
       />
       <p className={styles.hint}>{THRESHOLD_ZERO_HINT}</p>
+      {onResetAuto ? (
+        <button
+          type="button"
+          className={styles.reset}
+          data-testid="threshold-reset-auto"
+          disabled={pending}
+          aria-busy={pending || undefined}
+          onClick={onResetAuto}
+        >
+          {RESET_AUTO_LABEL}
+        </button>
+      ) : null}
       <div className={styles.actions}>
         <ButtonOutline className={styles.action} disabled={pending} onClick={onCancel}>
           취소
