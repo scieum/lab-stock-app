@@ -124,6 +124,7 @@
 | 알림 날짜 | `reagents.low_stock_since`(timestamptz, null 허용): 재고가 기준 아래로 내려간 시각. stock·min_stock 이 바뀔 때 DB 가 맞춘다(아래로 내려가면 그 시각, 다시 기준 이상이면 null, 이미 부족한 상태가 이어지면 유지). 카드에 "YYYY.MM.DD 알림"(한국 시간). 이 열을 추가할 때 이미 부족한 기존 시약은 추가 시각으로 채운다 |
 | 카드 | reorder-alert-card: badge-low-stock "재고 부족" + 시약명 + "필요량 {min_stock} {unit} / 현재 재고 {stock} {unit}" + 기준 문구 + 알림 날짜 + vendor-link "판매처 연결" |
 | 판매처 연결 | vendor-link → ex-modal-card: 판매처 목록(우리 학교 판매처 먼저, 그다음 공통 목록; 행 = 판매처명 + 부가 정보) 중 하나를 고르고 "확인" → 그 판매처의 웹사이트를 새 창으로 연다(2026-10-05 사용자 결정). 아무것도 저장하지 않는다. 웹사이트가 없는 판매처를 고르면 "확인" 비활성 + 연락처 안내. 판매처가 하나도 없으면 안내 문구(admin 에게는 판매처 등록으로 가는 길) |
+| 검색어 자동 입력 | (2026-10-07 사용자 결정) 공통 목록 4곳은 웹사이트 대신 그 판매처의 검색 결과 주소를 연다. 검색어 = 시약 이름 그대로(앞뒤 공백만 정리, URL 인코딩). 검색 주소는 `vendors.search_url`(null 허용, `{q}` 자리에 검색어) — 공통 seed 만 채운다: 11번가 `https://search.11st.co.kr/Search.tmall?kwd={q}`, G마켓 `https://www.gmarket.co.kr/n/search?keyword={q}`, 오피스안 `https://officeahn.com/product/search.html?keyword={q}`, 퍼스트과학 `https://firstsci.co.kr/product/search.html?keyword={q}`. search_url 이 없는 판매처(우리 학교 판매처 전부)는 지금처럼 웹사이트를 연다. 화면 9 에는 입력 칸을 더하지 않는다(화면·API 로 search_url 을 쓸 수 없음 — 마이그레이션으로만) |
 | 판매처 등록 진입 | vendor-register: 목록 아래 "판매처 등록" → 화면 9. admin 에게만 보인다(R3) |
 | 매뉴얼 진입 | manual-upload: 재주문 기준 안내 박스("필요량 = 1반 1회 실험량 × 조 수") + "실험 매뉴얼 올리기" → 화면 5(`/manual`, 다음 run). 교사·admin만 (R1) |
 | 0건 | ex-empty-state-card "재고가 부족한 시약이 없어요" |

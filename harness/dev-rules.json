@@ -469,7 +469,8 @@
     "secret_env_names": [
       "NEIS_API_KEY",
       "GEMINI_API_KEY",
-      "SUPABASE_SERVICE_ROLE_KEY"
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "KOSHA_MSDS_API_KEY"
     ],
     "secret_allowed_dirs": [
       "app/api",
