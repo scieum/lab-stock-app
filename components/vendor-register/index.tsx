@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import { ButtonOutline } from "@/components/button-outline";
 import { ButtonPrimary } from "@/components/button-primary";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
+import { VendorFavoriteToggle } from "@/components/vendor-link/favorite-toggle";
 import { vendorInfo, type VendorField, type VendorValue } from "@/lib/vendor-rules";
 import { VendorForm } from "./form";
 import { VendorRowMenu } from "./row-menu";
@@ -41,6 +42,8 @@ export type VendorRegisterVendor = {
   contact?: string | null;
   website?: string | null;
   note?: string | null;
+  /** 우리 학교 즐겨찾기 (d7 §12-1) */
+  favorite?: boolean;
 };
 
 /** 열려 있는 폼: 등록 또는 어떤 판매처의 수정 */
@@ -65,6 +68,8 @@ type Props = {
   onSubmit?: (value: VendorValue, editingId: string | null) => void;
   /** 더보기 "삭제" — 화면 쪽이 VendorDeleteConfirm 을 띄운다 */
   onDelete?: (vendor: VendorRegisterVendor) => void;
+  /** 있으면 행마다 즐겨찾기 별표(vendor-favorite-toggle) — 화면 쪽이 바로 저장한다 (d7 §12-1) */
+  onToggleFavorite?: (vendor: VendorRegisterVendor, next: boolean) => void;
   /** 저장 중 */
   pending?: boolean;
   /** 저장 실패 안내 (서버 문구) */
@@ -94,6 +99,7 @@ export function VendorRegister({
   onFormChange,
   onSubmit,
   onDelete,
+  onToggleFavorite,
   pending = false,
   error,
   errorField,
@@ -153,6 +159,14 @@ export function VendorRegister({
                     <span className={styles.rowName}>{v.name}</span>
                     {info ? <span className={styles.rowInfo}>{info}</span> : null}
                   </div>
+                  {onToggleFavorite ? (
+                    <VendorFavoriteToggle
+                      name={v.name}
+                      favorite={v.favorite === true}
+                      className={styles.favorite}
+                      onToggle={(next) => onToggleFavorite(v, next)}
+                    />
+                  ) : null}
                   <VendorRowMenu
                     name={v.name}
                     defaultOpen={defaultMenuOpenId === v.id}

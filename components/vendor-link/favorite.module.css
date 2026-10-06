@@ -1,0 +1,38 @@
+/* 판매처 즐겨찾기 별표 (d7 §12-1, 시안 예외): 아이콘 20, 누름 영역 = 버튼 최소 높이 */
+.toggle {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.toggle:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+/* 누른 즉시 반응 */
+.toggle:active:not(:disabled) {
+  opacity: var(--pressed-opacity);
+}
+
+.toggle:disabled {
+  cursor: not-allowed;
+}
+
+.icon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+}
+
+/* 즐겨찾기 = 하늘색 채운 별 (아이콘에만 — 글자색으로 쓰지 않는다) */
+.iconOn {
+  color: var(--color-highlight);
+}

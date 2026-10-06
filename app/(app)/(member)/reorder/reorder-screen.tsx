@@ -8,6 +8,7 @@ import { ReorderAlertItemCard, ReorderAlertList, ReorderAlertListItem } from "@/
 import { VendorLink, VendorLinkModal, openVendorWebsite, type VendorLinkOption } from "@/components/vendor-link";
 import { VendorRegisterEntry } from "@/components/vendor-register";
 import { isOpenableUrl, vendorSearchUrl } from "@/lib/vendor-rules";
+import { toggleVendorFavoriteAction } from "./actions";
 import styles from "./reorder.module.css";
 
 export type ReorderScreenAlert = {
@@ -26,7 +27,7 @@ type Props = {
   isAdmin: boolean;
   /** 재고가 필요량보다 적은 시약 (부족한 정도가 큰 순) */
   alerts: ReorderScreenAlert[];
-  /** 판매처 연결 목록 (우리 학교 판매처 먼저, 그다음 공통 목록) */
+  /** 판매처 연결 목록 (우리 학교 판매처 먼저, 그다음 공통 목록). favorite = 우리 학교 즐겨찾기 */
   vendors: VendorLinkOption[];
 };
 
@@ -45,8 +46,18 @@ const NOTICE_MS = 12000;
  * 판매처를 고르고 "확인" → 그 판매처 웹사이트(공통 목록 4곳은 시약 이름 검색 결과 주소)를 새 창으로 연다. 아무것도 저장하지 않는다 (서버 요청 없음).
  * 카드는 비모달이다 — 뒤 목록을 계속 조작할 수 있다. 닫기: Esc · "취소" · 같은 카드의 "판매처 연결" 다시 누르기.
  */
-export function ReorderScreen({ isAdmin, alerts, vendors }: Props) {
+export function ReorderScreen({ isAdmin, alerts, vendors: initialVendors }: Props) {
   const [openId, setOpenId] = useState<string | null>(null);
+  /** 즐겨찾기를 누르면 바로 바꿔 보여 준다(저장 실패 시 되돌림). 서버가 새 목록을 내려 주면 그것으로 맞춘다 */
+  const [vendors, setVendors] = useState(initialVendors);
+  const [seen, setSeen] = useState(initialVendors);
+  if (seen !== initialVendors) {
+    setSeen(initialVendors);
+    setVendors(initialVendors);
+  }
+  const [favoriteError, setFavoriteError] = useState<string | null>(null);
+  /** 판매처마다 마지막 요청 번호 — 늦게 온 이전 응답이 새 상태를 되돌리지 않게 */
+  const favoriteSeq = useRef(new Map<string, number>());
   /** 방금 새 창으로 연 판매처 — 새 창이 막혔을 때 직접 누를 수 있는 링크를 남긴다 */
   const [opened, setOpened] = useState<{ name: string; url: string } | null>(null);
 
@@ -101,7 +112,30 @@ export function ReorderScreen({ isAdmin, alerts, vendors }: Props) {
     }
     opener.current = button;
     setOpened(null);
+    setFavoriteError(null);
     setOpenId(id);
+  };
+
+  const setFavorite = (id: string, favorite: boolean) =>
+    setVendors((list) => list.map((v) => (v.id === id ? { ...v, favorite } : v)));
+
+  // 별표: 바로 바꿔 보이고 저장(서버 액션). 실패하면 되돌리고 모달 안에 안내 (d7 §12-1)
+  const toggleFavorite = (id: string, next: boolean) => {
+    const seq = (favoriteSeq.current.get(id) ?? 0) + 1;
+    favoriteSeq.current.set(id, seq);
+    setFavoriteError(null);
+    setFavorite(id, next);
+    toggleVendorFavoriteAction({ vendorId: id, favorite: next })
+      .then((res) => {
+        if (favoriteSeq.current.get(id) !== seq || res.ok) return;
+        setFavorite(id, !next);
+        setFavoriteError(res.error);
+      })
+      .catch(() => {
+        if (favoriteSeq.current.get(id) !== seq) return;
+        setFavorite(id, !next);
+        setFavoriteError("즐겨찾기를 저장하지 못했어요. 잠시 후 다시 시도해 주세요");
+      });
   };
 
   const confirm = (vendor: VendorLinkOption) => {
@@ -156,6 +190,8 @@ export function ReorderScreen({ isAdmin, alerts, vendors }: Props) {
             registerHref={isAdmin ? VENDORS_PATH : undefined}
             onCancel={close}
             onConfirm={confirm}
+            onToggleFavorite={toggleFavorite}
+            favoriteError={favoriteError}
           />
         ) : null}
       </div>

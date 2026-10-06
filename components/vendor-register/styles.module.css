@@ -352,3 +352,21 @@
     box-sizing: border-box;
   }
 }
+
+/* ---------- 즐겨찾기 별표 (d7 §12-1, 시안 예외) ---------- */
+/* 우리 학교 행: 더보기 앞. 누름 영역 44 — 행 높이가 늘지 않게 위아래 바깥 여백으로 되돌린다 */
+.favorite {
+  margin: calc(var(--space-12) * -1) 0;
+}
+
+/* 공통 목록: 판매처명 칸 맨 앞 (셀 가운데를 눌러도 별표가 눌리지 않게 왼쪽에 둔다) */
+.commonName {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.commonFavorite {
+  margin: calc(var(--space-12) * -1) 0 calc(var(--space-12) * -1) calc(var(--space-12) * -1);
+}

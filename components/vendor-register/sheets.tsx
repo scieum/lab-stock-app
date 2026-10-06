@@ -5,6 +5,7 @@ import { ButtonPrimary } from "@/components/button-primary";
 import { DataTable, DataTableRow } from "@/components/ex-data-table";
 import { DataTableCell } from "@/components/ex-data-table-cell";
 import { ModalCard } from "@/components/ex-modal-card";
+import { VendorFavoriteToggle } from "@/components/vendor-link/favorite-toggle";
 import { vendorInfo, type VendorLike } from "@/lib/vendor-rules";
 import styles from "./styles.module.css";
 
@@ -53,13 +54,22 @@ export function VendorDeleteConfirm({ name, pending, error, onCancel, onConfirm,
   );
 }
 
-export type VendorCommonItem = VendorLike & { id: string };
+export type VendorCommonItem = VendorLike & { id: string; /** 우리 학교 즐겨찾기 (d7 §12-1) */ favorite?: boolean };
 
 /**
  * "공통 목록" 탭 (화면 9): 서비스 공통 판매처, 보기 전용 2열(판매처명 · 부가 정보) — 셀은 ex-data-table-cell.
  * 수정·삭제 버튼이 없다. vendor-register 바깥에 둔다.
  */
-export function VendorCommonList({ vendors, label = "공통 목록" }: { vendors: VendorCommonItem[]; label?: string }) {
+export function VendorCommonList({
+  vendors,
+  label = "공통 목록",
+  onToggleFavorite,
+}: {
+  vendors: VendorCommonItem[];
+  label?: string;
+  /** 있으면 판매처명 칸 앞에 즐겨찾기 별표 — 보기 전용 2열은 그대로, 별표만 누를 수 있다 (d7 §12-1) */
+  onToggleFavorite?: (vendor: VendorCommonItem, next: boolean) => void;
+}) {
   return (
     <DataTable
       label={label}
@@ -72,7 +82,21 @@ export function VendorCommonList({ vendors, label = "공통 목록" }: { vendors
     >
       {vendors.map((v) => (
         <DataTableRow key={v.id}>
-          <DataTableCell strong>{v.name}</DataTableCell>
+          <DataTableCell strong>
+            {onToggleFavorite ? (
+              <span className={styles.commonName}>
+                <VendorFavoriteToggle
+                  name={v.name}
+                  favorite={v.favorite === true}
+                  className={styles.commonFavorite}
+                  onToggle={(next) => onToggleFavorite(v, next)}
+                />
+                <span>{v.name}</span>
+              </span>
+            ) : (
+              v.name
+            )}
+          </DataTableCell>
           <DataTableCell>{vendorInfo(v) || "-"}</DataTableCell>
         </DataTableRow>
       ))}

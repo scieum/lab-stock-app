@@ -30,7 +30,8 @@ export type IconName =
   | "more"
   | "upload"
   | "print"
-  | "caret-down";
+  | "caret-down"
+  | "star";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: (
@@ -181,6 +182,8 @@ const PATHS: Record<IconName, React.ReactNode> = {
   ),
   // 시안 nav-account-menu icon-caret (작은 ▾ — 16 상자 안 6.67×3.33 꺾쇠)
   "caret-down": <path d="m7 10 5 5 5-5" />,
+  // 판매처 즐겨찾기 별표 (d7 §12-1, 시안 예외) — 채운 별은 부모가 fill="currentColor" 를 넘긴다
+  star: <path d="M12 3.5 14.6 8.8l5.9.86-4.27 4.15 1 5.87L12 16.9l-5.23 2.78 1-5.87L3.5 9.66l5.9-.86Z" />,
   bell: (
     <>
       <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15Z" />

@@ -3,6 +3,7 @@ import styles from "./styles.module.css";
 
 export { VendorLinkModal, VendorOptions, openVendorWebsite } from "./modal";
 export type { VendorLinkOption } from "./modal";
+export { VendorFavoriteToggle } from "./favorite-toggle";
 
 type Props = {
   /** 버튼 글자 (기본 "판매처 연결") */
