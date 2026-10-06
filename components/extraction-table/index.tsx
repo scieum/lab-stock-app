@@ -10,6 +10,7 @@ import {
   existingBasisText,
   formatAmountText,
   isManualUnit,
+  mergedRowsText,
   outcomeText,
   planSave,
   type ExtractionRow,
@@ -173,7 +174,7 @@ export function ExtractionTable({
                         삭제
                       </button>
                     </div>
-                    <RowNotes view={view} />
+                    <RowNotes view={view} extractedMerged={mergedRowsText(row)} />
                   </td>
                 </tr>
               </tbody>
@@ -190,8 +191,10 @@ export function ExtractionTable({
   );
 }
 
-/** 보조 줄의 안내: 기존 기준(+ 저장 결과 예측) · 같은 시약 합산 · 저장 제외 · 오류 */
-function RowNotes({ view }: { view: RowView }) {
+/**
+ * 보조 줄의 안내: 추출 중복 합치기("N개 행을 합쳤어요", d7 §13) · 기존/자동 기준(+ 저장 결과 예측) · 같은 시약 합산 · 저장 제외 · 오류
+ */
+function RowNotes({ view, extractedMerged }: { view: RowView; extractedMerged: string | null }) {
   const basis = view.reagent ? existingBasisText(view.reagent) : null;
   const outcome = view.status === "ok" ? outcomeText(view) : null;
   const merged =
@@ -199,9 +202,14 @@ function RowNotes({ view }: { view: RowView }) {
       ? `같은 시약 ${view.mergedCount}행 — 합쳐서 ${formatAmountText(view.mergedRequired, view.reagent.unit)}로 저장해요`
       : null;
   const isError = view.status === "amount" || view.status === "unit" || view.status === "mismatch";
-  if (!basis && !merged && !view.message) return null;
+  if (!extractedMerged && !basis && !merged && !view.message) return null;
   return (
     <div className={styles.notes}>
+      {extractedMerged ? (
+        <p className={styles.note} data-note="extracted-merged" data-testid="extract-merged-note">
+          {extractedMerged}
+        </p>
+      ) : null}
       {basis ? (
         <p className={styles.note} data-note="basis">
           {outcome ? `${basis} · ${outcome}` : basis}

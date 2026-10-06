@@ -10,7 +10,7 @@ import { UNASSIGNED_LABEL } from "@/lib/cabinet-rules";
 import { thresholdText } from "@/lib/reorder-rules";
 import type { PickerCabinet, ReagentPlacement, ReagentThreshold } from "@/lib/supabase/reagent-detail";
 import type { StorageClass } from "@/lib/cabinet-rules";
-import { placeReagentAtAction, setReorderThresholdAction } from "./actions";
+import { placeReagentAtAction, resetReorderThresholdAction, setReorderThresholdAction } from "./actions";
 
 /** 저장 후 토스트를 보여 주는 시간 */
 const TOAST_MS = 4000;
@@ -39,7 +39,7 @@ type Props = {
  * 화면 3 요약 카드 (디자인 1.15): reagent-detail-card 안 입고일 → reagent-location(번호 + "1번 시약장 · 우 1단" / "칸 없음")
  * → reorder-threshold("3병" / "아직 없어요").
  * 교사·admin: 위치 바꾸기 → location-picker(모바일 tab-bar 위 하단 시트 · 데스크톱 가운데) → 저장/칸 없음으로 → place_reagent,
- * 연필 → 숫자 입력(0 = 알림 없음) → set_reorder_threshold. 저장하면 토스트 + 서버가 화면을 다시 내려 준다(revalidatePath).
+ * 연필 → 숫자 입력(0 = 알림 없음) → set_reorder_threshold, 출처가 자동이 아니면 입력 상태의 "자동으로 돌리기" → reset_reorder_threshold. 저장하면 토스트 + 서버가 화면을 다시 내려 준다(revalidatePath).
  */
 export function DetailSummary({ reagent, placement, threshold, picker }: Props) {
   const canEdit = picker !== null;
@@ -117,6 +117,31 @@ export function DetailSummary({ reagent, placement, threshold, picker }: Props) 
     });
   };
 
+  // "자동으로 돌리기" (d7 §11-1): 출처 'auto' + 자동 값으로 다시 계산 → 토스트, 서버가 값·표시를 다시 내려 준다
+  const resetThreshold = () => {
+    if (!canEdit) return;
+    setThresholdError(null);
+    run("threshold", async () => {
+      const res = await resetReorderThresholdAction({ reagentId: reagent.id }).catch(() => null);
+      if (!res) {
+        setThresholdError("저장하지 못했어요. 잠시 후 다시 시도해 주세요");
+        return;
+      }
+      if (!res.ok) {
+        setThresholdError(res.error);
+        return;
+      }
+      setEditing(false);
+      setToast({
+        key: Date.now(),
+        text:
+          res.minStock > 0
+            ? `재주문 기준을 자동(${thresholdText(res.minStock, threshold.unit)})으로 돌렸어요`
+            : "재주문 기준을 자동으로 돌렸어요 — 아직 계산할 기록이 없어요",
+      });
+    });
+  };
+
   return (
     <>
       <ReagentDetailCard
@@ -143,6 +168,9 @@ export function DetailSummary({ reagent, placement, threshold, picker }: Props) 
               unit={threshold.unit}
               perGroup={threshold.perGroup}
               groups={threshold.groups}
+              source={threshold.source}
+              autoBasis={threshold.autoBasis}
+              onResetAuto={resetThreshold}
               canEdit={canEdit}
               editing={editing}
               onEditingChange={(next) => {

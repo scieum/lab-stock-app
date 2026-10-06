@@ -595,10 +595,14 @@ export function planSave(rows: readonly ExtractionRow[], reagents: readonly Manu
   return { rows: views, items, errorRowIds, skippedRowIds, canSave: blockReason === null, blockReason };
 }
 
-/** 기존 기준 보조 문구: 기준이 없으면(0) null */
-export function existingBasisText(reagent: Pick<ManualReagent, "minStock" | "unit">): string | null {
+/**
+ * 기존 기준 보조 문구: 기준이 없으면(0) null.
+ * 지금 기준이 자동(source = 'auto', d7 §11-1)이면 "자동 기준 N" — 저장하면 항상 바뀐다. 그 밖은 "기존 기준 N".
+ */
+export function existingBasisText(reagent: Pick<ManualReagent, "minStock" | "unit" | "source">): string | null {
   if (!(reagent.minStock > 0)) return null;
-  return `기존 기준 ${formatAmountText(reagent.minStock, reagent.unit)}`;
+  const label = reagent.source === "auto" ? "자동 기준" : "기존 기준";
+  return `${label} ${formatAmountText(reagent.minStock, reagent.unit)}`;
 }
 
 /** 기존 기준과 견준 안내: "저장하면 300 mL로 바뀌어요" / "기존 기준이 같거나 더 커서 그대로 둬요" (기준이 없으면 null) */

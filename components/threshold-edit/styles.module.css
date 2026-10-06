@@ -51,6 +51,33 @@
   line-height: var(--line-height-normal);
 }
 
+/* "자동으로 돌리기" (시안에 없는 추가, d7 §11-1): 기본색 밑줄 글자 버튼, 누름 영역 높이 44 */
+.reset {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--button-min-height);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.reset:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.reset:disabled {
+  color: var(--color-text-placeholder);
+  cursor: not-allowed;
+}
+
 .actions {
   display: flex;
   gap: var(--space-8);

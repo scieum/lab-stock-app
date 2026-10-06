@@ -36,6 +36,31 @@
   min-width: 0;
 }
 
+/* 값 + (자동이면) "자동" pill 한 줄 */
+.valueLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+/* 시안에 없는 추가(d7 §11-1): 자동 기준 표시 — slot-count 와 같은 무채색 pill (핑크·하늘색 없음) */
+.autoTag {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: var(--icon-md);
+  padding: 0 var(--space-8);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  white-space: nowrap;
+}
+
 .value,
 .none {
   font-size: var(--font-size-15);

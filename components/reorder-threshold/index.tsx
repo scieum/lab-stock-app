@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import { ThresholdEdit } from "@/components/threshold-edit";
-import { reorderBasisText, thresholdText } from "@/lib/reorder-rules";
+import {
+  AUTO_LABEL,
+  reorderBasisText,
+  thresholdSourceText,
+  thresholdText,
+  type AutoBasis,
+  type ThresholdSource,
+} from "@/lib/reorder-rules";
 import styles from "./styles.module.css";
 
 type Props = {
@@ -13,6 +20,16 @@ type Props = {
   /** 화면 5 가 채운 근거 (1조 사용량 · 조 수) — 둘 다 있으면 값 아래 "1반 1회 실험량 … × …조 기준" (d7 §11) */
   perGroup?: number | null;
   groups?: number | null;
+  /**
+   * 기준의 출처 (reagents.min_stock_source, d7 §11-1). 주면 값 옆 "자동" 표시 + 출처 한 줄
+   * (auto: "최근 4주 사용량 기준" · "마지막 입고량의 20%" / basis: "1반 1회 실험량 … × …조 기준" / manual: "직접 입력").
+   * 없으면(갤러리 예시) 예전처럼 화면 5 근거만.
+   */
+  source?: ThresholdSource;
+  /** 자동 값의 근거 (source = 'auto' 일 때) */
+  autoBasis?: AutoBasis;
+  /** "자동으로 돌리기" (교사·admin, source 가 'auto' 가 아닐 때 입력 상태 안에) — reset_reorder_threshold */
+  onResetAuto?: () => void;
   /** true = 교사·admin — threshold-edit (R5: 학생 false) */
   canEdit?: boolean;
   /** 처음부터 입력 상태 (갤러리·시안 상태) — 상태를 부르는 쪽이 쥐려면 editing · onEditingChange */
@@ -33,13 +50,18 @@ type Props = {
  * 재주문 기준 줄 (디자인 1.15 reorder-threshold, d7 §14): reagent-detail-card 안 reagent-location 아래 한 줄.
  * caption "재주문 기준" + 값 "3병"(없으면 "아직 없어요" 회색). 화면 5 근거가 있으면 값 아래 기준 문구.
  * 교사·admin 은 값 오른쪽 연필(threshold-edit) → 누르면 값 자리가 숫자 입력 + 저장/취소로 바뀐다.
- * 직접 입력하면 근거(1조 사용량·조 수)는 지워지고 "재주문 기준 N" 이 된다 (d7 §14 — DB 가 한다).
+ * 직접 입력하면 근거(1조 사용량·조 수)는 지워지고 출처가 'manual'("직접 입력")이 된다 (d7 §14 — DB 가 한다).
+ * 출처(d7 §11-1, 시안에 없는 추가 — d2 §5 예외): 자동이면 값 옆 회색 pill "자동" + 근거 caption, 화면 5 근거·직접 입력은 caption 만.
+ * 자동이 아니면 입력 상태 안에 "자동으로 돌리기"(threshold-edit).
  */
 export function ReorderThreshold({
   minStock,
   unit,
   perGroup,
   groups,
+  source,
+  autoBasis,
+  onResetAuto,
   canEdit = false,
   defaultEditing = false,
   editing: editingProp,
@@ -59,7 +81,15 @@ export function ReorderThreshold({
     onEditingChange?.(next);
   };
   const has = typeof minStock === "number" && minStock > 0;
-  const basis = has && perGroup && groups ? reorderBasisText({ minStock: minStock ?? 0, unit, perGroup, groups }) : null;
+  const auto = source === "auto";
+  let basis: string | null;
+  if (source) {
+    const text = thresholdSourceText({ source, autoBasis, minStock: minStock ?? 0, unit, perGroup, groups });
+    // 자동인데 값이 0(아직 없어요)이거나 근거를 모르면("자동") 값·표시와 겹치므로 줄을 두지 않는다
+    basis = auto && (!has || text === AUTO_LABEL) ? null : text;
+  } else {
+    basis = has && perGroup && groups ? reorderBasisText({ minStock: minStock ?? 0, unit, perGroup, groups }) : null;
+  }
 
   if (editing) {
     return (
@@ -74,6 +104,7 @@ export function ReorderThreshold({
           autoFocus={opened}
           onCancel={() => setEditing(false)}
           onSave={(value) => onSave?.(value)}
+          onResetAuto={source && !auto ? onResetAuto : undefined}
         />
       </div>
     );
@@ -84,8 +115,19 @@ export function ReorderThreshold({
       <div className={styles.field}>
         <span className={styles.label}>재주문 기준</span>
         <span className={styles.valueGroup}>
-          <span className={has ? styles.value : styles.none}>{thresholdText(minStock, unit)}</span>
-          {basis ? <span className={styles.basis}>{basis}</span> : null}
+          <span className={styles.valueLine}>
+            <span className={has ? styles.value : styles.none}>{thresholdText(minStock, unit)}</span>
+            {auto ? (
+              <span className={styles.autoTag} data-testid="reorder-threshold-auto">
+                {AUTO_LABEL}
+              </span>
+            ) : null}
+          </span>
+          {basis ? (
+            <span className={styles.basis} data-testid={source ? "reorder-threshold-source" : undefined}>
+              {basis}
+            </span>
+          ) : null}
         </span>
       </div>
       {canEdit ? <ThresholdEdit mode="button" disabled={pending} onStart={() => setEditing(true)} /> : null}
