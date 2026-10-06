@@ -15,7 +15,7 @@ import {
 } from "@/components/vendor-register";
 import { DESKTOP_MIN_WIDTH } from "@/lib/breakpoints";
 import { filterVendors, type VendorField, type VendorValue } from "@/lib/vendor-rules";
-import { deleteVendorAction, saveVendorAction } from "./actions";
+import { deleteVendorAction, saveVendorAction, toggleVendorFavoriteAction } from "./actions";
 import styles from "./vendors.module.css";
 
 type Props = {
@@ -43,8 +43,26 @@ const TOAST_MS = 4000;
  * 저장 뒤 폼: 모바일은 목록으로 돌아간다 / 데스크톱은 시안 9-desktop 처럼 방금 저장한 판매처의 "판매처 수정" 으로 남는다.
  * 삭제 확인(ex-modal-card)은 비모달이다 — 닫기: Esc · "취소". 학교·호출자 역할 값은 보내지 않는다.
  */
-export function VendorsScreen({ vendors, common }: Props) {
+export function VendorsScreen({ vendors: serverVendors, common: serverCommon }: Props) {
   const [tab, setTab] = useState<Tab>("school");
+  /**
+   * 즐겨찾기 (d7 §12-1): 별표를 누르면 바로 바꿔 보여 주고 저장한다. 실패하면 되돌리고 토스트.
+   * 판매처 id → 누른 뒤의 값. 서버가 새 목록을 내려 주면 비운다(서버 값이 맞다).
+   */
+  const [favoriteOverride, setFavoriteOverride] = useState<Map<string, boolean>>(() => new Map());
+  const [seenLists, setSeenLists] = useState({ serverVendors, serverCommon });
+  if (seenLists.serverVendors !== serverVendors || seenLists.serverCommon !== serverCommon) {
+    setSeenLists({ serverVendors, serverCommon });
+    setFavoriteOverride(new Map());
+  }
+  const withFavorite = <T extends { id: string; favorite?: boolean }>(list: T[]): T[] =>
+    favoriteOverride.size === 0
+      ? list
+      : list.map((v) => (favoriteOverride.has(v.id) ? { ...v, favorite: favoriteOverride.get(v.id) } : v));
+  const vendors = withFavorite(serverVendors);
+  const common = withFavorite(serverCommon);
+  /** 판매처마다 마지막 요청 번호 — 늦게 온 이전 응답이 새 상태를 되돌리지 않게 */
+  const favoriteSeq = useRef(new Map<string, number>());
   const [query, setQuery] = useState("");
   const [form, setForm] = useState<VendorFormState | null>(null);
   const [resetKey, setResetKey] = useState(0);
@@ -160,6 +178,26 @@ export function VendorsScreen({ vendors, common }: Props) {
     });
   };
 
+  const setFavorite = (id: string, favorite: boolean) =>
+    setFavoriteOverride((m) => new Map(m).set(id, favorite));
+
+  const toggleFavorite = (vendor: { id: string }, next: boolean) => {
+    const id = vendor.id;
+    const seq = (favoriteSeq.current.get(id) ?? 0) + 1;
+    favoriteSeq.current.set(id, seq);
+    setFavorite(id, next);
+    const fail = (text: string) => {
+      if (favoriteSeq.current.get(id) !== seq) return;
+      setFavorite(id, !next);
+      setToast({ key: Date.now(), text });
+    };
+    toggleVendorFavoriteAction({ vendorId: id, favorite: next })
+      .then((res) => {
+        if (!res.ok) fail(res.error);
+      })
+      .catch(() => fail("즐겨찾기를 저장하지 못했어요. 잠시 후 다시 시도해 주세요"));
+  };
+
   const searching = query.trim() !== "";
   const shownCommon = filterVendors(common, query);
 
@@ -187,7 +225,7 @@ export function VendorsScreen({ vendors, common }: Props) {
       <div aria-busy={pending ? true : undefined}>
         {tab === "common" ? (
           shownCommon.length > 0 ? (
-            <VendorCommonList vendors={shownCommon} />
+            <VendorCommonList vendors={shownCommon} onToggleFavorite={toggleFavorite} />
           ) : (
             <EmptyStateCard title={searching ? "찾는 판매처가 없어요" : "공통 판매처가 없어요"} />
           )
@@ -200,6 +238,7 @@ export function VendorsScreen({ vendors, common }: Props) {
             onFormChange={changeForm}
             onSubmit={save}
             onDelete={askDelete}
+            onToggleFavorite={toggleFavorite}
             pending={pending}
             error={formError?.text ?? null}
             errorField={formError?.field ?? null}

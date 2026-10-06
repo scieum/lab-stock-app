@@ -173,3 +173,27 @@ export function orderVendorsForLink<T extends { name: string; schoolId: string |
     return a.name.localeCompare(b.name, "ko");
   });
 }
+
+/**
+ * 즐겨찾기 먼저 (d7 §12-1): favorite = true 인 판매처를 맨 위로, 각 묶음 안은 넘겨받은 순서 그대로(안정 정렬).
+ */
+export function favoritesFirst<T extends { favorite?: boolean }>(vendors: readonly T[]): T[] {
+  return [...vendors.filter((v) => v.favorite === true), ...vendors.filter((v) => v.favorite !== true)];
+}
+
+/** 즐겨찾기 수 */
+export function countFavorites(vendors: readonly { favorite?: boolean }[]): number {
+  return vendors.filter((v) => v.favorite === true).length;
+}
+
+/**
+ * 판매처 연결 모달에 보일 판매처 (d7 §12-1 화면 6):
+ * - 즐겨찾기가 1곳 이상이고 펼치지 않았으면(showAll = false) 즐겨찾기만 (넘겨받은 순서).
+ * - 펼쳤으면 전체, 즐겨찾기 먼저 + 기존 순서.
+ * - 즐겨찾기가 없으면 처음부터 전체 (기존 순서 그대로).
+ */
+export function visibleVendors<T extends { favorite?: boolean }>(vendors: readonly T[], showAll: boolean): T[] {
+  if (countFavorites(vendors) === 0) return [...vendors];
+  if (!showAll) return vendors.filter((v) => v.favorite === true);
+  return favoritesFirst(vendors);
+}

@@ -10,6 +10,9 @@ const DUPLICATE_NAME = "같은 이름의 판매처가 이미 있어요";
 const INVALID = "입력한 내용을 확인해 주세요";
 const SAVE_FAILED = "저장하지 못했어요. 잠시 후 다시 시도해 주세요";
 const DELETE_FAILED = "삭제하지 못했어요. 잠시 후 다시 시도해 주세요";
+const STAFF_ONLY = "즐겨찾기는 교사·admin만 바꿀 수 있어요";
+const FAVORITE_DENIED = "이 판매처는 즐겨찾기할 수 없어요";
+const FAVORITE_FAILED = "즐겨찾기를 저장하지 못했어요. 잠시 후 다시 시도해 주세요";
 
 const COLUMNS = "id, name, contact, website, note";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -20,6 +23,8 @@ export type VendorItem = {
   contact: string | null;
   website: string | null;
   note: string | null;
+  /** 우리 학교 즐겨찾기 (vendor_favorites, d7 §12-1) */
+  favorite: boolean;
 };
 
 export type VendorScreen = {
@@ -39,11 +44,14 @@ export type VendorScreenResult =
   | { kind: "signed-out" };
 
 export type SaveVendorResult =
-  | { ok: true; vendor: VendorItem }
+  /** 저장한 판매처 (즐겨찾기 여부는 목록을 다시 읽을 때 붙는다) */
+  | { ok: true; vendor: Omit<VendorItem, "favorite"> }
   /** field = 문제가 된 입력 칸 (입력 검사에서 걸렸을 때) */
   | { ok: false; error: string; field?: VendorField };
 
 export type DeleteVendorResult = { ok: true; id: string } | { ok: false; error: string };
+
+export type ToggleFavoriteResult = { ok: true; vendorId: string; favorite: boolean } | { ok: false; error: string };
 
 function byName(a: VendorItem, b: VendorItem): number {
   return a.name.localeCompare(b.name, "ko");
@@ -62,11 +70,14 @@ export async function getVendorScreen(): Promise<VendorScreenResult> {
   const schoolId = me.school.id;
 
   const supabase = await getServerClient();
-  const { data } = await supabase
-    .from("vendors")
-    .select("id, school_id, name, contact, website, note")
-    .or(`school_id.eq.${schoolId},school_id.is.null`)
-    .order("name");
+  const [{ data }, favorites] = await Promise.all([
+    supabase
+      .from("vendors")
+      .select("id, school_id, name, contact, website, note")
+      .or(`school_id.eq.${schoolId},school_id.is.null`)
+      .order("name"),
+    favoriteVendorIds(schoolId),
+  ]);
   const rows = data ?? [];
   const item = (v: (typeof rows)[number]): VendorItem => ({
     id: v.id,
@@ -74,6 +85,7 @@ export async function getVendorScreen(): Promise<VendorScreenResult> {
     contact: v.contact,
     website: v.website,
     note: v.note,
+    favorite: favorites.has(v.id),
   });
   return {
     kind: "ok",
@@ -83,6 +95,54 @@ export async function getVendorScreen(): Promise<VendorScreenResult> {
       common: rows.filter((v) => v.school_id === null).map(item).sort(byName),
     },
   };
+}
+
+/**
+ * 자기 학교 즐겨찾기 판매처 id (vendor_favorites, d7 §12-1). 로그인 세션(RLS)으로 읽는다 — 교사·admin 에게 자기 학교 행만 보인다.
+ * 읽기에 실패하면 빈 집합(즐겨찾기 없음 = 전체 목록)으로 본다.
+ */
+export async function favoriteVendorIds(schoolId: string): Promise<Set<string>> {
+  const supabase = await getServerClient();
+  const { data, error } = await supabase.from("vendor_favorites").select("vendor_id").eq("school_id", schoolId);
+  if (error) return new Set();
+  return new Set((data ?? []).map((r) => r.vendor_id));
+}
+
+/**
+ * 즐겨찾기 추가·해제 (d7 §12-1) — 교사·admin, 자기 학교 행만. vendor_favorites 에 직접 insert·delete
+ * (RLS: 자기 학교 + 교사·admin + 데모 학교 아님 + 대상 판매처가 공통 목록이거나 자기 학교 것, created_by = 본인).
+ * 학교·작성자는 세션에서만 정한다 — 입력으로 받지 않는다. 이미 같은 상태면(중복 추가·없는 행 해제) 성공으로 본다.
+ */
+export async function toggleVendorFavorite(input: { vendorId: unknown; favorite: unknown }): Promise<ToggleFavoriteResult> {
+  const vendorId = input?.vendorId;
+  if (typeof vendorId !== "string" || !UUID_RE.test(vendorId)) return { ok: false, error: NOT_FOUND };
+  if (typeof input?.favorite !== "boolean") return { ok: false, error: INVALID };
+  const favorite = input.favorite;
+
+  const me = await getServerSession();
+  if (me.kind === "signed-out" || me.kind === "unavailable") return { ok: false, error: SIGNED_OUT };
+  if (me.kind === "no-school") return { ok: false, error: NO_SCHOOL };
+  if (me.role !== "teacher" && me.role !== "admin") return { ok: false, error: STAFF_ONLY };
+  const schoolId = me.school.id;
+
+  const supabase = await getServerClient();
+  if (favorite) {
+    const { error } = await supabase
+      .from("vendor_favorites")
+      .insert({ school_id: schoolId, vendor_id: vendorId, created_by: me.userId });
+    // 23505 = 이미 즐겨찾기 (다른 사람이 먼저 눌렀다) → 원하는 상태
+    if (error && error.code !== "23505") {
+      return { ok: false, error: error.code === "42501" ? FAVORITE_DENIED : error.code === "23503" ? NOT_FOUND : FAVORITE_FAILED };
+    }
+  } else {
+    const { error } = await supabase
+      .from("vendor_favorites")
+      .delete()
+      .eq("school_id", schoolId)
+      .eq("vendor_id", vendorId);
+    if (error) return { ok: false, error: error.code === "42501" ? FAVORITE_DENIED : FAVORITE_FAILED };
+  }
+  return { ok: true, vendorId, favorite };
 }
 
 /** 쓰기 전 확인: 로그인 + 소속 학교 + admin. 학교는 세션(profiles)에서만 정한다 — 입력으로 받지 않는다 */

@@ -1,7 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createVendor, deleteVendor, updateVendor, type DeleteVendorResult, type SaveVendorResult } from "@/lib/supabase/vendors";
+import {
+  createVendor,
+  deleteVendor,
+  toggleVendorFavorite,
+  updateVendor,
+  type DeleteVendorResult,
+  type SaveVendorResult,
+  type ToggleFavoriteResult,
+} from "@/lib/supabase/vendors";
 
 function field(input: unknown, key: string): unknown {
   return input !== null && typeof input === "object" ? (input as Record<string, unknown>)[key] : undefined;
@@ -34,6 +42,13 @@ export async function saveVendorAction(input: unknown): Promise<SaveVendorResult
 /** 판매처 삭제. 자기 학교 판매처만 — 공통 목록·다른 학교 행은 서버(RLS + school_id 조건)가 거부한다 */
 export async function deleteVendorAction(input: unknown): Promise<DeleteVendorResult> {
   const result = await deleteVendor({ id: field(input, "id") });
+  if (result.ok) revalidate();
+  return result;
+}
+
+/** 판매처 즐겨찾기 추가·해제 (d7 §12-1). 우리 학교 판매처·공통 목록 모두. 학교·작성자는 세션으로 서버가 정한다 */
+export async function toggleVendorFavoriteAction(input: unknown): Promise<ToggleFavoriteResult> {
+  const result = await toggleVendorFavorite({ vendorId: field(input, "vendorId"), favorite: field(input, "favorite") });
   if (result.ok) revalidate();
   return result;
 }

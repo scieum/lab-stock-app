@@ -9,6 +9,7 @@ import {
   type ThresholdSource,
 } from "@/lib/reorder-rules";
 import { orderVendorsForLink } from "@/lib/vendor-rules";
+import { favoriteVendorIds } from "./vendors";
 
 export type ReorderAlert = {
   id: string;
@@ -39,6 +40,8 @@ export type ReorderVendor = {
   note: string | null;
   /** 공통 목록(school_id = null) 여부 */
   common: boolean;
+  /** 우리 학교 즐겨찾기 (vendor_favorites, d7 §12-1) */
+  favorite: boolean;
 };
 
 export type ReorderScreen = {
@@ -47,7 +50,7 @@ export type ReorderScreen = {
   isAdmin: boolean;
   /** stock < min_stock 인 시약, 부족한 정도(모자란 양 ÷ 필요량)가 큰 순 */
   alerts: ReorderAlert[];
-  /** 판매처 연결 목록: 우리 학교 판매처 먼저, 그다음 공통 목록 */
+  /** 판매처 연결 목록: 우리 학교 판매처 먼저, 그다음 공통 목록 (즐겨찾기만 보이기·펼치기는 화면이 visibleVendors 로) */
   vendors: ReorderVendor[];
 };
 
@@ -79,7 +82,7 @@ export async function getReorderScreen(): Promise<ReorderScreenResult> {
   const schoolId = me.school.id;
 
   const supabase = await getServerClient();
-  const [reagents, vendors] = await Promise.all([
+  const [reagents, vendors, favorites] = await Promise.all([
     supabase
       .from("reagents")
       .select(
@@ -92,6 +95,7 @@ export async function getReorderScreen(): Promise<ReorderScreenResult> {
       .select("id, school_id, name, contact, website, search_url, note")
       .or(`school_id.eq.${schoolId},school_id.is.null`)
       .order("name"),
+    favoriteVendorIds(schoolId),
   ]);
 
   const low = (reagents.data ?? [])
@@ -138,7 +142,7 @@ export async function getReorderScreen(): Promise<ReorderScreenResult> {
       schoolName: me.school.name,
       isAdmin: me.role === "admin",
       alerts,
-      vendors: ordered.map(({ schoolId: sid, ...v }) => ({ ...v, common: sid === null })),
+      vendors: ordered.map(({ schoolId: sid, ...v }) => ({ ...v, common: sid === null, favorite: favorites.has(v.id) })),
     },
   };
 }

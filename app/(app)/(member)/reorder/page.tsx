@@ -39,6 +39,7 @@ export default async function ReorderPage() {
         website: v.website,
         searchUrl: v.searchUrl,
         note: v.note,
+        favorite: v.favorite,
       }))}
     />
   );

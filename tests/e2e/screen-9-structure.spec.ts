@@ -240,14 +240,14 @@ test(`[C1][S${SCREEN}] 학교A admin: 화면 ${SCREEN} 에 속하지 않는 컴�
   }
 });
 
-test(`[C1][S${SCREEN}] 학교A admin "${TAB_COMMON}" 탭: ${CELL} 2열(${COMMON_HEAD.join(" · ")}) = d7 §12 공통 ${COMMON_SEED.length}곳(이름 · 웹사이트 호스트) · 보기 전용(수정·삭제·더보기 0) · 검색 부분 일치·0건(${EMPTY}) · 쓰기 요청 0건`, async ({ browser }, info) => {
+test(`[C1][S${SCREEN}] 학교A admin "${TAB_COMMON}" 탭: ${CELL} 2열(${COMMON_HEAD.join(" · ")}) = d7 §12·§12-1 공통 ${COMMON_SEED.length}곳(이름 · 웹사이트 호스트) · 보기 전용(수정·삭제·더보기 0) · 검색 부분 일치·0건(${EMPTY}) · 쓰기 요청 0건`, async ({ browser }, info) => {
   test.setTimeout(180_000);
   const { context, page } = await openAs(browser, info, "admin", SCREEN);
   const writes = watchWrites(page);
   try {
     await waitVendors(page);
     const common = (await visibleVendors(page)).filter((v) => v.school_id === null);
-    expect(common.map((v) => v.name).sort(), "대조: 세션에 보이는 공통 목록 = d7 §12 seed").toEqual([...COMMON_NAMES].sort());
+    expect(common.map((v) => v.name).sort(), "대조: 세션에 보이는 공통 목록 = d7 §12·§12-1 seed").toEqual([...COMMON_NAMES].sort());
 
     await switchTab(page, TAB_COMMON);
     await expect(page.locator(sel(SEGMENT_ACTIVE)), `${SEGMENT_ACTIVE} 1`).toHaveCount(1);
@@ -265,7 +265,8 @@ test(`[C1][S${SCREEN}] 학교A admin "${TAB_COMMON}" 탭: ${CELL} 2열(${COMMON_
     await expect(page.getByRole("menuitem"), "메뉴 항목").toHaveCount(0);
     await expect(main(page).locator("input, textarea, select").filter({ visible: true }), "입력 칸은 검색뿐").toHaveCount(1);
     for (const name of COMMON_NAMES) {
-      await main(page).locator(sel(CELL)).filter({ hasText: exact(name) }).click();
+      // 판매처명 글자를 누른다 (d7 §12-1 별표가 같은 칸에 있다 — 공용 학교 즐겨찾기를 쓰지 않도록 별표는 누르지 않는다)
+      await main(page).locator(sel(CELL)).filter({ hasText: exact(name) }).getByText(name, { exact: true }).click();
       await expect(page.locator(sel(MODAL)), `공통 행 "${name}" 을 눌러도 모달 없음`).toHaveCount(0);
       await expect(page.getByRole("menuitem")).toHaveCount(0);
     }

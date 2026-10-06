@@ -173,3 +173,56 @@
   flex: 1;
   min-width: 0;
 }
+
+/* ---------- 즐겨찾기 (d7 §12-1, 시안 예외) ---------- */
+/* 판매처 행 + 오른쪽 별표 (별표는 라벨 밖 형제 — 행 선택과 따로 눌린다) */
+.optionRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.optionRow .option {
+  flex: 1;
+  min-width: 0;
+}
+
+/* "모든 판매처 보기": 글자 버튼(흑백), 누름 영역 = 버튼 최소 높이 */
+.showAll {
+  align-self: flex-start;
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-4);
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.showAll:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.showAll:active {
+  opacity: var(--pressed-opacity);
+}
+
+/*
+ * 모바일 하단 시트: 판매처가 많으면(공통 목록 10곳 + 우리 학교) 시트가 화면을 거의 덮어 누른 카드가 가려진다.
+ * 판매처 행 묶음만 5줄 높이까지 보이고 그 안에서 스크롤한다 — 제목·"취소"·"확인" 은 늘 보인다.
+ * (포커스 테두리가 잘리지 않게 안쪽 4 를 두고 바깥 여백으로 되돌린다)
+ */
+@media (max-width: 1023px) {
+  .options {
+    max-height: calc((var(--button-min-height) + var(--space-12)) * 5);
+    margin: calc(var(--space-4) * -1);
+    padding: var(--space-4);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
