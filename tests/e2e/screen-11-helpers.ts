@@ -454,13 +454,13 @@ export async function sharedCabinetSnapshot(): Promise<string[]> {
   const ids = (schools.data ?? []).map((s) => s.id as string);
   expect(ids.length, "대조: 학교 A·B·데모 학교").toBeGreaterThanOrEqual(3);
   const [c, s, r] = await Promise.all([
-    sb.from("cabinets").select("id, school_id, label, door_type, shelves").in("school_id", ids),
+    sb.from("cabinets").select("id, school_id, number, label, door_type, shelves").in("school_id", ids),
     sb.from("cabinet_slots").select("*").in("school_id", ids),
     sb.from("reagents").select("id, slot_id").in("school_id", ids).not("slot_id", "is", null),
   ]);
   for (const q of [c, s, r]) if (q.error) throw new Error(`대조 조회 실패: ${q.error.message}`);
   return [
-    ...(c.data ?? []).map((x) => `cabinet|${x.school_id}|${x.id}|${x.label}|${x.door_type}|${x.shelves}`),
+    ...(c.data ?? []).map((x) => `cabinet|${x.school_id}|${x.id}|${x.number}|${x.label}|${x.door_type}|${x.shelves}`),
     ...((s.data ?? []) as Row[]).map((x) => `slot|${x.cabinet_id}|${x.id}|${x.side}${x.shelf}|${classesOfRow(x).join("+")}|${x.storage_class ?? ""}`),
     ...(r.data ?? []).map((x) => `placed|${x.id}|${x.slot_id}`),
   ].sort();
@@ -493,13 +493,20 @@ export async function makeFixture(info: TestInfo, group: string): Promise<S11Fix
   return { school, admin: school.admin, teacher, student, prep };
 }
 
-/** 일회용 학교의 시약·시약장·칸을 비운다 (service role — 준비) */
+/**
+ * 일회용 학교의 시약·시약장·칸을 비운다 (service role — 준비).
+ * 시약장 번호는 학교의 마지막 번호(schools.cabinet_seq)를 이어 쓰므로(d7 §14 삭제된 번호 재사용 안 함),
+ * 다음 테스트가 "새 학교"(1번부터)에서 시작하도록 이 일회용 학교의 cabinet_seq 만 0 으로 되돌린다.
+ */
 export async function purgeSchool(schoolId: string): Promise<void> {
   const sb = service();
   const r = await sb.from("reagents").delete().eq("school_id", schoolId);
   expect(r.error, `일회용 학교 시약 정리: ${r.error?.message}`).toBeNull();
   const c = await sb.from("cabinets").delete().eq("school_id", schoolId);
   expect(c.error, `일회용 학교 시약장 정리: ${c.error?.message}`).toBeNull();
+  const s = await sb.from("schools").update({ cabinet_seq: 0 }).eq("id", schoolId).like("neis_code", "S8UI-%").select("id");
+  expect(s.error, `일회용 학교 cabinet_seq 되돌리기: ${s.error?.message}`).toBeNull();
+  expect(s.data ?? [], "되돌린 학교 = 이 일회용 학교").toHaveLength(1);
 }
 
 function firstRow(data: unknown): Row {
@@ -547,15 +554,20 @@ export async function prepReagent(f: S11Fixture, tag: string, stock = 7, unit = 
   return { id: row.id as string, name, stock, unit };
 }
 
-/** 준비: 시약을 칸에 배치 — admin 세션의 reagents.slot_id update (d7 §9). 막혀 있으면 service role 로 한다 */
+/**
+ * 준비: 시약을 칸에 배치 — 일회용 교사 세션의 DB 함수 place_reagent (d7 §14: 배치는 함수 경유, slot_id 직접 update 는 닫힘).
+ * service role 로 대신하지 않는다 — 함수가 실패하면 준비 실패로 알린다.
+ */
 export async function prepPlace(f: S11Fixture, reagentId: string, cabinetId: string, key: string): Promise<void> {
   const slot = (await slotRowsByService(cabinetId)).find((s) => `${s.side}${s.shelf}` === key);
   if (!slot) throw new Error(`준비: 칸 ${key} 행이 없음`);
-  const up = await f.prep.from("reagents").update({ slot_id: slot.id }).eq("id", reagentId).select("id");
-  if (!up.error && (up.data ?? []).length === 1) return;
-  const forced = await service().from("reagents").update({ slot_id: slot.id }).eq("id", reagentId).select("id");
-  expect(forced.error, `준비: service role 배치 (${forced.error?.message})`).toBeNull();
-  expect(forced.data ?? []).toHaveLength(1);
+  const teacher = await clientFor(f.teacher);
+  const res = await teacher.rpc("place_reagent", { p_reagent_id: reagentId, p_slot_id: slot.id });
+  expect(res.error, `준비: 교사 place_reagent (${res.error?.code} ${res.error?.message})`).toBeNull();
+  const out = (Array.isArray(res.data) ? res.data[0] : res.data) as Row | null;
+  expect(out?.slot_id, "준비: place_reagent 반환 slot_id").toBe(slot.id);
+  const now = await service().from("reagents").select("slot_id").eq("id", reagentId).single();
+  expect(now.data?.slot_id, "준비: 배치 반영 (대조 조회)").toBe(slot.id);
 }
 
 /** s2-spec 화면 11 예시 상태의 1번 시약장 칸 분류 (양문형 4단) */
