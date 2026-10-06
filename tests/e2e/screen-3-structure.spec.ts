@@ -1,6 +1,7 @@
 // 화면 3 (시약 상세, dev-rules.json routes["3"]) 구조 규칙: C1 · C2 · R-ui · V1
 // 기대값: design/rules.json (screens_required, tab_bar, roles) · harness/dev-rules.json (viewports, components)
 // 로그인은 auth-state.ts 의 역할별 storageState 를 재사용한다 (Supabase Auth 요청 최소화).
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test, expect } from "@playwright/test";
 import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
@@ -17,6 +18,13 @@ import {
   sel,
 } from "./screen-helpers";
 import { SCREEN, dbDetail, detailPath, seedReagents, seedSchoolOf, waitDetail } from "./screen-3-helpers";
+import { watchActions } from "./screen-11-helpers";
+
+/** design/frames/{name}.json 의 노드 이름 (dev-rules components 에 있는 이름만) */
+function frameNames(name: string): Set<string> {
+  const j = JSON.parse(readFileSync(join(process.cwd(), "design", "frames", `${name}.json`), "utf8")) as { frames: { nodes: { name: string }[] }[] };
+  return new Set(j.frames[0].nodes.map((n) => n.name).filter((n) => devRules.components[n]));
+}
 
 const ROLES: Role[] = [...SCHOOL_A_ROLES, "schoolB"];
 const BADGE = "badge-low-stock";
@@ -45,14 +53,27 @@ for (const role of ROLES) {
     const forbidden = forbiddenFor(role);
     // rules.guest 의 둘러보기 전용 컴포넌트(배너·잠금·진입점)는 /demo 버전 화면 소속 — 로그인 화면에서는 0 (아래)
     const guestOnly = new Set(guestOnlyComponents());
-    const fromDev = Object.entries(devRules.components)
+    // 디자인 1.15: 상태 프레임(3-location, rules.json variants["3"].location — 교사·admin 이 "위치 바꾸기"를 연 상태) 에만 있는 컴포넌트
+    // (dev-rules 화면 3 컴포넌트 중 기본 프레임 3-{폭} 에 없는 것: location-picker·cabinet-switcher·cabinet-slot·slot-count·mix-warning)는
+    // 기본 상태가 아니라 그 상태에서 본다 (아래 · screen-3-location.spec.ts)
+    const viewportName = info.project.name as "mobile" | "desktop";
+    const baseFrame = frameNames(`${SCREEN}-${viewportName}`);
+    const fromDevAll = Object.entries(devRules.components)
       .filter(([, screens]) => screens.includes(SCREEN))
       .map(([n]) => n)
-      .filter((n) => !guestOnly.has(n));
+      .filter((n) => !guestOnly.has(n))
+      // 탭바는 폭별 기대값이 다르다 (C2 에서 본다)
+      .filter((n) => n !== rules.tab_bar.component && n !== rules.tab_bar.item);
+    const stateOnly = fromDevAll.filter((n) => !baseFrame.has(n));
+    const variant = (rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants[String(SCREEN)].location;
+    for (const n of variant) expect(stateOnly, `variants["${SCREEN}"].location ${n} 은 기본 프레임에 없는 상태 컴포넌트`).toContain(n);
+    for (const n of stateOnly) expect(frameNames(`${SCREEN}-location-${viewportName}`), `상태 컴포넌트 ${n} 은 3-location 프레임에 있다`).toContain(n);
+    const fromDev = fromDevAll.filter((n) => baseFrame.has(n));
     expect(fromDev.length, `dev-rules components 에 화면 ${SCREEN} 컴포넌트가 있어야 함`).toBeGreaterThan(0);
 
     const { school, pick } = pickFor(role);
     const { context, page } = await openAs(browser, info, role, SCREEN, detailPath(pick.id));
+    const actions = watchActions(page);
     try {
       await waitDetail(page);
       for (const name of guestOnly) {
@@ -82,6 +103,25 @@ for (const role of ROLES) {
         expect(await countComponent(page, name), `${name}`).toBeGreaterThanOrEqual(1);
         await expect(page.locator(sel(name)).first(), `${name} 보임`).toBeVisible();
       }
+      // 상태 컴포넌트: 기본 상태에는 없다 → 교사·admin 은 "위치 바꾸기"를 열면 variants["3"].location 이 모두 보인다 (저장하지 않고 닫는다)
+      for (const name of stateOnly) expect(await countComponent(page, name), `기본 상태에 상태 컴포넌트 ${name} 없음`).toBe(0);
+      if (forbidden.has("location-edit")) {
+        expect(await countComponent(page, "location-edit"), "학생 location-edit (R7)").toBe(0);
+      } else {
+        const edit = page.locator(`main ${sel("location-edit")}`).getByRole("button");
+        await expect(edit, "location-edit 버튼").toHaveCount(1);
+        await expect(async () => {
+          await edit.click();
+          await expect(page.locator(sel("location-picker")), "위치 바꾸기 → location-picker").toBeVisible({ timeout: 2_000 });
+        }).toPass({ timeout: 30_000 });
+        for (const name of variant) {
+          expect(await countComponent(page, name), `variants["${SCREEN}"].location ${name}`).toBeGreaterThanOrEqual(1);
+          await expect(page.locator(sel(name)).first(), `${name} 보임`).toBeVisible();
+        }
+        await page.locator(sel("location-picker")).getByRole("button", { name: /^\s*닫기\s*$/ }).click();
+        await expect(page.locator(sel("location-picker")), "× → 닫힘").toHaveCount(0);
+      }
+      expect(actions.count(), "쓰기 요청 0건 (저장하지 않음)").toBe(0);
     } finally {
       await context.close();
     }
@@ -154,15 +194,17 @@ test(`[R-ui][S${SCREEN}] rules.json R4 msds-entry min_per_role 이 학생·교�
 });
 
 // ---------- V1 (보고용 스크린샷, 실패 조건 아님) ----------
-test(`[V1][S${SCREEN}] 화면 ${SCREEN} 스크린샷 저장 (학생, 학교 A seed 재고 부족 시약)`, async ({ browser }, info) => {
+// 디자인 1.15 시안 3-mobile·3-desktop 은 교사 기준(보관 위치·재주문 기준 + location-edit·threshold-edit) — 교사로 읽기만 한다
+test(`[V1][S${SCREEN}] 화면 ${SCREEN} 스크린샷 저장 (학교A 교사, seed 재고 부족 시약 — 읽기만)`, async ({ browser }, info) => {
   test.setTimeout(120_000);
-  const school = seedSchoolOf("student");
+  const school = seedSchoolOf("teacher");
   const low = seedReagents().find((r) => r.school_id === school.id && r.low) ?? seedReagents().find((r) => r.school_id === school.id);
   if (!low) return;
-  const { context, page, viewport } = await openAs(browser, info, "student", SCREEN, detailPath(low.id));
+  const { context, page, viewport } = await openAs(browser, info, "teacher", SCREEN, detailPath(low.id));
   try {
     await waitDetail(page).catch(() => undefined);
-    await page.screenshot({ path: join(process.cwd(), "test-results", `v1-${SCREEN}-${viewport}.png`), fullPage: true });
+    // 시안 프레임 크기(390×844 · 1440×900) 그대로
+    await page.screenshot({ path: join(process.cwd(), "test-results", `v1-${SCREEN}-${viewport}.png`), fullPage: false });
   } finally {
     await context.close();
   }

@@ -17,6 +17,21 @@ import {
   CABINETS_HREF,
   CANCEL_BUTTON,
   CHIP,
+  CONTINUE_BUTTON,
+  DISCARD_BUTTON,
+  ROW,
+  SLOT_ASSIGN,
+  SLOT_SHEET,
+  UNSAVED_TITLE,
+  acceptBeforeUnload,
+  closeSlotSheet,
+  expectPills,
+  hydrated,
+  pill,
+  readSlots,
+  slotSheet,
+  unsavedBody,
+  unsavedDialog,
   CLASSES,
   DELETE_BUTTON,
   DELETE_CAPTION,
@@ -77,7 +92,6 @@ import {
   pickDoor,
   pickShelves,
   pillLabels,
-  pills,
   primaryIn,
   renameButton,
   renameDialog,
@@ -175,12 +189,13 @@ for (const role of SCHOOL_A_ROLES) {
       for (const c of ["stock-intake", "reagent-register", "user-manage"]) expect(foreign, `대조: ${c} 는 화면 ${SCREEN} 밖`).toContain(c);
       expect(await componentCounts(page.locator("body"), foreign), `화면 ${SCREEN} 밖 컴포넌트`).toEqual(Object.fromEntries(foreign.map((n) => [n, 0])));
 
-      // 보기는 모든 역할: 전환 pill = 자기 학교 시약장, 배치도, 범례
+      // 보기는 모든 역할: 전환 pill = 자기 학교 시약장(번호 = DB number · 이름), 배치도(칸마다 slot-count = DB), 범례
       await expect(switcher(page)).toHaveCount(1);
       expect((await pillLabels(page)).sort(), "pill = 자기 학교 시약장 이름").toEqual(db.cabinets.map((c) => c.label).sort());
+      await expectPills(page, db.cabinets, ROLE_LABEL[role]);
       const cab = await firstCabinet(page, db);
-      await expectHeader(page, cab.label, cab.door_type, cab.shelves, ROLE_LABEL[role]);
-      await expectBoard(page, cab.door_type, cab.shelves, classesOf(db, cab), ROLE_LABEL[role]);
+      await expectHeader(page, cab.label, cab.door_type, cab.shelves, ROLE_LABEL[role], cab.number);
+      await expectBoard(page, cab.door_type, cab.shelves, classesOf(db, cab), ROLE_LABEL[role], db.counts[cab.id]);
       await expect(legendChips(page).filter({ hasText: exact(UNSET) }), `범례 칩 "${UNSET}"`).toHaveCount(1);
 
       const frame = frameCounts(`${SCREEN}-${viewport}`);
@@ -207,22 +222,32 @@ for (const role of SCHOOL_A_ROLES) {
         }
         await expect(main(page).getByRole("button", { name: /시약장 추가/ }), "학생 화면 시약장 추가").toHaveCount(0);
         await expect(main(page).getByRole("radio"), "학생 화면 선택 컨트롤").toHaveCount(0);
-        // 칸: 버튼이 아니고, 눌러도 선택되지 않고 칩이 생기지 않는다
+        // 칸 (1.15 s2-spec 화면 11 cabinet-slot: 학생도 칸을 눌러 그 칸 시약 목록(slot-sheet)을 본다 — 목록만):
+        // 칸 안에 다른 누르는 요소 없음, 선택 상태(연하늘) 없음, 눌러도 고르는 칩·선택 표시가 생기지 않는다
         const info0 = await slots(page).evaluateAll((els) =>
-          els.map((e) => ({ tag: e.tagName, inner: e.querySelectorAll("button, a, input").length, pressed: e.getAttribute("aria-pressed"), tab: (e as HTMLElement).tabIndex })),
+          els.map((e) => ({ inner: e.querySelectorAll("button, a, input").length, pressed: e.getAttribute("aria-pressed") })),
         );
         for (const s of info0) {
-          expect(s.tag, "학생의 칸은 버튼이 아니다").not.toBe("BUTTON");
           expect(s.inner, "칸 안에 누르는 요소 없음").toBe(0);
-          expect(s.pressed, "칸에 선택 상태 없음").toBeNull();
-          expect(s.tab, "칸은 포커스 순서에 없다").toBeLessThan(0);
+          expect(s.pressed, "학생 칸에 선택 상태 없음").not.toBe("true");
         }
         const bg = await slots(page).evaluateAll((els) => els.map((e) => getComputedStyle(e).backgroundColor));
-        await slots(page).first().click({ force: true });
-        await slots(page).last().click({ force: true });
-        expect(await slots(page).evaluateAll((els) => els.map((e) => getComputedStyle(e).backgroundColor)), "눌러도 칸 모양이 그대로").toEqual(bg);
         expect(bg, "학생 화면에 선택된 칸(연하늘) 없음").not.toContain(highlightSoft());
-        await expect(pickChips(page)).toHaveCount(0);
+        await hydrated(slots(page).first());
+        for (const key of [gridKeys(cab.door_type, cab.shelves)[0], gridKeys(cab.door_type, cab.shelves).at(-1)!]) {
+          await slotAt(page, cab.door_type, key).click();
+          const sheet = slotSheet(page);
+          await expect(sheet, `학생 칸 ${key} 누름 → ${SLOT_SHEET}`).toBeVisible();
+          const want = (db.inSlot[cab.id][key] ?? []).map((r) => r.name).sort();
+          expect((await sheet.locator(sel(ROW)).allInnerTexts()).length, `${SLOT_SHEET} 행 수 = DB 그 칸 시약 수`).toBe(want.length);
+          for (const n of want) await expect(sheet.locator(sel(ROW)).filter({ hasText: n }), `${SLOT_SHEET} 행 "${n}"`).toHaveCount(1);
+          await expect(sheet.locator(sel(SLOT_ASSIGN)), `학생 ${SLOT_SHEET} 에 ${SLOT_ASSIGN}`).toHaveCount(0);
+          await expect(sheet.getByRole("button", { name: /빼기/ }), `학생 ${SLOT_SHEET} 에 "빼기"`).toHaveCount(0);
+          await expect(pickChips(page), "학생에게 고르는 칩 없음").toHaveCount(0);
+          expect(await slots(page).evaluateAll((els) => els.map((e) => e.getAttribute("aria-pressed"))), "눌러도 선택 칸이 생기지 않는다").not.toContain("true");
+          expect(await slots(page).evaluateAll((els) => els.map((e) => getComputedStyle(e).backgroundColor)), "눌러도 칸 모양이 그대로").toEqual(bg);
+          await closeSlotSheet(page);
+        }
         await expect(legendChips(page).filter({ hasText: /선택/ }), "학생 범례에 '선택 칸' 없음").toHaveCount(0);
       }
 
@@ -278,7 +303,9 @@ test(`[R-ui][S${SCREEN}] 비로그인 ${CABINETS_HREF}(· ?c=) 접근 → ${rout
 
 for (const role of SCHOOL_A_ROLES) {
   const roleName = ROLE_NAME[role as keyof typeof ROLE_NAME];
-  test(`[R-ui][S${SCREEN}] ${ROLE_LABEL[role]} 홈·시약 목록·시약 상세: ${EDIT}·${ADD} 0 (${role === "student" ? "R7" : `화면 ${SCREEN} 전용 컴포넌트`}) · 응답 본문에도 없음`, async ({ browser }, info) => {
+  // rules 1.15 R7 = cabinet-edit·cabinet-add·slot-assign·location-edit·qr-print. 화면마다 그 화면 소속(dev-rules components) R7 컴포넌트는
+  // 학생 0 · 교사·admin ≥ 1, 소속이 아닌 R7 컴포넌트는 모든 역할 0 (예: location-edit 는 화면 3 에서 교사·admin 에게 있다)
+  test(`[R-ui][S${SCREEN}] ${ROLE_LABEL[role]} 홈·시약 목록·시약 상세: R7(${(R7.components ?? []).join("·")}) 중 그 화면 소속이 아닌 것 0${role === "student" ? " · 소속인 것도 0 (R7)" : " · 소속인 것(시약 상세 location-edit)은 있음"} · 응답 본문도 같음`, async ({ browser }, info) => {
     test.setTimeout(240_000);
     const first = await openAs(browser, info, role, HOME_SCREEN);
     try {
@@ -298,11 +325,20 @@ for (const role of SCHOOL_A_ROLES) {
         expect(res?.status(), `${path} 응답`).toBe(200);
         await expect(page.locator(`main ${marker}`).first(), `화면 ${screen} 본문`).toBeVisible({ timeout: 45_000 });
         await expect(page.locator('main [aria-busy="true"]')).toHaveCount(0);
+        const html = await (await context.request.get(path)).text();
+        let onScreen = 0;
         for (const c of R7.components!) {
+          const belongs = (devRules.components[c] ?? []).includes(screen);
+          if (belongs && role !== "student") {
+            onScreen += 1;
+            expect(await countComponent(page, c), `화면 ${screen} ${c} (교사·admin, 화면 소속)`).toBeGreaterThanOrEqual(1);
+            expect(html, `화면 ${screen} 응답 본문에 ${c}`).toContain(`data-component="${c}"`);
+            continue;
+          }
           expect(await countComponent(page, c), `화면 ${screen} ${c}`).toBe(R7.max);
-          const html = await (await context.request.get(path)).text();
           expect(html, `화면 ${screen} 응답 본문에 ${c}`).not.toContain(`data-component="${c}"`);
         }
+        if (screen === DETAIL_SCREEN && role !== "student") expect(onScreen, "대조: 시약 상세에 화면 소속 R7 컴포넌트(location-edit)가 있다").toBeGreaterThanOrEqual(1);
         for (const c of roleChecks(screen, roleName).filter((x) => x.rule === "R7")) {
           expect(await countComponent(page, c.component), `${c.rule} ${c.component} ≤ ${c.value} (화면 ${screen})`).toBeLessThanOrEqual(c.value);
         }
@@ -341,8 +377,10 @@ for (const role of STAFF) {
       await expect(slots(page), "칸 수 = 문 형태 × 단 수").toHaveCount(slotCount(otherDoor, otherShelves));
       await expect(saveButton(page)).toBeEnabled();
 
-      // 저장하지 않고 다시 연다 → DB 값 그대로
+      // 저장하지 않고 다시 연다 → 브라우저 기본 확인(beforeunload, d7 §14)을 받아들이면 DB 값 그대로
+      const unload = acceptBeforeUnload(page);
       await page.reload();
+      expect(unload.count(), "편집 중 새로고침 = 브라우저 기본 확인 1번").toBe(1);
       await waitEditable(page);
       const after = await dbView(page);
       expect(after.cabinets, "시약장 행 그대로").toEqual(before.cabinets);
@@ -399,6 +437,7 @@ test(`[C1][S${SCREEN}] 학교A 교사: 시약장마다 ?c={id} → 이름·요�
     const db = await dbView(page);
     expect(db.cabinets.length, "대조: 학교 A 시약장 2개 이상 (seed)").toBeGreaterThanOrEqual(2);
     expect((await pillLabels(page)).sort()).toEqual(db.cabinets.map((c) => c.label).sort());
+    await expectPills(page, db.cabinets, "학교 A");
     for (const cab of db.cabinets) {
       const res = await page.goto(withC(cab.id));
       expect(res?.status()).toBe(200);
@@ -406,7 +445,9 @@ test(`[C1][S${SCREEN}] 학교A 교사: 시약장마다 ?c={id} → 이름·요�
       expect(new URL(page.url()).searchParams.get("c"), "주소의 c").toBe(cab.id);
       await expectActive(page, cab.label, cab.label);
       await expectHeader(page, cab.label, cab.door_type, cab.shelves, cab.label);
-      await expectBoard(page, cab.door_type, cab.shelves, classesOf(db, cab), cab.label);
+      await expectActive(page, cab.label, `${cab.label} 번호`, cab.number);
+      await expectHeader(page, cab.label, cab.door_type, cab.shelves, `${cab.label} 번호`, cab.number);
+      await expectBoard(page, cab.door_type, cab.shelves, classesOf(db, cab), cab.label, db.counts[cab.id]);
       await expectMix(page, cab.door_type, cab.shelves, classesOf(db, cab), cab.label);
       await expect(doorRadio(page, cab.door_type), "문 형태 선택 = DB").toBeChecked();
       await expect(shelfRadio(page, cab.shelves), "단 수 선택 = DB").toBeChecked();
@@ -525,7 +566,7 @@ test(`[C1][S${SCREEN}] 학교A 교사: 칸 선택(한 번에 하나, 선택 칸 
       want[key] = [...on];
       await expectBoard(page, cab.door_type, cab.shelves, want, `"${c}" 를 끈 뒤`);
     }
-    expect((await slot.innerText()).trim(), "다 끄면 미지정").toBe(UNSET);
+    expect((await readSlots(page))[gridKeys(cab.door_type, cab.shelves).indexOf(key)].tokens, "다 끄면 미지정").toEqual([UNSET]);
     await expect(saveButton(page), "원래대로 돌아오면 저장 비활성").toBeDisabled();
     expect(actions.count(), "쓰기 요청 0건").toBe(0);
     expect((await dbView(page)).classes, "DB 그대로").toEqual(db.classes);
@@ -600,7 +641,7 @@ test(`[C1][S${SCREEN}] 학교A 교사: rules.json cabinet.incompatible ${CAB.inc
   }
 });
 
-test(`[C1][S${SCREEN}] 학교A 교사: pill 을 누르면 ?c={id} 로 바뀌고 이름·배치도가 그 시약장 · 직접 URL · 없는 id·uuid 아닌 값 → 첫 시약장(200) · 저장 안 한 편집은 전환하면 버려짐`, async ({ browser }, info) => {
+test(`[C1][S${SCREEN}] 학교A 교사: pill 을 누르면 ?c={id} 로 바뀌고 이름·배치도가 그 시약장 · 직접 URL · 없는 id·uuid 아닌 값 → 첫 시약장(200) · 저장 안 한 편집 중 전환 → 확인 카드(rules.json cabinet.unsaved_confirm): "${CONTINUE_BUTTON}" = 머묾·편집 유지, "${DISCARD_BUTTON}" = 버리고 이동 · 편집이 없으면 확인 없이 이동`, async ({ browser }, info) => {
   test.setTimeout(240_000);
   const { context, page } = await openAs(browser, info, "teacher", SCREEN);
   const actions = watchActions(page);
@@ -618,21 +659,40 @@ test(`[C1][S${SCREEN}] 학교A 교사: pill 을 누르면 ?c={id} 로 바뀌고 
     await selectSlot(page, first.door_type, key);
     await setChip(page, CLASSES[0], true);
     await expect(saveButton(page)).toBeEnabled();
+    const edited = { ...classesOf(db, first), [key]: [CLASSES[0]] };
 
-    // pill 로 전환
-    await pills(page).filter({ hasText: exact(second.label) }).click();
+    // pill 로 전환 → 확인 카드 → 계속 편집: 머묾·편집 유지
+    const urlBefore = page.url();
+    await pill(page, second.label).click();
+    const confirm = unsavedDialog(page);
+    await expect(confirm, `편집 중 전환 → "${UNSAVED_TITLE}"`).toBeVisible();
+    await expect(page.locator(sel(MODAL)), `확인 카드 = ${MODAL} 1개`).toHaveCount(1);
+    await expect(confirm.getByText(exact(unsavedBody(first.label))), "안내 = 편집 중인 시약장 이름").toBeVisible();
+    await primaryIn(confirm, CONTINUE_BUTTON).click();
+    await expect(confirm, `"${CONTINUE_BUTTON}" → 카드 닫힘`).toHaveCount(0);
+    expect(page.url(), `"${CONTINUE_BUTTON}" → 주소 그대로`).toBe(urlBefore);
+    await expectActive(page, first.label, `"${CONTINUE_BUTTON}" 뒤`);
+    await expectBoard(page, first.door_type, first.shelves, edited, `"${CONTINUE_BUTTON}" 뒤 (편집 유지)`);
+    await expect(saveButton(page), "편집 유지 → 저장 가능").toBeEnabled();
+
+    // 다시 전환 → 버리고 이동
+    await pill(page, second.label).click();
+    await expect(confirm).toBeVisible();
+    await outlineIn(confirm, DISCARD_BUTTON).click();
     await expect.poll(() => new URL(page.url()).searchParams.get("c"), { message: "주소의 c = 누른 시약장", timeout: 30_000 }).toBe(second.id);
+    await expect(confirm).toHaveCount(0);
     expect(new URL(page.url()).pathname).toBe(CABINETS_HREF);
-    await expectActive(page, second.label, "전환 뒤");
-    await expectHeader(page, second.label, second.door_type, second.shelves, "전환 뒤");
-    await expectBoard(page, second.door_type, second.shelves, classesOf(db, second), "전환 뒤");
+    await expectActive(page, second.label, "전환 뒤", second.number);
+    await expectHeader(page, second.label, second.door_type, second.shelves, "전환 뒤", second.number);
+    await expectBoard(page, second.door_type, second.shelves, classesOf(db, second), "전환 뒤", db.counts[second.id]);
     await expect(saveButton(page), "전환한 시약장은 바뀐 것이 없다").toBeDisabled();
 
-    // 되돌아오면 앞의 편집은 버려져 있다
-    await pills(page).filter({ hasText: exact(first.label) }).click();
+    // 편집이 없으면 확인 없이 이동 · 되돌아오면 앞의 편집은 버려져 있다
+    await pill(page, first.label).click();
     await expect.poll(() => new URL(page.url()).searchParams.get("c"), { timeout: 30_000 }).toBe(first.id);
+    await expect(unsavedDialog(page), "편집이 없으면 확인 카드 없음").toHaveCount(0);
     await expectActive(page, first.label, "되돌아온 뒤");
-    await expectBoard(page, first.door_type, first.shelves, classesOf(db, first), "되돌아온 뒤 (편집은 버려진다)");
+    await expectBoard(page, first.door_type, first.shelves, classesOf(db, first), "되돌아온 뒤 (편집은 버려진다)", db.counts[first.id]);
     await expect(saveButton(page)).toBeDisabled();
 
     // 직접 URL

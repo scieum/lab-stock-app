@@ -19,12 +19,32 @@ const QUICK = "quick-action";
 const CARD = "reorder-alert-card";
 const SETTINGS = "시약장 설정";
 const VIEW = "시약장 보기";
-/** 역할별 quick-action 라벨 (s2-spec 화면 13 + 이번 변경: 교사·admin 에 "시약장 설정") */
-const QUICK_LABELS = {
-  student: ["사용 기록 입력", VIEW],
-  teacher: ["사용 기록 입력", "입고", SETTINGS],
-  admin: ["입고", "사용자 관리", SETTINGS],
-} as const;
+/**
+ * 역할별 quick-action 라벨 — 디자인 1.15 정식 시안: dev-rules route_auth.home_quick_action
+ * ("학생 = 사용 기록 입력·시약장 보기 / 교사 = … / admin = … (모바일 2+1)") 에서 읽고,
+ * 교사·admin 은 rules.json app_exceptions["quick-action-cabinet"] ("교사 = …, admin = … (모바일 2+1)") 과 같은지 대조한다.
+ */
+function parseQuick(text: string, sep: RegExp): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const part of text.split(sep)) {
+    const m = part.match(/(학생|교사|admin)\s*=\s*([^(]+)/);
+    if (m) out[m[1]] = m[2].replace(/\.\s.*$/, "").trim().split("·").map((s) => s.trim()).filter(Boolean);
+  }
+  return out;
+}
+const FROM_DEV = parseQuick(String((devRules as unknown as { route_auth: Record<string, string> }).route_auth.home_quick_action), /\s\/\s/);
+const FROM_RULES = parseQuick(String((rules as unknown as { app_exceptions: Record<string, string> }).app_exceptions["quick-action-cabinet"]).replace(/^\d+\s*홈:\s*/, ""), /,\s*/);
+const QUICK_LABELS = { student: FROM_DEV["학생"], teacher: FROM_DEV["교사"], admin: FROM_DEV["admin"] } as Record<"student" | "teacher" | "admin", string[]>;
+
+test(`[C1][S${SCREEN}] 기대값 원본: dev-rules route_auth.home_quick_action = rules.json app_exceptions quick-action-cabinet (교사·admin 3칸, 학생 2칸) · 교사·admin 에 "${SETTINGS}", 학생에 "${VIEW}"`, () => {
+  expect(QUICK_LABELS.student, "학생 quick-action").toHaveLength(2);
+  expect(QUICK_LABELS.teacher, "교사 quick-action").toHaveLength(3);
+  expect(QUICK_LABELS.admin, "admin quick-action").toHaveLength(3);
+  expect(FROM_RULES["교사"], "rules app_exceptions 교사 = dev-rules").toEqual(QUICK_LABELS.teacher);
+  expect(FROM_RULES["admin"], "rules app_exceptions admin = dev-rules").toEqual(QUICK_LABELS.admin);
+  for (const r of ["teacher", "admin"] as const) expect(QUICK_LABELS[r]).toContain(SETTINGS);
+  expect(QUICK_LABELS.student).toContain(VIEW);
+});
 const R7 = rules.roles.R7;
 const BUTTON_MIN_HEIGHT = (rules as unknown as { button: { min_height: number } }).button.min_height;
 
@@ -88,6 +108,19 @@ for (const role of SCHOOL_A_ROLES as ("student" | "teacher" | "admin")[]) {
           expect(overlap, `칸 "${a.label}" 과 "${b.label}" 이 겹치지 않음`).toBe(false);
         }
       }
+      // 배치 (s2-spec 1.15 화면 13 · app_exceptions "(모바일 2+1)"): 3칸이면 모바일 = 위 2칸 같은 폭 + 아래 1칸 가로 전체, 데스크탑 = 한 줄 3칸.
+      // 학생 2칸 = 한 줄
+      const sameRow = (a: { top: number }, b: { top: number }) => Math.abs(a.top - b.top) <= 1;
+      if (boxes.length === 3 && viewport === "mobile") {
+        const [a, b, c] = boxes;
+        expect(sameRow(a, b), "모바일 3칸: 위 2칸 같은 줄").toBe(true);
+        expect(Math.abs(a.width - b.width), "모바일 3칸: 위 2칸 같은 폭").toBeLessThanOrEqual(1);
+        expect(c.top, "모바일 3칸: 셋째 칸은 아래 줄").toBeGreaterThanOrEqual(Math.max(a.bottom, b.bottom) - 0.5);
+        expect(Math.abs(c.left - a.left), "모바일 3칸: 아래 칸 왼쪽 = 위 줄 왼쪽").toBeLessThanOrEqual(1);
+        expect(Math.abs(c.right - b.right), "모바일 3칸: 아래 칸 오른쪽 = 위 줄 오른쪽 (가로 전체)").toBeLessThanOrEqual(1);
+      } else {
+        for (const b of boxes.slice(1)) expect(sameRow(boxes[0], b), `${viewport} ${boxes.length}칸: 한 줄 ("${b.label}")`).toBe(true);
+      }
 
       // 시약장 진입
       const link = quickLink(page, cabinetLabel);
@@ -117,7 +150,9 @@ for (const role of SCHOOL_A_ROLES as ("student" | "teacher" | "admin")[]) {
 for (const role of SCHOOL_A_ROLES as ("student" | "teacher" | "admin")[]) {
   test(`[R-ui][S${SCREEN}] ${ROLE_LABEL[role]} 홈(시약장 있는 학교): ${(R7.components ?? []).join("·")} 0 — "시약장 설정"·"시약장 보기" 칸은 진입 링크일 뿐 R7 컴포넌트가 아니다 · 역할 규칙(roles) 상한 유지`, async ({ browser }, info) => {
     test.setTimeout(120_000);
-    expect(R7.components, "R7 컴포넌트").toEqual(["cabinet-edit", "cabinet-add"]);
+    // rules 1.15 R7 = cabinet-edit·cabinet-add·slot-assign·location-edit·qr-print — 모두 화면 13 소속이 아니다 (dev-rules components)
+    expect(R7.components, "R7 컴포넌트에 cabinet-edit·cabinet-add").toEqual(expect.arrayContaining(["cabinet-edit", "cabinet-add"]));
+    for (const c of R7.components ?? []) expect(devRules.components[c] ?? [], `dev-rules components ${c} 에 화면 ${SCREEN} 없음`).not.toContain(SCREEN);
     expect([R7.role, R7.max], "R7 학생 max 0").toEqual([ROLE_NAME.student, 0]);
     const { context, page } = await openAs(browser, info, role, SCREEN);
     try {
