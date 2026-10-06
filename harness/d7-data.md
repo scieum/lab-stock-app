@@ -136,7 +136,7 @@
 |---|---|
 | 기준의 출처 | `reagents.min_stock_source` ∈ 'auto'(자동)·'basis'(화면 5 실험 매뉴얼)·'manual'(화면 3 직접 입력). 매뉴얼·직접 입력 값이 있으면 그것이 우선, 없으면 자동 |
 | 자동 값 | 최근 28일 사용 기록이 있으면 **(최근 28일 사용량 합 ÷ 4) × 2주** = 28일 합 ÷ 2. 없으면 **마지막 입고량 × 20%**(intake_logs 의 가장 최근 amount; 입고 기록이 없으면 0). 소수 3자리 반올림. 0 이면 알림 없음 |
-| 다시 계산 | source = 'auto' 인 시약만, 그 시약의 사용 기록 추가(record_usage)·입고(record_intake)·등록(register_reagent) 때 DB 가 다시 계산(트리거 또는 함수 안). 시간이 지나 28일 창에서 빠지는 사용 기록은 다음 사용·입고 때 반영(매일 다시 계산은 하지 않음 — 한계) |
+| 다시 계산 | source = 'auto' 인 시약만, 그 시약의 사용 기록 추가(record_usage)·입고(record_intake)·등록(register_reagent) 때 DB 가 다시 계산(트리거 또는 함수 안). 시간이 지나 28일 창에서 빠지는 사용 기록은 다음 사용·입고 때 반영(매일 다시 계산은 하지 않음 — 한계). 2026-10-07 부터 28일은 사용일(used_on, §15) 기준 |
 | 기존 행 | 근거 열(reorder_per_group)이 있으면 'basis', min_stock > 0 이고 근거가 없으면 'manual', min_stock = 0 이면 'auto'(지금 자동 값으로 채움) |
 | 화면 5 와의 관계 | `save_reorder_basis`: source 가 'auto' 이면 필요량으로 항상 바꾸고 'basis', 'basis'·'manual' 이면 지금처럼 더 큰 값만(§13) |
 | 화면 3 직접 입력 | `set_reorder_threshold` → 'manual'(지금처럼 덮어씀). 교사·admin 이 "자동으로 돌리기"를 누르면 'auto' 로 바꾸고 자동 값으로 다시 계산(함수 `reset_reorder_threshold(p_reagent_id)` 또는 같은 함수의 인자) |
@@ -198,6 +198,27 @@
 | 저장 안 한 편집 | 화면 11 에서 편집 중(저장 안 함)에 시약장 전환·화면 이탈 → ex-modal-card "저장하지 않은 변경이 있어요" [버리고 이동] / [계속 편집] (rules.json cabinet.unsaved_confirm). 브라우저 새로고침·창 닫기는 브라우저 기본 확인 |
 | 재주문 기준 직접 입력 | 화면 3 시약 상세의 reorder-threshold 줄("재주문 기준 N {unit}" 또는 "1반 1회 실험량 … × …조 기준")에서 교사·admin 이 threshold-edit 로 숫자를 직접 입력(R5: 학생 0). DB 함수 `set_reorder_threshold(p_reagent_id, p_min_stock)` — 0 이상(0 = 알림 없음), 자기 학교, 데모 거부. **화면 5 의 "더 큰 값 유지"와 달리 그대로 덮어쓴다**(사용자가 직접 정한 값). 직접 입력하면 reorder_per_group·reorder_groups 는 null(근거 문구가 "재주문 기준 N" 으로 바뀜). low_stock_since 는 §11 트리거 |
 | 데모 학교 | 둘러보기에서 threshold-edit·location-edit·slot-assign·qr-print·cabinet-add 숨김(rules.json guest.hidden_components). 쓰기 거부 |
+
+## 15. 사용일 (화면 4·10, 2026-10-07 결정 — design/rules.json 1.17 usage_date)
+
+| 항목 | 결정 |
+|---|---|
+| 열 | `usage_logs.used_on date not null` — 실제로 쓴 날(한국 날짜). 기존 행은 used_at 의 한국 날짜로 채운다. used_at 은 "기록한 시각"으로 그대로 둔다 |
+| 기록 | `record_usage` 가 사용일(선택, 기본 = 오늘 한국 날짜)을 받는다. 오늘(한국 날짜) 이후는 거부. 과거 하한은 두지 않는다. 기존 인자·동작(재고 차감·memo)은 그대로 |
+| 화면 4 | usage-date "사용일"(화면 7 입고일과 같은 모양, 수량 아래, 기본 오늘, 날짜 고르기의 최댓값 = 오늘). 오늘이 아니면 저장 버튼 위 past-date-note "10월 3일 사용으로 기록해요"(무채색) |
+| 화면 10 | 사용일로 묶고(월 그룹 헤더도 사용일 기준) 사용일 최신순, 같은 날은 기록 시각 최신순. 기간 필터도 사용일 기준. 행·상세의 날짜 = 사용일. 기록한 날(used_at 의 한국 날짜)이 사용일과 다를 때만 회색 캡션 "10월 6일에 기록"(행·상세). 데스크톱 상세는 시안대로 |
+| 재주문 기준 자동 | §11-1 의 "최근 28일 사용량"은 used_on 기준(오늘 포함 28일: used_on ≥ 오늘 − 27일) |
+
+## 16. 시약 목록 필터·정렬 (화면 2, 2026-10-07 결정 — design/rules.json 1.17 list_filter)
+
+| 항목 | 결정 |
+|---|---|
+| 필터 | list-filter-button "필터"(검색 오른쪽, 적용 개수 배지) → list-filter-sheet(모바일 바텀시트, 데스크톱 드롭다운): 정렬(이름순 기본·재고 적은 순·최근 입고순) → 보관 분류(storage-class-chip 여러 개 + "분류 없음") → 보관 위치(시약장 → 칸, "칸 없음만") → "MSDS 없는 시약만". "초기화" + "{N}종 보기". 기존 "전체 / 재고 부족"·이름 검색과 함께 적용(AND) |
+| 정렬 기준 | 이름순 = 한국어 가나다(같으면 id), 재고 적은 순 = stock 오름차순(같으면 이름), 최근 입고순 = intake_date 내림차순(없으면 뒤, 같으면 이름) |
+| 칩·결과 | filter-chip-row: 적용 칩(×로 하나씩) + "모두 지우기" + "N종". 정렬은 기본(이름순)이 아니면 칩 1개. 결과 0 = ex-empty-state-card "조건에 맞는 시약이 없어요" + "필터 지우기" |
+| 상태 | 주소창 쿼리로 유지(새로고침·뒤로가기, 기존 ?filter·?q 와 함께). 잘못된 값은 무시 |
+| 데이터 | 목록 데이터에 storage_class·slot(시약장 번호·이름·칸)·msds 유무를 함께 읽어 화면에서 거른다(학교당 시약 수가 적음). 새 DB 변경 없음 |
+| 역할·둘러보기 | 모든 역할·둘러보기(/demo/reagents) 같은 동작. MSDS 일괄 띠(msds-bulk-banner)는 MSDS 찾기 run 에서 — 이번에는 넣지 않는다 |
 
 ## 10. 로그아웃 (2026-10-05 결정)
 
