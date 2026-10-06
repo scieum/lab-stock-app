@@ -1,7 +1,10 @@
 // 화면 11 (시약장 설정) 새 컴포넌트 + nav-pill 로그아웃 메뉴의 컴포넌트 수준 동작 — 갤러리(/gallery/cabinets, /gallery · 비로그인 공개) 대상.
 // 기준: 디자인 run 20261004-2256 s2-spec "## 화면 11" · "## 상태 화면 11-empty" · "## 상태 화면 11-delete",
-//       harness/d7-data.md §9(시약장 설정) · §10(로그아웃), harness/dev-rules.json components·components_note·route_auth.logout.
-// 기대값: 개수·문구·채움색은 design/frames/11-mobile.json · 11-empty-mobile.json · 11-delete-mobile.json 노드에서,
+//       디자인 run 20261006-1223 s2-spec "## 화면 11"(1.15 — 번호 pill · 칸 안 시약 수 · 칸 누르기 = 칸 시트 · QR 인쇄),
+//       harness/d7-data.md §9(시약장 설정) · §10(로그아웃) · §14, harness/dev-rules.json components·components_note·route_auth.logout.
+// 기대값: 개수·문구·채움색은 design/frames/11-mobile.json(1.15 노드: manage-row · link-delete · select-option-active · class-title ·
+//         legend-item · warning-line · section-title · bottom-actions) · 11-desktop.json(편집 카드 안 구성) · 11-empty-mobile.json ·
+//         11-delete-mobile.json 노드에서,
 //         문 형태·단 수·분류·비호환 조합·기본 이름·"칸 없음"·역할(R7)·색 범위는 design/rules.json 에서,
 //         컴포넌트 목록은 harness/dev-rules.json components 에서 읽는다 (구현에서 읽지 않는다).
 //         프레임에 없는 상태(이름 시트·토스트·학생 화면·로그아웃 메뉴) 문구는 s2-spec · d7-data.md 문장에서 그대로 옮긴 상수다.
@@ -45,6 +48,7 @@ const rules = JSON.parse(readFileSync(join(root, "design/rules.json"), "utf8")) 
 const dev = JSON.parse(readFileSync(join(root, "harness/dev-rules.json"), "utf8")) as Dev;
 const loadFrame = (name: string) => (JSON.parse(readFileSync(join(root, `design/frames/${name}.json`), "utf8")) as Frame).frames[0].nodes;
 const mainNodes = loadFrame(`${SCREEN}-mobile`);
+const desktopNodes = loadFrame(`${SCREEN}-desktop`);
 const emptyNodes = loadFrame(`${SCREEN}-empty-mobile`);
 const deleteNodes = loadFrame(`${SCREEN}-delete-mobile`);
 const cab = rules.cabinet;
@@ -72,20 +76,28 @@ function groups(nodes: FrameNode[], leafName: string): { node: FrameNode; childr
 const labelIn = (g: { children: FrameNode[] }, name = "label") => g.children.find((c) => c.name === name && c.text)?.text?.characters ?? "";
 
 const switcherNodes = under(mainNodes, "cabinet-switcher");
+// pill 이름 = cabinet-chip(-active) 바로 아래 label (pill 안 cabinet-number 의 label 은 번호)
 const PILLS = switcherNodes.filter((n) => n.name === "label" && /cabinet-chip/.test(n.path[n.path.length - 2])).map((n) => n.text!.characters);
+const PILL_NUMBERS = switcherNodes
+  .filter((n) => n.name === "label" && n.path[n.path.length - 2] === "cabinet-number" && /cabinet-chip/.test(n.path[n.path.length - 3]))
+  .map((n) => n.text!.characters);
 const ACTIVE_PILL = switcherNodes.find((n) => n.name === "label" && n.path[n.path.length - 2] === "cabinet-chip-active")!.text!.characters;
 const ACTIVE_PILL_NODE = mainNodes.find((n) => leaf(n) === "cabinet-chip-active")!;
 const ADD_LABEL = labelIn(groups(mainNodes, "cabinet-add")[0]);
 const TITLE = texts(mainNodes, "cabinet-title")[0];
-const META = texts(mainNodes, "cabinet-meta")[0];
-const RENAME_LABEL = labelIn(groups(under(mainNodes, "cabinet-manage"), "button-outline")[0]);
-const DELETE_LABEL = labelIn(groups(mainNodes, "text-action-delete")[0]);
+/** 시약장 요약: 모바일 시안은 "양문형 · 4단"(칸 수 없음), 데스크탑 시안은 "양문형 · 4단 · 8칸" */
+const META_MOBILE = texts(mainNodes, "cabinet-meta")[0];
+const META_DESKTOP = texts(desktopNodes, "cabinet-meta")[0];
+const HEADER_NUMBER = texts(under(mainNodes, "cabinet-header"), "label")[0];
+const RENAME_LABEL = labelIn(groups(under(mainNodes, "manage-actions"), "button-outline")[0]);
+const QR_PRINT_LABEL = texts(under(mainNodes, "qr-print"), "label")[0];
+const DELETE_LABEL = labelIn(groups(mainNodes, "link-delete")[0]);
 const selectOf = (name: string) => {
   const nodes = under(mainNodes, name);
   return {
     label: texts(nodes, "select-label")[0],
     options: nodes.filter((n) => n.name === "label" && n.text).map((n) => n.text!.characters),
-    selected: nodes.find((n) => n.name === "label" && n.path[n.path.length - 2] === "option-selected")!.text!.characters,
+    selected: nodes.find((n) => n.name === "label" && n.path[n.path.length - 2] === "select-option-active")!.text!.characters,
   };
 };
 const DOOR = selectOf("cabinet-door-select");
@@ -95,27 +107,34 @@ const FRAME_SLOTS = groups(mainNodes, "cabinet-slot").map((g) => ({
   fill: (g.node.fills[0] ?? "").toLowerCase(),
   stroke: (g.node.strokes[0] ?? "").toLowerCase(),
   warning: g.children.some((c) => c.path.includes("icon-warning")),
+  count: Number(g.children.find((c) => c.name === "label" && c.text && c.path.includes("slot-count"))?.text?.characters ?? 0),
 }));
 const FRAME_CHIPS = groups(mainNodes, "storage-class-chip").map((g) => ({ label: labelIn(g), fill: (g.node.fills[0] ?? "").toLowerCase() }));
-const PICKER_TITLE = texts(mainNodes, "picker-title")[0];
-const PICKER_HINT = texts(under(mainNodes, "picker-header"), "caption")[0];
-const LEGEND = [...groups(mainNodes, "legend-chip").map((g) => labelIn(g)), texts(under(mainNodes, "legend-warning"), "caption")[0]];
+const PICKER_TITLE = texts(mainNodes, "class-title")[0];
+const PICKER_HINT = texts(mainNodes, "class-help")[0];
+const LEGEND = groups(mainNodes, "legend-item").map((g) => labelIn(g));
 const mixNodes = under(mainNodes, "mix-warning");
 const MIX = {
   fill: (mainNodes.find((n) => leaf(n) === "mix-warning")!.fills[0] ?? "").toLowerCase(),
-  title: texts(mixNodes, "mix-warning-title")[0],
-  titleColor: mixNodes.find((n) => n.name === "mix-warning-title")!.fills[0].toLowerCase(),
-  lines: texts(mixNodes, "warning-text"),
-  textColor: mixNodes.find((n) => n.name === "warning-text")!.fills[0].toLowerCase(),
+  title: texts(mixNodes, "warning-title")[0],
+  titleColor: mixNodes.find((n) => n.name === "warning-title")!.fills[0].toLowerCase(),
+  // 1.15: warning-text 는 FRAME, 글자는 그 안 warning-line
+  lines: texts(mixNodes.filter((n) => n.path.includes("warning-text")), "warning-line"),
+  textColor: mixNodes.find((n) => n.name === "warning-line")!.fills[0].toLowerCase(),
   iconColors: [...new Set(mixNodes.filter((n) => n.path.includes("icon-warning")).flatMap((n) => [...n.fills, ...n.strokes].map((c) => c.toLowerCase())))],
 };
-const UNASSIGNED_TITLE = texts(mainNodes, "unassigned-title")[0];
-const UNASSIGNED_ROWS = groups(under(mainNodes, "unassigned-list"), "reagent-row").map((g) => ({
+const unassignedNodes = under(mainNodes, "unassigned-list");
+const UNASSIGNED_TITLE = texts(unassignedNodes, "section-title")[0];
+const UNASSIGNED_ROWS = groups(unassignedNodes, "reagent-row").map((g) => ({
   name: labelIn(g, "reagent-name"),
-  stock: labelIn(g, "stock"),
-  caption: labelIn(g, "slot-unassigned"),
+  stock: labelIn(g, "quantity"),
+  caption: labelIn(g, "slot-caption"),
 }));
-const SAVE_LABEL = labelIn(groups(under(mainNodes, "save-bar"), "button-primary")[0]);
+const UNASSIGNED_CAPTION_FILL = unassignedNodes.find((n) => n.name === "slot-caption")!.fills[0];
+const SAVE_LABEL = labelIn(groups(under(mainNodes, "bottom-actions"), "button-primary")[0]);
+const DELETE_LABEL_FILL = mainNodes.find((n) => n.name === "label" && n.path.includes("link-delete"))!.fills[0];
+/** 데스크탑 시안 11-desktop: 편집 카드(cabinet-edit) 안에 든 컴포넌트 (모바일 시안은 같은 묶음을 세로로 펼쳐 그린다) */
+const EDIT_INSIDE = [...new Set(under(desktopNodes, "cabinet-edit").map(leaf).filter((n) => Object.keys(dev.components).includes(n)))];
 
 const EMPTY = {
   pageTitle: texts(emptyNodes, "page-title")[0],
@@ -182,7 +201,18 @@ const DOUBLE = "양문형";
 const columns = (door: string) => (door === SINGLE ? 1 : 2);
 const slotNameAt = (index: number, door: string) =>
   door === SINGLE ? `${index + 1}단` : `${index % 2 === 0 ? "좌" : "우"}${Math.floor(index / 2) + 1}단`;
-const metaOf = (door: string, shelves: number) => `${door} · ${shelves}단 · ${columns(door) * shelves}칸`;
+/** 시약장 요약 (1.15): full = 데스크탑 "양문형 · 4단 · 8칸", short = 모바일 "양문형 · 4단" */
+const metaOf = (door: string, shelves: number, form: "full" | "short" = "full") =>
+  form === "short" ? `${door} · ${shelves}단` : `${door} · ${shelves}단 · ${columns(door) * shelves}칸`;
+const MOBILE_W = (JSON.parse(readFileSync(join(root, "harness/dev-rules.json"), "utf8")) as { viewports: { mobile: number[] } }).viewports.mobile[0];
+const isMobile = (page: Page) => page.viewportSize()!.width <= MOBILE_W;
+/** 지금 폭에서 보여야 할 요약 (모바일 = 시안 11-mobile 꼴, 데스크탑 = 시안 11-desktop 꼴) */
+const metaFor = (page: Page, door: string, shelves: number) => metaOf(door, shelves, isMobile(page) ? "short" : "full");
+/** 11-delete 시안(1.14)의 2번 시약장 요약 "양문형 · 3단 · 6칸" 에서 문 형태·단 수 */
+const DEL_SHAPE = (() => {
+  const m = /^(\S+) · (\d+)단/.exec(DEL.meta);
+  return { door: m?.[1] ?? "", shelves: Number(m?.[2] ?? 0) };
+})();
 const pickerTitle = (slot: string) => `${slot} 보관 분류`;
 // 한국어 조사: 받침이 있으면 과·은, 없으면 와·는 (분류 8종을 손으로 적은 표)
 const BATCHIM: Record<string, boolean> = { 유기: false, 산: true, 염기: false, 산화제: false, 인화성: true, 무기염: true, 독성: true, 기타: false };
@@ -307,13 +337,58 @@ const using = (uses: Use[], rgbs: string[]) => uses.filter((u) => u.colors.some(
 
 // ---------- 화면 11 예시 구역 안 요소 ----------
 const pills = (scope: Locator) => scope.locator(`${sel("cabinet-switcher")} :is(button, a):not(${sel("cabinet-add")})`);
-const pill = (scope: Locator, name: string) => pills(scope).filter({ hasText: exact(name) });
+/** pill 의 이름 글자 (pill 안 cabinet-number 원의 번호는 뺀다 — 1.15) */
+const nameWithoutNumber = (els: Element[]) =>
+  els.map((el) => {
+    const c = el.cloneNode(true) as Element;
+    for (const n of Array.from(c.querySelectorAll('[data-component="cabinet-number"]'))) n.remove();
+    return (c.textContent ?? "").replace(/\s+/g, " ").trim();
+  });
+const pillNames = async (scope: Locator) => pills(scope).evaluateAll(nameWithoutNumber);
+/** pill 안 cabinet-number 의 번호 (pill 마다 1개) */
+const pillNumbers = async (scope: Locator) =>
+  pills(scope).evaluateAll((els) => els.map((el) => Array.from(el.querySelectorAll('[data-component="cabinet-number"]')).map((n) => (n.textContent ?? "").trim())));
+const pill = (scope: Locator, name: string) => pills(scope).filter({ has: scope.page().getByText(name, { exact: true }) });
 const slots = (scope: Locator) => scope.locator(sel("cabinet-slot"));
 const chips = (scope: Locator) => scope.locator(`button${sel("storage-class-chip")}`);
 const chip = (scope: Locator, name: string) => chips(scope).filter({ hasText: exact(name) });
 const pressedChips = async (scope: Locator) =>
   (await chips(scope).evaluateAll((els) => els.filter((e) => e.getAttribute("aria-pressed") === "true").map((e) => (e.textContent ?? "").trim())));
-const slotTexts = async (scope: Locator) => (await slots(scope).allInnerTexts()).map(squash);
+/** 칸 글자 (칸 안 slot-count 의 수는 뺀다 — 1.15) */
+const slotTexts = async (scope: Locator) =>
+  slots(scope).evaluateAll((els) =>
+    els.map((el) => {
+      const c = el.cloneNode(true) as Element;
+      for (const n of Array.from(c.querySelectorAll('[data-component="slot-count"]'))) n.remove();
+      return (c.textContent ?? "").replace(/\s+/g, " ").trim();
+    }),
+  );
+/** 칸 하나의 분류 글자 (slot-count 수 제외) */
+async function expectSlotLabel(s: Locator, want: string, message = "칸 라벨"): Promise<void> {
+  await expect
+    .poll(async () => (await s.evaluateAll((els) => els.map((el) => {
+      const c = el.cloneNode(true) as Element;
+      for (const n of Array.from(c.querySelectorAll('[data-component="slot-count"]'))) n.remove();
+      return (c.textContent ?? "").replace(/\s+/g, " ").trim();
+    })))[0], { message })
+    .toBe(want);
+}
+/** 시약장 제목(heading) 1개 + 바로 뒤 요약 줄이 지금 폭의 꼴, 바로 앞 cabinet-number = 번호 */
+async function expectHeader(page: Page, scope: Locator, title: string, door: string, shelves: number, number?: string): Promise<void> {
+  const h = scope.getByRole("heading", { name: title, exact: true });
+  await expect(h, `시약장 이름 "${title}" (heading)`).toHaveCount(1);
+  const want = metaFor(page, door, shelves);
+  await expect
+    .poll(async () => squash(await h.evaluate((el) => (el.nextElementSibling as HTMLElement | null)?.innerText ?? "")), { message: `요약 "${want}"` })
+    .toBe(want);
+  if (number !== undefined) {
+    const prev = await h.evaluate((el) => {
+      const p = el.previousElementSibling;
+      return p ? { name: p.getAttribute("data-component"), text: (p.textContent ?? "").trim() } : null;
+    });
+    expect(prev, `제목 앞 cabinet-number "${number}"`).toEqual({ name: "cabinet-number", text: number });
+  }
+}
 const radios = (scope: Locator, component: string) => scope.locator(sel(component)).getByRole("radiogroup").getByRole("radio");
 /** 옵션 글자가 놓인 자리를 실제 마우스로 누른다 (라디오 입력이 pill 전체를 덮어도 사용자와 같은 결과) */
 async function pickRadio(scope: Locator, component: string, name: string): Promise<void> {
@@ -358,13 +433,22 @@ const toast = (scope: Locator, text: string) => scope.locator(sel("ex-toast")).f
 // ---------- 기대값 자체 점검 ----------
 test(`[K1][S${SCREEN}] 기대값 원본: 프레임 11·11-empty·11-delete 와 rules.json cabinet·colors 가 서로 맞는다`, () => {
   expect(PILLS, "프레임 시약장 pill").toEqual([defaultName(1), defaultName(2)]);
+  // 1.15: pill 마다 이름 앞 cabinet-number, 기본 이름 "{n}번 시약장" 의 n = 번호 (d7 §14)
+  expect(PILL_NUMBERS, "프레임 pill 번호").toEqual(PILLS.map((_, i) => String(i + 1)));
+  expect(HEADER_NUMBER, "프레임 제목 앞 번호 = 활성 pill 번호").toBe(PILL_NUMBERS[PILLS.indexOf(ACTIVE_PILL)]);
+  expect(QR_PRINT_LABEL, "프레임 qr-print 라벨").toBe("QR 인쇄");
+  expect(META_MOBILE, "11-mobile 요약 (칸 수 없음)").toBe(metaOf(DOOR.selected, parseInt(SHELF.selected, 10), "short"));
+  expect(META_DESKTOP, "11-desktop 요약 (칸 수 포함)").toBe(metaOf(DOOR.selected, parseInt(SHELF.selected, 10), "full"));
+  expect(DEL.meta, "11-delete 요약 (1.14 데스크탑 꼴)").toBe(metaOf(DEL_SHAPE.door, DEL_SHAPE.shelves, "full"));
+  expect(FRAME_SLOTS.map((s) => s.count), "프레임 칸 안 시약 수 (s2-spec: 좌1단 2 · 우1단 1 · 좌2단 3 · 우3단 1)").toEqual([2, 1, 3, 0, 0, 1, 0, 0]);
+  expect(PICKER_HINT, "프레임 칩 묶음 안내").toBe("여러 개 고를 수 있어요");
   expect(PILLS, "프레임 활성 pill").toContain(ACTIVE_PILL);
   expect(HIGHLIGHTS, "활성 pill 채움 = 하늘색").toContain((ACTIVE_PILL_NODE.fills[0] ?? "").toLowerCase());
   expect(ADD_LABEL, "프레임 cabinet-add 라벨").toBe("시약장 추가");
   expect(TITLE, "프레임 시약장 이름 = 활성 pill").toBe(ACTIVE_PILL);
   expect(DOOR.options, "프레임 문 형태 옵션 = rules door_types").toEqual(cab.door_types);
   expect(SHELF.options, "프레임 단 수 옵션 = rules shelves").toEqual(cab.shelves.map((n) => `${n}단`));
-  expect(META, "프레임 요약").toBe(metaOf(DOOR.selected, parseInt(SHELF.selected, 10)));
+
   expect(FRAME_SLOTS.length, "프레임 칸 수 = 열 × 단").toBe(columns(DOOR.selected) * parseInt(SHELF.selected, 10));
   expect(FRAME_SLOTS.filter((s) => HIGHLIGHTS.includes(s.fill)).length, "프레임 선택 칸 1개").toBe(1);
   expect(HIGHLIGHTS, "선택 칸 테두리 = 하늘색").toContain(SELECTED_SLOT.stroke);
@@ -398,13 +482,27 @@ test(`[K1][S${SCREEN}] 기대값 원본: 프레임 11·11-empty·11-delete 와 r
 });
 
 // ---------- 갤러리 등장 (K1 의 DOM 판) ----------
-test(`[K1][S${SCREEN}] /gallery DOM 에 화면 ${SCREEN} 전용 컴포넌트 8종이 각각 1개 이상 (K1 갤러리 기준 페이지)`, async ({ page }) => {
+test(`[K1][S${SCREEN}] /gallery DOM 에 화면 ${SCREEN} 전용 컴포넌트(화면 11 에만 · 화면 3·11 에만)가 각각 1개 이상 (K1 갤러리 기준 페이지)`, async ({ page }) => {
   const only = componentNames.filter((n) => dev.components[n].length === 1 && dev.components[n][0] === SCREEN);
+  // 1.15: cabinet-slot · cabinet-switcher · mix-warning 은 화면 3(위치 피커)에도 쓰여 [3, 11], 새 qr-label · qr-print · qr-print-sheet · slot-assign · slot-sheet 는 11 에만
   expect(only.sort(), "dev-rules 에서 화면 11 에만 있는 컴포넌트").toEqual(
-    ["cabinet-add", "cabinet-door-select", "cabinet-edit", "cabinet-shelf-select", "cabinet-slot", "cabinet-switcher", "mix-warning", "storage-class-chip"].sort(),
+    [
+      "cabinet-add",
+      "cabinet-door-select",
+      "cabinet-edit",
+      "cabinet-shelf-select",
+      "qr-label",
+      "qr-print",
+      "qr-print-sheet",
+      "slot-assign",
+      "slot-sheet",
+      "storage-class-chip",
+    ].sort(),
   );
+  const shared = componentNames.filter((n) => dev.components[n].includes(SCREEN) && dev.components[n].every((s) => s === SCREEN || s === 3) && !only.includes(n));
+  expect(shared.sort(), "dev-rules 에서 화면 3·11 에만 있는 컴포넌트").toEqual(["cabinet-number", "cabinet-slot", "cabinet-switcher", "mix-warning", "slot-count"].sort());
   await open(page, GALLERY);
-  for (const n of only) expect(await page.locator(sel(n)).count(), `/gallery ${n}`).toBeGreaterThanOrEqual(1);
+  for (const n of [...only, ...shared]) expect(await page.locator(sel(n)).count(), `/gallery ${n}`).toBeGreaterThanOrEqual(1);
 });
 
 test(`[K1][S${SCREEN}] /gallery/cabinets DOM 에 화면 ${SCREEN} 컴포넌트(dev-rules, tab-bar 제외)가 각각 1개 이상, 새 data-component 이름 없음`, async ({ page }) => {
@@ -429,8 +527,8 @@ test(`[K1][S${SCREEN}] 컴포넌트 개수: 기본 예시가 프레임 ${SCREEN}
   for (const name of rules.screens_required[String(SCREEN)]) {
     expect(await sec.locator(sel(name)).count(), `필수 ${name}`).toBeGreaterThanOrEqual(1);
   }
-  // 하나뿐이어야 하는 것·칸 수는 프레임과 정확히 같다
-  for (const name of ["cabinet-switcher", "cabinet-add", "cabinet-edit", "cabinet-door-select", "cabinet-shelf-select", "mix-warning", "cabinet-slot", "reagent-row"]) {
+  // 하나뿐이어야 하는 것·칸 수·번호 원·칸 안 시약 수는 프레임과 정확히 같다
+  for (const name of ["cabinet-switcher", "cabinet-add", "cabinet-edit", "qr-print", "cabinet-door-select", "cabinet-shelf-select", "mix-warning", "cabinet-slot", "cabinet-number", "slot-count", "reagent-row"]) {
     await expect(sec.locator(sel(name)), `기본 예시 ${name}`).toHaveCount(FRAME_MAIN_COUNTS[name]);
   }
 });
@@ -458,8 +556,7 @@ test(`[K1][S${SCREEN}] 컴포넌트 개수: 기본 예시에서 "${DEL.activePil
   await open(page);
   const sec = await area(page, "default");
   await pill(sec, DEL.activePill).click();
-  await expect(sec.getByRole("heading", { name: DEL.activePill, exact: true }), "시약장 이름").toHaveCount(1);
-  await expect(sec.getByText(DEL.meta, { exact: true }), `요약 "${DEL.meta}"`).toBeVisible();
+  await expectHeader(page, sec, DEL.activePill, DEL_SHAPE.door, DEL_SHAPE.shelves);
   await expect(slots(sec), "칸 수").toHaveCount(DEL.slots);
   await sec.locator(sel("cabinet-edit")).getByRole("button", { name: DELETE_LABEL, exact: true }).click();
   await expect(sec.locator(sel("ex-modal-card")), "삭제 확인 카드").toHaveCount(1);
@@ -490,7 +587,8 @@ test.describe("기본 예시 (교사·admin)", () => {
     const sw = sec.locator(sel("cabinet-switcher"));
     await expect(sw).toHaveCount(1);
     await expect(pills(sec), "pill 수").toHaveCount(PILLS.length);
-    expect((await pills(sec).allInnerTexts()).map(squash), "pill 이름·순서").toEqual(PILLS);
+    expect(await pillNames(sec), "pill 이름·순서").toEqual(PILLS);
+    expect(await pillNumbers(sec), "pill 마다 cabinet-number 1개 = 시안 번호").toEqual(PILL_NUMBERS.map((n) => [n]));
     await page.mouse.move(0, 0);
     await expect
       .poll(async () => (await paints(pills(sec))).map(isSelectedPaint), { message: "활성 표시는 활성 pill 에만" })
@@ -500,7 +598,7 @@ test.describe("기본 예시 (교사·admin)", () => {
     // 읽기 도구에도 활성 상태가 하나만 전달된다
     const marked = sw.locator(':is([aria-current]:not([aria-current="false"]), [aria-pressed="true"], [aria-selected="true"])');
     await expect(marked, "활성 상태 속성은 하나").toHaveCount(1);
-    await expect(marked).toHaveText(exact(ACTIVE_PILL));
+    expect(await marked.evaluateAll(nameWithoutNumber), "활성 pill 이름").toEqual([ACTIVE_PILL]);
     // cabinet-add: switcher 안 맨 끝, 같은 줄
     const add = sw.locator(sel("cabinet-add"));
     await expect(add, "switcher 안 cabinet-add").toHaveCount(1);
@@ -519,18 +617,24 @@ test.describe("기본 예시 (교사·admin)", () => {
     for (let i = 0; i < PILLS.length; i++) expect((await box(pills(sec).nth(i), PILLS[i])).height, `${PILLS[i]} pill 높이 ≥ ${MIN_H}`).toBeGreaterThanOrEqual(MIN_H);
   });
 
-  test(`[K1][S${SCREEN}] 시약장 이름 "${TITLE}" 제목 + 요약 "${META}", switcher 아래`, async ({ page }) => {
+  test(`[K1][S${SCREEN}] 시약장 이름 "${TITLE}" 제목(앞 cabinet-number "${HEADER_NUMBER}") + 요약 모바일 "${META_MOBILE}" · 데스크탑 "${META_DESKTOP}", switcher 아래`, async ({ page }) => {
     await open(page);
     const sec = await area(page, "default");
     const title = sec.getByRole("heading", { name: TITLE, exact: true });
-    await expect(title, "시약장 이름(heading)").toHaveCount(1);
-    await expect(sec.getByText(META, { exact: true }), "요약").toHaveCount(1);
-    await expect(sec.getByText(META, { exact: true })).toBeVisible();
+    await expectHeader(page, sec, TITLE, DOOR.selected, parseInt(SHELF.selected, 10), HEADER_NUMBER);
+    expect(metaFor(page, DOOR.selected, parseInt(SHELF.selected, 10)), "요약 = 지금 폭의 시안 문구").toBe(isMobile(page) ? META_MOBILE : META_DESKTOP);
     const sw = await box(sec.locator(sel("cabinet-switcher")), "switcher");
     const t = await box(title, "시약장 이름");
     const edit = await box(sec.locator(sel("cabinet-edit")), "cabinet-edit");
     expect(t.y, "이름은 switcher 아래").toBeGreaterThanOrEqual(sw.y + sw.height);
-    expect(edit.y, "cabinet-edit 은 이름 아래").toBeGreaterThanOrEqual(t.y);
+    if (isMobile(page)) {
+      // 시안 11-mobile: 한 열 — cabinet-edit 관리 줄은 이름 아래
+      expect(edit.y, "cabinet-edit 은 이름 아래").toBeGreaterThanOrEqual(t.y);
+    } else {
+      // 시안 11-desktop: 2단 — 왼쪽 열(switcher · 이름) 오른쪽에 cabinet-edit 카드, 위쪽 끝이 switcher 와 같은 줄에서 시작
+      expect(edit.x, "cabinet-edit 카드는 switcher 오른쪽").toBeGreaterThanOrEqual(sw.x + sw.width);
+      expect(edit.y, "cabinet-edit 카드 위쪽 끝은 switcher 아래 끝보다 위").toBeLessThan(sw.y + sw.height);
+    }
   });
 
   test(`[K1][S${SCREEN}] cabinet-switcher: 다른 pill 을 누르면 그 시약장만 활성, 아래 이름·요약·배치도가 그 시약장으로`, async ({ page }) => {
@@ -540,9 +644,8 @@ test.describe("기본 예시 (교사·admin)", () => {
     await pill(sec, other).click();
     await page.mouse.move(0, 0);
     await expect.poll(async () => (await paints(pills(sec))).map(isSelectedPaint), { message: "활성 표시가 옮겨 간다" }).toEqual(PILLS.map((p) => p === other));
-    await expect(sec.getByRole("heading", { name: other, exact: true })).toHaveCount(1);
+    await expectHeader(page, sec, other, DEL_SHAPE.door, DEL_SHAPE.shelves, PILL_NUMBERS[PILLS.indexOf(other)]);
     await expect(sec.getByRole("heading", { name: TITLE, exact: true })).toHaveCount(0);
-    await expect(sec.getByText(DEL.meta, { exact: true }), `요약 "${DEL.meta}" (시안 11-delete)`).toBeVisible();
     await expect(slots(sec), "칸 수").toHaveCount(DEL.slots);
     // 칸 없음 시약 목록은 어느 시약장을 보든 같다 (d7 §9)
     await expect(sec.getByRole("heading", { name: UNASSIGNED_TITLE, exact: true })).toHaveCount(1);
@@ -559,12 +662,13 @@ test.describe("기본 예시 (교사·admin)", () => {
     await sec.locator(sel("cabinet-switcher")).locator(sel("cabinet-add")).click();
     await page.mouse.move(0, 0);
     await expect(pills(sec), "pill 수 +1").toHaveCount(PILLS.length + 1);
-    expect((await pills(sec).allInnerTexts()).map(squash), "새 pill 은 맨 뒤").toEqual([...PILLS, name]);
+    expect(await pillNames(sec), "새 pill 은 맨 뒤").toEqual([...PILLS, name]);
+    expect((await pillNumbers(sec)).at(-1), "새 pill 번호 = 다음 번호 (rules cabinet.number)").toEqual([String(PILLS.length + 1)]);
     await expect.poll(async () => (await paints(pills(sec))).map(isSelectedPaint), { message: "새 시약장이 활성" }).toEqual([...PILLS.map(() => false), true]);
     await expect(sec.locator(sel("cabinet-switcher")).locator(sel("cabinet-add")), "cabinet-add 는 여전히 1개").toHaveCount(1);
-    await expect(sec.getByRole("heading", { name, exact: true })).toHaveCount(1);
-    await expect(sec.getByText(metaOf(DOUBLE, MAX_SHELVES), { exact: true })).toBeVisible();
+    await expectHeader(page, sec, name, DOUBLE, MAX_SHELVES, String(PILLS.length + 1));
     await expect(slots(sec)).toHaveCount(columns(DOUBLE) * MAX_SHELVES);
+    await expect(sec.locator(sel("slot-count")), "새 시약장 칸에 시약 수 없음").toHaveCount(0);
     expect(await slotTexts(sec), "새 시약장 칸은 모두 미지정").toEqual(Array.from({ length: columns(DOUBLE) * MAX_SHELVES }, () => UNSET));
     await expect(sec.locator(sel("mix-warning")), "새 시약장에는 경고 없음").toHaveCount(0);
     await expect(toast(sec, toastAdded(name)), `ex-toast "${toastAdded(name)}"`).toBeVisible();
@@ -588,11 +692,19 @@ test.describe("기본 예시 (교사·admin)", () => {
     expect(p.lines, '"삭제" 테두리 없음').toEqual([]);
     expect(using(await colorUses(del), PINK_RGB), '"삭제" 에 핑크 없음').toEqual([]);
     expect(await del.evaluate((el) => getComputedStyle(el).color), '"삭제" 글자색 = 프레임').toBe(
-      hexToRgb(mainNodes.find((n) => n.name === "label" && n.path.includes("text-action-delete"))!.fills[0]),
+      hexToRgb(DELETE_LABEL_FILL),
     );
     const r = await box(rename, "이름 바꾸기");
     const d = await box(del, "삭제");
     expect(d.x, '"삭제" 는 "이름 바꾸기" 오른쪽').toBeGreaterThan(r.x + r.width - 1);
+    // 1.15: "이름 바꾸기" 옆 qr-print "QR 인쇄" (button-outline 모양), "삭제" 는 그 오른쪽
+    const qr = edit.locator(sel("qr-print"));
+    await expect(qr, "관리 줄 qr-print").toHaveCount(1);
+    await expect(qr.locator(sel("button-outline")), `qr-print 안 button-outline "${QR_PRINT_LABEL}"`).toHaveText(exact(QR_PRINT_LABEL));
+    const q = await box(qr.locator(sel("button-outline")), "QR 인쇄");
+    expect(q.x, '"QR 인쇄" 는 "이름 바꾸기" 오른쪽').toBeGreaterThan(r.x + r.width - 1);
+    expect(d.x, '"삭제" 는 "QR 인쇄" 오른쪽').toBeGreaterThan(q.x + q.width - 1);
+    expect(q.height, `"QR 인쇄" 높이 ≥ ${MIN_H}`).toBeGreaterThanOrEqual(MIN_H);
     expect(d.height, `"삭제" 누름 영역 높이 ≥ ${MIN_H}`).toBeGreaterThanOrEqual(MIN_H);
     expect(r.height, `"이름 바꾸기" 높이 ≥ ${MIN_H}`).toBeGreaterThanOrEqual(MIN_H);
     // 저장: cabinet-edit 안 button-primary 1개, 편집 블록 맨 아래
@@ -604,10 +716,11 @@ test.describe("기본 예시 (교사·admin)", () => {
     expect(s.height, `"저장" 높이 ≥ ${MIN_H}`).toBeGreaterThanOrEqual(MIN_H);
     const mix = await box(edit.locator(sel("mix-warning")), "mix-warning");
     expect(s.y, '"저장" 은 mix-warning 아래').toBeGreaterThanOrEqual(mix.y + mix.height);
-    // 편집 영역 안에 문 형태·단 수·배치도·칩·주의사항이 모두 들어 있다
-    for (const n of ["cabinet-door-select", "cabinet-shelf-select", "cabinet-slot", "storage-class-chip", "mix-warning"]) {
-      expect(await edit.locator(sel(n)).count(), `cabinet-edit 안 ${n}`).toBeGreaterThanOrEqual(1);
-    }
+    // 편집 영역 안 구성 = 시안 11-desktop 편집 카드(관리 줄 · 문 형태 · 단 수 · 선택 칸 칩 · 주의사항 · 저장)
+    expect([...EDIT_INSIDE].sort(), "11-desktop cabinet-edit 안 컴포넌트").toEqual(
+      ["button-outline", "qr-print", "cabinet-door-select", "cabinet-shelf-select", "storage-class-chip", "mix-warning", "button-primary"].sort(),
+    );
+    for (const n of EDIT_INSIDE) expect(await edit.locator(sel(n)).count(), `cabinet-edit 안 ${n}`).toBeGreaterThanOrEqual(1);
   });
 
   test(`[K1][S${SCREEN}] "${SAVE_LABEL}" 을 누르면 ex-toast "${TOAST_SAVED}"`, async ({ page }) => {
@@ -739,10 +852,15 @@ test.describe("기본 예시 (교사·admin)", () => {
     const want = hexToRgb([...iconColor.strokes, ...iconColor.fills][0]);
     const svgUses = (await colorUses(warned.locator("svg"))).flatMap((u) => u.colors);
     expect(svgUses, "칸 경고 아이콘 색").toContain(want);
+    // 1.15 시안: 칸 = 가로 한 줄(분류 글자 · 오른쪽 slot-meta[경고 아이콘 → slot-count]), 세로 가운데
     const sb = await box(warned, "경고 칸");
     const ib = await box(warned.locator("svg"), "경고 아이콘");
     expect(ib.x + ib.width / 2, "아이콘은 칸 오른쪽 절반").toBeGreaterThan(sb.x + sb.width / 2);
-    expect(ib.y + ib.height / 2, "아이콘은 칸 위쪽 절반").toBeLessThan(sb.y + sb.height / 2);
+    expect(ib.y, "아이콘은 칸 안 (위)").toBeGreaterThanOrEqual(sb.y);
+    expect(ib.y + ib.height, "아이콘은 칸 안 (아래)").toBeLessThanOrEqual(sb.y + sb.height);
+    const cb = await box(warned.locator(sel("slot-count")), "slot-count");
+    expect(cb.x, "slot-count 는 경고 아이콘 오른쪽").toBeGreaterThanOrEqual(ib.x + ib.width);
+    expect(Math.abs(cb.y + cb.height / 2 - (ib.y + ib.height / 2)), "경고 아이콘과 slot-count 는 같은 줄").toBeLessThanOrEqual(cb.height / 2);
   });
 
   test(`[K1][S${SCREEN}] 칸 선택: 누른 칸만 선택 표시, 칩 묶음 제목 "{칸} 보관 분류" 와 선택된 칩이 그 칸으로 바뀐다`, async ({ page }) => {
@@ -791,19 +909,19 @@ test.describe("기본 예시 (교사·admin)", () => {
     const sec = await area(page, "default");
     const i = FRAME_SLOTS.indexOf(SELECTED_SLOT);
     const s = slots(sec).nth(i);
-    await expect(s).toHaveText(exact("산 · 염기"));
+    await expectSlotLabel(s, "산 · 염기");
     await chip(sec, "염기").click();
-    await expect(s, "염기를 끄면").toHaveText(exact("산"));
+    await expectSlotLabel(s, "산", "염기를 끄면");
     await expect(chip(sec, "염기")).toHaveAttribute("aria-pressed", "false");
     await expect(chip(sec, "산")).toHaveAttribute("aria-pressed", "true");
     await chip(sec, "산").click();
-    await expect(s, "모두 끄면 미지정").toHaveText(exact(UNSET));
+    await expectSlotLabel(s, UNSET, "모두 끄면 미지정");
     expect(await pressedChips(sec)).toEqual([]);
     // 누른 순서와 무관하게 rules 순서로 적힌다
     await chip(sec, "기타").click();
     await chip(sec, "염기").click();
     await chip(sec, "산").click();
-    await expect(s, "세 개 선택").toHaveText(exact("산 · 염기 · 기타"));
+    await expectSlotLabel(s, "산 · 염기 · 기타", "세 개 선택");
     expect(await pressedChips(sec)).toEqual(["산", "염기", "기타"]);
     await page.mouse.move(0, 0);
     await expect
@@ -814,7 +932,7 @@ test.describe("기본 예시 (교사·admin)", () => {
     expect(all.filter((_, k) => k !== i), "다른 칸 라벨").toEqual(FRAME_SLOTS.filter((_, k) => k !== i).map((x) => x.label));
     // 8종 모두 켤 수 있다
     await setClasses(sec, cab.storage_classes);
-    await expect(s).toHaveText(exact(cab.storage_classes.join(" · ")));
+    await expectSlotLabel(s, cab.storage_classes.join(" · "));
   });
 
   test(`[K1][S${SCREEN}] mix-warning: 처음 1개 "${MIX.title}" + "${MIX.lines[0]}", 연핑크 바탕·테두리 없음, 진한 핑크는 경고 아이콘만, 하늘색 없음`, async ({ page }) => {
@@ -854,18 +972,18 @@ test.describe("기본 예시 (교사·admin)", () => {
     for (const [a, b] of cab.incompatible) {
       // 한쪽만 고르면 경고 없음
       await chip(sec, b).click();
-      await expect(s).toHaveText(exact(b));
+      await expectSlotLabel(s, b);
       await expect(sec.locator(sel("mix-warning")), `${b} 만`).toHaveCount(0);
       await chip(sec, a).click();
       await expect(sec.locator(sel("mix-warning")), `${a} + ${b}`).toHaveCount(1);
       await expect.poll(() => mixLines(sec), { message: `${a} + ${b} 경고 문구` }).toEqual([warningText(name, a, b)]);
-      await expect(s, "칸 라벨").toHaveText(exact(classOrder([a, b]).join(" · ")));
+      await expectSlotLabel(s, classOrder([a, b]).join(" · "), "칸 라벨");
       await expect(s.locator("svg"), "칸 경고 아이콘").toHaveCount(1);
       await chip(sec, a).click();
       await expect(sec.locator(sel("mix-warning")), `${a} 해제 뒤`).toHaveCount(0);
       await expect(s.locator("svg"), "해제 뒤 칸 경고 아이콘 없음").toHaveCount(0);
       await chip(sec, b).click();
-      await expect(s).toHaveText(exact(UNSET));
+      await expectSlotLabel(s, UNSET);
     }
   });
 
@@ -957,7 +1075,15 @@ test.describe("기본 예시 (교사·admin)", () => {
     const lg = await box(legendChips.first(), "범례");
     const firstChip = await box(chips(sec).first(), "첫 칩");
     expect(lg.y, "범례는 배치도 아래").toBeGreaterThanOrEqual(lastSlot.y + lastSlot.height);
-    expect(lg.y, "범례는 칩 묶음 위").toBeLessThan(firstChip.y);
+    if (isMobile(page)) {
+      // 시안 11-mobile: 배치도 → 범례 → 칩 묶음
+      expect(lg.y, "범례는 칩 묶음 위").toBeLessThan(firstChip.y);
+    } else {
+      // 시안 11-desktop: 범례는 왼쪽 열, 칩 묶음은 오른쪽 편집 카드
+      const ed = await box(sec.locator(sel("cabinet-edit")), "cabinet-edit");
+      expect(lg.x + lg.width, "범례는 편집 카드 왼쪽").toBeLessThanOrEqual(ed.x);
+      expect(firstChip.x, "칩 묶음은 편집 카드 안").toBeGreaterThanOrEqual(ed.x);
+    }
   });
 
   test(`[K1][S${SCREEN}] "${UNASSIGNED_TITLE}": N = reagent-row 수, 행마다 시약명·재고 + caption "${cab.unassigned_label}", 시약 상세로 가는 링크`, async ({ page }) => {
@@ -978,7 +1104,7 @@ test.describe("기본 예시 (교사·admin)", () => {
       await expect(cap, `${i + 1}행 caption "${r.caption}"`).toHaveCount(1);
       await expect(cap).toBeVisible();
       expect(await cap.evaluate((el) => getComputedStyle(el).color), `"${r.caption}" 글자색 = 프레임`).toBe(
-        hexToRgb(mainNodes.find((x) => x.name === "slot-unassigned")!.fills[0]),
+        hexToRgb(UNASSIGNED_CAPTION_FILL),
       );
       const nameBox = await box(row.getByText(r.name, { exact: true }), "시약명");
       const capBox = await box(cap, "칸 없음");
@@ -987,10 +1113,18 @@ test.describe("기본 예시 (교사·admin)", () => {
       const href = await row.evaluate((el) => (el.matches("a[href]") ? el : el.querySelector("a[href]"))?.getAttribute("href") ?? "");
       expect(href, `${i + 1}행은 시약 상세 링크`).toMatch(/^\/reagents\/[^/]+$/);
     }
-    // 주의사항 아래
     const mix = await box(sec.locator(sel("mix-warning")), "mix-warning");
     const t = await box(title, "칸 없음 제목");
-    expect(t.y, '"칸 없음 시약" 은 주의사항 아래').toBeGreaterThanOrEqual(mix.y + mix.height);
+    if (isMobile(page)) {
+      // 시안 11-mobile: 주의사항 아래
+      expect(t.y, '"칸 없음 시약" 은 주의사항 아래').toBeGreaterThanOrEqual(mix.y + mix.height);
+    } else {
+      // 시안 11-desktop: 왼쪽 열(배치도 아래), 오른쪽 편집 카드 왼쪽
+      const ed = await box(sec.locator(sel("cabinet-edit")), "cabinet-edit");
+      const last = await box(slots(sec).last(), "마지막 칸");
+      expect(t.x + t.width, '"칸 없음 시약" 은 편집 카드 왼쪽').toBeLessThanOrEqual(ed.x);
+      expect(t.y, '"칸 없음 시약" 은 배치도 아래').toBeGreaterThanOrEqual(last.y + last.height);
+    }
   });
 
   test(`[K1][S${SCREEN}] 이름 바꾸기: "${RENAME_LABEL}" → 이름 시트(현재 이름) → 저장하면 pill·제목이 바뀌고 ex-toast "${TOAST_RENAMED}", 취소하면 그대로`, async ({ page }) => {
@@ -1010,7 +1144,7 @@ test.describe("기본 예시 (교사·admin)", () => {
     await sheet.locator(sel("button-outline")).filter({ hasText: exact(RENAME_CANCEL) }).click();
     await expect(sec.locator(sel("ex-modal-card")), "취소하면 닫힌다").toHaveCount(0);
     await expect(sec.getByRole("heading", { name: TITLE, exact: true })).toHaveCount(1);
-    expect((await pills(sec).allInnerTexts()).map(squash)).toEqual(PILLS);
+    expect(await pillNames(sec)).toEqual(PILLS);
     // 저장 (앞뒤 공백은 뗀다)
     await rename.click();
     await expect(input, "다시 열면 현재 이름").toHaveValue(TITLE);
@@ -1019,7 +1153,8 @@ test.describe("기본 예시 (교사·admin)", () => {
     await sheet.locator(sel("button-primary")).filter({ hasText: exact(RENAME_SAVE) }).click();
     await expect(sec.locator(sel("ex-modal-card")), "저장하면 닫힌다").toHaveCount(0);
     await expect(sec.getByRole("heading", { name: next, exact: true }), "제목이 바뀐다").toHaveCount(1);
-    expect((await pills(sec).allInnerTexts()).map(squash), "pill 이름이 바뀐다").toEqual(PILLS.map((p) => (p === TITLE ? next : p)));
+    expect(await pillNames(sec), "pill 이름이 바뀐다").toEqual(PILLS.map((p) => (p === TITLE ? next : p)));
+    expect(await pillNumbers(sec), "이름을 바꿔도 번호는 그대로 (rules cabinet.number)").toEqual(PILL_NUMBERS.map((n) => [n]));
     await expect(toast(sec, TOAST_RENAMED)).toBeVisible();
     await expect(slots(sec), "배치도는 그대로").toHaveCount(FRAME_SLOTS.length);
   });
@@ -1050,7 +1185,8 @@ test.describe("기본 예시 (교사·admin)", () => {
     await expect(sec.locator(sel("ex-modal-card"))).toHaveCount(0);
     const rest = PILLS.filter((p) => p !== target);
     await expect(pills(sec), "pill 이 하나 빠진다").toHaveCount(rest.length);
-    expect((await pills(sec).allInnerTexts()).map(squash)).toEqual(rest);
+    expect(await pillNames(sec)).toEqual(rest);
+    expect(await pillNumbers(sec), "남은 pill 번호는 그대로 (삭제된 번호를 다시 쓰지 않는다)").toEqual(rest.map((p) => [PILL_NUMBERS[PILLS.indexOf(p)]]));
     await expect(sec.getByRole("heading", { name: rest[0], exact: true }), "남은 시약장이 활성").toHaveCount(1);
     await page.mouse.move(0, 0);
     await expect.poll(async () => (await paints(pills(sec))).map(isSelectedPaint), { message: "남은 pill 활성" }).toEqual(rest.map((_, i) => i === 0));
@@ -1074,7 +1210,7 @@ test.describe("학생 예시 (보기 전용)", () => {
     }
     await expect(chips(sec), "학생에게 고르는 칩 없음").toHaveCount(0);
     await expect(sec.getByRole("radio"), "학생에게 라디오 없음").toHaveCount(0);
-    for (const label of [SAVE_LABEL, RENAME_LABEL, DELETE_LABEL, ADD_LABEL]) {
+    for (const label of [SAVE_LABEL, RENAME_LABEL, DELETE_LABEL, ADD_LABEL, QR_PRINT_LABEL]) {
       await expect(sec.getByRole("button", { name: label, exact: true }), `학생에게 "${label}" 버튼 없음`).toHaveCount(0);
     }
     await expect(sec.getByRole("heading", { name: /보관 분류$/ }), "학생에게 칩 묶음 제목 없음").toHaveCount(0);
@@ -1084,12 +1220,11 @@ test.describe("학생 예시 (보기 전용)", () => {
     await open(page);
     const sec = await area(page, "student");
     await expect(sec.locator(sel("cabinet-switcher"))).toHaveCount(1);
-    expect((await pills(sec).allInnerTexts()).map(squash), "pill").toEqual(PILLS);
+    expect(await pillNames(sec), "pill").toEqual(PILLS);
     await expect(sec.locator(sel("cabinet-switcher")).locator(":is(button, a)"), "switcher 안에는 시약장 pill 만").toHaveCount(PILLS.length);
     await page.mouse.move(0, 0);
     await expect.poll(async () => (await paints(pills(sec))).map(isSelectedPaint), { message: "활성 pill 하나" }).toEqual(PILLS.map((p) => p === ACTIVE_PILL));
-    await expect(sec.getByRole("heading", { name: TITLE, exact: true })).toHaveCount(1);
-    await expect(sec.getByText(META, { exact: true })).toBeVisible();
+    await expectHeader(page, sec, TITLE, DOOR.selected, parseInt(SHELF.selected, 10), HEADER_NUMBER);
     await expect(slots(sec)).toHaveCount(FRAME_SLOTS.length);
     expect(await slotTexts(sec), "칸 라벨 = 교사 화면과 같다").toEqual(FRAME_SLOTS.map((s) => s.label));
     await expect(sec.getByText(UNSET, { exact: true }).first(), `범례 "${UNSET}"`).toBeVisible();
@@ -1105,25 +1240,29 @@ test.describe("학생 예시 (보기 전용)", () => {
     await expect(sec.locator(sel("reagent-row"))).toHaveCount(UNASSIGNED_ROWS.length);
   });
 
-  test(`[K1][S${SCREEN}] 학생: 칸은 누를 수 없는 요소(버튼·링크 아님), 눌러도 선택 표시가 생기지 않는다`, async ({ page }) => {
+  // 1.15 (s2-spec 화면 11 cabinet-slot · 상태 11-slot): 칸을 누르면 칸 시트가 열린다 — 학생은 그 칸 시약 목록 보기만(빼기·넣기 없음).
+  // 학생에게는 분류 편집이 없으므로 선택 표시(선택 칸)·고르는 칩은 생기지 않는다.
+  test(`[K1][S${SCREEN}] 학생: 칸을 누르면 slot-sheet(목록만 — slot-assign·"빼기" 0), 선택 표시·고르는 칩은 생기지 않는다`, async ({ page }) => {
     await open(page);
     const sec = await area(page, "student");
-    for (let i = 0; i < FRAME_SLOTS.length; i++) {
-      const s = slots(sec).nth(i);
-      const pressable = await s.evaluate(
-        (el) =>
-          el.matches("button,a,input,[role=button],[tabindex]:not([tabindex='-1']),[onclick]") ||
-          el.querySelector("button,a,input,[role=button],[tabindex]:not([tabindex='-1'])") !== null,
-      );
-      expect(pressable, `${i + 1}번째 칸은 누를 수 없다`).toBe(false);
-      expect(await s.evaluate((el) => getComputedStyle(el).cursor), `${i + 1}번째 칸 커서`).not.toBe("pointer");
-    }
+    await expect(sec.locator(sel("slot-sheet")), "처음에는 칸 시트 없음").toHaveCount(0);
     expect((await paints(slots(sec))).filter(hasHighlight).length, "처음에 선택 표시 없음").toBe(0);
-    await slots(sec).nth(2).click();
-    await slots(sec).nth(0).click();
+    const titleAt = (i: number) => `${i % 2 === 0 ? "좌" : "우"} ${Math.floor(i / 2) + 1}단`;
+    for (const i of [2, 0]) {
+      await slots(sec).nth(i).click();
+      const sheet = sec.locator(sel("slot-sheet"));
+      await expect(sheet, `${titleAt(i)} 칸 시트`).toHaveCount(1);
+      await expect(sheet.getByRole("heading", { name: titleAt(i), exact: true }), `시트 제목 "${titleAt(i)}"`).toHaveCount(1);
+      await expect(sheet.getByRole("heading", { name: `이 칸의 시약 (${FRAME_SLOTS[i].count})`, exact: true }), "이 칸의 시약 수 = 시안 slot-count").toHaveCount(1);
+      await expect(sheet.locator(sel("reagent-row")), "목록 행 수").toHaveCount(FRAME_SLOTS[i].count);
+      await expect(sheet.locator(sel("slot-assign")), "학생 slot-assign").toHaveCount(0);
+      await expect(sheet.getByRole("button", { name: /빼기$/ }), '학생 "빼기"').toHaveCount(0);
+      await expect(sheet.getByText("빼기", { exact: true }), '학생 "빼기" 글자').toHaveCount(0);
+    }
     await page.mouse.move(0, 0);
     expect((await paints(slots(sec))).filter(hasHighlight).length, "눌러도 선택 표시 없음").toBe(0);
-    await expect(chips(sec), "눌러도 칩이 생기지 않는다").toHaveCount(0);
+    await expect(chips(sec), "눌러도 고르는 칩이 생기지 않는다").toHaveCount(0);
+    for (const n of rules.roles.R7.components) await expect(sec.locator(sel(n)), `칸 시트를 연 뒤에도 학생 ${n}`).toHaveCount(rules.roles.R7.max);
     expect(await slotTexts(sec)).toEqual(FRAME_SLOTS.map((s) => s.label));
   });
 
@@ -1190,9 +1329,9 @@ test.describe("빈 상태 예시 (시약장 0개)", () => {
     await sec.locator(sel("cabinet-add")).click();
     await expect(sec.locator(sel("ex-empty-state-card")), "빈 상태 카드가 사라진다").toHaveCount(0);
     await expect(sec.locator(sel("cabinet-switcher"))).toHaveCount(1);
-    expect((await pills(sec).allInnerTexts()).map(squash), "pill").toEqual([defaultName(1)]);
-    await expect(sec.getByRole("heading", { name: defaultName(1), exact: true })).toHaveCount(1);
-    await expect(sec.getByText(metaOf(DOUBLE, MAX_SHELVES), { exact: true })).toBeVisible();
+    expect(await pillNames(sec), "pill").toEqual([defaultName(1)]);
+    expect(await pillNumbers(sec), "첫 시약장 번호 1").toEqual([["1"]]);
+    await expectHeader(page, sec, defaultName(1), DOUBLE, MAX_SHELVES, "1");
     await expect(slots(sec)).toHaveCount(columns(DOUBLE) * MAX_SHELVES);
     expect(new Set(await slotTexts(sec)), "칸은 모두 미지정").toEqual(new Set([UNSET]));
     await expect(sec.locator(sel("cabinet-edit"))).toHaveCount(1);

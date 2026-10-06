@@ -130,7 +130,15 @@ test(`[R-ui][S${SCREEN}] 규칙 전제: rules.json R7 = 학생의 ${EDIT}·${ADD
   expect(R7.role).toBe(ROLE_NAME.student);
   expect(R7.components).toEqual(expect.arrayContaining([EDIT, ADD]));
   expect(typeof R7.max).toBe("number");
-  for (const c of R7.components!) expect(devRules.components[c], `dev-rules components ${c}`).toContain(SCREEN);
+  // rules 1.15 R7 = cabinet-edit·cabinet-add·slot-assign·location-edit·qr-print — 화면 11 것과 화면 3 것(location-edit)이 섞여 있다.
+  // R7 컴포넌트마다 dev-rules components 에 화면이 1개 이상 있고, 화면 11 것은 화면 11 에, 나머지는 화면 3 에 있다 (화면별 단언).
+  const r7OnScreen = R7.components!.filter((c) => (devRules.components[c] ?? []).includes(SCREEN));
+  for (const c of R7.components!) {
+    const screens = devRules.components[c] ?? [];
+    expect(screens.length, `dev-rules components ${c} 에 화면이 있다`).toBeGreaterThan(0);
+    if (!screens.includes(SCREEN)) expect(screens, `R7 ${c} 은 화면 ${SCREEN} 이 아니면 화면 3 (location-edit)`).toContain(3);
+  }
+  expect(r7OnScreen, `R7 중 화면 ${SCREEN} 컴포넌트에 ${EDIT}·${ADD} 포함`).toEqual(expect.arrayContaining([EDIT, ADD]));
   const student = roleChecks(SCREEN, ROLE_NAME.student).filter((c) => c.rule === "R7");
   expect(student.map((c) => c.component).sort()).toEqual([...R7.components!].sort());
   for (const role of STAFF) expect(roleChecks(SCREEN, ROLE_NAME[role as keyof typeof ROLE_NAME]).filter((c) => c.rule === "R7")).toEqual([]);
