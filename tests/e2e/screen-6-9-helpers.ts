@@ -96,6 +96,32 @@ export const COMMON_SEED: { name: string; website: string }[] = (() => {
   return out;
 })();
 export const COMMON_NAMES = COMMON_SEED.map((v) => v.name);
+
+/** d7 §11 "검색어 자동 입력": 검색어가 들어갈 자리 */
+export const SEARCH_Q = "{q}";
+
+/** d7 §11 "검색어 자동 입력" 행의 공통 목록 검색 주소: "이름 `https://…{q}…`" 목록을 문서에서 읽는다 */
+export const COMMON_SEARCH: { name: string; searchUrl: string }[] = (() => {
+  const line = d7.split(/\r?\n/).find((l) => l.startsWith("| 검색어 자동 입력 |"));
+  if (!line) throw new Error("harness/d7-data.md §11 에서 '검색어 자동 입력' 행을 찾지 못했습니다");
+  const out = [...line.matchAll(/([^\s,()|:`]+) `(https:\/\/[^`\s]+)`/g)].map((m) => ({ name: m[1], searchUrl: m[2] }));
+  if (out.length === 0) throw new Error("harness/d7-data.md §11 공통 목록 검색 주소를 읽지 못했습니다");
+  for (const s of out) if (!s.searchUrl.includes(SEARCH_Q)) throw new Error(`d7 §11 ${s.name} 검색 주소에 ${SEARCH_Q} 없음`);
+  return out;
+})();
+
+/** d7 §11: 검색어 = 시약 이름(앞뒤 공백만 정리, URL 인코딩) → `{q}` 자리에 넣은 주소 (URL 정규화 표기) */
+export function searchHref(template: string, reagentName: string): string {
+  const q = encodeURIComponent(reagentName.trim());
+  return new URL(template.split(SEARCH_Q).join(q)).href;
+}
+
+/** 공통 판매처 이름 → d7 §11 검색 주소 틀 */
+export function commonSearchOf(name: string): string {
+  const s = COMMON_SEARCH.find((v) => v.name === name);
+  if (!s) throw new Error(`d7 §11 검색어 자동 입력에 공통 판매처 "${name}" 의 검색 주소가 없습니다`);
+  return s.searchUrl;
+}
 export const hostOf = (website: string) => new URL(website).host;
 export const hrefOf = (website: string) => new URL(website).href;
 
