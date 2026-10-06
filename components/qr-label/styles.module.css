@@ -1,0 +1,72 @@
+/* 시안 1.15 qr-label: 흰 바탕, border-strong 테두리 한 줄, radius 16, 안쪽 12, QR 과 글자 사이 12. 흑백만 */
+.label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-width: 0;
+  padding: var(--space-12);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-sizing: border-box;
+  break-inside: avoid;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+/* QR 1:1, 모서리 0 — 모바일 56, 데스크톱 64 */
+.qr {
+  flex-shrink: 0;
+  width: calc(var(--space-48) + var(--space-8));
+  height: calc(var(--space-48) + var(--space-8));
+  border-radius: var(--radius-none);
+  background: var(--color-surface);
+  fill: var(--color-text);
+  shape-rendering: crispEdges;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.school {
+  color: var(--color-text);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.name {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.help {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+@media (min-width: 1024px) {
+  .qr {
+    width: var(--space-64);
+    height: var(--space-64);
+  }
+}

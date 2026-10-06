@@ -353,6 +353,12 @@ test(`[C1][S${SCREEN}] 학교A 학생 첫 행 상세 열림(시안과 같은 상
     for (const name of screenComponents()) {
       if (name === tb.component || name === tb.item) continue; // C2
       const want = frame[name] ?? 0;
+      // 공통 셸 예외(rules.json app_exceptions — 디자인 1.15 nav-account-menu)는 이 화면의 옛 시안 프레임에 없고 dev-rules 가 더한다:
+      // 로그인 후 셸이 있는 화면마다 정확히 1개 (dev-rules components_note · route_auth.logout)
+      if (name in (rules as unknown as { app_exceptions: Record<string, string> }).app_exceptions) {
+        expect(await countComponent(page, name), `셸 ${name} = 1`).toBe(1);
+        continue;
+      }
       if (want === 0) {
         // 프레임에 없는 상태 컴포넌트 (0건 카드) — 기록이 있을 때는 없어야 한다
         expect(name, "프레임에 없는 화면 10 컴포넌트는 0건 카드뿐").toBe(EMPTY);

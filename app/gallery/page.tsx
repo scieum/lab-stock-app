@@ -7,7 +7,8 @@ import { ButtonPillSoft } from "@/components/button-pill-soft";
 import { ButtonPrimary } from "@/components/button-primary";
 import { CabinetAdd } from "@/components/cabinet-add";
 import { CabinetDoorSelect } from "@/components/cabinet-door-select";
-import { CabinetEdit, CabinetSelects } from "@/components/cabinet-edit";
+import { CabinetEdit, CabinetSelects, CabinetTitle } from "@/components/cabinet-edit";
+import { CabinetNumber } from "@/components/cabinet-number";
 import { CabinetShelfSelect } from "@/components/cabinet-shelf-select";
 import { CabinetLayout, CabinetLegend, CabinetSlot } from "@/components/cabinet-slot";
 import { CabinetSwitcher } from "@/components/cabinet-switcher";
@@ -20,6 +21,8 @@ import { Toast } from "@/components/ex-toast";
 import { ExtractionTable } from "@/components/extraction-table";
 import { FeatureCard } from "@/components/feature-card";
 import { GuestBanner } from "@/components/guest-banner";
+import { LocationEdit } from "@/components/location-edit";
+import { LocationPicker } from "@/components/location-picker";
 import { GuestEntry } from "@/components/guest-entry";
 import { GuestLock } from "@/components/guest-lock";
 import { CabinetSummaryCard, HomeSummary, StockSummaryCard } from "@/components/home-summary";
@@ -29,28 +32,45 @@ import { ManualUpload } from "@/components/manual-upload";
 import { MixWarning } from "@/components/mix-warning";
 import { MsdsEntry } from "@/components/msds-entry";
 import { MsdsQrTile } from "@/components/msds-qr-tile";
+import { NavAccountMenu } from "@/components/nav-account-menu";
 import { NavPill } from "@/components/nav-pill";
+import { QrLabel } from "@/components/qr-label";
+import { QrPrint } from "@/components/qr-print";
+import { QrPrintSheet } from "@/components/qr-print-sheet";
 import { QuickAction } from "@/components/quick-action";
 import { ReagentDetailCard } from "@/components/reagent-detail-card";
+import { ReagentLocation } from "@/components/reagent-location";
 import { ReagentRegister } from "@/components/reagent-register";
 import { ReagentRow } from "@/components/reagent-row";
 import { RecordGroup, RecordList } from "@/components/record-group";
 import { ReorderAlertCard } from "@/components/reorder-alert-card";
+import { ReorderThreshold } from "@/components/reorder-threshold";
 import { SchoolSelectRegion } from "@/components/school-select-region";
 import { SchoolSelectSchool } from "@/components/school-select-school";
 import { SchoolSelectSido } from "@/components/school-select-sido";
 import { SegmentedControl } from "@/components/segmented-control";
 import { SegmentedControlActive } from "@/components/segmented-control-active";
+import { SlotAssign } from "@/components/slot-assign";
+import { SlotCount } from "@/components/slot-count";
+import { SlotSheet } from "@/components/slot-sheet";
 import { StockIntake } from "@/components/stock-intake";
 import { StorageClassChip, StorageClassPicker } from "@/components/storage-class-chip";
 import { TabBar } from "@/components/tab-bar";
 import { TabItem } from "@/components/tab-item";
 import { TextInput, TextInputSelect } from "@/components/text-input";
+import { ThresholdEdit } from "@/components/threshold-edit";
 import { UserManage } from "@/components/user-manage";
 import { VendorLink } from "@/components/vendor-link";
 import { VendorRegisterEntry } from "@/components/vendor-register";
-import { mixWarnings } from "@/lib/cabinet-rules";
-import { sampleCabinets } from "./cabinets/sample";
+import { cabinetQrUrl, mixWarnings, slotTitle } from "@/lib/cabinet-rules";
+import {
+  SAMPLE_ORIGIN,
+  sampleCabinets,
+  sampleCandidates,
+  sampleCounts,
+  sampleInSlot,
+  samplePickerCabinets as pickerCabinets,
+} from "./cabinets/sample";
 import { SAMPLE_GROUPS, samplePdf, sampleReagents, sampleRowsFrame } from "./manual/sample";
 import { sampleInvites, sampleMemberCounts, sampleMembers } from "./users/sample";
 import styles from "./gallery.module.css";
@@ -99,6 +119,10 @@ const storageClasses = ["유기", "산", "염기", "산화제", "인화성", "�
 
 const cabinet = sampleCabinets[0];
 const cabinetWarnings = mixWarnings(cabinet.slots, cabinet.doorType, cabinet.shelves).map((w) => w.text);
+const cabinetCounts = sampleCounts(cabinet.id);
+/** 시안 11-slot: 1번 시약장 좌 2단(유기)에 에탄올 · 아세톤 · 메탄올 */
+const slotL2 = sampleInSlot(cabinet.id, "L2").map((r) => ({ id: r.id, name: r.name, amount: r.amount, storageClass: r.storageClass }));
+const printCabinets = sampleCabinets.map((c) => ({ id: c.id, number: c.number, label: c.label }));
 
 function Item({ name, children }: { name: string; children: React.ReactNode }) {
   return (
@@ -440,18 +464,19 @@ export default function GalleryPage() {
 
         <Item name="cabinet-switcher · cabinet-add">
           <CabinetSwitcher
-            items={sampleCabinets.map((c) => ({ id: c.id, label: c.label, href: `/gallery/cabinets?c=${c.id}` }))}
+            items={sampleCabinets.map((c) => ({ id: c.id, label: c.label, number: c.number, href: `/gallery/cabinets?c=${c.id}` }))}
             activeId={cabinet.id}
           >
             <CabinetAdd />
           </CabinetSwitcher>
           <Link href="/gallery/cabinets" className={styles.more}>
-            시약장 설정 상태 보기 — 기본 · 학생 · 빈 상태 · 삭제 확인 · 이름 시트 · 로그아웃 메뉴 (/gallery/cabinets)
+            시약장 설정 상태 보기 — 기본 · 학생 · 빈 상태 · 삭제 확인 · 이름 시트 · 칸 시트 · QR 인쇄 · 저장 안 한 편집 · 위치 피커 ·
+            재주문 기준 · 계정 메뉴 (/gallery/cabinets)
           </Link>
         </Item>
 
         <Item name="cabinet-edit · cabinet-door-select · cabinet-shelf-select">
-          <CabinetEdit>
+          <CabinetEdit qrPrint={<QrPrint />}>
             <CabinetSelects>
               <CabinetDoorSelect defaultValue={cabinet.doorType} />
               <CabinetShelfSelect defaultValue={cabinet.shelves} />
@@ -460,7 +485,8 @@ export default function GalleryPage() {
         </Item>
 
         <Item name="cabinet-slot (배치도 · 범례)">
-          <CabinetLayout doorType={cabinet.doorType} shelves={cabinet.shelves} slots={cabinet.slots} readOnly />
+          <CabinetTitle number={cabinet.number} label={cabinet.label} doorType={cabinet.doorType} shelves={cabinet.shelves} />
+          <CabinetLayout doorType={cabinet.doorType} shelves={cabinet.shelves} slots={cabinet.slots} counts={cabinetCounts} readOnly />
           <CabinetLegend />
           <CabinetSlot name="1단" classes={[]} />
         </Item>
@@ -475,6 +501,78 @@ export default function GalleryPage() {
 
         <Item name="mix-warning">
           <MixWarning lines={cabinetWarnings} />
+        </Item>
+
+        <Item name="cabinet-number · slot-count">
+          <div className={styles.row}>
+            <CabinetNumber number={1} />
+            <CabinetNumber number={2} />
+            <CabinetNumber number={12} />
+            <SlotCount count={3} />
+            <SlotCount count={12} />
+          </div>
+        </Item>
+
+        <Item name="slot-sheet · slot-assign (교사 — 시안 11-slot: 좌 2단에 염산 넣기, 분류 불일치 경고 / 학생 — 목록만)">
+          <SlotSheet sheet={false} canEdit title={slotTitle({ side: "L", shelf: 2 }, cabinet.doorType)} classes={["유기"]} reagents={slotL2}>
+            <SlotAssign
+              candidates={sampleCandidates.slice(0, 2)}
+              slotClasses={["유기"]}
+              slotReagentClasses={slotL2.map((r) => r.storageClass)}
+              defaultSelectedId="u-1"
+            />
+          </SlotSheet>
+          <SlotSheet sheet={false} title={slotTitle({ side: "L", shelf: 2 }, cabinet.doorType)} classes={["유기"]} reagents={slotL2} />
+        </Item>
+
+        <Item name="qr-print · qr-label · qr-print-sheet">
+          <div className={styles.row}>
+            <QrPrint />
+          </div>
+          <QrLabel schoolName={SAMPLE_SCHOOL} number={cabinet.number} name={cabinet.label} content={cabinetQrUrl(SAMPLE_ORIGIN, cabinet.id)} />
+          <QrPrintSheet sheet={false} schoolName={SAMPLE_SCHOOL} origin={SAMPLE_ORIGIN} cabinets={printCabinets} defaultTarget="all" />
+        </Item>
+
+        <Item name="reagent-location · location-edit · reorder-threshold · threshold-edit (화면 3 시약 상세 카드)">
+          <ReagentDetailCard
+            name="과산화수소"
+            stock={2}
+            unit="병"
+            lowStock
+            intakeDate="2026-09-14"
+            meta={
+              <>
+                <ReagentLocation cabinet={cabinet} slot={{ side: "R", shelf: 1 }} canEdit />
+                <ReorderThreshold minStock={3} unit="병" canEdit />
+              </>
+            }
+          />
+          <ReagentLocation cabinet={null} slot={null} />
+          <ReorderThreshold minStock={60} unit="g" perGroup={10} groups={6} />
+          <ReorderThreshold minStock={null} unit="mL" />
+          <div className={styles.row}>
+            <LocationEdit />
+            <ThresholdEdit mode="button" />
+          </div>
+          <ThresholdEdit mode="form" unit="병" defaultValue="3" />
+        </Item>
+
+        <Item name="location-picker (교사 — 시안 3-location: 2번 시약장 좌 2단, 섞으면 위험한 조합 경고)">
+          <LocationPicker
+            sheet={false}
+            reagentName="과산화수소"
+            reagentClass="산화제"
+            cabinets={pickerCabinets}
+            current={{ cabinetId: cabinet.id, side: "R", shelf: 1 }}
+            defaultCabinetId="c-2"
+            defaultSlot={{ side: "L", shelf: 2 }}
+          />
+        </Item>
+
+        <Item name="nav-account-menu (학교명 옆 ▾ — 누르면 로그아웃 메뉴)">
+          <div className={styles.row}>
+            <NavAccountMenu schoolName={SAMPLE_SCHOOL} />
+          </div>
         </Item>
 
         <Item name="tab-bar · tab-item">

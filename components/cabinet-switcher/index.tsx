@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import { CabinetNumber } from "@/components/cabinet-number";
 import { LinkPending } from "@/components/link-pending";
 import { linkPrefetch } from "@/lib/link-prefetch";
 import styles from "./styles.module.css";
@@ -10,6 +11,8 @@ export type CabinetSwitcherItem = {
   id: string;
   /** 시약장 이름 ("1번 시약장") */
   label: string;
+  /** 시약장 번호 (d7 §14) — 있으면 이름 앞에 cabinet-number 원 */
+  number?: number;
   /** 있으면 링크(`/cabinets?c={id}`), 없으면 버튼(onSelect) */
   href?: string;
 };
@@ -27,7 +30,8 @@ type Props = {
 };
 
 /**
- * 시약장 전환 pill 한 줄 (화면 11). 시약장마다 pill 1개, 넘치면 가로 스크롤, 끝에 cabinet-add 자리.
+ * 시약장 전환 pill 한 줄 (화면 11 · 화면 3 위치 피커). 시약장마다 pill 1개(번호가 있으면 cabinet-number + 이름),
+ * 넘치면 가로 스크롤, 끝에 cabinet-add 자리.
  * 활성 pill 은 aria-current="true" — 누르는 동안·이동 중인 pill 은 모양만 먼저 활성으로 바뀐다.
  */
 export function CabinetSwitcher({ items, activeId, onSelect, children, label = "시약장" }: Props) {
@@ -60,6 +64,7 @@ export function CabinetSwitcher({ items, activeId, onSelect, children, label = "
                   className={cls}
                   aria-current={active ? "true" : undefined}
                 >
+                  {item.number !== undefined ? <CabinetNumber number={item.number} /> : null}
                   <span className={styles.label}>{item.label}</span>
                   <LinkPending />
                 </Link>
@@ -70,6 +75,7 @@ export function CabinetSwitcher({ items, activeId, onSelect, children, label = "
                   aria-current={active ? "true" : undefined}
                   onClick={onSelect ? () => onSelect(item.id) : undefined}
                 >
+                  {item.number !== undefined ? <CabinetNumber number={item.number} /> : null}
                   <span className={styles.label}>{item.label}</span>
                 </button>
               )}

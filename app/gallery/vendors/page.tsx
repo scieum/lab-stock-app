@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { NavAccountMenu } from "@/components/nav-account-menu";
 import { Toast } from "@/components/ex-toast";
 import { VendorDeleteConfirm } from "@/components/vendor-register";
 import styles from "../gallery.module.css";
@@ -84,6 +85,10 @@ export default function GalleryVendorsPage() {
         <Item id="toast" name="ex-toast">
           <Toast>판매처를 저장했어요</Toast>
           <Toast>판매처를 삭제했어요</Toast>
+        </Item>
+
+        <Item id="account-menu" name="nav-account-menu — 학교명 옆 ▾ (로그인 후 셸 공통, 디자인 1.15)">
+          <NavAccountMenu schoolName="샘플고등학교" />
         </Item>
       </div>
     </main>

@@ -1,0 +1,71 @@
+/* 시안 1.15 3 reorder-threshold: reagent-location 과 같은 줄 모양 — 왼쪽 field(라벨 12 회색 위 · 값 15 아래) + 오른쪽 연필 44.
+ * 데스크톱: field 가 가로 (라벨 칸 64 · 값) */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+/* 편집 상태: 라벨 위 · 입력 묶음 아래 (전폭) */
+.editing {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.label {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.valueGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.value,
+.none {
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.value {
+  color: var(--color-text);
+}
+
+.none {
+  color: var(--color-text-muted);
+}
+
+/* 화면 5 근거 문구 (caption 회색) */
+.basis {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+@media (min-width: 1024px) {
+  .field {
+    flex-direction: row;
+    align-items: baseline;
+    gap: var(--space-8);
+  }
+
+  .field > .label {
+    flex: 0 0 var(--space-64);
+  }
+}

@@ -107,3 +107,32 @@ a.row:has([data-pending]) {
   flex-shrink: 0;
   color: var(--color-highlight);
 }
+
+/* 디자인 1.15 칸 시트 행 (시안 11-slot reagent-row: 안쪽 4·4·4·16, 오른쪽 "빼기" 44) */
+.withAction {
+  padding: var(--space-4) var(--space-4) var(--space-4) var(--space-16);
+}
+
+.action {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+/* 동작이 있는 행의 왼쪽 글자 묶음 링크 (칸 시트 → 시약 상세): 행 높이만큼 누름 영역 */
+.mainLink {
+  align-self: stretch;
+  justify-content: center;
+  min-height: var(--button-min-height);
+  color: inherit;
+  text-decoration: none;
+}
+
+.mainLink:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.withAction:has(.mainLink:active),
+.withAction:has(.mainLink [data-pending]) {
+  background: var(--color-highlight-soft);
+}

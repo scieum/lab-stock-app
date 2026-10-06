@@ -268,7 +268,12 @@ function fixture(info: TestInfo): Promise<Fixture> {
   return fixtureCache;
 }
 
-/** 일회용 학교의 시약·시약장·칸을 비운다 (service role — 준비). 시약 → 시약장(칸 cascade) 순서. */
+/**
+ * 일회용 학교의 시약·시약장·칸을 비운다 (service role — 준비). 시약 → 시약장(칸 cascade) 순서.
+ * d7 §14: 시약장 번호는 학교의 마지막 번호(schools.cabinet_seq)를 이어 쓴다(삭제된 번호를 다시 쓰지 않음 — 정상 동작).
+ * 테스트마다 "새 학교" 에서 시작하도록 **이 일회용 학교의** cabinet_seq 만 0 으로 되돌린다 (실행 순서와 무관하게).
+ * 번호를 다시 쓰지 않는지는 각 테스트 안에서(되돌리지 않은 상태로) 본다.
+ */
 async function purge(schoolIds: string[]): Promise<void> {
   if (!schoolIds.length) return;
   const sb = service();
@@ -276,6 +281,9 @@ async function purge(schoolIds: string[]): Promise<void> {
   expect(r.error, `일회용 학교 시약 정리: ${r.error?.message}`).toBeNull();
   const c = await sb.from("cabinets").delete().in("school_id", schoolIds);
   expect(c.error, `일회용 학교 시약장 정리: ${c.error?.message}`).toBeNull();
+  const s = await sb.from("schools").update({ cabinet_seq: 0 }).in("id", schoolIds).like("neis_code", "S8UI-%").select("id");
+  expect(s.error, `일회용 학교 cabinet_seq 되돌리기: ${s.error?.message}`).toBeNull();
+  expect((s.data ?? []).length, "되돌린 학교 = 일회용 학교만").toBe(schoolIds.length);
 }
 
 async function fresh(info: TestInfo): Promise<Fixture> {
@@ -345,14 +353,21 @@ async function newReagent(client: SupabaseClient, tag: string): Promise<string> 
   return row.id as string;
 }
 
-/** 시약을 칸에 배치: 교사 세션의 reagents.slot_id 직접 update (정책 유지 — d7 §9). 막혀 있으면 service role 로 하고 표시를 남긴다. */
+/**
+ * 시약을 칸에 배치: 교사 세션의 DB 함수 place_reagent (d7 §14 — 배치는 함수 경유, 교사의 slot_id 직접 update 는 닫힘).
+ * 함수가 실패하거나 다른 칸을 돌려주면 service role 로 하고 표시를 남긴다 (맨 끝 테스트가 0건을 단언).
+ */
 async function place(f: Fixture, info: TestInfo, reagentId: string, slotId: string): Promise<void> {
-  const up = await f.teacher.from("reagents").update({ slot_id: slotId }).eq("id", reagentId).select("id, slot_id");
-  if (!up.error && (up.data ?? []).length === 1) return;
+  const res = await rpc(f.teacher, "place_reagent", { p_reagent_id: reagentId, p_slot_id: slotId });
+  const out = res.error ? null : firstRow(res.data);
+  if (out && out.reagent_id === reagentId && out.slot_id === slotId) {
+    const now = await service().from("reagents").select("slot_id").eq("id", reagentId).single();
+    if (!now.error && now.data?.slot_id === slotId) return;
+  }
   placedByService += 1;
   info.annotations.push({
     type: "placement-by-service-role",
-    description: `교사 직접 update 로 배치 실패 (${up.error?.code ?? "0행"} ${up.error?.message ?? ""}) → service role 로 배치`,
+    description: `교사 place_reagent 로 배치 실패 (${res.error?.code ?? "반환값 불일치"} ${res.error?.message ?? JSON.stringify(res.data)}) → service role 로 배치`,
   });
   const forced = await service().from("reagents").update({ slot_id: slotId }).eq("id", reagentId).select("id");
   expect(forced.error, `service role 배치: ${forced.error?.message}`).toBeNull();
@@ -1312,8 +1327,8 @@ test.describe("일회용 학교", () => {
     expect(cross.data ?? [], "이 학교 교사에게 다른 학교 시약장은 0행").toHaveLength(0);
   });
 
-  test(`[R-db][S11] 준비 방식 기록: 시약 배치는 교사의 reagents.slot_id 직접 update 로 했다 (service role 대체 0건)`, async () => {
-    // 위 테스트들이 배치를 service role 로 대신했다면 d7 §9 "reagents 정책 유지"가 깨진 것이다.
+  test(`[R-db][S11] 준비 방식 기록: 시약 배치는 교사 세션의 place_reagent 로 했다 (service role 대체 0건)`, async () => {
+    // 위 테스트들이 배치를 service role 로 대신했다면 d7 §14 "배치 = 교사·admin 의 place_reagent" 경로가 깨진 것이다.
     expect(placedByService, "service role 로 대신 배치한 횟수").toBe(0);
   });
 });

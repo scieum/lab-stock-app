@@ -1,0 +1,18 @@
+/* 시안 slot-count: 높이 20, 좌우 8, 흰 바탕, radius pill, 숫자 12/600 기본색 (핑크·하늘색 없음) */
+.count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: var(--icon-lg);
+  height: var(--icon-md);
+  padding: 0 var(--space-8);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
+}

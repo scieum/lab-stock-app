@@ -1,0 +1,21 @@
+/* 시안 cabinet-number: 24 × 24 원, 흰 바탕, hairline(border-strong) 한 줄 테두리, 숫자 12/600 기본색.
+ * 두 자리 숫자는 옆으로 늘어난 pill 이 된다 */
+.number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: var(--icon-lg);
+  height: var(--icon-lg);
+  padding: 0 var(--space-4);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
+  white-space: nowrap;
+}

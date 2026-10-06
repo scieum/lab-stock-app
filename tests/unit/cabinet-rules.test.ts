@@ -1,6 +1,8 @@
 // 화면 11 시약장 설정 순수 규칙 (lib/cabinet-rules).
 // 기대값: design/rules.json cabinet(door_types·shelves·storage_classes·incompatible·default_name·unassigned_label),
-//         harness/d7-data.md §9(혼재 경고 문구 틀 · 칸 줄이기 · 이름 1~20자), design/frames/11-mobile.json(시안 예시 문구).
+//         harness/d7-data.md §9(혼재 경고 문구 틀 · 칸 줄이기 · 이름 1~20자),
+//         design/frames/11-mobile.json · 11-desktop.json(시안 예시 문구 — 1.15: 경고 글자는 warning-text 프레임 안 warning-line,
+//         요약은 모바일 "양문형 · 4단" / 데스크탑 "양문형 · 4단 · 8칸").
 //         구현에서 읽지 않는다 — 구현 상수는 rules.json 과 같은지 비교만 한다.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -40,12 +42,21 @@ const cab = rules.cabinet as Cabinet;
 
 // ---------- 시안 프레임 11-mobile 의 예시 문구 ----------
 type FrameNode = { name: string; path: string[]; text: { characters: string } | null };
-const frame = JSON.parse(readFileSync(join(ROOT, "design/frames/11-mobile.json"), "utf8")) as { frames: { nodes: FrameNode[] }[] };
-const frameText = (name: string) =>
-  frame.frames[0].nodes.filter((n) => n.name === name && n.text).map((n) => n.text!.characters);
-const FRAME_WARNING = frameText("warning-text")[0];
-const FRAME_META = frameText("cabinet-meta")[0];
-const FRAME_SLOT_LABELS = frameText("slot-label");
+const loadFrame = (file: string) =>
+  (JSON.parse(readFileSync(join(ROOT, "design/frames", file), "utf8")) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes;
+const MOBILE = loadFrame("11-mobile.json");
+const DESKTOP = loadFrame("11-desktop.json");
+const textOf = (nodes: FrameNode[], name: string) => nodes.filter((n) => n.name === name && n.text).map((n) => n.text!.characters);
+// 경고 한 줄 = mix-warning > warning-row > warning-text(FRAME) > warning-line(TEXT)
+const warningLines = (nodes: FrameNode[]) =>
+  nodes
+    .filter((n) => n.name === "warning-line" && n.text && n.path.includes("warning-text") && n.path.includes("mix-warning"))
+    .map((n) => n.text!.characters);
+const FRAME_WARNING = warningLines(MOBILE)[0];
+const FRAME_WARNING_DESKTOP = warningLines(DESKTOP)[0];
+const FRAME_META_SHORT = textOf(MOBILE, "cabinet-meta")[0];
+const FRAME_META_FULL = textOf(DESKTOP, "cabinet-meta")[0];
+const FRAME_SLOT_LABELS = textOf(MOBILE, "slot-label");
 
 // ---------- 규칙에서 도출한 기대값 ----------
 // s2-spec 화면 11: 양문형 = 좌·우 2열, 단문형 = 1열
@@ -88,8 +99,10 @@ describe("cabinet rules: 상수 = design/rules.json cabinet", () => {
       expect(cab.storage_classes).toContain(a);
       expect(cab.storage_classes).toContain(b);
     }
-    expect(FRAME_WARNING, "프레임 warning-text").toBeTruthy();
-    expect(FRAME_META, "프레임 cabinet-meta").toBeTruthy();
+    expect(FRAME_WARNING, "프레임 11-mobile warning-text > warning-line").toBeTruthy();
+    expect(FRAME_WARNING_DESKTOP, "프레임 11-desktop warning-text > warning-line").toBe(FRAME_WARNING);
+    expect(FRAME_META_SHORT, "프레임 11-mobile cabinet-meta").toBeTruthy();
+    expect(FRAME_META_FULL, "프레임 11-desktop cabinet-meta").toBeTruthy();
   });
 
   it("[K1][S11] DOOR_TYPES = rules.json cabinet.door_types (순서까지)", () => {
@@ -153,10 +166,22 @@ describe("cabinet rules: 칸 이름 · 칸 수", () => {
     expect(slotKeys("단문형", 3)).toHaveLength(3);
   });
 
-  it(`[K1][S11] 시약장 요약: 시안 "${FRAME_META}" (문 형태 · 단 수 · 칸 수)`, () => {
-    expect(cabinetMeta("양문형", 4)).toBe(FRAME_META);
+  it(`[K1][S11] 시약장 요약 full: 데스크탑 시안 "${FRAME_META_FULL}" (문 형태 · 단 수 · 칸 수), 기본값 = full`, () => {
+    expect(cabinetMeta("양문형", 4, "full")).toBe(FRAME_META_FULL);
+    expect(cabinetMeta("양문형", 4)).toBe(FRAME_META_FULL);
     for (const d of cab.door_types) {
-      for (const s of cab.shelves) expect(cabinetMeta(d as DoorType, s)).toBe(`${d} · ${s}단 · ${columns(d) * s}칸`);
+      for (const s of cab.shelves) expect(cabinetMeta(d as DoorType, s, "full")).toBe(`${d} · ${s}단 · ${columns(d) * s}칸`);
+    }
+  });
+
+  it(`[K1][S11] 시약장 요약 short: 모바일 시안 "${FRAME_META_SHORT}" (문 형태 · 단 수, 칸 수 없음)`, () => {
+    expect(cabinetMeta("양문형", 4, "short")).toBe(FRAME_META_SHORT);
+    expect(FRAME_META_SHORT).not.toMatch(/칸/);
+    for (const d of cab.door_types) {
+      for (const s of cab.shelves) {
+        expect(cabinetMeta(d as DoorType, s, "short")).toBe(`${d} · ${s}단`);
+        expect(cabinetMeta(d as DoorType, s, "full").startsWith(cabinetMeta(d as DoorType, s, "short"))).toBe(true);
+      }
     }
   });
 });

@@ -4,10 +4,12 @@ import { revalidatePath } from "next/cache";
 import {
   addCabinet,
   deleteCabinet,
+  placeReagent,
   renameCabinet,
   saveCabinetLayout,
   type AddCabinetResult,
   type DeleteCabinetResult,
+  type PlaceReagentResult,
   type RenameCabinetResult,
   type SaveCabinetLayoutResult,
 } from "@/lib/supabase/cabinets";
@@ -51,6 +53,19 @@ export async function saveCabinetLayoutAction(input: unknown): Promise<SaveCabin
     shelves: field(input, "shelves"),
     slots: field(input, "slots"),
   });
+  if (!result.ok) return result;
+  revalidatePath("/", "layout");
+  return result;
+}
+
+/**
+ * 칸 시트의 넣기·빼기 (d7 §14). reagentId·slotId(null = 빼기 → "칸 없음")만 꺼내 lib/supabase/cabinets 가 형식을 다시 보고,
+ * 교사·admin·자기 학교 시약·자기 학교 칸·데모 거부는 DB 함수 place_reagent 가 본다. 분류 불일치·위험 조합은 막지 않는다.
+ * 칸 시약 수·칸 없음 목록·홈 시약장 요약·시약 상세 보관 위치가 바뀌므로 전체를 다시 받게 한다.
+ */
+export async function placeReagentAction(input: unknown): Promise<PlaceReagentResult> {
+  const slotId = field(input, "slotId");
+  const result = await placeReagent({ reagentId: field(input, "reagentId"), slotId: slotId === undefined ? null : slotId });
   if (!result.ok) return result;
   revalidatePath("/", "layout");
   return result;

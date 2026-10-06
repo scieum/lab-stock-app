@@ -34,6 +34,11 @@
   min-width: 0;
 }
 
+.item.wide {
+  /* 화면 전체 배치(예: 화면 11 2단)를 보여 주는 구역은 2열 격자에서 전체 폭 — 실제 화면 콘텐츠 폭과 맞춘다 */
+  grid-column: 1 / -1;
+}
+
 .itemName {
   margin: 0;
   color: var(--color-text-muted);

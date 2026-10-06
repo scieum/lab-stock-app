@@ -16,7 +16,7 @@ type Props = {
 
 /**
  * 판매처 행 더보기 메뉴 ("수정" · "삭제"). 시안에는 아이콘만 있어 새 data-component 이름을 만들지 않는다 —
- * nav-pill 학교명 메뉴(components/nav-pill/school-menu.tsx)와 같은 접근성 패턴의 일반 버튼·목록이다.
+ * nav-pill 계정 메뉴(components/nav-account-menu)와 같은 접근성 패턴의 일반 버튼·목록이다.
  */
 export function VendorRowMenu({ name, defaultOpen = false, disabled, onEdit, onDelete }: Props) {
   const [open, setOpen] = useState(defaultOpen);

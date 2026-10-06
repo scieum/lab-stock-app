@@ -33,12 +33,14 @@
   flex-shrink: 0;
 }
 
-/* pill: 좌우 16, 라벨 15/600. 폭이 활성 여부로 흔들리지 않게 비활성에도 투명 테두리 */
+/* pill: 좌우 16, 라벨 15/600. 폭이 활성 여부로 흔들리지 않게 비활성에도 투명 테두리.
+ * 번호 원이 있으면 (시안 1.15 cabinet-chip) 왼쪽 12 · 번호와 이름 사이 8 */
 .pill,
 .pillActive {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: var(--space-8);
   min-height: var(--button-min-height);
   padding: 0 var(--space-16);
   border: var(--border-width) solid transparent;
@@ -52,6 +54,11 @@
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.pill:has([data-component="cabinet-number"]),
+.pillActive:has([data-component="cabinet-number"]) {
+  padding-left: var(--space-12);
 }
 
 .label {

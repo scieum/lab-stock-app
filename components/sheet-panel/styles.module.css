@@ -1,0 +1,220 @@
+/* 하단 시트 틀 (시안 1.15 slot-sheet · location-picker · qr-print-sheet):
+ * 흰 바탕, border-strong 테두리 한 줄, 위쪽 radius 24, 안쪽 24, 묶음 사이 16, 딤·그림자 없음 */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+  padding: var(--space-24);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-none);
+  box-sizing: border-box;
+}
+
+.panel:focus {
+  outline: none;
+}
+
+.panel:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+/* 모바일: tab-bar 위쪽 선에 붙는 전폭 하단 시트 (위쪽만 둥글게) */
+.sheet {
+  position: fixed;
+  right: 0;
+  bottom: var(--tab-bar-height);
+  left: 0;
+  z-index: 20;
+  max-height: calc(100% - var(--tab-bar-height) - var(--space-24));
+  border-bottom: 0;
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-none) var(--radius-none);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* 제목 줄: 왼쪽 제목(+ 칩) · 오른쪽 × (44) */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: var(--button-min-height);
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+}
+
+.close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+  margin-right: calc(var(--space-12) * -1);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.close:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.close:active {
+  opacity: var(--pressed-opacity);
+}
+
+.closeIcon {
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+}
+
+.caption {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+/* 본문: 시트에서는 길면 이 안만 스크롤 */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+  min-height: 0;
+}
+
+.sheet .body {
+  overflow-y: auto;
+  /* 포커스 테두리가 스크롤 상자에 잘리지 않게 */
+  margin: calc(var(--space-4) * -1);
+  padding: var(--space-4);
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.footer > :is(button, a) {
+  width: 100%;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.textAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  align-self: flex-start;
+  min-width: var(--button-min-height);
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-12);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.textAction:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.textAction:disabled {
+  color: var(--color-text-placeholder);
+  cursor: not-allowed;
+}
+
+.textAction:active:not(:disabled) {
+  opacity: var(--pressed-opacity);
+}
+
+.note,
+.noteStrong {
+  margin: 0;
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.note {
+  color: var(--color-text-muted);
+}
+
+.noteStrong {
+  color: var(--color-text);
+}
+
+/* 데스크톱: 화면 가운데 카드 (모서리 모두 24, 폭 560 · 640) */
+@media (min-width: 1024px) {
+  .panel {
+    width: 100%;
+    max-width: calc(var(--space-64) * 8 + var(--space-48));
+  }
+
+  .lg {
+    max-width: calc(var(--space-64) * 10);
+  }
+
+  .sheet {
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    left: 50%;
+    width: calc(100% - var(--space-64));
+    max-height: calc(100% - var(--space-64));
+    border-bottom: var(--border-width) solid var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    transform: translate(-50%, -50%);
+  }
+
+  .sectionTitle {
+    font-size: var(--font-size-17);
+  }
+}

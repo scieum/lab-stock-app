@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { NavAccountMenu } from "@/components/nav-account-menu";
 import { BadgeOverlay } from "@/components/badge-overlay";
 import { Toast } from "@/components/ex-toast";
 import { ManualUpload } from "@/components/manual-upload";
@@ -133,6 +134,10 @@ export default function GalleryManualPage() {
 
         <Item id="demo" name="동작 데모 — 파일 + 조 수 → AI 추출(가짜 결과) → 처리 중 → 추출 결과 확인 → 확인 후 저장">
           <ManualFlowDemo reagents={sampleReagents} extracted={demoExtracted} />
+        </Item>
+
+        <Item id="account-menu" name="nav-account-menu — 학교명 옆 ▾ (로그인 후 셸 공통, 디자인 1.15)">
+          <NavAccountMenu schoolName="샘플고등학교" />
         </Item>
       </div>
     </main>

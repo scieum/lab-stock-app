@@ -28,6 +28,7 @@ type Rules = {
   button: { min_height: number };
   roles: { R1: { role: string; component: string; max: number } };
   tab_bar: { component: string; item: string };
+  app_exceptions: Record<string, string>;
 };
 type Dev = { components: Record<string, number[]>; routes: Record<string, string> };
 
@@ -442,7 +443,10 @@ test(`[K1][S${S5}] /gallery DOM 에 새 컴포넌트 badge-overlay · extraction
 
 test(`[K1][S${S5}] /gallery/manual DOM 에 화면 ${S5} 컴포넌트(dev-rules, nav-pill·tab-bar 제외)가 각각 1개 이상, 새 data-component 이름 없음, 가로 넘침 없음, 핑크 없음`, async ({ page }) => {
   const want = screenComponents(S5);
-  expect(want.sort(), "dev-rules 화면 5 컴포넌트").toEqual([OVERLAY, OUTLINE, PRIMARY, CELL, TOAST, TABLE, UPLOAD, INPUT].sort());
+  // 공통 셸 예외(rules.json app_exceptions — 디자인 1.15 nav-account-menu)는 시안 5 프레임에 없고 dev-rules 가 화면 5 에 더한다
+  const shellExceptions = componentNames.filter((n) => n in rules.app_exceptions && dev.components[n].includes(S5));
+  expect(shellExceptions, "app_exceptions 중 화면 5 셸 컴포넌트 (nav-account-menu)").toEqual(["nav-account-menu"]);
+  expect(want.sort(), "dev-rules 화면 5 컴포넌트").toEqual([OVERLAY, OUTLINE, PRIMARY, CELL, TOAST, TABLE, UPLOAD, INPUT, ...shellExceptions].sort());
   await open(page, GALLERY_MANUAL);
   for (const n of want) expect(await page.locator(sel(n)).count(), `/gallery/manual ${n}`).toBeGreaterThanOrEqual(1);
   await expectKnownNames(page);

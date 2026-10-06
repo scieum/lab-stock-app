@@ -1,6 +1,6 @@
 // 화면 11 (시약장 설정, dev-rules.json routes["11"]) e2e 도우미.
 // 기준: 디자인 run 20261004-2256 s2-spec "## 화면 11"·"## 상태 화면 11-empty"·"## 상태 화면 11-delete",
-//       design/frames/11-*.json, design/rules.json(cabinet·roles R7·screens_required·variants·tab_bar), harness/d7-data.md §9,
+//       디자인 run 20261006-1223 s2-spec (1.15: cabinet-number · slot-count · 11-slot · 11-print · 11-unsaved), design/frames/11-*.json, design/rules.json(cabinet·roles R7·screens_required·variants·tab_bar), harness/d7-data.md §9,
 //       harness/dev-rules.json(route_auth 11·11_note·components).
 //
 // 절대 규칙 (공용 테스트 계정 4개 · 학교 A·B · 실사용 학교 · 데모 학교):
@@ -46,6 +46,7 @@ type CabinetRules = {
     default_name: string;
     unassigned_label: string;
     manage_roles: string[];
+    qr_label_text: string[];
   };
   variants: Record<string, Record<string, string[]>>;
   screens_required: Record<string, string[] | string>;
@@ -90,6 +91,13 @@ export const SLOT = "cabinet-slot";
 export const CHIP = "storage-class-chip";
 export const MIX = "mix-warning";
 export const ROW = "reagent-row";
+export const NUMBER = "cabinet-number";
+export const COUNT = "slot-count";
+export const SLOT_SHEET = "slot-sheet";
+export const SLOT_ASSIGN = "slot-assign";
+export const QR_PRINT = "qr-print";
+export const QR_SHEET = "qr-print-sheet";
+export const QR_LABEL = "qr-label";
 export const MODAL = "ex-modal-card";
 export const EMPTY = "ex-empty-state-card";
 export const TOAST = "ex-toast";
@@ -122,6 +130,13 @@ export const SHRINK_NOTICE = /이 변경으로 시약 \d+종이 '칸 없음'이 
 export const unassignedHeading = (n: number) => `${CAB.unassigned_label} 시약 (${n})`;
 export const UNASSIGNED_HEADING = /^\s*칸 없음 시약 \((\d+)\)\s*$/;
 export const ACTIVE_TAB_LABEL = "시약";
+/** s2-spec 11-slot · 11-print · 3-location: 시트 오른쪽 위 × (읽기 이름 "닫기") */
+export const CLOSE_LABEL = "닫기";
+/** s2-spec 11-unsaved · rules.json cabinet.unsaved_confirm */
+export const UNSAVED_TITLE = "저장하지 않은 변경이 있어요";
+export const unsavedBody = (label: string) => `이동하면 ${label}에서 바꾼 내용이 사라져요`;
+export const DISCARD_BUTTON = "버리고 이동";
+export const CONTINUE_BUTTON = "계속 편집";
 /** s2-spec 화면 11 mix-warning 예시 문구 (좌1단 = 산 + 염기) */
 export const MIX_EXAMPLE = "좌1단: 산과 염기는 섞이면 위험해요. 다른 칸에 나눠 보관하세요";
 /** d7 §9: "{칸}: {A}과 {B}는 섞이면 위험해요. 다른 칸에 나눠 보관하세요" (조사는 받침에 따라 과/와 · 은/는) */
@@ -164,7 +179,8 @@ export const switcher = (page: Page) => main(page).locator(sel(SWITCHER));
 /** 시약장 pill (cabinet-add 는 pill 이 아니다) */
 export const pills = (page: Page) => switcher(page).locator(`a:not(${sel(ADD)}), button:not(${sel(ADD)})`);
 export const activePills = (page: Page) => switcher(page).locator('[aria-current]:not([aria-current="false"])');
-export const pill = (page: Page, label: string) => pills(page).filter({ hasText: exact(label) });
+/** 이름이 label 인 pill (1.15: pill 글자 = cabinet-number + 이름 — 이름 부분으로 찾는다) */
+export const pill = (page: Page, label: string) => pills(page).filter({ has: page.getByText(exact(label)) });
 export const addButton = (page: Page) => main(page).locator(sel(ADD));
 export const edit = (page: Page) => main(page).locator(sel(EDIT));
 export const slots = (page: Page) => main(page).locator(sel(SLOT));
@@ -192,6 +208,33 @@ export const doorRadio = (page: Page, door: string) => main(page).locator(sel(DO
 export const shelfRadio = (page: Page, shelves: number) => main(page).locator(sel(SHELF_SELECT)).getByRole("radio", { name: exact(`${shelves}단`) });
 export const unassignedTitle = (page: Page) => main(page).getByRole("heading", { name: UNASSIGNED_HEADING });
 export const notice = (page: Page) => main(page).getByText(SHRINK_NOTICE);
+/** 칸 시트 (s2-spec 11-slot) — 모든 역할이 칸을 누르면 열린다 */
+export const slotSheet = (page: Page) => page.locator(sel(SLOT_SHEET));
+export const sheetClose = (sheet: Locator) => sheet.getByRole("button", { name: exact(CLOSE_LABEL) });
+
+/** 저장 안 한 편집 확인 카드 (ex-modal-card "저장하지 않은 변경이 있어요") */
+export const unsavedDialog = (page: Page) => page.getByRole("dialog", { name: exact(UNSAVED_TITLE) });
+
+/**
+ * 브라우저 기본 확인(beforeunload, d7 §14 "새로고침·창 닫기는 브라우저 기본 확인")을 받아들이고 그 수를 센다.
+ * Playwright 는 처리기가 없으면 대화상자를 닫아(dismiss) 이동이 취소된다.
+ */
+export function acceptBeforeUnload(page: Page): { count: () => number } {
+  let n = 0;
+  page.on("dialog", (d) => {
+    if (d.type() === "beforeunload") n += 1;
+    void d.accept().catch(() => undefined);
+  });
+  return { count: () => n };
+}
+
+/** 열린 칸 시트를 × 로 닫는다 */
+export async function closeSlotSheet(page: Page): Promise<void> {
+  const sheet = slotSheet(page);
+  await expect(sheet, `${SLOT_SHEET} 열림`).toHaveCount(1);
+  await sheetClose(sheet).click();
+  await expect(sheet, `${SLOT_SHEET} 닫힘`).toHaveCount(0);
+}
 
 /** 요소가 하이드레이션됐는지 (하이드레이션 전 누름은 아무 일도 하지 않는다) */
 export async function hydrated(l: Locator): Promise<void> {
@@ -233,10 +276,15 @@ export async function pickShelves(page: Page, shelves: number): Promise<void> {
   await expect(shelfRadio(page, shelves), `단 수 "${shelves}단" 선택`).toBeChecked();
 }
 
-/** 칸 고르기 → 그 칸만 선택 상태 */
+/**
+ * 칸 고르기 → 그 칸만 선택 상태 (교사·admin).
+ * 1.15: 칸을 누르면 칸 시트(slot-sheet)가 열리고 같은 누름으로 그 칸이 선택 칸이 된다(s2-spec 11-slot) — 분류 칩은 시트를 × 로 닫고 고친다.
+ */
 export async function selectSlot(page: Page, door: string, key: string): Promise<Locator> {
   const slot = slotAt(page, door, key);
   await slot.click();
+  await expect(slotSheet(page), `칸 ${key} 을 누르면 ${SLOT_SHEET}`).toBeVisible();
+  await closeSlotSheet(page);
   await expect(slot, `칸 ${key} 선택`).toHaveAttribute("aria-pressed", "true");
   await expect(main(page).locator(`${sel(SLOT)}[aria-pressed="true"]`), "선택된 칸은 하나").toHaveCount(1);
   return slot;
@@ -258,32 +306,58 @@ export async function setClasses(page: Page, classes: readonly string[]): Promis
 /** 칸 안 글자 → 분류 이름 목록 (보이는 순서). 분류가 없으면 ["미지정"] */
 export const tokensOf = (text: string) => text.split(/[^가-힣A-Za-z0-9]+/).filter(Boolean);
 
-export type ShownSlot = { tokens: string[]; warning: boolean; pressed: string | null; tag: string };
+export type ShownSlot = { tokens: string[]; count: number; warning: boolean; pressed: string | null; tag: string };
 
-/** 배치도의 모든 칸 (읽는 순서): 글자·경고 아이콘·선택 상태·태그 */
-export async function readSlots(page: Page): Promise<ShownSlot[]> {
-  const list = await slots(page).evaluateAll((els) =>
-    els.map((el) => ({
-      text: (el as HTMLElement).innerText,
-      warning: el.querySelector("svg") !== null,
-      pressed: el.getAttribute("aria-pressed"),
-      tag: el.tagName,
-    })),
+/**
+ * 배치도의 모든 칸 (읽는 순서): 분류 글자·slot-count 숫자·경고 아이콘·선택 상태·태그.
+ * 1.15: 칸 안 slot-count(시약 수) 는 분류 글자에서 떼어 count 로 읽는다 (없으면 0). scope 기본 = 화면 본문(main)
+ */
+export async function readSlots(page: Page, scope: Locator = main(page)): Promise<ShownSlot[]> {
+  const list = await scope.locator(sel(SLOT)).evaluateAll(
+    (els, countSel) =>
+      els.map((el) => {
+        const counts = Array.from(el.querySelectorAll(countSel)).map((c) => (c.textContent ?? "").trim());
+        // 보이는 글자에서 slot-count 를 뺀다: slot-count 를 잠깐 숨기고 innerText 를 읽는다
+        const hidden = Array.from(el.querySelectorAll<HTMLElement>(countSel));
+        const prev = hidden.map((h) => h.style.display);
+        for (const h of hidden) h.style.display = "none";
+        const text = (el as HTMLElement).innerText;
+        hidden.forEach((h, i) => (h.style.display = prev[i]));
+        return { text, counts, warning: el.querySelector("svg") !== null, pressed: el.getAttribute("aria-pressed"), tag: el.tagName };
+      }),
+    sel(COUNT),
   );
-  return list.map((s) => ({ tokens: s.text.split(/[^가-힣A-Za-z0-9]+/).filter(Boolean), warning: s.warning, pressed: s.pressed, tag: s.tag }));
+  return list.map((s) => {
+    expect(s.counts.length, `칸 하나에 ${COUNT} 는 0~1개`).toBeLessThanOrEqual(1);
+    if (s.counts.length) expect(s.counts[0], `${COUNT} 는 숫자`).toMatch(/^\d+$/);
+    const tokens = s.text.split(/[^가-힣A-Za-z0-9]+/).filter(Boolean);
+    expect(tokens.filter((t) => /\d/.test(t)), "칸 분류 글자에 숫자 없음 (숫자는 slot-count 뿐)").toEqual([]);
+    return { tokens, count: s.counts.length ? Number(s.counts[0]) : 0, warning: s.warning, pressed: s.pressed, tag: s.tag };
+  });
 }
 
 /** 칸에 보여야 하는 글자: 분류 이름(규칙 순서), 없으면 "미지정" */
 export const shownTokens = (classes: readonly string[]) => (sortClasses(classes).length ? sortClasses(classes) : [UNSET]);
 
-/** 배치도가 기대(칸 키 → 분류)와 같은지: 칸 수 = 문 형태 × 단 수, 칸마다 분류 글자(규칙 순서)·경고 아이콘 */
-export async function expectBoard(page: Page, door: string, shelves: number, want: Record<string, readonly string[]>, what: string): Promise<void> {
+/**
+ * 배치도가 기대(칸 키 → 분류)와 같은지: 칸 수 = 문 형태 × 단 수, 칸마다 분류 글자(규칙 순서)·경고 아이콘.
+ * counts(칸 키 → 시약 수, DB)를 주면 칸마다 slot-count = 그 수 (0 이면 slot-count 없음 — d7 §14 "0 이면 표시 안 함")
+ */
+export async function expectBoard(
+  page: Page,
+  door: string,
+  shelves: number,
+  want: Record<string, readonly string[]>,
+  what: string,
+  counts?: Record<string, number>,
+): Promise<void> {
   const keys = gridKeys(door, shelves);
   await expect(slots(page), `${what}: 칸 수 = ${door} × ${shelves}단`).toHaveCount(keys.length);
   await expect(async () => {
     const shown = await readSlots(page);
     expect(shown.map((s) => s.tokens), `${what}: 칸 글자 (읽는 순서 ${keys.join(" ")})`).toEqual(keys.map((k) => shownTokens(want[k] ?? [])));
     expect(shown.map((s) => s.warning), `${what}: 칸 경고 아이콘`).toEqual(keys.map((k) => incompatiblePairsIn(want[k] ?? []).length > 0));
+    if (counts) expect(shown.map((s) => s.count), `${what}: 칸마다 ${COUNT} = DB 그 칸 시약 수 (읽는 순서 ${keys.join(" ")})`).toEqual(keys.map((k) => counts[k] ?? 0));
   }).toPass({ timeout: 15_000 });
 }
 
@@ -302,23 +376,62 @@ export async function expectMix(page: Page, door: string, shelves: number, want:
   for (const re of lines) expect(texts.some((t) => re.test(t)), `${what}: 경고 줄 ${re} (보이는 줄: ${texts.join(" / ")})`).toBe(true);
 }
 
-/** 시약장 이름 + 요약 — 시안 11 프레임 "양문형 · 4단 · 8칸" (칸 수 = 문 형태 × 단 수) */
-export async function expectHeader(page: Page, label: string, door: string, shelves: number, what: string): Promise<void> {
+/** 폭 390(dev-rules viewports.mobile) 화면인지 */
+export const isMobile = (page: Page) => page.viewportSize()!.width === devRules.viewports.mobile[0];
+
+export const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * 시약장 이름 + 요약 — 시안 1.15: 데스크톱 11-desktop "양문형 · 4단 · 8칸", 모바일 11-mobile "양문형 · 4단" (칸 수 = 문 형태 × 단 수).
+ * number 를 주면 제목 앞 cabinet-number = 그 번호 (DB cabinets.number).
+ */
+export async function expectHeader(page: Page, label: string, door: string, shelves: number, what: string, number?: number): Promise<void> {
   await expect(title(page, label), `${what}: 시약장 이름 "${label}"`).toHaveCount(1);
   await expect(title(page, label)).toBeVisible();
-  const text = `${door} · ${shelves}단 · ${slotCount(door, shelves)}칸`;
-  const meta = main(page).getByText(exact(text));
-  await expect(meta, `${what}: 요약 "${text}"`).toHaveCount(1);
-  await expect(meta).toBeVisible();
+  const text = isMobile(page) ? `${door} · ${shelves}단` : `${door} · ${shelves}단 · ${slotCount(door, shelves)}칸`;
+  const head = title(page, label).locator("xpath=..");
+  await expect
+    .poll(async () => (await head.innerText()).replace(/\s+/g, " ").trim(), { message: `${what}: 제목 줄 = [번호] 이름 + 요약 "${text}"` })
+    .toMatch(new RegExp(`(^|\\s)${escapeRe(label)} ?${escapeRe(text)}$`));
+  if (number !== undefined) {
+    await expect(head.locator(sel(NUMBER)), `${what}: 제목 앞 ${NUMBER} 1개`).toHaveCount(1);
+    await expect(head.locator(sel(NUMBER)), `${what}: 제목 ${NUMBER} = DB number ${number}`).toHaveText(exact(String(number)));
+  }
 }
 
-/** 활성 pill 은 정확히 하나이고 그 이름이다 */
-export async function expectActive(page: Page, label: string, what: string): Promise<void> {
+/** 전환 pill 마다 {cabinet-number 숫자, 이름} (pill 글자에서 번호 원을 뗀 나머지가 이름) */
+export async function readPills(page: Page, scope: Locator = switcher(page)): Promise<{ number: number | null; label: string }[]> {
+  const list = await scope.locator(`a:not(${sel(ADD)}), button:not(${sel(ADD)})`).evaluateAll(
+    (els, numSel) =>
+      els.map((el) => {
+        const nums = Array.from(el.querySelectorAll(numSel)).map((n) => (n.textContent ?? "").trim());
+        const clone = el.cloneNode(true) as HTMLElement;
+        for (const n of Array.from(clone.querySelectorAll(numSel))) n.remove();
+        return { nums, label: (clone.textContent ?? "").replace(/\s+/g, " ").trim() };
+      }),
+    sel(NUMBER),
+  );
+  return list.map((p) => {
+    expect(p.nums.length, `pill "${p.label}" 의 ${NUMBER} 는 0~1개`).toBeLessThanOrEqual(1);
+    return { number: p.nums.length ? Number(p.nums[0]) : null, label: p.label };
+  });
+}
+
+/** 활성 pill 은 정확히 하나이고 그 이름이다 (number 를 주면 pill 의 cabinet-number 도) */
+export async function expectActive(page: Page, label: string, what: string, number?: number): Promise<void> {
   await expect(activePills(page), `${what}: 활성 pill 1개`).toHaveCount(1);
-  await expect(activePills(page), `${what}: 활성 pill = "${label}"`).toHaveText(exact(label));
+  await expect(activePills(page).getByText(exact(label)), `${what}: 활성 pill = "${label}"`).toHaveCount(1);
+  if (number !== undefined) await expect(activePills(page).locator(sel(NUMBER)), `${what}: 활성 pill 번호 = ${number}`).toHaveText(exact(String(number)));
 }
 
-export const pillLabels = async (page: Page) => (await pills(page).allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim());
+/** pill 이름들 (cabinet-number 를 뗀 글자) — 번호까지는 readPills */
+export const pillLabels = async (page: Page) => (await readPills(page)).map((p) => p.label);
+
+/** pill = DB 시약장 (번호 순): 번호(cabinet-number) = DB number · 이름 = DB label */
+export async function expectPills(page: Page, cabinets: readonly { number: number; label: string }[], what: string): Promise<void> {
+  const want = [...cabinets].sort((a, b) => a.number - b.number).map((c) => ({ number: c.number, label: c.label }));
+  await expect.poll(() => readPills(page), { message: `${what}: pill = DB 시약장 (번호 순 · 번호 = cabinets.number)`, timeout: 15_000 }).toEqual(want);
+}
 
 /** 서버 액션 요청(쓰기 요청) 수 — Next 서버 액션 = POST + next-action 헤더 */
 export function watchActions(page: Page): { count: () => number } {
@@ -373,13 +486,19 @@ export async function expectTabBar(page: Page, viewport: ViewportName, state: st
 // ======================================================================
 
 export type Row = Record<string, unknown>;
-export type DbCabinet = { id: string; label: string; door_type: string; shelves: number; created_at: string };
+export type DbCabinet = { id: string; number: number; label: string; door_type: string; shelves: number; created_at: string };
 export type DbView = {
   cabinets: DbCabinet[];
   /** 시약장 id → 칸 키("L1") → 분류 (규칙 순서) */
   classes: Record<string, Record<string, string[]>>;
   /** 시약장 id → 배치된 시약 수 */
   placed: Record<string, number>;
+  /** 시약장 id → 칸 키("L1") → 그 칸 시약 수 (slot-count) */
+  counts: Record<string, Record<string, number>>;
+  /** 시약장 id → 칸 키 → 그 칸 시약 (이름순) */
+  inSlot: Record<string, Record<string, { id: string; name: string; storage_class: string | null }[]>>;
+  /** 시약장 id → 칸 키 → 칸 행 id */
+  slotIds: Record<string, Record<string, string>>;
   /** 칸 없음 시약 */
   unassigned: { id: string; name: string; stock: number; unit: string }[];
   /** 모든 시약 이름 */
@@ -392,9 +511,9 @@ function classesOfRow(s: Row): string[] {
 }
 
 async function viewOf(client: SupabaseClient, schoolId?: string): Promise<DbView> {
-  let cq = client.from("cabinets").select("id, label, door_type, shelves, created_at").order("created_at").order("id");
+  let cq = client.from("cabinets").select("id, number, label, door_type, shelves, created_at").order("created_at").order("id");
   let sq = client.from("cabinet_slots").select("*");
-  let rq = client.from("reagents").select("id, name, stock, unit, slot_id").order("name").order("id");
+  let rq = client.from("reagents").select("id, name, stock, unit, slot_id, storage_class").order("name").order("id");
   if (schoolId) {
     cq = cq.eq("school_id", schoolId);
     sq = sq.eq("school_id", schoolId);
@@ -407,24 +526,45 @@ async function viewOf(client: SupabaseClient, schoolId?: string): Promise<DbView
   const reagents = (r.data ?? []) as Row[];
   const classes: DbView["classes"] = {};
   const placed: DbView["placed"] = {};
+  const counts: DbView["counts"] = {};
+  const inSlot: DbView["inSlot"] = {};
+  const slotIds: DbView["slotIds"] = {};
   const cabinetOfSlot = new Map<string, string>();
+  const keyOfSlot = new Map<string, string>();
   for (const cab of cabinets) {
+    cab.number = Number(cab.number);
     classes[cab.id] = {};
     placed[cab.id] = 0;
+    counts[cab.id] = {};
+    inSlot[cab.id] = {};
+    slotIds[cab.id] = {};
   }
   for (const row of slotRows) {
     const cabId = row.cabinet_id as string;
+    const key = `${row.side}${row.shelf}`;
     cabinetOfSlot.set(row.id as string, cabId);
-    if (classes[cabId]) classes[cabId][`${row.side}${row.shelf}`] = classesOfRow(row);
+    keyOfSlot.set(row.id as string, key);
+    if (classes[cabId]) {
+      classes[cabId][key] = classesOfRow(row);
+      slotIds[cabId][key] = row.id as string;
+    }
   }
   for (const re of reagents) {
     const cabId = re.slot_id ? cabinetOfSlot.get(re.slot_id as string) : undefined;
-    if (cabId && placed[cabId] !== undefined) placed[cabId] += 1;
+    if (cabId && placed[cabId] !== undefined) {
+      placed[cabId] += 1;
+      const key = keyOfSlot.get(re.slot_id as string)!;
+      counts[cabId][key] = (counts[cabId][key] ?? 0) + 1;
+      (inSlot[cabId][key] ??= []).push({ id: re.id as string, name: re.name as string, storage_class: (re.storage_class as string | null) ?? null });
+    }
   }
   return {
     cabinets,
     classes,
     placed,
+    counts,
+    inSlot,
+    slotIds,
     unassigned: reagents.filter((re) => !re.slot_id).map((re) => ({ id: re.id as string, name: re.name as string, stock: Number(re.stock), unit: re.unit as string })),
     reagentNames: reagents.map((re) => re.name as string),
   };
@@ -454,13 +594,13 @@ export async function sharedCabinetSnapshot(): Promise<string[]> {
   const ids = (schools.data ?? []).map((s) => s.id as string);
   expect(ids.length, "대조: 학교 A·B·데모 학교").toBeGreaterThanOrEqual(3);
   const [c, s, r] = await Promise.all([
-    sb.from("cabinets").select("id, school_id, label, door_type, shelves").in("school_id", ids),
+    sb.from("cabinets").select("id, school_id, number, label, door_type, shelves").in("school_id", ids),
     sb.from("cabinet_slots").select("*").in("school_id", ids),
     sb.from("reagents").select("id, slot_id").in("school_id", ids).not("slot_id", "is", null),
   ]);
   for (const q of [c, s, r]) if (q.error) throw new Error(`대조 조회 실패: ${q.error.message}`);
   return [
-    ...(c.data ?? []).map((x) => `cabinet|${x.school_id}|${x.id}|${x.label}|${x.door_type}|${x.shelves}`),
+    ...(c.data ?? []).map((x) => `cabinet|${x.school_id}|${x.id}|${x.number}|${x.label}|${x.door_type}|${x.shelves}`),
     ...((s.data ?? []) as Row[]).map((x) => `slot|${x.cabinet_id}|${x.id}|${x.side}${x.shelf}|${classesOfRow(x).join("+")}|${x.storage_class ?? ""}`),
     ...(r.data ?? []).map((x) => `placed|${x.id}|${x.slot_id}`),
   ].sort();
@@ -493,13 +633,20 @@ export async function makeFixture(info: TestInfo, group: string): Promise<S11Fix
   return { school, admin: school.admin, teacher, student, prep };
 }
 
-/** 일회용 학교의 시약·시약장·칸을 비운다 (service role — 준비) */
+/**
+ * 일회용 학교의 시약·시약장·칸을 비운다 (service role — 준비).
+ * 시약장 번호는 학교의 마지막 번호(schools.cabinet_seq)를 이어 쓰므로(d7 §14 삭제된 번호 재사용 안 함),
+ * 다음 테스트가 "새 학교"(1번부터)에서 시작하도록 이 일회용 학교의 cabinet_seq 만 0 으로 되돌린다.
+ */
 export async function purgeSchool(schoolId: string): Promise<void> {
   const sb = service();
   const r = await sb.from("reagents").delete().eq("school_id", schoolId);
   expect(r.error, `일회용 학교 시약 정리: ${r.error?.message}`).toBeNull();
   const c = await sb.from("cabinets").delete().eq("school_id", schoolId);
   expect(c.error, `일회용 학교 시약장 정리: ${c.error?.message}`).toBeNull();
+  const s = await sb.from("schools").update({ cabinet_seq: 0 }).eq("id", schoolId).like("neis_code", "S8UI-%").select("id");
+  expect(s.error, `일회용 학교 cabinet_seq 되돌리기: ${s.error?.message}`).toBeNull();
+  expect(s.data ?? [], "되돌린 학교 = 이 일회용 학교").toHaveLength(1);
 }
 
 function firstRow(data: unknown): Row {
@@ -530,12 +677,15 @@ export async function prepRename(f: S11Fixture, cabinetId: string, label: string
 
 export type PrepReagent = { id: string; name: string; stock: number; unit: string };
 
-/** 준비: 임시 시약 (DB 함수 register_reagent — admin 세션). 새 시약은 "칸 없음" (d7 §6·§9) */
-export async function prepReagent(f: S11Fixture, tag: string, stock = 7, unit = "g"): Promise<PrepReagent> {
-  const name = `임시시약-${tag}-${randomBytes(3).toString("hex")}`;
+/**
+ * 준비: 임시 시약 (DB 함수 register_reagent — admin 세션). 새 시약은 "칸 없음" (d7 §6·§9).
+ * cls = 시약 보관 분류(기본 = 규칙의 첫 분류), name 을 주면 그 이름 그대로 (토스트 조사를 정하려고 끝 글자를 고를 때)
+ */
+export async function prepReagent(f: S11Fixture, tag: string, stock = 7, unit = "g", cls: string | null = CLASSES[0], name?: string): Promise<PrepReagent> {
+  name ??= `임시시약-${tag}-${randomBytes(3).toString("hex")}`;
   const res = await f.prep.rpc("register_reagent", {
     p_name: name,
-    p_storage_class: CLASSES[0],
+    p_storage_class: cls,
     p_stock: stock,
     p_unit: unit,
     p_intake_date: "2026-09-15",
@@ -547,15 +697,20 @@ export async function prepReagent(f: S11Fixture, tag: string, stock = 7, unit = 
   return { id: row.id as string, name, stock, unit };
 }
 
-/** 준비: 시약을 칸에 배치 — admin 세션의 reagents.slot_id update (d7 §9). 막혀 있으면 service role 로 한다 */
+/**
+ * 준비: 시약을 칸에 배치 — 일회용 교사 세션의 DB 함수 place_reagent (d7 §14: 배치는 함수 경유, slot_id 직접 update 는 닫힘).
+ * service role 로 대신하지 않는다 — 함수가 실패하면 준비 실패로 알린다.
+ */
 export async function prepPlace(f: S11Fixture, reagentId: string, cabinetId: string, key: string): Promise<void> {
   const slot = (await slotRowsByService(cabinetId)).find((s) => `${s.side}${s.shelf}` === key);
   if (!slot) throw new Error(`준비: 칸 ${key} 행이 없음`);
-  const up = await f.prep.from("reagents").update({ slot_id: slot.id }).eq("id", reagentId).select("id");
-  if (!up.error && (up.data ?? []).length === 1) return;
-  const forced = await service().from("reagents").update({ slot_id: slot.id }).eq("id", reagentId).select("id");
-  expect(forced.error, `준비: service role 배치 (${forced.error?.message})`).toBeNull();
-  expect(forced.data ?? []).toHaveLength(1);
+  const teacher = await clientFor(f.teacher);
+  const res = await teacher.rpc("place_reagent", { p_reagent_id: reagentId, p_slot_id: slot.id });
+  expect(res.error, `준비: 교사 place_reagent (${res.error?.code} ${res.error?.message})`).toBeNull();
+  const out = (Array.isArray(res.data) ? res.data[0] : res.data) as Row | null;
+  expect(out?.slot_id, "준비: place_reagent 반환 slot_id").toBe(slot.id);
+  const now = await service().from("reagents").select("slot_id").eq("id", reagentId).single();
+  expect(now.data?.slot_id, "준비: 배치 반영 (대조 조회)").toBe(slot.id);
 }
 
 /** s2-spec 화면 11 예시 상태의 1번 시약장 칸 분류 (양문형 4단) */
@@ -574,7 +729,10 @@ export const FRAME_LAYOUT: Record<string, string[]> = {
   R4: ["기타"],
 };
 
-export type S11Residue = Residue & { cabinets: number; cabinet_slots: number; reagents: number; intake_logs: number; usage_logs: number };
+/** s2-spec 1.15 화면 11 예시 "칸별 시약 수: 좌1단 2, 좌2단 3, 우1단 1, 우3단 1" (프레임 11 slot-count 4개) */
+export const FRAME_COUNTS: Record<string, number> = { L1: 2, L2: 3, R1: 1, R3: 1 };
+
+export type S11Residue =Residue & { cabinets: number; cabinet_slots: number; reagents: number; intake_logs: number; usage_logs: number };
 export const NO_S11_RESIDUE: S11Residue = { users: 0, schools: 0, invites: 0, profiles: 0, cabinets: 0, cabinet_slots: 0, reagents: 0, intake_logs: 0, usage_logs: 0 };
 
 /** 이 묶음(group)·프로젝트의 일회용 학교·계정과 그 학교의 시약·시약장을 지우고 남은 수를 돌려준다 */

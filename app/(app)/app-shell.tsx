@@ -43,11 +43,20 @@ function activeTab(pathname: string): TabKey | undefined {
   return undefined;
 }
 
-type SubPage = { title: string; backHref: string; links?: { label: string; href: string; active?: boolean }[] };
+type SubPage = {
+  title: string;
+  backHref: string;
+  links?: { label: string; href: string; active?: boolean }[];
+  /**
+   * true = 데스크톱 nav 는 최상위 화면처럼 워드마크 + 주 메뉴(현재 섹션 표시), 뒤로가기·제목은 본문 page-header 가 맡는다
+   * (시안 1.15 3-desktop). 모바일은 그대로 뒤로가기 + 제목
+   */
+  mainNav?: boolean;
+};
 
 /** 하위 화면 (시안: nav-pill = 뒤로가기 + 제목 + 학교명. 화면 4 데스크톱은 링크 2개) */
 function subPage(pathname: string, staff: boolean): SubPage | undefined {
-  if (/^\/reagents\/[^/]+\/?$/.test(pathname)) return { title: "시약 상세", backHref: "/reagents" };
+  if (/^\/reagents\/[^/]+\/?$/.test(pathname)) return { title: "시약 상세", backHref: "/reagents", mainNav: true };
   if (/^\/usage\/new\/?$/.test(pathname)) {
     // 시안 4-desktop nav-links: 시약 목록(활성) · 재주문 알림 (재주문 알림은 교사·admin 만 — 학생 nav 에는 없다)
     return {
@@ -112,7 +121,7 @@ async function logout() {
 export function AppShell({ schoolName, staff = false, admin = false, children }: Props) {
   const pathname = usePathname();
   const sub = subPage(pathname, staff);
-  const links: NavLinkItem[] | undefined = sub
+  const links: NavLinkItem[] | undefined = sub && !sub.mainNav
     ? sub.links
     : LINKS.filter((l) => (staff || !l.staffOnly) && (admin || !l.adminOnly)).map((l) => ({
         label: l.label,
@@ -127,6 +136,7 @@ export function AppShell({ schoolName, staff = false, admin = false, children }:
           links={links}
           title={sub?.title}
           backHref={sub?.backHref}
+          desktopWordmark={sub?.mainNav}
           sectionTitle={sub ? undefined : sectionTitle(pathname)}
           onLogout={logout}
         />

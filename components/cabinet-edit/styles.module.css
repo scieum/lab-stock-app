@@ -17,6 +17,15 @@
   gap: var(--space-8);
 }
 
+/* 왼쪽 묶음: "이름 바꾸기" + qr-print (시안 1.15 manage-actions, 사이 8) */
+.manageActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
 .manage .rename {
   height: var(--button-min-height);
 }
@@ -110,6 +119,21 @@
   min-width: 0;
 }
 
+/* 입력 + 글자 수 + caption "번호 N은 바뀌지 않아요" (s2-spec 화면 11 이름 시트) */
+.sheetField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.sheetCaption {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-tight);
+}
+
 .sheetActions {
   display: flex;
   flex-direction: column;
@@ -143,6 +167,122 @@
   color: var(--color-text);
   font-size: var(--font-size-13);
   line-height: var(--line-height-normal);
+}
+
+/* ───────── 디자인 1.15 화면 11 본문 배치 (CabinetScreen) · 편집 패널 (layout="panel") ───────── */
+
+/* 학생(편집 없음): 한 열, 블록 사이 24 */
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  min-width: 0;
+}
+
+.sTop,
+.sBoard,
+.sBottom {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  min-width: 0;
+}
+
+/* 교사·admin 모바일: 한 열 격자. 1 top · 2~6 편집 패널(subgrid) · 3 배치도(패널 사이 줄에 겹침) · 7 칸 없음 목록 */
+.screenEdit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: var(--space-24);
+}
+
+.screenEdit > .sTop {
+  grid-row: 1;
+  grid-column: 1;
+}
+
+.screenEdit > .sBoard {
+  position: relative;
+  z-index: 1;
+  grid-row: 3;
+  grid-column: 1;
+}
+
+.screenEdit > .sBottom {
+  grid-row: 7;
+  grid-column: 1;
+}
+
+.screenEdit > .panel {
+  display: grid;
+  grid-row: 2 / 7;
+  grid-column: 1;
+  grid-template-rows: subgrid;
+  gap: var(--space-24);
+}
+
+.pHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+  grid-row: 1;
+}
+
+.pPicker {
+  grid-row: 3;
+  min-width: 0;
+}
+
+.pWarning {
+  grid-row: 4;
+  min-width: 0;
+}
+
+.pWarning:empty {
+  display: none;
+}
+
+.pFooter {
+  grid-row: 5;
+  min-width: 0;
+}
+
+/* 패널을 CabinetScreen 밖에서 쓸 때(갤러리 단독): 세로 묶음 */
+.panel:not(.screenEdit > .panel) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+/* 시약장 제목 줄 (시안 cabinet-header: 번호 · 이름 20/700 · 요약 12 회색, 사이 8) */
+.title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.titleText {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.titleMeta {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
+/* 칸 수 " · 8칸" 은 데스크톱에서만 (시안 11-mobile 은 "양문형 · 4단") */
+.titleMetaWide {
+  display: none;
 }
 
 @media (min-width: 1024px) {
@@ -219,5 +359,44 @@
   .sticky {
     position: static;
     padding: var(--space-0);
+  }
+}
+
+/* 디자인 1.15 11-desktop: 왼쪽 열 860 · 사이 32 · 오른쪽 편집 카드 420. 맨 아래 1fr 줄이 카드의 남는 높이를 받아
+ * 왼쪽 열 블록 사이가 벌어지지 않는다 */
+@media (min-width: 1024px) {
+  .screenEdit {
+    grid-template-columns: minmax(0, 43fr) minmax(0, 21fr);
+    grid-template-rows: auto auto auto 1fr;
+    column-gap: var(--space-32);
+  }
+
+  .screenEdit > .sTop {
+    grid-row: 1;
+  }
+
+  .screenEdit > .sBoard {
+    grid-row: 2;
+  }
+
+  .screenEdit > .sBottom {
+    grid-row: 3;
+  }
+
+  .screenEdit > .panel {
+    display: flex;
+    flex-direction: column;
+    grid-row: 1 / -1;
+    grid-column: 2;
+    align-self: start;
+    gap: var(--space-24);
+  }
+
+  .pHead {
+    gap: var(--space-24);
+  }
+
+  .titleMetaWide {
+    display: inline;
   }
 }

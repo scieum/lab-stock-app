@@ -1,0 +1,4 @@
+/* 시안 1.15 3-location slot-unassign "칸 없음으로": 조용한 텍스트 동작 — 왼쪽 정렬, 글자 끝이 배치도 왼쪽 선에 맞게 */
+.unassign {
+  margin-left: calc(var(--space-12) * -1);
+}

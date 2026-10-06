@@ -26,3 +26,35 @@ body {
   line-height: var(--line-height-normal);
   -webkit-font-smoothing: antialiased;
 }
+
+/* QR 인쇄 (디자인 1.15 qr-print-sheet, d7 §14): 인쇄 전용 사본은 화면에 보이지 않는다.
+ * 인쇄할 때는 그 사본만 — 화면의 nav·tab-bar·시트 테두리는 찍히지 않는다. A4 한 장에 라벨 8개(2열 × 4줄) */
+[data-print-root] {
+  display: none;
+}
+
+@page {
+  size: A4;
+}
+
+@media print {
+  /* 인쇄 사본이 있을 때만 (QR 인쇄 시트가 열려 있을 때) 나머지를 숨긴다 — 다른 화면의 인쇄는 그대로 */
+  body:has(> [data-print-root]) > :not([data-print-root]) {
+    display: none !important;
+  }
+
+  [data-print-root] {
+    display: block;
+  }
+
+  [data-print-page] {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-16);
+    break-after: page;
+  }
+
+  [data-print-page]:last-child {
+    break-after: auto;
+  }
+}

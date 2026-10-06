@@ -1,0 +1,15 @@
+/* 시안 11-slot slot-picker: 행 사이 8 */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+/* 시안 slot-assign: 전폭 button-primary 48 */
+.action {
+  display: flex;
+}
+
+.action > :is(button, a) {
+  width: 100%;
+}

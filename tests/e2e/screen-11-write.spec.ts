@@ -111,6 +111,15 @@ import {
   waitEditable,
   watchActions,
   hydrated,
+  ROW as ROW_NAME,
+  SLOT_ASSIGN,
+  SLOT_SHEET,
+  FRAME_COUNTS,
+  closeSlotSheet,
+  expectPills,
+  pill,
+  slotAt,
+  slotSheet,
   type DbCabinet,
   type PrepReagent,
   type S11Fixture,
@@ -181,13 +190,24 @@ async function expectUnassigned(page: Page, want: PrepReagent[], what: string): 
   }
 }
 
-/** 시안 예시 상태: 1번 시약장(양문형 4단, 좌1단 = 산+염기 …) · 2번 시약장(양문형 3단, 배치 시약 6) · 칸 없음 시약 2 */
-async function prepFrameState(f: S11Fixture): Promise<{ c1: DbCabinet; c2: DbCabinet; placed2: PrepReagent[]; unassigned: PrepReagent[] }> {
+/**
+ * 시안 예시 상태: 1번 시약장(양문형 4단, 좌1단 = 산+염기 …, 칸별 시약 수 = s2-spec 1.15 화면 11 "좌1단 2, 좌2단 3, 우1단 1, 우3단 1")
+ * · 2번 시약장(양문형 3단, 배치 시약 6) · 칸 없음 시약 2
+ */
+async function prepFrameState(f: S11Fixture): Promise<{ c1: DbCabinet; c2: DbCabinet; placed1: PrepReagent[]; placed2: PrepReagent[]; unassigned: PrepReagent[] }> {
   const c1 = await prepCabinet(f);
   const c2 = await prepCabinet(f);
   expect([c1.label, c2.label]).toEqual([defaultName(1), defaultName(2)]);
   await prepLayout(f, c1.id, DOUBLE, 4, FRAME_LAYOUT);
   await prepLayout(f, c2.id, DOUBLE, 3, FRAME_LAYOUT_2);
+  const placed1: PrepReagent[] = [];
+  for (const [key, n] of Object.entries(FRAME_COUNTS)) {
+    for (let i = 0; i < n; i += 1) {
+      const r = await prepReagent(f, `일번${key}${i}`, 5 + i, "g", FRAME_LAYOUT[key][0]);
+      await prepPlace(f, r.id, c1.id, key);
+      placed1.push(r);
+    }
+  }
   const placed2: PrepReagent[] = [];
   for (const key of gridKeys(DOUBLE, 3)) {
     const r = await prepReagent(f, `배치${key}`);
@@ -195,7 +215,7 @@ async function prepFrameState(f: S11Fixture): Promise<{ c1: DbCabinet; c2: DbCab
     placed2.push(r);
   }
   const unassigned = [await prepReagent(f, "칸없음가", 250, "g"), await prepReagent(f, "칸없음나", 300, "mL")];
-  return { c1, c2, placed2, unassigned };
+  return { c1, c2, placed1, placed2, unassigned };
 }
 
 // =====================================================================
@@ -240,8 +260,10 @@ test(`[C1][S${SCREEN}] 일회용 교사 · 시약장 0개: "${EMPTY_HEADING}" + 
     expect(actions.count(), "연타에도 추가 요청 1건").toBe(1);
     await expect.poll(() => new URL(page.url()).searchParams.get("c"), { message: "주소의 c = 새 시약장", timeout: SAVE_TIMEOUT }).toBe(cab.id);
     expect(await pillLabels(page)).toEqual([defaultName(1)]);
-    await expectActive(page, defaultName(1), "추가 뒤");
-    await expectHeader(page, defaultName(1), DEFAULT_DOOR, DEFAULT_SHELVES, "추가 뒤");
+    expect(cab.number, "DB: 첫 시약장 번호 1 (d7 §14)").toBe(1);
+    await expectPills(page, db.cabinets, "추가 뒤");
+    await expectActive(page, defaultName(1), "추가 뒤", cab.number);
+    await expectHeader(page, defaultName(1), DEFAULT_DOOR, DEFAULT_SHELVES, "추가 뒤", cab.number);
     await expectBoard(page, DEFAULT_DOOR, DEFAULT_SHELVES, {}, "추가 뒤 (전부 미지정)");
     await expect(mix(page)).toHaveCount(0);
     await expect(emptyCard(page), "빈 상태 카드는 사라진다").toHaveCount(0);
@@ -628,9 +650,11 @@ test(`[C1][S${SCREEN}] 일회용 교사 · 시안 상태(시약장 2개 · 1번 
 
     // 기본 상태 (프레임 11)
     expect(await pillLabels(page)).toEqual([defaultName(1), defaultName(2)]);
-    await expectActive(page, defaultName(1), "기본");
-    await expectHeader(page, defaultName(1), DOUBLE, 4, "기본");
-    await expectBoard(page, DOUBLE, 4, FRAME_LAYOUT, "기본");
+    await expectPills(page, db.cabinets, "기본");
+    expect(db.counts[st.c1.id], "대조: 1번 시약장 칸별 시약 수 = s2-spec 예시").toEqual(FRAME_COUNTS);
+    await expectActive(page, defaultName(1), "기본", st.c1.number);
+    await expectHeader(page, defaultName(1), DOUBLE, 4, "기본", st.c1.number);
+    await expectBoard(page, DOUBLE, 4, FRAME_LAYOUT, "기본", db.counts[st.c1.id]);
     await expectMix(page, DOUBLE, 4, FRAME_LAYOUT, "기본");
     await expect(mixLines(page)).toHaveText(exact(MIX_EXAMPLE));
     await selectSlot(page, DOUBLE, "L1");
@@ -643,11 +667,11 @@ test(`[C1][S${SCREEN}] 일회용 교사 · 시안 상태(시약장 2개 · 1번 
     await expect(saveButton(page)).toBeDisabled();
 
     // 2번 시약장에서도 같은 칸 없음 목록
-    await pills(page).filter({ hasText: exact(defaultName(2)) }).click();
+    await pill(page, defaultName(2)).click();
     await expect.poll(() => new URL(page.url()).searchParams.get("c"), { timeout: SAVE_TIMEOUT }).toBe(st.c2.id);
-    await expectActive(page, defaultName(2), "전환");
-    await expectHeader(page, defaultName(2), DOUBLE, 3, "2번 시약장");
-    await expectBoard(page, DOUBLE, 3, FRAME_LAYOUT_2, "2번 시약장");
+    await expectActive(page, defaultName(2), "전환", st.c2.number);
+    await expectHeader(page, defaultName(2), DOUBLE, 3, "2번 시약장", st.c2.number);
+    await expectBoard(page, DOUBLE, 3, FRAME_LAYOUT_2, "2번 시약장", db.counts[st.c2.id]);
     await expectMix(page, DOUBLE, 3, FRAME_LAYOUT_2, "2번 시약장");
     await expectUnassigned(page, st.unassigned, "2번 시약장");
 
@@ -682,7 +706,7 @@ test(`[C1][S${SCREEN}] 일회용 교사 · 시안 상태(시약장 2개 · 1번 
 // 학생 — 같은 일회용 학교를 보기 전용으로
 // =====================================================================
 
-test(`[R-ui][S${SCREEN}] 일회용 학생 · 시안 상태의 같은 학교: ${R7.components!.join("·")} 0 (R7) · 문 형태·단 수·고르는 칩·저장·이름 바꾸기·삭제 0 · 칸은 버튼이 아님 · 전환 pill·배치도·범례·${MIX}("${MIX_EXAMPLE}")·칸 없음 목록은 보임 · pill 로 전환 가능 · 쓰기 요청 0건`, async ({ browser }, info) => {
+test(`[R-ui][S${SCREEN}] 일회용 학생 · 시안 상태의 같은 학교: ${R7.components!.join("·")} 0 (R7) · 문 형태·단 수·고르는 칩·저장·이름 바꾸기·삭제 0 · 본문 버튼 = 칸뿐 · 칸 누름 → ${SLOT_SHEET} 목록만(${SLOT_ASSIGN}·"빼기"·선택 표시 0) · 전환 pill·배치도(slot-count)·범례·${MIX}("${MIX_EXAMPLE}")·칸 없음 목록은 보임 · pill 로 전환 가능 · 쓰기 요청 0건`, async ({ browser }, info) => {
   const f = await fresh(info);
   const st = await prepFrameState(f);
   const { context, page, viewport, response } = await openTemp(browser, info, f.student, CABINETS_HREF);
@@ -696,31 +720,50 @@ test(`[R-ui][S${SCREEN}] 일회용 학생 · 시안 상태의 같은 학교: ${R
     }
     for (const c of [DOOR_SELECT, SHELF_SELECT, PRIMARY, OUTLINE, MODAL, INPUT]) expect(await countComponent(page, c), `학생 화면 ${c}`).toBe(0);
     await expect(pickChips(page)).toHaveCount(0);
-    await expect(main(page).getByRole("button"), "학생 본문에 버튼 없음").toHaveCount(0);
+    // 1.15: 학생도 칸을 눌러 칸 시트(목록만)를 연다 — 본문의 버튼은 칸뿐 (편집·추가·이름·삭제·저장 버튼 없음)
+    await expect(main(page).getByRole("button"), "학생 본문 버튼 = 칸 수").toHaveCount(await slots(page).count());
+    expect(await main(page).getByRole("button").evaluateAll((els, s) => els.every((e) => e.matches(s)), sel(SLOT)), "학생 본문 버튼은 모두 칸").toBe(true);
     await expect(main(page).getByRole("radio")).toHaveCount(0);
-    expect(await slots(page).evaluateAll((els) => els.map((e) => e.tagName)), "칸은 버튼이 아니다").not.toContain("BUTTON");
+    const db0 = await dbViewByService(f.school.id);
 
     expect(await pillLabels(page)).toEqual([defaultName(1), defaultName(2)]);
-    await expectActive(page, defaultName(1), "학생");
-    await expectHeader(page, defaultName(1), DOUBLE, 4, "학생");
-    await expectBoard(page, DOUBLE, 4, FRAME_LAYOUT, "학생");
+    await expectPills(page, db0.cabinets, "학생");
+    await expectActive(page, defaultName(1), "학생", st.c1.number);
+    await expectHeader(page, defaultName(1), DOUBLE, 4, "학생", st.c1.number);
+    await expectBoard(page, DOUBLE, 4, FRAME_LAYOUT, "학생", db0.counts[st.c1.id]);
     await expectMix(page, DOUBLE, 4, FRAME_LAYOUT, "학생");
     await expect(mixLines(page), "학생에게도 같은 경고").toHaveText(exact(MIX_EXAMPLE));
     await expect(legendChips(page).first()).toBeVisible();
     await expectUnassigned(page, st.unassigned, "학생");
     await expectTabBar(page, viewport, "학생");
-    // 눌러도 아무 일도 없다
-    await slots(page).first().click({ force: true });
-    await expect(pickChips(page)).toHaveCount(0);
+    // 칸 누름 → 칸 시트 = 그 칸 시약 목록만 (행 → 시약 상세 링크), 넣기·빼기·선택 표시 없음
+    await hydrated(slots(page).first());
+    for (const key of Object.keys(FRAME_COUNTS)) {
+      await slotAt(page, DOUBLE, key).click();
+      const sheet = slotSheet(page);
+      await expect(sheet, `학생 칸 ${key} → ${SLOT_SHEET}`).toBeVisible();
+      const want = db0.inSlot[st.c1.id][key] ?? [];
+      await expect(sheet.locator(sel(ROW_NAME)), `${SLOT_SHEET} 행 수 = DB ${key} 시약 수`).toHaveCount(want.length);
+      for (const r of want) {
+        const row = sheet.locator(sel(ROW_NAME)).filter({ hasText: r.name });
+        await expect(row, `${SLOT_SHEET} 행 "${r.name}"`).toHaveCount(1);
+        await expect(row.locator(`a[href="${detailPath(r.id)}"]`).or(row.and(page.locator(`a[href="${detailPath(r.id)}"]`))), `"${r.name}" 행 → 시약 상세`).toHaveCount(1);
+      }
+      await expect(sheet.locator(sel(SLOT_ASSIGN)), `학생 ${SLOT_ASSIGN}`).toHaveCount(0);
+      await expect(sheet.getByRole("button", { name: /빼기/ }), `학생 "빼기"`).toHaveCount(0);
+      await expect(pickChips(page)).toHaveCount(0);
+      expect(await slots(page).evaluateAll((els) => els.map((e) => e.getAttribute("aria-pressed"))), "선택 칸 없음").not.toContain("true");
+      await closeSlotSheet(page);
+    }
     await expect(modal(page)).toHaveCount(0);
 
     // 전환
     await hydrated(pills(page).last());
-    await pills(page).filter({ hasText: exact(defaultName(2)) }).click();
+    await pill(page, defaultName(2)).click();
     await expect.poll(() => new URL(page.url()).searchParams.get("c"), { timeout: SAVE_TIMEOUT }).toBe(st.c2.id);
-    await expectActive(page, defaultName(2), "학생 전환");
-    await expectHeader(page, defaultName(2), DOUBLE, 3, "학생 2번 시약장");
-    await expectBoard(page, DOUBLE, 3, FRAME_LAYOUT_2, "학생 2번 시약장");
+    await expectActive(page, defaultName(2), "학생 전환", st.c2.number);
+    await expectHeader(page, defaultName(2), DOUBLE, 3, "학생 2번 시약장", st.c2.number);
+    await expectBoard(page, DOUBLE, 3, FRAME_LAYOUT_2, "학생 2번 시약장", db0.counts[st.c2.id]);
     await expect(mix(page), "2번 시약장에는 비호환 칸이 없다").toHaveCount(0);
     await expectUnassigned(page, st.unassigned, "학생 2번 시약장");
     for (const c of R7.components!) expect(await countComponent(page, c), `전환 뒤 R7 ${c}`).toBe(R7.max);

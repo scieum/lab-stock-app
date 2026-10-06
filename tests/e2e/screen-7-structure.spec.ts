@@ -104,8 +104,12 @@ test(`[R-ui][S${SCREEN}] rules.json R5 = 학생 ${INTAKE}·${REGISTER} max 0 이
   expect(studentMax.length, "rules.json 학생 max 규칙").toBeGreaterThan(0);
   const checks = roleChecks(SCREEN, ROLE_NAME.student);
   for (const [id] of studentMax) expect(checks.some((c) => c.rule === id), `학생 검사에 ${id}`).toBe(true);
-  // 화면 7 컴포넌트가 dev-rules 에 있어야 교사·admin 존재 검사가 의미 있다
-  for (const c of R5_COMPONENTS) expect(devRules.components[c] ?? [], `dev-rules components ${c}`).toContain(SCREEN);
+  // 화면 7 컴포넌트가 dev-rules 에 있어야 교사·admin 존재 검사가 의미 있다.
+  // rules 1.15 R5 에 더해진 threshold-edit(재주문 기준 직접 입력)는 화면 3 소속 — R5 중 stock-intake·reagent-register 가 화면 7 이다
+  for (const c of [INTAKE, REGISTER]) expect(devRules.components[c] ?? [], `dev-rules components ${c}`).toContain(SCREEN);
+  for (const c of R5_COMPONENTS.filter((x) => ![INTAKE, REGISTER].includes(x))) {
+    expect(devRules.components[c] ?? [], `R5 ${c} 은 화면 ${SCREEN} 이 아니면 화면 3 (threshold-edit)`).toContain(3);
+  }
 });
 
 for (const q of [{}, { tab: "register" }, { reagent: "own" }] as const) {

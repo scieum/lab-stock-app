@@ -1,7 +1,7 @@
-/* 화면 11 시약장 설정
- * 모바일(11-mobile): cabinet-switcher → cabinet-header → cabinet-edit(관리 줄 · selects · 배치도 · 범례 · 분류 칩 · mix-warning)
- *                    → unassigned-list, 사이 16. 저장 줄은 tab-bar 바로 위 고정. 제목은 nav-pill 안(nav-title)
- * 데스크톱(11-desktop): switcher → header → cabinet-main(배치도 열 840 + 32 + 편집 카드 440) → 칸 없음 목록, 사이 24
+/* 화면 11 시약장 설정 (디자인 1.15) — 본문 배치는 components/cabinet-edit CabinetScreen 이 한다.
+ * 모바일(11-mobile): switcher → 제목 → 관리 줄 · selects → 배치도 · 범례 → 분류 칩 → mix-warning → 칸 없음 목록, 사이 24.
+ *                    저장 줄은 tab-bar 바로 위 고정. 화면 제목은 nav-pill 안(nav-title)
+ * 데스크톱(11-desktop): 왼쪽 열 860(switcher · 제목 · 배치도 · 범례 · 칸 없음 목록) + 32 + 오른쪽 편집 카드 420
  */
 
 .page {
@@ -32,36 +32,13 @@
   white-space: nowrap;
 }
 
-.header {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: var(--space-8);
-  min-width: 0;
-}
-
-.pageTitle,
-.cabinetTitle {
+.pageTitle {
   margin: 0;
   color: var(--color-text);
   font-size: var(--font-size-20);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
   overflow-wrap: anywhere;
-}
-
-.cabinetMeta {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-12);
-  line-height: var(--line-height-normal);
-}
-
-/* 학생(보기 전용): 배치도 → 범례 → mix-warning */
-.view {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-16);
-  min-width: 0;
 }
 
 .unassigned {
@@ -114,20 +91,6 @@
   .withSave,
   .withNotice {
     padding-bottom: var(--space-0);
-  }
-
-  .header {
-    gap: var(--space-12);
-  }
-
-  .cabinetMeta {
-    font-size: var(--font-size-13);
-  }
-
-  /* 배치도 열 폭 = 시안 layout-column 840 / 1312 */
-  .view,
-  .unassigned {
-    width: calc((100% - var(--space-32)) * 21 / 32);
   }
 
   .emptyArea {

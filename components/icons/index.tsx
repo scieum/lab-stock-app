@@ -28,7 +28,9 @@ export type IconName =
   | "plus"
   | "warning"
   | "more"
-  | "upload";
+  | "upload"
+  | "print"
+  | "caret-down";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: (
@@ -169,6 +171,16 @@ const PATHS: Record<IconName, React.ReactNode> = {
   ),
   // 시안 9 vendor-row icon-more (가로 점 3개)
   more: <path d="M5.5 12h.01M12 12h.01M18.5 12h.01" strokeWidth={3} />,
+  // 시안 11 qr-print icon-print (프린터)
+  print: (
+    <>
+      <path d="M7 9V3.5h10V9" />
+      <rect x="3.5" y="9" width="17" height="8" rx="1.5" />
+      <path d="M7 14h10v6.5H7Z" />
+    </>
+  ),
+  // 시안 nav-account-menu icon-caret (작은 ▾ — 16 상자 안 6.67×3.33 꺾쇠)
+  "caret-down": <path d="m7 10 5 5 5-5" />,
   bell: (
     <>
       <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15Z" />

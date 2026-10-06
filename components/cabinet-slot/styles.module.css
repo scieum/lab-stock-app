@@ -98,6 +98,14 @@
   font-weight: var(--font-weight-regular);
 }
 
+/* 칸 오른쪽: 경고 아이콘 + slot-count (시안 1.15 slot-meta, 사이 4) */
+.meta {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--space-4);
+}
+
 /* 경고 아이콘 — 기본색 (핑크는 mix-warning 안에서만) */
 .warning {
   width: var(--icon-sm);
@@ -105,6 +113,10 @@
   flex-shrink: 0;
   align-self: flex-start;
   color: var(--color-text);
+}
+
+.meta .warning {
+  align-self: center;
 }
 
 /* 범례 (시안 cabinet-legend: 사이 8) */
@@ -144,9 +156,9 @@
     line-height: var(--line-height-normal);
   }
 
+  /* 시안 1.15 11-desktop: 칸 높이 64 (1.14 의 96 에서 줄었다), 글자·표시는 가운데 줄 */
   .slot {
-    align-items: flex-start;
-    min-height: calc(var(--control-height) * 2);
+    min-height: var(--space-64);
   }
 
   .label {

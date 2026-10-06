@@ -172,7 +172,9 @@ test(`[C1][S${SCREEN}] 기대값 원본: 프레임 5 의 문구·4행·조 수�
   expect(UNITS).toEqual(["병", "mL", "g"]);
   expect(NO_KEY_TEXT, "d7 §13 키 없음 문구").toBe("AI 추출을 쓸 수 없어요(서버 설정)");
   for (const q of D7_QUOTES) expect(D7_S13, `d7 §13 에 ${q}`).toContain(q);
-  expect(screenComponents().sort(), "dev-rules 화면 5 컴포넌트").toEqual([OVERLAY, OUTLINE, PRIMARY, CELL, TOAST, TABLE, UPLOAD, "nav-pill", "tab-bar", "tab-item", INPUT].sort());
+  // 디자인 1.15: 공통 셸 예외 nav-account-menu (rules.json app_exceptions) 가 로그인 후 셸 화면 모두에 더해졌다 (dev-rules components_note)
+  expect((rules as unknown as { app_exceptions: Record<string, string> }).app_exceptions, "rules app_exceptions nav-account-menu").toHaveProperty("nav-account-menu");
+  expect(screenComponents().sort(), "dev-rules 화면 5 컴포넌트").toEqual([OVERLAY, OUTLINE, PRIMARY, CELL, TOAST, TABLE, UPLOAD, "nav-pill", "nav-account-menu", "tab-bar", "tab-item", INPUT].sort());
   expect(BOTTOM_GAP, "시안 bottom-actions 아래 여백").toBeGreaterThan(0);
 });
 

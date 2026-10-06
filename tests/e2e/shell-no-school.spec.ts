@@ -132,6 +132,9 @@ test(`[R-ui][S${HOME}] 프로필 없는 세션 ${HOME_PATH}: 리다이렉트 없
     await expect(page.locator(sel(tb.component)), "하이드레이션 뒤에도 tab-bar 0").toHaveCount(0);
     await expect(page.locator("[aria-busy='true']"), "자리 표시가 남지 않는다").toHaveCount(0);
     expect(await componentCounts(page.locator("body"), business), "업무 컴포넌트").toEqual(Object.fromEntries(business.map((n) => [n, 0])));
+    // dev-rules route_auth.logout (디자인 1.15): 계정 메뉴 nav-account-menu 는 NoSchoolScreen 에 없다
+    expect(business, "대조: nav-account-menu 는 업무 컴포넌트(로그인 화면에 없음)").toContain("nav-account-menu");
+    await expect(page.locator(sel("nav-account-menu")), "NoSchoolScreen nav-account-menu 0").toHaveCount(0);
     expect(await schoolNamesIn(page.locator("body")), "학교명").toEqual([]);
     expect(new URL(page.url()).pathname).toBe(HOME_PATH);
   } finally {

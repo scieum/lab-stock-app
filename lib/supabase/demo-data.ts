@@ -1,11 +1,11 @@
 import "server-only";
 import { createAnonClient } from "./anon";
 import { formatAmount, formatDateDots, formatStock, formatUsedAt } from "@/lib/format";
-import { slotLabel as classesLabel, slotRowClasses } from "@/lib/cabinet-rules";
+import { isStorageClass } from "@/lib/cabinet-rules";
 import { isLowStock } from "@/lib/types";
 import type { HomeData } from "./home-data";
 import type { ReagentListItem } from "./reagents-data";
-import type { ReagentDetail } from "./reagent-detail";
+import { toPlacement, type ReagentDetail } from "./reagent-detail";
 
 /**
  * 둘러보기(비회원) 데이터 — harness/d7-data.md §5.
@@ -102,11 +102,6 @@ function safeUrl(v: string | null): string | null {
   }
 }
 
-function slotLabel(doorType: string, side: string, shelf: number): string {
-  if (doorType === "양문형") return `${side === "L" ? "왼쪽" : "오른쪽"} ${shelf}단`;
-  return `${shelf}단`;
-}
-
 export type DemoReagentDetail = Omit<ReagentDetail, "role">;
 
 /** 3 둘러보기 시약 상세 — 데모 학교가 아닌 id·없는 id·형식이 틀린 id 는 모두 null (존재 여부 비노출) */
@@ -117,7 +112,7 @@ export async function getDemoReagentDetail(id: string): Promise<DemoReagentDetai
     supabase
       .from("reagents")
       .select(
-        "id, name, cas_no, unit, stock, min_stock, msds_url, intake_date, slot:cabinet_slots(*, cabinet:cabinets(label, door_type))",
+        "id, name, cas_no, unit, stock, min_stock, msds_url, intake_date, storage_class, reorder_per_group, reorder_groups, slot:cabinet_slots(*, cabinet:cabinets(*))",
       )
       .eq("school_id", DEMO_SCHOOL_ID)
       .eq("id", id)
@@ -126,8 +121,8 @@ export async function getDemoReagentDetail(id: string): Promise<DemoReagentDetai
   ]);
   const r = reagentRes.data;
   if (reagentRes.error || !r) return null;
-  const slot = r.slot;
-  const cabinet = slot?.cabinet ?? null;
+  const placement = toPlacement(r.slot);
+  const num = (v: unknown) => (v === null || v === undefined || !Number.isFinite(Number(v)) ? null : Number(v));
 
   return {
     reagent: {
@@ -140,11 +135,17 @@ export async function getDemoReagentDetail(id: string): Promise<DemoReagentDetai
       intakeDate: formatDateDots(r.intake_date),
       lowStock: isLowStock(r),
       msdsUrl: safeUrl(r.msds_url),
+      storageClass: typeof r.storage_class === "string" && isStorageClass(r.storage_class) ? r.storage_class : null,
     },
-    location:
-      slot && cabinet
-        ? { cabinet: cabinet.label, slot: slotLabel(cabinet.door_type, slot.side, slot.shelf), storageClass: classesLabel(slotRowClasses(slot)) }
-        : null,
+    placement,
+    threshold: {
+      minStock: Number(r.min_stock),
+      perGroup: num(r.reorder_per_group),
+      groups: num(r.reorder_groups),
+      unit: r.unit,
+    },
+    // 둘러보기: 위치 바꾸기 없음 (guest.hidden_components)
+    picker: null,
     usage: (usageRes.data ?? []).map((u) => ({
       id: u.id,
       date: formatDateDots(SEOUL_DATE.format(new Date(u.used_at))),
