@@ -234,8 +234,13 @@ export type ReagentRow = {
   slot_id: string | null;
   cas_no: string | null;
   msds_url: string | null;
+  /** d7 §11-1 기준의 출처 ('auto' | 'basis' | 'manual') */
+  min_stock_source: string;
+  /** d7 §11-1 자동 값의 근거 ('usage' | 'intake' | null) */
+  min_stock_auto_basis: string | null;
 };
-const REAGENT_COLS = "id, school_id, name, unit, stock, min_stock, storage_class, intake_date, slot_id, cas_no, msds_url";
+const REAGENT_COLS =
+  "id, school_id, name, unit, stock, min_stock, storage_class, intake_date, slot_id, cas_no, msds_url, min_stock_source, min_stock_auto_basis";
 
 function toReagent(r: Record<string, unknown>): ReagentRow {
   return { ...(r as ReagentRow), stock: Number(r.stock), min_stock: Number(r.min_stock) };

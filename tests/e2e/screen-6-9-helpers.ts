@@ -501,7 +501,7 @@ const storageClasses = (JSON.parse(readFileSync(join(process.cwd(), "design", "r
 export type ReagentSpec = { tag: string; stock: number; min: number; unit?: string; perGroup?: number; groups?: number };
 
 /**
- * 준비: 임시 시약 (admin 세션 — register_reagent 는 min_stock 0 으로 시작, d7 §6) → 같은 세션으로 min_stock·기준 열을 정한다.
+ * 준비: 임시 시약 (admin 세션 — register_reagent 는 자동 기준 = 첫 재고 × 입고 비율로 시작, d7 §11-1) → 같은 세션으로 min_stock·기준 열을 정한다.
  * low_stock_since 는 DB 가 맞춘다 (d7 §11). 돌려주는 값은 로그인 세션으로 다시 읽은 행.
  */
 export async function prepReagent(f: Fx, spec: ReagentSpec): Promise<DbReagent> {

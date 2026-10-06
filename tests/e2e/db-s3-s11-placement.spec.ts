@@ -300,7 +300,7 @@ function reagentOf(st: TempState, id: string): Row {
   return r;
 }
 
-/** 임시 시약 (register_reagent — 교사·admin 세션). 새 시약은 "칸 없음"·min_stock 0 (d7 §6). */
+/** 임시 시약 (register_reagent — 교사·admin 세션). 새 시약은 "칸 없음"(d7 §6)·자동 기준 = 첫 재고 × 입고 비율 (d7 §11-1). */
 async function newReagent(client: SupabaseClient, cls: string, tag: string, stock = 7): Promise<string> {
   const res = await rpc(client, "register_reagent", {
     p_name: `S3S11-${tag}-${randomUUID().slice(0, 8)}`,
