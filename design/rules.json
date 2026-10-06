@@ -1,5 +1,5 @@
 {
-  "version": "1.14",
+  "version": "1.15",
   "sources": [
     "docs/design.md",
     "docs/story-service.md",
@@ -14,7 +14,8 @@
     "2026-10-02 로그인/회원가입 분리 (화면 14)",
     "2026-10-03 화면 15 랜딩 추가",
     "2026-10-03 둘러보기(guest) 모드",
-    "2026-10-04 학교당 시약장 여러 개"
+    "2026-10-04 학교당 시약장 여러 개",
+    "2026-10-06 시약 칸 배치·시약장 번호·QR 인쇄·재주문 기준 직접 입력 (개발 세션 요청)"
   ],
   "colors": {
     "allowed": [
@@ -176,8 +177,8 @@
       15
     ],
     "guest_name_pattern": "^([1-9]|1[0-5])-guest-(mobile|desktop)$",
-    "variant_name_pattern": "^([1-9]|1[0-5])-(empty|delete)-(mobile|desktop)$",
-    "variant_note": "같은 화면의 다른 상태 프레임. input.json variants {\"11\": [\"empty\",\"delete\"]} 로 요청 (2026-10-04)"
+    "variant_name_pattern": "^([1-9]|1[0-5])-(empty|delete|slot|print|unsaved|location|result)-(mobile|desktop)$",
+    "variant_note": "같은 화면의 다른 상태 프레임. input.json variants {\"11\": [\"empty\",\"delete\"]} 로 요청 (2026-10-04) · 2026-10-06 상태 추가: 11-slot·11-print·11-unsaved·3-location·12-result"
   },
   "s1": {
     "refs_per_screen": [
@@ -218,10 +219,11 @@
       "role": "학생",
       "components": [
         "stock-intake",
-        "reagent-register"
+        "reagent-register",
+        "threshold-edit"
       ],
       "max": 0,
-      "source": "2026-10-02 화면 7"
+      "source": "2026-10-02 화면 7 · 2026-10-06 threshold-edit(재주문 기준 고치기 = 시약 정보 입력) 추가"
     },
     "R6": {
       "component": "user-manage",
@@ -234,10 +236,13 @@
       "role": "학생",
       "components": [
         "cabinet-edit",
-        "cabinet-add"
+        "cabinet-add",
+        "slot-assign",
+        "location-edit",
+        "qr-print"
       ],
       "max": 0,
-      "source": "2026-10-02 화면 11 · 2026-10-04 cabinet-add 추가"
+      "source": "2026-10-02 화면 11 · 2026-10-04 cabinet-add 추가 · 2026-10-06 slot-assign·location-edit·qr-print 추가"
     }
   },
   "never": {
@@ -376,13 +381,14 @@
       "cabinet-slot",
       "storage-class-chip",
       "mix-warning",
-      "cabinet-switcher"
+      "cabinet-switcher",
+      "cabinet-number",
+      "qr-print"
     ],
     "12": [
       "qr-scan",
       "qr-manual-entry"
     ],
-    "source": "2026-10-02 story-service 결정 (화면별 필수 컴포넌트, 규칙 C1) · 15 랜딩 2026-10-03",
     "13": [
       "home-summary",
       "quick-action"
@@ -392,7 +398,12 @@
       "feature-card",
       "landing-cta",
       "guest-entry"
-    ]
+    ],
+    "3": [
+      "reagent-location",
+      "reorder-threshold"
+    ],
+    "source": "2026-10-02 story-service 결정 (화면별 필수 컴포넌트, 규칙 C1) · 15 랜딩 2026-10-03 · 2026-10-06 화면 3 보관 위치·재주문 기준, 화면 11 시약장 번호·QR 인쇄"
   },
   "cabinet": {
     "door_types": [
@@ -445,7 +456,31 @@
       "교사",
       "admin"
     ],
-    "multiple_source": "2026-10-04 사용자 결정 (개발 세션 요청)"
+    "multiple_source": "2026-10-04 사용자 결정 (개발 세션 요청)",
+    "number": "학교 안 고정 번호 1, 2, 3 … (이름과 별개, 바뀌지 않음, 삭제된 번호는 다시 쓰지 않음). 화면 11 전환 pill·QR 라벨·화면 12 직접 찾기 입력에 사용",
+    "slot_assign_roles": [
+      "교사",
+      "admin"
+    ],
+    "slot_assign_entry": [
+      "화면 11 칸 누르기 → 칸 시트(넣기·빼기)",
+      "화면 3 보관 위치 → 위치 바꾸기(시약장 → 칸)"
+    ],
+    "class_mismatch": "경고만, 저장 허용 — 시약 분류가 칸 분류에 없으면 mix-warning, 그 칸의 분류·시약과 incompatible 조합이면 더 강한 문구의 mix-warning. 막지 않음",
+    "slot_count": "칸 안 시약 수 = slot-count (무채색 pill, 핑크 금지)",
+    "qr_print_roles": [
+      "교사",
+      "admin"
+    ],
+    "qr_label_text": [
+      "학교명",
+      "시약장 번호",
+      "시약장 이름",
+      "QR을 찍으면 이 시약장의 시약을 봐요"
+    ],
+    "qr_print_layout": "인쇄 시트: 시약장 선택(기본 = 지금 시약장, 모두 선택 가능) → 미리보기 → A4 한 장에 라벨 여러 개",
+    "unsaved_confirm": "저장하지 않은 편집이 있을 때 시약장 전환·이탈 → ex-modal-card 확인(버리고 이동 / 계속 편집)",
+    "slot_source": "2026-10-06 사용자 결정 (개발 세션 요청 1·2·4-7)"
   },
   "tab_bar": {
     "component": "tab-bar",
@@ -515,7 +550,12 @@
       "reorder-alert-card",
       "school-select-sido",
       "school-select-region",
-      "school-select-school"
+      "school-select-school",
+      "threshold-edit",
+      "location-edit",
+      "slot-assign",
+      "qr-print",
+      "cabinet-add"
     ],
     "source": "2026-10-03 사용자 결정: 비회원 둘러보기 (데모 학교 읽기 전용)"
   },
@@ -528,8 +568,45 @@
       "delete": [
         "ex-modal-card",
         "cabinet-switcher"
+      ],
+      "slot": [
+        "slot-sheet",
+        "slot-assign",
+        "mix-warning"
+      ],
+      "print": [
+        "qr-print-sheet",
+        "qr-label"
+      ],
+      "unsaved": [
+        "ex-modal-card"
       ]
     },
-    "source": "2026-10-04 여러 시약장: 빈 상태(교사 기준)·삭제 확인 상태 필수 컴포넌트 (C1)"
+    "3": {
+      "location": [
+        "location-picker",
+        "cabinet-switcher",
+        "cabinet-slot"
+      ]
+    },
+    "12": {
+      "result": [
+        "qr-result-sheet",
+        "cabinet-number"
+      ]
+    },
+    "source": "2026-10-04 여러 시약장: 빈 상태(교사 기준)·삭제 확인 상태 필수 컴포넌트 (C1) · 2026-10-06 11-slot·11-print·11-unsaved·3-location·12-result"
+  },
+  "reorder": {
+    "threshold_edit": "화면 3 시약 상세에서 교사·admin이 재주문 기준(필요량)을 숫자로 직접 입력 (reorder-threshold 안 threshold-edit). 화면 5 AI 추출 값과 같은 칸을 덮어씀",
+    "source": "2026-10-06 사용자 결정 (개발 세션 요청 3)"
+  },
+  "app_exceptions": {
+    "nav-account-menu": "공통 nav-pill: 로그인 후 학교명 옆 작은 ▾ → 메뉴에 '로그아웃' 1개",
+    "quick-action-cabinet": "13 홈: 교사 = 사용 기록 입력·입고·시약장 설정, admin = 입고·사용자 관리·시약장 설정 (모바일 2+1)",
+    "extraction-link-row": "5 실험 매뉴얼: 추출 표 행마다 아래 줄에 '우리 학교 시약' 선택·삭제·'기존 기준 N · 그대로 둬요/바뀌어요'. 단위 = 선택 상자(병·mL·g). 조 수 기본값 빈 값",
+    "sheet-close": "8 사용자 관리 시트·9 판매처 등록 폼: 오른쪽 위 × 닫기. 8 삭제 확인 '{이름} · 사용·입고 기록은 남아요', 초대는 이메일만. 9 부가 정보 칸 없음",
+    "vendor-new-window": "6 재주문 알림: 판매처 '확인' 뒤 '사이트를 새 창으로 열었어요. 열리지 않았다면 [직접 열기]' 안내 줄",
+    "source": "2026-10-06 사용자 결정 — 개발 세션 예외 1~6 시안에 반영 (7은 cabinet.unsaved_confirm으로 대체)"
   }
 }
