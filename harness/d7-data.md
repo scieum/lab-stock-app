@@ -156,6 +156,17 @@
 | 저장 후 | ex-toast "판매처를 저장했어요" / "판매처를 삭제했어요", 방금 등록·수정한 행 강조 |
 | 데모 학교 | 판매처 쓰기 금지(§5), 둘러보기에는 화면 9 없음 |
 
+### 12-1. 공통 판매처 추가·즐겨찾기 (2026-10-07 사용자 결정)
+
+| 항목 | 결정 |
+|---|---|
+| 공통 목록 추가 seed | 과학 교구·시약 쇼핑몰 6곳을 공통 목록에 더한다(이름 중복이면 건너뜀). 검색 주소는 "염산" 검색 결과가 나오는 것을 확인한 곳만: 과학생각(https://ideascience.co.kr, `https://ideascience.co.kr/product/search.html?keyword={q}`), 사이언스툴(https://sciencetool.co.kr, `https://sciencetool.co.kr/product/search.html?keyword={q}`), 컴사이언스(https://comscience.co.kr, `https://comscience.co.kr/product/search.html?keyword={q}`), 양원과학(https://ywscience.co.kr, `https://ywscience.co.kr/product/search.html?keyword={q}`), 과학랩(https://sciencelabstore.co.kr, `https://sciencelabstore.co.kr/product/search.html?keyword={q}`), 덕산종합과학(https://www.dslab.co.kr, 검색 주소 없음 → 웹사이트). note 는 비워 둔다. 공통 목록은 모두 10곳 |
+| 즐겨찾기 | 학교 단위로 공유. 테이블 `vendor_favorites`(school_id, vendor_id, created_by, created_at; (school_id, vendor_id) 하나만). 대상 = 자기 학교 판매처 + 공통 목록. 판매처가 지워지면 즐겨찾기도 함께 사라진다 |
+| 즐겨찾기 권한 | 교사·admin 이 추가·해제(자기 학교 행만, 데모 학교 쓰기 금지). 읽기는 교사·admin. 학생·anon 0행 (N1·R) |
+| 화면 6 판매처 연결 | 각 판매처 행에 별표 버튼(즐겨찾기 추가·해제, 누르면 바로 저장). 즐겨찾기가 1곳 이상이면 목록에는 즐겨찾기만 보이고, 아래 글자 버튼 "모든 판매처 보기"로 전체를 펼친다(펼친 뒤에는 즐겨찾기가 맨 위). 즐겨찾기가 없으면 처음부터 전체(지금 순서) |
+| 화면 9 판매처 설정 | admin 은 "우리 학교 판매처"·"공통 목록" 두 탭의 행에서도 별표로 추가·해제 |
+| 시안 | 별표·"모든 판매처 보기"는 시안에 없는 추가(사용자 결정, 시안 예외) — 디자인 하네스에 나중에 반영 요청 |
+
 ## 13. 실험 매뉴얼 (화면 5, 2026-10-05 결정)
 
 | 항목 | 결정 |
