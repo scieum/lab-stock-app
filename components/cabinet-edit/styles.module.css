@@ -119,6 +119,21 @@
   min-width: 0;
 }
 
+/* 입력 + 글자 수 + caption "번호 N은 바뀌지 않아요" (s2-spec 화면 11 이름 시트) */
+.sheetField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.sheetCaption {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-tight);
+}
+
 .sheetActions {
   display: flex;
   flex-direction: column;

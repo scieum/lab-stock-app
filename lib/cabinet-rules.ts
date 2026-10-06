@@ -242,6 +242,21 @@ export function withJosa(word: string, afterBatchim: string, afterVowel: string)
   return `${word}${hasBatchim(word) ? afterBatchim : afterVowel}`;
 }
 
+/**
+ * 숫자에 조사 붙이기 (한글 읽기 기준): 끝자리 1일·3삼·6육·7칠·8팔·0(십·백·천·만·영) = 받침 있음,
+ * 2이·4사·5오·9구 = 받침 없음. withNumberJosa(1, "은", "는") = "1은" · withNumberJosa(2, "은", "는") = "2는"
+ */
+export function withNumberJosa(n: number, afterBatchim: string, afterVowel: string): string {
+  const last = Math.abs(Math.trunc(n)) % 10;
+  const vowel = last === 2 || last === 4 || last === 5 || last === 9;
+  return `${n}${vowel ? afterVowel : afterBatchim}`;
+}
+
+/** 이름 시트 caption: "번호 1은 바뀌지 않아요" (rules.json cabinet.number — 이름과 별개, 바뀌지 않음) */
+export function cabinetNumberFixedText(n: number): string {
+  return `번호 ${withNumberJosa(n, "은", "는")} 바뀌지 않아요`;
+}
+
 /** 경고 한 줄: "좌1단: 산과 염기는 섞이면 위험해요. 다른 칸에 나눠 보관하세요" (d7 §9 혼재 경고) */
 export function mixWarningText(slot: string, a: string, b: string): string {
   return `${slot}: ${withJosa(a, "과", "와")} ${withJosa(b, "은", "는")} 섞이면 위험해요. 다른 칸에 나눠 보관하세요`;

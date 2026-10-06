@@ -80,7 +80,7 @@ export default function GalleryCabinetsPage() {
         </Item>
 
         <Item id="rename" name="ex-modal-card 이름 바꾸기 시트">
-          <CabinetRenameSheet sheet={false} defaultName="1번 시약장" />
+          <CabinetRenameSheet sheet={false} defaultName="1번 시약장" cabinetNumber={1} />
         </Item>
 
         <Item id="save-notice" name="저장 줄 — 칸을 줄일 때 안내">

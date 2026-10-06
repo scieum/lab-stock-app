@@ -5,7 +5,7 @@ import { ButtonOutline } from "@/components/button-outline";
 import { ButtonPrimary } from "@/components/button-primary";
 import { ModalCard } from "@/components/ex-modal-card";
 import { TextInput } from "@/components/text-input";
-import { CABINET_NAME_MAX, UNASSIGNED_LABEL } from "@/lib/cabinet-rules";
+import { CABINET_NAME_MAX, UNASSIGNED_LABEL, cabinetNumberFixedText } from "@/lib/cabinet-rules";
 import styles from "./styles.module.css";
 
 type SheetProps = {
@@ -19,6 +19,8 @@ type SheetProps = {
 type RenameProps = SheetProps & {
   /** 지금 이름 — 입력에 들어 있다 */
   defaultName?: string;
+  /** 시약장 번호 — caption "번호 1은 바뀌지 않아요" (이름과 별개, 바뀌지 않음). 없으면 caption 없음 */
+  cabinetNumber?: number;
   maxLength?: number;
   pending?: boolean;
   /** 저장 실패 안내 (서버 문구 — 예: 같은 이름이 있어요) */
@@ -29,9 +31,10 @@ type RenameProps = SheetProps & {
   onCancel?: () => void;
 };
 
-/** 이름 바꾸기 시트 (ex-modal-card): "시약장 이름" + text-input + 글자 수 + "저장"(비어 있으면 비활성) + "취소" */
+/** 이름 바꾸기 시트 (ex-modal-card): "시약장 이름" + text-input + 글자 수 + caption "번호 N은 바뀌지 않아요" + "저장"(비어 있으면 비활성) + "취소" */
 export function CabinetRenameSheet({
   defaultName = "",
+  cabinetNumber,
   maxLength = CABINET_NAME_MAX,
   pending = false,
   error,
@@ -63,17 +66,20 @@ export function CabinetRenameSheet({
   return (
     <ModalCard title="시약장 이름" density="roomy" hideClose onClose={onClose ?? onCancel} sheet={sheet} modal={modal}>
       <form ref={formRef} className={styles.sheetForm} onSubmit={submit} noValidate>
-        <TextInput
-          aria-label="시약장 이름"
-          placeholder="시약장 이름"
-          value={name}
-          maxLength={maxLength}
-          autoComplete="off"
-          enterKeyHint="done"
-          counter={`${length}/${maxLength}`}
-          error={error ?? undefined}
-          onChange={(e) => setName(e.target.value)}
-        />
+        <div className={styles.sheetField}>
+          <TextInput
+            aria-label="시약장 이름"
+            placeholder="시약장 이름"
+            value={name}
+            maxLength={maxLength}
+            autoComplete="off"
+            enterKeyHint="done"
+            counter={`${length}/${maxLength}`}
+            error={error ?? undefined}
+            onChange={(e) => setName(e.target.value)}
+          />
+          {cabinetNumber !== undefined ? <p className={styles.sheetCaption}>{cabinetNumberFixedText(cabinetNumber)}</p> : null}
+        </div>
         <div className={styles.sheetActions}>
           <ButtonPrimary type="submit" fullWidth disabled={!canSave} aria-busy={pending || undefined}>
             저장

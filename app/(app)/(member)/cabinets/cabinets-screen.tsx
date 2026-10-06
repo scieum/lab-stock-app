@@ -552,6 +552,7 @@ export function CabinetsScreen({ canManage, schoolName, origin, cabinets, active
               key={active.id}
               modal={false}
               defaultName={active.label}
+              cabinetNumber={active.number}
               pending={pending}
               error={sheetError}
               onSave={rename}

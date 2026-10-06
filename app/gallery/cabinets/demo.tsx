@@ -324,6 +324,7 @@ export function CabinetsDemo({
           key={active.id}
           sheet={false}
           defaultName={active.label}
+          cabinetNumber={active.number}
           onCancel={() => setOpen(null)}
           onSave={(label) => {
             update({ label });
