@@ -110,7 +110,7 @@
 | 직접 쓰기 | cabinets·cabinet_slots 의 직접 insert·update·delete 는 위 함수 밖에서 할 수 없게 한다(기존 teacher·admin 직접 쓰기 정책을 함수 경유로 좁힘). 학생·다른 학교·anon·데모 학교 쓰기 거부 |
 | 혼재 경고 | 같은 칸에 rules.json cabinet.incompatible 조합이 있으면 mix-warning 한 줄씩("{칸}: {A}과 {B}는 섞이면 위험해요. 다른 칸에 나눠 보관하세요"). 저장은 막지 않는다(경고만). 학생에게도 보기 전용으로 표시 |
 | 칸 없음 시약 | 화면 아래 "칸 없음 시약 (N)": 그 학교에서 slot 배치가 없는 시약(어느 시약장을 보고 있든 같은 목록). 행을 누르면 시약 상세(화면 3) |
-| 시약 배치 | 시약을 칸에 넣는 화면은 시안에 아직 없다 — 화면 11 은 칸의 분류만 다룬다. 새로 등록한 시약은 모두 "칸 없음" (화면 7 결정 그대로) |
+| 시약 배치 | §14 (2026-10-06): 화면 11 칸 시트·화면 3 위치 바꾸기. 새로 등록한 시약은 "칸 없음"으로 시작 (화면 7 등록 폼에는 위치 없음) |
 | 데모 학교 | 둘러보기에는 화면 11 없음. 데모 학교 시약장 쓰기 금지(§5) 그대로 |
 | 저장 후 | ex-toast "시약장 설정을 저장했어요" / "이름을 바꿨어요" / "{이름}을 추가했어요" / "{이름}을 삭제했어요" |
 
@@ -159,8 +159,22 @@
 | 데모 학교 | 둘러보기에는 화면 5 없음, 데모 학교 저장 금지(§5) |
 | 테스트 | 실제 Gemini 호출은 자동 테스트에서 하지 않는다(비용·불안정). 화면 테스트는 추출 API 응답을 가로채 대체하고, 서버 쪽은 권한·입력 검증·키 없음 처리까지 자동 검증. 실제 추출은 미리보기에서 사람이 확인 |
 
+## 14. 시약 칸 배치·시약장 번호·QR 인쇄·재주문 기준 직접 입력 (화면 3·11, 2026-10-06 결정 — design/rules.json 1.15 cabinet·reorder)
+
+| 항목 | 결정 |
+|---|---|
+| 시약장 번호 | `cabinets.number` int: 학교 안 고정 번호 1, 2, 3 … 이름과 별개, 바뀌지 않음, **삭제된 번호는 다시 쓰지 않음**(학교별 마지막 번호를 따로 기억 — 예: `schools.cabinet_seq`). 기존 시약장은 만든 순서로 1부터 채움. (school_id, number) unique. 화면 11 전환 pill 이름 앞·화면 3 보관 위치·QR 라벨·화면 12 직접 찾기에 쓴다. 새 시약장 기본 이름 "{n}번 시약장" 의 n = 이 번호 |
+| 칸 배치 | 시약 1개 = 칸 0~1개(`reagents.slot_id`). 넣기·빼기·옮기기 = 교사·admin(rules.json cabinet.slot_assign_roles, R7: 학생의 slot-assign·location-edit = 0). DB 함수 `place_reagent(p_reagent_id, p_slot_id null 허용)` 하나로 — 자기 학교 시약·자기 학교 칸만, null 이면 빼기("칸 없음"), 데모 학교 거부. 교사의 reagents.slot_id 직접 update 경로는 닫는다(함수 경유) |
+| 진입 | (a) 화면 11 칸 누르기 → 칸 시트(slot-sheet): 그 칸의 시약 목록 + 시약 넣기(slot-assign: 칸 없음 시약에서 고르기) + 빼기. 학생은 목록만 (b) 화면 3 보관 위치 줄(reagent-location: "N번 시약장 이름 · 좌1단" 또는 "칸 없음") + 위치 바꾸기(location-edit) → 위치 피커(location-picker: 시약장 전환 → 칸 고르기 → 저장, "칸 없음으로" 가능) |
+| 분류 불일치 | 막지 않는다(경고만): 시약의 분류(reagents.storage_class)가 칸의 분류에 없으면 mix-warning, 그 칸의 다른 분류·다른 시약 분류와 rules.json cabinet.incompatible 조합이면 더 강한 문구의 mix-warning. 시약 분류가 없으면 경고 없음 |
+| 칸 안 시약 수 | 배치도의 칸마다 slot-count(무채색 pill, 핑크 금지). 0 이면 표시 안 함 |
+| QR 인쇄 | 화면 11 관리 줄 qr-print "QR 인쇄"(교사·admin, R7) → qr-print-sheet: 시약장 선택(기본 = 지금 시약장, "모두" 가능) → 미리보기 → 브라우저 인쇄(A4 한 장에 qr-label 여러 개). 라벨 글자 = 학교명 · 시약장 번호 · 시약장 이름 · "QR을 찍으면 이 시약장의 시약을 봐요". **QR 내용 = `{origin}/scan?cabinet={cabinet id}`**(화면 12 가 열고, 로그인 사용자의 학교 시약장이 아니면 "{학교명} 시약장 QR이 아니에요"). 서버 저장 없음 |
+| 저장 안 한 편집 | 화면 11 에서 편집 중(저장 안 함)에 시약장 전환·화면 이탈 → ex-modal-card "저장하지 않은 변경이 있어요" [버리고 이동] / [계속 편집] (rules.json cabinet.unsaved_confirm). 브라우저 새로고침·창 닫기는 브라우저 기본 확인 |
+| 재주문 기준 직접 입력 | 화면 3 시약 상세의 reorder-threshold 줄("재주문 기준 N {unit}" 또는 "1반 1회 실험량 … × …조 기준")에서 교사·admin 이 threshold-edit 로 숫자를 직접 입력(R5: 학생 0). DB 함수 `set_reorder_threshold(p_reagent_id, p_min_stock)` — 0 이상(0 = 알림 없음), 자기 학교, 데모 거부. **화면 5 의 "더 큰 값 유지"와 달리 그대로 덮어쓴다**(사용자가 직접 정한 값). 직접 입력하면 reorder_per_group·reorder_groups 는 null(근거 문구가 "재주문 기준 N" 으로 바뀜). low_stock_since 는 §11 트리거 |
+| 데모 학교 | 둘러보기에서 threshold-edit·location-edit·slot-assign·qr-print·cabinet-add 숨김(rules.json guest.hidden_components). 쓰기 거부 |
+
 ## 10. 로그아웃 (2026-10-05 결정)
 
 - 로그인 후 모든 화면의 nav-pill 학교명을 누르면 작은 메뉴가 열리고 "로그아웃" 1개가 있다. 누르면 `POST /api/auth/logout` → `/login`.
-- 시안에 없는 요소다(사용자 결정). 새 `data-component` 이름을 만들지 않고, 메뉴는 nav-pill 안의 일반 버튼·목록으로 만든다. 학교 전환 기능은 두지 않는다(메뉴에 학교 목록 없음).
+- 2026-10-06 디자인 1.15 에서 정식 시안이 됐다: 학교명 옆 ▾, 메뉴 = `nav-account-menu`(data-component). 학교 전환 기능은 두지 않는다(메뉴에 학교 목록 없음).
 - 둘러보기(/demo)·로그인 전 화면에는 없다.
