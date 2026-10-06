@@ -27,7 +27,8 @@ export type IconName =
   | "info"
   | "plus"
   | "warning"
-  | "more";
+  | "more"
+  | "upload";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: (
@@ -148,6 +149,13 @@ const PATHS: Record<IconName, React.ReactNode> = {
     <>
       <circle cx="12" cy="12" r="9" />
       <path d="M12 11v5.5M12 7.5h.01" />
+    </>
+  ),
+  // 시안 5 manual-upload icon-upload (위 화살표 + 받침 줄)
+  upload: (
+    <>
+      <path d="M12 15.5V4M7 8.5 12 4l5 4.5" />
+      <path d="M4 20h16" />
     </>
   ),
   // 시안 11 cabinet-add icon-plus

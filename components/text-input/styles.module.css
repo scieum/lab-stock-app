@@ -109,6 +109,21 @@
   text-align: right;
 }
 
+/* 화면 5: 표 셀 안 사용량 입력 (시안 5 extraction-table text-input: 안쪽 4·8, 글자 13) */
+.cell {
+  min-height: 0;
+  padding: var(--space-4) var(--space-8);
+}
+
+.cell .input {
+  font-size: var(--font-size-13);
+}
+
+/* 화면 5: 사용자가 고친 칸 = 연하늘 바탕 */
+.edited {
+  background: var(--color-highlight-soft);
+}
+
 /* 입력 아래 안내 (핑크 아님) */
 .error {
   margin: 0;

@@ -1,0 +1,96 @@
+/* 화면 5 갤러리 예시 배치 (시안 5-mobile content: 사이 16 · 5-desktop extract-layout: 업로드 칸 480 + 결과 칸, 사이 32) */
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-32);
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.uploadColumn,
+.resultColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+/* 업로드 영역만 있는 예시가 넓은 화면에서 지나치게 늘어나지 않게 (시안 5-desktop upload-column 480) */
+.narrow {
+  width: 100%;
+  max-width: calc(var(--side-column-width) + var(--space-48) + var(--space-32));
+}
+
+/* bottom-actions: 위 선 + 버튼 2개(사이 8). 저장할 수 없는 이유는 버튼 위 */
+.bottom {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding-top: var(--space-12);
+  border-top: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.reason,
+.note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.toastRow {
+  display: flex;
+  justify-content: center;
+}
+
+/* 이미지 위에 얹은 badge-overlay 예시 */
+.overlayStage {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  width: calc(var(--space-64) * 3);
+  max-width: 100%;
+  min-height: calc(var(--space-48) * 2);
+  padding: var(--space-8);
+  border-radius: var(--radius-md);
+  background: var(--color-border-strong);
+  box-sizing: border-box;
+}
+
+@media (min-width: 1024px) {
+  .layout {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--space-32);
+  }
+
+  .uploadColumn {
+    flex: 0 0 calc(var(--side-column-width) + var(--space-48) + var(--space-32));
+  }
+
+  .resultColumn {
+    flex: 1;
+    gap: var(--space-24);
+  }
+}

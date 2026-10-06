@@ -33,7 +33,7 @@ type Rules = {
   };
   tab_bar: { component: string; item: string };
 };
-type Dev = { components: Record<string, number[]>; routes: Record<string, string> };
+type Dev = { components: Record<string, number[]>; routes: Record<string, string>; mvp_screens: number[] };
 
 const root = process.cwd();
 const rules = JSON.parse(readFileSync(join(root, "design/rules.json"), "utf8")) as Rules;
@@ -535,8 +535,16 @@ test(`[K1][S${S9}] 기대값 원본: 프레임 9-mobile·9-desktop 과 d7 §12 �
 // 갤러리 등장 (K1 의 DOM 판)
 // =====================================================================
 test(`[K1][S${S6}] /gallery DOM 에 새 컴포넌트 manual-upload · vendor-link · vendor-register 가 각각 1개 이상, vendor-link 는 button-primary "${FRAME_CARDS[0].link}" 1개를 감싼다`, async ({ page }) => {
-  const fresh = componentNames.filter((n) => dev.components[n].every((s) => s === S6 || s === S9) && ["manual-upload", "vendor-link", "vendor-register"].includes(n));
-  expect(fresh.sort(), "dev-rules 에서 화면 6·9 에만 있는 새 컴포넌트").toEqual(["manual-upload", "vendor-link", "vendor-register"]);
+  // "새 컴포넌트" = 화면 6·9 에 쓰이고, 그보다 먼저 만든 화면(dev-rules mvp_screens 순서에서 6·9 앞)에는 없는 것.
+  // 뒤에 만든 화면(화면 5 가 manual-upload 를 함께 쓰게 됨)이 추가돼도 뜻이 바뀌지 않는다.
+  const order = dev.mvp_screens;
+  expect(order, "dev-rules mvp_screens 에 화면 6·9").toEqual(expect.arrayContaining([S6, S9]));
+  const earlier = order.slice(0, Math.min(order.indexOf(S6), order.indexOf(S9)));
+  expect(earlier.length, "화면 6·9 보다 먼저 만든 화면이 있다").toBeGreaterThan(0);
+  const fresh = componentNames.filter(
+    (n) => dev.components[n].some((s) => s === S6 || s === S9) && !dev.components[n].some((s) => earlier.includes(s)),
+  );
+  expect(fresh.sort(), "dev-rules 에서 화면 6·9 에 처음 나온 새 컴포넌트").toEqual(["manual-upload", "vendor-link", "vendor-register"]);
   await open(page, GALLERY);
   for (const n of fresh) expect(await page.locator(sel(n)).count(), `/gallery ${n}`).toBeGreaterThanOrEqual(1);
   const link = page.locator(sel("vendor-link")).first();

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BadgeLowStock } from "@/components/badge-low-stock";
+import { BadgeOverlay } from "@/components/badge-overlay";
 import { ButtonOutline } from "@/components/button-outline";
 import { ButtonPillSoft } from "@/components/button-pill-soft";
 import { ButtonPrimary } from "@/components/button-primary";
@@ -16,6 +17,7 @@ import { DataRecordRow, DataTableCell } from "@/components/ex-data-table-cell";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { ModalCard } from "@/components/ex-modal-card";
 import { Toast } from "@/components/ex-toast";
+import { ExtractionTable } from "@/components/extraction-table";
 import { FeatureCard } from "@/components/feature-card";
 import { GuestBanner } from "@/components/guest-banner";
 import { GuestEntry } from "@/components/guest-entry";
@@ -49,6 +51,7 @@ import { VendorLink } from "@/components/vendor-link";
 import { VendorRegisterEntry } from "@/components/vendor-register";
 import { mixWarnings } from "@/lib/cabinet-rules";
 import { sampleCabinets } from "./cabinets/sample";
+import { SAMPLE_GROUPS, samplePdf, sampleReagents, sampleRowsFrame } from "./manual/sample";
 import { sampleInvites, sampleMemberCounts, sampleMembers } from "./users/sample";
 import styles from "./gallery.module.css";
 
@@ -324,6 +327,24 @@ export default function GalleryPage() {
           <ManualUpload href="/manual" />
           <Link href="/gallery/reorder" className={styles.more}>
             재주문 알림 상태 보기 — 알림 카드 · 판매처 연결 모달 · 0건 · 교사/admin (/gallery/reorder)
+          </Link>
+        </Item>
+
+        <Item name="manual-upload (화면 5 업로드 영역)">
+          <ManualUpload variant="upload" file={null} />
+        </Item>
+
+        <Item name="badge-overlay">
+          <div className={styles.row}>
+            <BadgeOverlay>{samplePdf.name}</BadgeOverlay>
+          </div>
+        </Item>
+
+        <Item name="extraction-table">
+          <ExtractionTable rows={sampleRowsFrame} groups={SAMPLE_GROUPS} reagents={sampleReagents} />
+          <Link href="/gallery/manual" className={styles.more}>
+            실험 매뉴얼 상태 보기 — 파일 선택 전·후 · 파일 오류 · 처리 중 · 추출 결과 · 미연결 · 단위 불일치 · 기존 기준 · 0행 · 동작 데모
+            (/gallery/manual)
           </Link>
         </Item>
 
