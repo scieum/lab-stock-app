@@ -66,6 +66,7 @@ export type Database = {
           door_type: string
           id: string
           label: string
+          number: number
           school_id: string
           shelves: number
         }
@@ -74,6 +75,7 @@ export type Database = {
           door_type: string
           id?: string
           label: string
+          number: number
           school_id: string
           shelves: number
         }
@@ -82,6 +84,7 @@ export type Database = {
           door_type?: string
           id?: string
           label?: string
+          number?: number
           school_id?: string
           shelves?: number
         }
@@ -284,6 +287,7 @@ export type Database = {
       }
       schools: {
         Row: {
+          cabinet_seq: number
           created_at: string
           id: string
           is_demo: boolean
@@ -294,6 +298,7 @@ export type Database = {
           sido: string
         }
         Insert: {
+          cabinet_seq?: number
           created_at?: string
           id?: string
           is_demo?: boolean
@@ -304,6 +309,7 @@ export type Database = {
           sido: string
         }
         Update: {
+          cabinet_seq?: number
           created_at?: string
           id?: string
           is_demo?: boolean
@@ -413,6 +419,7 @@ export type Database = {
           door_type: string
           id: string
           label: string
+          number: number
           school_id: string
           shelves: number
         }
@@ -481,6 +488,10 @@ export type Database = {
         }
       }
       pending_signup_user: { Args: { p_email: string }; Returns: string }
+      place_reagent: {
+        Args: { p_reagent_id: string; p_slot_id?: string }
+        Returns: Json
+      }
       reagent_usage: {
         Args: { p_limit?: number; p_reagent_id: string }
         Returns: {
@@ -619,6 +630,7 @@ export type Database = {
           door_type: string
           id: string
           label: string
+          number: number
           school_id: string
           shelves: number
         }
@@ -639,6 +651,10 @@ export type Database = {
         Returns: Json
       }
       save_reorder_basis: { Args: { p_items: Json }; Returns: Json }
+      set_reorder_threshold: {
+        Args: { p_min_stock: number; p_reagent_id: string }
+        Returns: Json
+      }
       usage_history: {
         Args: {
           p_limit?: number
