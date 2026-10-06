@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { NavAccountMenu } from "@/components/nav-account-menu";
 import { ReorderAlertItemCard } from "@/components/reorder-alert-card";
 import { VendorLink, VendorLinkModal } from "@/components/vendor-link";
 import styles from "../gallery.module.css";
@@ -75,6 +76,10 @@ export default function GalleryReorderPage() {
           >
             <VendorLink />
           </ReorderAlertItemCard>
+        </Item>
+
+        <Item id="account-menu" name="nav-account-menu — 학교명 옆 ▾ (로그인 후 셸 공통, 디자인 1.15)">
+          <NavAccountMenu schoolName="샘플고등학교" />
         </Item>
       </div>
     </main>

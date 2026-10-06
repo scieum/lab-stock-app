@@ -1,0 +1,16 @@
+/* 시안 1.15 qr-print: button-outline 높이 44, 아이콘 16 (하늘색) + "QR 인쇄" 15/600, 사이 8 */
+.wrap {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.wrap .button {
+  height: var(--button-min-height);
+}
+
+.icon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  flex-shrink: 0;
+  color: var(--color-highlight);
+}

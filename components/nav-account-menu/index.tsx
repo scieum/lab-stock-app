@@ -7,16 +7,22 @@ import styles from "./styles.module.css";
 type Props = {
   /** 자기 학교 이름 — 버튼 글자로 한 번만 나온다 (메뉴 안에 되풀이하지 않는다) */
   schoolName: string;
-  /** "로그아웃" 을 눌렀을 때. Promise 를 돌려주면 끝날 때까지 다시 누를 수 없고, 실패하면 안내를 보여 준다 */
-  onLogout: () => void | Promise<void>;
+  /**
+   * "로그아웃" 을 눌렀을 때. Promise 를 돌려주면 끝날 때까지 다시 누를 수 없고, 실패하면 안내를 보여 준다.
+   * 없으면 메뉴만 열리고 닫힌다 (갤러리 정적 예시).
+   */
+  onLogout?: () => void | Promise<void>;
 };
 
 /**
- * nav-pill 학교명 메뉴 (d7 §10): 학교명을 누르면 작은 메뉴가 열리고 "로그아웃" 1개가 있다.
- * 시안에 없는 요소라 새 data-component 이름을 만들지 않는다 — nav-pill 안의 일반 버튼·목록이다.
- * 학교 전환은 없다 (메뉴에 학교 목록 없음).
+ * 계정 메뉴 (디자인 1.15 nav-account-menu, d7 §10 · rules.json app_exceptions): nav-pill 학교명 옆 작은 ▾.
+ * 학교명 + ▾ 를 누르면 작은 메뉴가 열리고 "로그아웃" 1개가 있다. 학교 전환은 없다 (메뉴에 학교 목록 없음).
+ *
+ * data-component="nav-account-menu" 는 ▾ 자리에 붙인다 — 시안의 nav-account-menu 노드가 학교명 옆 ▾(icon-caret)만 감싸고
+ * 닫힌 상태 프레임에도 1개 있다(늘 DOM 에 있는 요소). 누름 버튼(학교명 + ▾, aria-haspopup=menu)과 열린 메뉴(role=menu)는
+ * 그 바깥 — 버튼의 가장 가까운 data-component 는 nav-pill 그대로다.
  */
-export function SchoolMenu({ schoolName, onLogout }: Props) {
+export function NavAccountMenu({ schoolName, onLogout }: Props) {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -79,7 +85,7 @@ export function SchoolMenu({ schoolName, onLogout }: Props) {
     setFailed(false);
     setPending(true);
     try {
-      await onLogout();
+      await onLogout?.();
       // 성공하면 보통 화면이 바뀐다. 남아 있는 경우에 대비해 메뉴를 닫고 학교명 버튼으로 돌아간다
       close(true);
     } catch {
@@ -103,7 +109,9 @@ export function SchoolMenu({ schoolName, onLogout }: Props) {
         onClick={() => setOpen((v) => !v)}
       >
         <span className={styles.schoolText}>{schoolName}</span>
-        <Icon name={open ? "chevron-up" : "chevron-down"} className={styles.schoolChevron} />
+        <span data-component="nav-account-menu" className={styles.caret} aria-hidden="true">
+          <Icon name="caret-down" className={styles.caretIcon} />
+        </span>
       </button>
       {open ? (
         <div id={menuId} role="menu" aria-labelledby={buttonId} className={styles.menu}>

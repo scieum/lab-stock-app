@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { Icon } from "@/components/icons";
 import { LinkPending } from "@/components/link-pending";
+import { NavAccountMenu } from "@/components/nav-account-menu";
 import { linkPrefetch } from "@/lib/link-prefetch";
 import { NavLinkLocked } from "./locked-link";
-import { SchoolMenu } from "./school-menu";
 import styles from "./styles.module.css";
 
 export type NavLinkItem = {
@@ -27,7 +27,8 @@ type Props = {
   /** 데스크톱 상단 링크 (모바일에서는 숨김 — 모바일은 tab-bar) */
   links?: NavLinkItem[];
   /**
-   * 있으면 학교명이 버튼이 되고, 누르면 "로그아웃" 1개짜리 메뉴가 열린다 (d7 §10 — 로그인 후 화면만).
+   * 있으면 학교명 옆에 ▾(nav-account-menu)가 붙고 학교명 + ▾ 가 버튼이 되어, 누르면 "로그아웃" 1개짜리 메뉴가 열린다
+   * (d7 §10 — 로그인 후 화면만).
    * 없으면 학교명은 지금처럼 글자다 (로그인 전 화면 · 둘러보기 · 소속 학교 없음 안내).
    */
   onLogout?: () => void | Promise<void>;
@@ -89,7 +90,7 @@ export function NavPill({ title, backHref, schoolName, endTitle, links, sectionT
       </div>
       {schoolName ? (
         onLogout ? (
-          <SchoolMenu schoolName={schoolName} onLogout={onLogout} />
+          <NavAccountMenu schoolName={schoolName} onLogout={onLogout} />
         ) : (
           <span className={styles.school}>{schoolName}</span>
         )

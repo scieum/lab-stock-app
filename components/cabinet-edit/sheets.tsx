@@ -136,3 +136,39 @@ export function CabinetDeleteConfirm({ reagentCount = 0, pending = false, error,
     </ModalCard>
   );
 }
+
+type UnsavedProps = SheetProps & {
+  /** 편집 중인 시약장 이름 — "이동하면 1번 시약장에서 바꾼 내용이 사라져요" */
+  cabinetLabel: string;
+  /** "버리고 이동" — 편집을 버리고 누른 곳으로 간다 */
+  onDiscard?: () => void;
+  /** "계속 편집" · Esc — 카드를 닫고 편집 화면에 머문다 */
+  onContinue?: () => void;
+};
+
+/**
+ * 저장 안 한 편집 확인 (디자인 1.15 11-unsaved, rules.json cabinet.unsaved_confirm, d7 §14):
+ * 편집 중 시약장 전환·화면 이탈 → ex-modal-card "저장하지 않은 변경이 있어요" + 안내 +
+ * 가로 2버튼 button-outline "버리고 이동"(왼쪽) · button-primary "계속 편집"(오른쪽). 핑크·하늘색 없음.
+ */
+export function CabinetUnsavedConfirm({ cabinetLabel, onDiscard, onContinue, onClose, sheet, modal }: UnsavedProps) {
+  return (
+    <ModalCard
+      title="저장하지 않은 변경이 있어요"
+      description={`이동하면 ${cabinetLabel}에서 바꾼 내용이 사라져요`}
+      hideClose
+      onClose={onClose ?? onContinue}
+      sheet={sheet}
+      modal={modal}
+    >
+      <div className={styles.confirm}>
+        <ButtonOutline className={styles.confirmButton} onClick={onDiscard}>
+          버리고 이동
+        </ButtonOutline>
+        <ButtonPrimary className={styles.confirmButton} onClick={onContinue}>
+          계속 편집
+        </ButtonPrimary>
+      </div>
+    </ModalCard>
+  );
+}

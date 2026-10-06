@@ -78,3 +78,40 @@
   font-size: var(--font-size-15);
   line-height: var(--line-height-normal);
 }
+
+/* 디자인 1.15 화면 3 card-meta: 입고일 · 보관 위치 · 재주문 기준 줄 (사이 12, 데스크톱 8).
+ * 줄 모양 = 라벨(12 회색) 위 · 값 아래, 데스크톱은 라벨 칸 64 + 값 가로 */
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+.metaField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.metaLabel {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+@media (min-width: 1024px) {
+  .meta {
+    gap: var(--space-8);
+  }
+
+  .metaField {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-8);
+  }
+
+  .metaLabel {
+    flex: 0 0 var(--space-64);
+  }
+}

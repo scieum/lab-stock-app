@@ -1,0 +1,62 @@
+/* 시안 1.15 threshold-edit: 연필 버튼 44 × 44 (pill), 아이콘 16 하늘색 */
+.wrap {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.pencil {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-highlight);
+  cursor: pointer;
+}
+
+.pencil:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.pencil:active:not(:disabled) {
+  background: var(--color-surface-muted);
+}
+
+.pencil:disabled {
+  color: var(--color-text-placeholder);
+  cursor: not-allowed;
+}
+
+.pencilIcon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+}
+
+/* 편집 상태: 숫자 입력 + 안내 + 버튼 줄 (사이 8) */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.actions .action {
+  flex: 1;
+  min-width: 0;
+}

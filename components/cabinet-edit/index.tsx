@@ -2,7 +2,8 @@ import { Children, isValidElement } from "react";
 import { ButtonOutline } from "@/components/button-outline";
 import styles from "./styles.module.css";
 
-export { CabinetDeleteConfirm, CabinetRenameSheet } from "./sheets";
+export { CabinetDeleteConfirm, CabinetRenameSheet, CabinetUnsavedConfirm } from "./sheets";
+export { CabinetScreen, CabinetTitle } from "./layout";
 
 type Props = {
   /** "이름 바꾸기" — 이름 시트를 연다 */
@@ -11,6 +12,20 @@ type Props = {
   onDelete?: () => void;
   /** true = 관리 줄을 누를 수 없다 (시트·확인 카드가 열려 있거나 저장 중) */
   busy?: boolean;
+  /** 관리 줄 "이름 바꾸기" 옆 qr-print (디자인 1.15) */
+  qrPrint?: React.ReactNode;
+  /**
+   * panel = 디자인 1.15 편집 패널 (CabinetScreen 안에서 쓴다): 관리 줄 + selects 를 한 묶음으로, 그 아래 picker · warning · footer.
+   * 모바일은 배치도가 selects 와 picker 사이에 끼어 보이고(시안 11-mobile), 데스크톱은 오른쪽 테두리 카드(시안 11-desktop).
+   * 넘기지 않으면 예전 모양(children · board)
+   */
+  layout?: "panel";
+  /** panel: 선택 칸 분류 칩 묶음 (StorageClassPicker) */
+  picker?: React.ReactNode;
+  /** panel: mix-warning */
+  warning?: React.ReactNode;
+  /** panel: 저장 줄 (CabinetSaveBar) */
+  footer?: React.ReactNode;
   /** 관리 줄 아래: 문 형태·단 수 선택, 배치도, 분류 칩 묶음, mix-warning, 저장 버튼 */
   children?: React.ReactNode;
   /**
@@ -28,21 +43,55 @@ type Props = {
 
 /**
  * 시약장 편집 영역 (화면 11, 교사·admin 만 — R7: 학생 화면 0개).
- * 맨 위 관리 줄 = button-outline "이름 바꾸기" + 조용한 텍스트 동작 "삭제"(핑크 아님), 그 아래 children.
+ * 맨 위 관리 줄 = button-outline "이름 바꾸기" + qr-print "QR 인쇄"(디자인 1.15) + 오른쪽 조용한 텍스트 동작 "삭제"(핑크 아님),
+ * 그 아래 children (예전 모양) 또는 panel 묶음(selects · picker · warning · footer).
  * 모바일은 테두리 없는 세로 묶음, 데스크톱은 테두리 카드 (시안 11-desktop).
  */
-export function CabinetEdit({ onRename, onDelete, busy = false, children, board, selects, label = "시약장 편집" }: Props) {
-  const split = board !== undefined;
-  return (
-    <section data-component="cabinet-edit" className={[styles.edit, split ? styles.split : ""].filter(Boolean).join(" ")} aria-label={label}>
-      <div className={styles.manage}>
+export function CabinetEdit({
+  onRename,
+  onDelete,
+  busy = false,
+  qrPrint,
+  children,
+  board,
+  selects,
+  layout,
+  picker,
+  warning,
+  footer,
+  label = "시약장 편집",
+}: Props) {
+  const manage = (
+    <div className={styles.manage}>
+      <div className={styles.manageActions}>
         <ButtonOutline className={styles.rename} disabled={busy} onClick={onRename}>
           이름 바꾸기
         </ButtonOutline>
-        <button type="button" className={styles.delete} disabled={busy} onClick={onDelete}>
-          삭제
-        </button>
+        {qrPrint}
       </div>
+      <button type="button" className={styles.delete} disabled={busy} onClick={onDelete}>
+        삭제
+      </button>
+    </div>
+  );
+  if (layout === "panel") {
+    return (
+      <section data-component="cabinet-edit" className={[styles.edit, styles.panel].join(" ")} aria-label={label}>
+        <div className={styles.pHead}>
+          {manage}
+          {selects}
+          {children}
+        </div>
+        {picker ? <div className={styles.pPicker}>{picker}</div> : null}
+        {warning ? <div className={styles.pWarning}>{warning}</div> : null}
+        {footer ? <div className={styles.pFooter}>{footer}</div> : null}
+      </section>
+    );
+  }
+  const split = board !== undefined;
+  return (
+    <section data-component="cabinet-edit" className={[styles.edit, split ? styles.split : ""].filter(Boolean).join(" ")} aria-label={label}>
+      {manage}
       {split ? (
         <>
           {selects ? <div className={styles.segment}>{selects}</div> : null}

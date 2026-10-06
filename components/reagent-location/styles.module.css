@@ -1,0 +1,60 @@
+/* 시안 1.15 3 reagent-location: 한 줄 = 왼쪽 field(라벨 12 회색 위 · 값 15 아래, 사이 4) + 오른쪽 location-edit, 사이 8.
+ * 데스크톱: field 가 가로 (라벨 칸 64 · 값) */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.label {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.value {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.text,
+.none {
+  min-width: 0;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.text {
+  color: var(--color-text);
+}
+
+/* "칸 없음" — 회색 (핑크 아님) */
+.none {
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 1024px) {
+  .field {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-8);
+  }
+
+  .label {
+    flex: 0 0 var(--space-64);
+  }
+}

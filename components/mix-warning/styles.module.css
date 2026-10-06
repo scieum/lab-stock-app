@@ -9,11 +9,12 @@
   color: var(--color-text);
 }
 
+/* 시안 1.15 11 warning-title "주의사항" 17/700 */
 .title {
   margin: 0;
   color: var(--color-text);
-  font-size: var(--font-size-13);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-bold);
   line-height: var(--line-height-normal);
 }
 
@@ -49,8 +50,29 @@
   overflow-wrap: anywhere;
 }
 
-@media (min-width: 1024px) {
-  .title {
-    font-size: var(--font-size-15);
-  }
+/* 칸 배치 경고 (시안 1.15 11-slot · 3-location mix-warning): 제목 없이 아이콘 + 문구 한 줄, 사이 8 */
+.inline {
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.inlineText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.inlineText > p {
+  margin: 0;
+}
+
+/* 섞으면 위험한 조합의 첫 줄 (시안 3-location-mobile warning-line 13/600) */
+.textStrong {
+  min-width: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
 }

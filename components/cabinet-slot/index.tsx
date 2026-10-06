@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import { Icon } from "@/components/icons";
+import { SlotCount } from "@/components/slot-count";
 import { StorageClassChip } from "@/components/storage-class-chip";
 import {
   SLOT_UNSET_LABEL,
@@ -29,7 +30,13 @@ type SlotProps = {
   selected?: boolean;
   /** 섞이면 위험한 조합이 있음 — 칸 오른쪽 위에 경고 아이콘 */
   warning?: boolean;
-  /** 있으면 칸이 선택 버튼이 된다 (교사·admin). 없으면 보기 전용 */
+  /** 이 칸에 배치된 시약 수 (디자인 1.15) — 1 이상이면 오른쪽에 slot-count */
+  count?: number;
+  /**
+   * 있으면 칸이 누름 버튼이 된다. 화면 11 에서는 모든 역할이 칸을 눌러 칸 시트(slot-sheet)를 연다(학생은 목록만) —
+   * 교사·admin 은 같은 누름으로 그 칸이 선택 칸(분류 편집 대상)도 된다. 화면 3 위치 피커에서는 칸 고르기.
+   * 없으면 보기 전용
+   */
   onSelect?: () => void;
   /** true = 보기 전용 (학생) — onSelect 가 있어도 누름 동작 없음 */
   readOnly?: boolean;
@@ -40,15 +47,20 @@ type SlotProps = {
  * 시약장 배치도의 칸 1개 (화면 11). 칸 안에 분류 이름("산 · 염기") 또는 "미지정".
  * 선택 = 연하늘 바탕 + 하늘색 테두리(글자는 기본색), 경고 아이콘은 기본색(핑크 아님).
  */
-export function CabinetSlot({ name, classes, selected = false, warning = false, onSelect, readOnly = false, disabled }: SlotProps) {
+export function CabinetSlot({ name, classes, selected = false, warning = false, count = 0, onSelect, readOnly = false, disabled }: SlotProps) {
   const empty = sortClasses(classes).length === 0;
   const text = slotLabel(classes);
-  const label = `${name}: ${text}${warning ? `, ${WARNING_LABEL}` : ""}`;
+  const label = `${name}: ${text}${warning ? `, ${WARNING_LABEL}` : ""}${count > 0 ? `, 시약 ${count}개` : ""}`;
   const cls = [styles.slot, selected ? styles.selected : ""].filter(Boolean).join(" ");
   const content = (
     <>
       <span className={empty ? styles.unset : styles.label}>{text}</span>
-      {warning ? <Icon name="warning" className={styles.warning} /> : null}
+      {warning || count > 0 ? (
+        <span className={styles.meta}>
+          {warning ? <Icon name="warning" className={styles.warning} /> : null}
+          <SlotCount count={count} />
+        </span>
+      ) : null}
     </>
   );
   if (onSelect && !readOnly) {
@@ -79,6 +91,8 @@ type LayoutProps = {
   shelves: number;
   /** 칸별 분류. 목록에 없는 칸은 "미지정" */
   slots: readonly SlotClasses[];
+  /** 칸별 시약 수 — 키는 slotId ("L1") (디자인 1.15 slot-count). 없거나 0 이면 그리지 않는다 */
+  counts?: Readonly<Record<string, number>>;
   /** 선택된 칸 (교사·admin) */
   selected?: SlotKey | null;
   /** 칸을 눌렀을 때 — 없으면 보기 전용 */
@@ -98,6 +112,7 @@ export function CabinetLayout({
   doorType,
   shelves,
   slots,
+  counts,
   selected,
   onSelect,
   readOnly = false,
@@ -136,6 +151,7 @@ export function CabinetLayout({
                   classes={classes}
                   selected={!readOnly && sameSlot(selected, key)}
                   warning={hasIncompatible(classes)}
+                  count={counts?.[slotId(key)] ?? 0}
                   onSelect={onSelect ? () => onSelect(key) : undefined}
                   readOnly={readOnly}
                   disabled={disabled}
