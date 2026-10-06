@@ -13,6 +13,7 @@ import { ROLE_LABEL, SCHOOL_A_ROLES } from "./db-helpers";
 import { demoReagents, guestDetailPath, openGuest } from "./guest-helpers";
 import { browserClient, browserSession, countComponent, routeOf, rules, sel, seedRows } from "./screen-helpers";
 import { detailPath, waitDetail } from "./screen-3-helpers";
+import { MANUAL_SOURCE_TEXT } from "./reorder-auto-helpers";
 import { HAS_SERVICE, clientFor, openTemp, service } from "./screen-8-helpers";
 import {
   CAB,
@@ -74,6 +75,8 @@ const PICKER_TITLE = "보관 위치 바꾸기";
 const UNASSIGN_ACTION = `${CAB.unassigned_label}으로`;
 const THRESH_CAPTION = "재주문 기준";
 const THRESH_NONE = "아직 없어요";
+/** 직접 입력한 기준(0 포함)의 출처 줄 (d7 §11-1 — D3 run 20261006-1934 부터 화면 3 에 표시) */
+const THRESH_MANUAL = MANUAL_SOURCE_TEXT;
 const TOAST_PLACED = "보관 위치를 바꿨어요";
 const SAVE = "저장";
 /** "1번 시약장 · 우 1단" (s2-spec 화면 3 reagent-location, 양문형) */
@@ -371,7 +374,7 @@ test.describe("일회용 학교", () => {
   test(`[R-ui][S${SCREEN}] 일회용 학생 시약 상세: ${LOC}·${THRESH} 값은 보임 · ${LOC_EDIT}·${THRESH_EDIT}·${PICKER} 0 (R5·R7) · 응답 본문에 그 컴포넌트·피커 데이터(다른 시약장 이름) 없음 — 같은 시약의 교사 응답에는 있음(대조) · 쓰기 0건`, async ({ browser }, info) => {
     const f = await fresh(info);
     const st = await prepLocState(f);
-    // 학생에게 보이는 재주문 기준 줄 = "아직 없어요" 상태로 (새 시약의 자동 기준 대신 manual 0 — 화면 문구가 바뀌는 D3 전까지 값만 보는 단언 유지)
+    // 학생에게 보이는 재주문 기준 줄 = 직접 입력 0 상태 ("아직 없어요" + 출처 "직접 입력", d7 §11-1 — 모든 역할 같은 표시)
     await prepNoThreshold(f, st.x.id);
     expect(R5.components, "R5 에 threshold-edit").toContain(THRESH_EDIT);
     expect(R7.components, "R7 에 location-edit").toContain(LOC_EDIT);
@@ -394,7 +397,7 @@ test.describe("일회용 학교", () => {
       }
       expect(html, "학생 응답 본문에 피커 데이터(다른 시약장 이름) 없음").not.toContain(st.c2.label);
       await expectLocation(page, { number: st.c1.number, label: st.c1.label, key: "R1" }, "학생");
-      expect(await thresholdText(page), "학생 재주문 기준 줄 (값만)").toBe(`${THRESH_CAPTION} ${THRESH_NONE}`);
+      expect(await thresholdText(page), "학생 재주문 기준 줄 (값 + 출처)").toBe(`${THRESH_CAPTION} ${THRESH_NONE} ${THRESH_MANUAL}`);
       await expect(locRow(page).getByRole("button"), "학생 보관 위치 줄에 버튼 없음").toHaveCount(0);
       await expect(thrRow(page).getByRole("button"), "학생 재주문 기준 줄에 버튼 없음").toHaveCount(0);
       expect(actions.count(), "쓰기 요청 0건").toBe(0);
@@ -430,10 +433,10 @@ test.describe("일회용 학교", () => {
       await expect(card(page).locator(sel(BADGE)), "재고 30 < 기준 60 → 재고 부족 배지").toHaveCount(1);
       await page.goto(detailPath(direct.id));
       await waitDetail(page);
-      expect(nospace(await thresholdText(page)), "직접 값 시약: 값 5g · 근거 문구 없음").toBe(nospace(`${THRESH_CAPTION} 5g`));
+      expect(nospace(await thresholdText(page)), "직접 값 시약: 값 5g · 근거 문구 대신 출처 \"직접 입력\"").toBe(nospace(`${THRESH_CAPTION} 5g ${THRESH_MANUAL}`));
       await page.goto(detailPath(none.id));
       await waitDetail(page);
-      expect(await thresholdText(page), "기준 0 = 아직 없어요").toBe(`${THRESH_CAPTION} ${THRESH_NONE}`);
+      expect(await thresholdText(page), "직접 입력 0 = 아직 없어요 + 출처").toBe(`${THRESH_CAPTION} ${THRESH_NONE} ${THRESH_MANUAL}`);
       await expect(card(page).locator(sel(BADGE)), "기준 없음 → 배지 없음").toHaveCount(0);
 
       // 연필 → 입력 · 검증
@@ -461,7 +464,7 @@ test.describe("일회용 학교", () => {
       expect(actions.count(), "연타에도 저장 요청 1건").toBe(1);
       await expect.poll(async () => (await reagentByService(none.id)).min_stock, { timeout: SAVE_TIMEOUT }).toBe(9);
       expect((await reagentByService(none.id)).min_stock_source, "직접 입력 → 'manual'").toBe("manual");
-      await expect.poll(() => thresholdText(page), { timeout: SAVE_TIMEOUT }).toBe(`${THRESH_CAPTION} 9g`);
+      await expect.poll(() => thresholdText(page), { timeout: SAVE_TIMEOUT }).toBe(`${THRESH_CAPTION} 9g ${THRESH_MANUAL}`);
       await expect(card(page).locator(sel(BADGE)), "재고 7 < 기준 9 → 재고 부족 배지").toHaveCount(1, { timeout: SAVE_TIMEOUT });
       // 화면 6 알림에 나타남
       await page.goto(REORDER_HREF);
@@ -476,7 +479,7 @@ test.describe("일회용 학교", () => {
       await save.click();
       await expectToast(page, /^\s*재주문 기준을 0/);
       await expect.poll(async () => (await reagentByService(none.id)).min_stock, { timeout: SAVE_TIMEOUT }).toBe(0);
-      await expect.poll(() => thresholdText(page), { timeout: SAVE_TIMEOUT }).toBe(`${THRESH_CAPTION} ${THRESH_NONE}`);
+      await expect.poll(() => thresholdText(page), { timeout: SAVE_TIMEOUT }).toBe(`${THRESH_CAPTION} ${THRESH_NONE} ${THRESH_MANUAL}`);
       await expect(card(page).locator(sel(BADGE)), "기준 0 → 배지 없음").toHaveCount(0);
       await page.goto(REORDER_HREF);
       await expect(page.locator("main").first()).toBeVisible({ timeout: 45_000 });
@@ -493,7 +496,7 @@ test.describe("일회용 학교", () => {
       await save.click();
       await expectToast(page, toastThreshold("2", "g"));
       await expect.poll(async () => reagentByService(basis.id), { timeout: SAVE_TIMEOUT }).toMatchObject({ min_stock: 2, reorder_per_group: null, reorder_groups: null, min_stock_source: "manual" });
-      await expect.poll(() => thresholdText(page), { timeout: SAVE_TIMEOUT }).toBe(`${THRESH_CAPTION} 2g`);
+      await expect.poll(() => thresholdText(page), { timeout: SAVE_TIMEOUT }).toBe(`${THRESH_CAPTION} 2g ${THRESH_MANUAL}`);
       await expect(card(page).locator(sel(BADGE)), "재고 30 ≥ 기준 2 → 배지 없음").toHaveCount(0);
       expect(actions.count(), "쓰기 요청 = 9 · 0 · 2 세 번").toBe(3);
     } finally {

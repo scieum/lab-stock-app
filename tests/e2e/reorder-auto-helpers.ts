@@ -59,3 +59,11 @@ export function withoutAutoDrift<T extends Record<string, unknown>>(row: T): T {
   delete out.low_stock_since;
   return out as T;
 }
+
+/** 직접 입력한 기준의 출처 문구: d7 §11-1 '기준의 출처' 행의 'manual'(화면 3 직접 입력) */
+export const MANUAL_SOURCE_TEXT = (() => {
+  const line = AUTO_SECTION.split(/\r?\n/).find((l) => l.startsWith("| 기준의 출처 |")) ?? "";
+  const m = /'manual'\(화면 3 ([^)]+)\)/.exec(line);
+  if (!m) throw new Error("harness/d7-data.md §11-1 '기준의 출처' 에서 manual 문구를 읽지 못했습니다");
+  return m[1];
+})();
