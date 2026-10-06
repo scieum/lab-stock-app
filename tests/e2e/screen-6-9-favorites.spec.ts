@@ -164,7 +164,7 @@ test.afterAll(async ({}, info) => {
 // 화면 6
 // =====================================================================
 
-test(`[C1][S${REORDER}] 일회용 학교 교사: 판매처 연결 모달 별표 — 처음엔 즐겨찾기 0 → 전체 ${COMMON_SEED.length}+학교 행 · 별표마다 누름 ≥ rules.button.min_height · 누르면 즉시 aria-pressed true(행 선택 그대로) + DB 1행(created_by = 교사) → 다시 열면 즐겨찾기만 + "${SHOW_ALL}" → 펼치면 전체·즐겨찾기 먼저(나머지는 지금 순서)·버튼 사라짐 → 해제해 0개면 처음부터 전체`, async ({ browser }, info) => {
+test(`[C1][S${REORDER}] 일회용 학교 교사: 판매처 연결 모달 별표 — 처음엔 즐겨찾기 0 → 전체 ${COMMON_SEED.length}+학교 행 · 별표마다 누름 ≥ rules.button.min_height · 누르면 즉시 aria-pressed true(열린 동안 목록·순서·선택 그대로, 다음 열 때 새 기준) + DB 1행(created_by = 교사) → 다시 열면 즐겨찾기만 + "${SHOW_ALL}" → 펼치면 전체·즐겨찾기 먼저(나머지는 지금 순서)·버튼 사라짐 → 해제해 0개면 처음부터 전체`, async ({ browser }, info) => {
   const f = await fresh(info);
   await prepReagent(f, { tag: "즐겨찾기", stock: 1, min: 9, unit: "g" });
   const own = await prepVendor(f, { contact: "043-000-7777", website: fakeSite("fav") }, "즐겨찾기");
@@ -191,11 +191,42 @@ test(`[C1][S${REORDER}] 일회용 학교 교사: 판매처 연결 모달 별표 
     for (const name of initial) await expectStar(toggleOf(dlg, name), false, `처음 "${name}"`);
     for (const name of [initial[0], target, initial[initial.length - 1]]) await expectTapTarget(toggleOf(dlg, name), `"${name}"`);
 
-    // 2) 대상 행을 고르고 그 별표를 누름 → 즉시 켜짐 · 선택 그대로 · DB 1행
+    // 1-1) 즐겨찾기 0 · 첫 행 선택 상태에서 마지막 행 별표 → 열린 동안 목록 전체·순서·선택 그대로 (별표 모양만 바뀜)
+    //      "즐겨찾기만 / 전체" 는 모달을 열 때 정한다 → 닫고 다시 열면 즐겨찾기만 + "모든 판매처 보기"
+    const first = initial[0];
+    const last = initial[initial.length - 1];
+    await pickVendor(page, first);
+    await toggleOf(dlg, last).click();
+    await expectStar(toggleOf(dlg, last), true, `누른 뒤 "${last}"`, INSTANT_MS);
+    expect(await optionNames(page), "열린 동안 목록 전체·순서 그대로").toEqual(initial);
+    expect(await checkedName(page), "다른 행 별표를 눌러도 선택은 그대로").toBe(first);
+    await expect(showAll(page), `열린 동안 "${SHOW_ALL}" 생기지 않음`).toHaveCount(0);
+    await expect.poll(async () => favPairs(await favsOf(f.school.id)), { message: "DB: 즐겨찾기 1행", timeout: 20_000 }).toEqual([`${common.get(last)!.id}|${f.teacher.id}`]);
+    await page.waitForTimeout(500);
+    expect(await optionNames(page), "저장 응답 뒤에도 목록 그대로").toEqual(initial);
+    expect(await checkedName(page), "저장 응답 뒤에도 선택 그대로").toBe(first);
+    await page.keyboard.press("Escape");
+    await expect(linkDialog(page), "Esc 로 닫힘").toHaveCount(0);
+    dlg = await openLinkModal(page, cards(page).first());
+    expect(await optionNames(page), "다시 열면 즐겨찾기만").toEqual([last]);
+    await expect(showAll(page), `다시 열면 "${SHOW_ALL}"`).toHaveCount(1);
+    // 해제: 열린 동안 행은 남고 별표만 꺼짐 → 다시 열면 전체
+    await toggleOf(dlg, last).click();
+    await expectStar(toggleOf(dlg, last), false, `해제 뒤 "${last}"`, INSTANT_MS);
+    expect(await optionNames(page), "마지막 즐겨찾기를 풀어도 열린 동안 행은 남음").toEqual([last]);
+    await expect.poll(async () => favsOf(f.school.id), { message: "DB: 0행", timeout: 20_000 }).toEqual([]);
+    await page.keyboard.press("Escape");
+    await expect(linkDialog(page)).toHaveCount(0);
+    dlg = await openLinkModal(page, cards(page).first());
+    expect(await optionNames(page), "다시 열면 전체 · 지금 순서").toEqual(initial);
+    await expect(showAll(page), `즐겨찾기 0: "${SHOW_ALL}" 없음`).toHaveCount(0);
+
+    // 2) 대상 행을 고르고 그 별표를 누름 → 즉시 켜짐 · 목록·선택 그대로 · DB 1행
     await pickVendor(page, target);
     await toggleOf(dlg, target).click();
     await expectStar(toggleOf(dlg, target), true, `누른 뒤 "${target}"`, INSTANT_MS);
     expect(await checkedName(page), "별표를 눌러도 행 선택은 그대로").toBe(target);
+    expect(await optionNames(page), "열린 동안 목록 그대로").toEqual(initial);
     await expect.poll(async () => favPairs(await favsOf(f.school.id)), { message: "DB: 즐겨찾기 1행", timeout: 20_000 }).toEqual([`${common.get(target)!.id}|${f.teacher.id}`]);
     await expect(favoriteAlert(page), "저장 성공: 오류 안내 없음").toHaveCount(0);
 
@@ -220,22 +251,29 @@ test(`[C1][S${REORDER}] 일회용 학교 교사: 판매처 연결 모달 별표 
     await toggleOf(dlg, second).click();
     await expectStar(toggleOf(dlg, second), true, `"${second}"`, INSTANT_MS);
     expect(await checkedName(page), "다른 행 별표를 눌러도 선택은 그대로").toBe(own.name);
+    expect(await optionNames(page), "펼친 목록의 순서는 열린 동안 그대로 (펼칠 때의 즐겨찾기 먼저)").toEqual([target, ...initial.filter((n) => n !== target)]);
     await expect
       .poll(async () => favPairs(await favsOf(f.school.id)), { message: "DB: 즐겨찾기 2행", timeout: 20_000 })
       .toEqual([`${common.get(target)!.id}|${f.teacher.id}`, `${common.get(second)!.id}|${f.teacher.id}`].sort());
 
-    // 6) 다시 열면 즐겨찾기 2곳만 (지금 순서) → 하나 해제하면 남은 하나만 → 마지막 해제하면 전체
+    // 6) 다시 열면 즐겨찾기 2곳만 (지금 순서) → 열린 동안 둘 다 풀어도 행 2개 그대로(별표만 꺼짐) → 다시 열면 전체
     await page.reload();
     await waitReorder(page);
     dlg = await openLinkModal(page, cards(page).first());
-    expect(await optionNames(page), "즐겨찾기 2곳만 (지금 순서)").toEqual(initial.filter((n) => n === target || n === second));
+    const favRows = initial.filter((n) => n === target || n === second);
+    expect(await optionNames(page), "즐겨찾기 2곳만 (지금 순서)").toEqual(favRows);
     await toggleOf(dlg, target).click();
-    await expect(toggleOf(dlg, target), `"${target}" 해제 → 목록에서 빠짐 (즐겨찾기만 보기)`).toHaveCount(0, { timeout: INSTANT_MS * 5 });
-    expect(await optionNames(page), "남은 즐겨찾기만").toEqual([second]);
+    await expectStar(toggleOf(dlg, target), false, `"${target}" 해제`, INSTANT_MS);
+    expect(await optionNames(page), "해제해도 열린 동안 행 남음 · 목록 그대로").toEqual(favRows);
     await expect.poll(async () => favPairs(await favsOf(f.school.id)), { message: "DB: 1행", timeout: 20_000 }).toEqual([`${common.get(second)!.id}|${f.teacher.id}`]);
     await toggleOf(dlg, second).click();
-    await expect.poll(async () => (await optionNames(page)).length, { message: "즐겨찾기 0 → 전체", timeout: INSTANT_MS * 5 }).toBe(initial.length);
+    await expectStar(toggleOf(dlg, second), false, `"${second}" 해제`, INSTANT_MS);
     await expect.poll(async () => favsOf(f.school.id), { message: "DB: 0행", timeout: 20_000 }).toEqual([]);
+    expect(await optionNames(page), "마지막 즐겨찾기를 풀어도 열린 동안 2행 그대로").toEqual(favRows);
+    await page.keyboard.press("Escape");
+    await expect(linkDialog(page)).toHaveCount(0);
+    dlg = await openLinkModal(page, cards(page).first());
+    expect(await optionNames(page), "다시 열면 전체 · 지금 순서").toEqual(initial);
     await page.reload();
     await waitReorder(page);
     dlg = await openLinkModal(page, cards(page).first());
