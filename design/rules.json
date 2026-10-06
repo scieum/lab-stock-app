@@ -1,5 +1,5 @@
 {
-  "version": "1.15",
+  "version": "1.17",
   "sources": [
     "docs/design.md",
     "docs/story-service.md",
@@ -15,7 +15,9 @@
     "2026-10-03 화면 15 랜딩 추가",
     "2026-10-03 둘러보기(guest) 모드",
     "2026-10-04 학교당 시약장 여러 개",
-    "2026-10-06 시약 칸 배치·시약장 번호·QR 인쇄·재주문 기준 직접 입력 (개발 세션 요청)"
+    "2026-10-06 시약 칸 배치·시약장 번호·QR 인쇄·재주문 기준 직접 입력 (개발 세션 요청)",
+    "2026-10-07 서류로 입고·MSDS 자동 찾기·위치 자동 추천·자동 재주문 기준 표시 (개발 세션 요청 2)",
+    "2026-10-07 시약 목록 필터·정렬, 사용일 고르기 (개발 세션 요청 3)"
   ],
   "colors": {
     "allowed": [
@@ -177,8 +179,8 @@
       15
     ],
     "guest_name_pattern": "^([1-9]|1[0-5])-guest-(mobile|desktop)$",
-    "variant_name_pattern": "^([1-9]|1[0-5])-(empty|delete|slot|print|unsaved|location|result)-(mobile|desktop)$",
-    "variant_note": "같은 화면의 다른 상태 프레임. input.json variants {\"11\": [\"empty\",\"delete\"]} 로 요청 (2026-10-04) · 2026-10-06 상태 추가: 11-slot·11-print·11-unsaved·3-location·12-result"
+    "variant_name_pattern": "^([1-9]|1[0-5])-(empty|delete|slot|print|unsaved|location|result|doc-upload|doc-review|doc-fail|suggest|msds|msds-bulk|filter|filter-empty|past-date)-(mobile|desktop)$",
+    "variant_note": "같은 화면의 다른 상태 프레임. input.json variants {\"11\": [\"empty\",\"delete\"]} 로 요청 (2026-10-04) · 2026-10-06 상태 추가: 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 상태 추가: 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk · 2026-10-07 상태 추가: 2-filter·2-filter-empty, 4-past-date"
   },
   "s1": {
     "refs_per_screen": [
@@ -220,10 +222,13 @@
       "components": [
         "stock-intake",
         "reagent-register",
-        "threshold-edit"
+        "threshold-edit",
+        "doc-upload",
+        "msds-search",
+        "msds-bulk-banner"
       ],
       "max": 0,
-      "source": "2026-10-02 화면 7 · 2026-10-06 threshold-edit(재주문 기준 고치기 = 시약 정보 입력) 추가"
+      "source": "2026-10-02 화면 7 · 2026-10-06 threshold-edit(재주문 기준 고치기 = 시약 정보 입력) 추가 · 2026-10-07 doc-upload·msds-search·msds-bulk-banner 추가"
     },
     "R6": {
       "component": "user-manage",
@@ -301,7 +306,9 @@
         "토큰",
         "NEIS 키",
         "나이스 키",
-        "인증키"
+        "인증키",
+        "서비스 키",
+        "서비스키"
       ],
       "scan": [
         "frames",
@@ -403,7 +410,16 @@
       "reagent-location",
       "reorder-threshold"
     ],
-    "source": "2026-10-02 story-service 결정 (화면별 필수 컴포넌트, 규칙 C1) · 15 랜딩 2026-10-03 · 2026-10-06 화면 3 보관 위치·재주문 기준, 화면 11 시약장 번호·QR 인쇄"
+    "7": [
+      "intake-mode"
+    ],
+    "2": [
+      "list-filter-button"
+    ],
+    "4": [
+      "usage-date"
+    ],
+    "source": "2026-10-02 story-service 결정 (화면별 필수 컴포넌트, 규칙 C1) · 15 랜딩 2026-10-03 · 2026-10-06 화면 3 보관 위치·재주문 기준, 화면 11 시약장 번호·QR 인쇄 · 2026-10-07 화면 7 intake-mode · 2026-10-07 화면 2 list-filter-button, 화면 4 usage-date"
   },
   "cabinet": {
     "door_types": [
@@ -555,7 +571,11 @@
       "location-edit",
       "slot-assign",
       "qr-print",
-      "cabinet-add"
+      "cabinet-add",
+      "doc-upload",
+      "msds-search",
+      "msds-bulk-banner",
+      "location-suggest"
     ],
     "source": "2026-10-03 사용자 결정: 비회원 둘러보기 (데모 학교 읽기 전용)"
   },
@@ -586,7 +606,12 @@
       "location": [
         "location-picker",
         "cabinet-switcher",
-        "cabinet-slot"
+        "cabinet-slot",
+        "suggest-badge"
+      ],
+      "msds": [
+        "msds-search",
+        "msds-candidates"
       ]
     },
     "12": {
@@ -595,11 +620,57 @@
         "cabinet-number"
       ]
     },
-    "source": "2026-10-04 여러 시약장: 빈 상태(교사 기준)·삭제 확인 상태 필수 컴포넌트 (C1) · 2026-10-06 11-slot·11-print·11-unsaved·3-location·12-result"
+    "7": {
+      "doc-upload": [
+        "intake-mode",
+        "doc-upload"
+      ],
+      "doc-review": [
+        "doc-intake-table",
+        "reagent-link",
+        "new-reagent-fields",
+        "msds-search"
+      ],
+      "doc-fail": [
+        "ex-empty-state-card",
+        "doc-upload"
+      ],
+      "suggest": [
+        "location-suggest",
+        "suggest-badge"
+      ],
+      "msds": [
+        "msds-candidates"
+      ]
+    },
+    "2": {
+      "msds-bulk": [
+        "msds-bulk-banner",
+        "msds-candidates"
+      ],
+      "filter": [
+        "list-filter-sheet",
+        "storage-class-chip",
+        "filter-chip-row"
+      ],
+      "filter-empty": [
+        "filter-chip-row",
+        "ex-empty-state-card"
+      ]
+    },
+    "4": {
+      "past-date": [
+        "usage-date",
+        "past-date-note"
+      ]
+    },
+    "source": "2026-10-04 여러 시약장: 빈 상태(교사 기준)·삭제 확인 상태 필수 컴포넌트 (C1) · 2026-10-06 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk, 3-location + suggest-badge · 2026-10-07 2-filter·2-filter-empty, 4-past-date"
   },
   "reorder": {
     "threshold_edit": "화면 3 시약 상세에서 교사·admin이 재주문 기준(필요량)을 숫자로 직접 입력 (reorder-threshold 안 threshold-edit). 화면 5 AI 추출 값과 같은 칸을 덮어씀",
-    "source": "2026-10-06 사용자 결정 (개발 세션 요청 3)"
+    "source": "2026-10-06 사용자 결정 (개발 세션 요청 3)",
+    "auto": "기준 없는 시약은 자동 기준(최근 4주 평균 주간 사용량 × 2주, 사용 기록 없으면 마지막 입고량의 20%). 매뉴얼·직접 입력 우선. 표시 = auto-threshold-badge '자동'(colors.canvas-soft 회색 pill, ink 글자) + 캡션 한 줄 '최근 사용량으로 계산했어요'. 핑크·하늘색 금지 (화면 3·6)",
+    "auto_source": "2026-10-07 개발 세션 요청 2-4"
   },
   "app_exceptions": {
     "nav-account-menu": "공통 nav-pill: 로그인 후 학교명 옆 작은 ▾ → 메뉴에 '로그아웃' 1개",
@@ -607,6 +678,59 @@
     "extraction-link-row": "5 실험 매뉴얼: 추출 표 행마다 아래 줄에 '우리 학교 시약' 선택·삭제·'기존 기준 N · 그대로 둬요/바뀌어요'. 단위 = 선택 상자(병·mL·g). 조 수 기본값 빈 값",
     "sheet-close": "8 사용자 관리 시트·9 판매처 등록 폼: 오른쪽 위 × 닫기. 8 삭제 확인 '{이름} · 사용·입고 기록은 남아요', 초대는 이메일만. 9 부가 정보 칸 없음",
     "vendor-new-window": "6 재주문 알림: 판매처 '확인' 뒤 '사이트를 새 창으로 열었어요. 열리지 않았다면 [직접 열기]' 안내 줄",
-    "source": "2026-10-06 사용자 결정 — 개발 세션 예외 1~6 시안에 반영 (7은 cabinet.unsaved_confirm으로 대체)"
+    "source": "2026-10-06 사용자 결정 — 개발 세션 예외 1~6 시안에 반영 (7은 cabinet.unsaved_confirm으로 대체)",
+    "extraction-merge": "5 실험 매뉴얼: 같은 시약이 여러 번 나오면 한 줄로 합치고 무채색 안내 줄 '2개 행을 합쳤어요' (2026-10-07)"
+  },
+  "intake": {
+    "entry": "화면 7 맨 위 intake-mode(segmented-control '직접 입력 / 서류로 입고', 기본 = 서류로 입고). 홈 quick-action '입고'는 화면 7로",
+    "roles": [
+      "교사",
+      "admin"
+    ],
+    "file_types": [
+      "PDF",
+      "JPG",
+      "PNG"
+    ],
+    "max_mb": 4,
+    "review": "화면 5 방식: 행 = 서류 품목 1개(품명·규격·수량) + 아래 줄 reagent-link(자동 연결·바꾸기·빼기·'새 시약으로 등록'). 모바일은 행마다 카드. 단위 환산은 무채색 안내 줄(예: 500 mL × 4병 = 2,000 mL)",
+    "new_reagent": "'새 시약'을 고르면 그 행이 아래로 펼쳐짐(new-reagent-fields): 이름·보관 분류(AI 추천 표시)·단위·재고량·MSDS(msds-search)",
+    "date": "입고일 = 서류 날짜(없으면 오늘), 고칠 수 있음",
+    "not_reagent": "시약이 아닌 품목은 표 아래 접힌 묶음 '시약 아님 N개'",
+    "after_save": "ex-toast → 새 시약이 있으면 location-suggest 단계, 없으면 시약 목록(화면 2)",
+    "source": "2026-10-07 사용자 결정 (개발 세션 요청 2-1)"
+  },
+  "msds": {
+    "entries": [
+      "화면 7 새 시약 입력(직접·서류)",
+      "화면 3 MSDS 없는 시약(교사·admin, 학생은 'MSDS가 아직 없어요')",
+      "화면 2 일괄 찾기 띠(교사·admin)"
+    ],
+    "candidates": "msds-candidates: 물질명·CAS 목록에서 하나 고르기. 0개면 '찾지 못했어요 — 직접 입력'",
+    "key": "공공데이터포털 서비스 키는 서버에서만 (N2). 화면에 키 입력 칸·키 문구 금지",
+    "source": "2026-10-07 사용자 결정 (개발 세션 요청 2-2)"
+  },
+  "suggest": {
+    "rule": "시약 분류가 칸 분류에 있고 그 칸 시약과 incompatible 조합 없음 → 시약 적은 칸 → 시약장 번호·칸 순 (개발 쪽 계산)",
+    "badge": "suggest-badge '추천' = colors.highlight-soft 채움 + colors.highlight 1px 테두리, 글자 ink. 핑크 금지",
+    "picker": "location-picker·slot-sheet에서 추천 칸에 suggest-badge, 처음 선택으로 둠",
+    "after_register": "location-suggest: 시약마다 '추천 위치: {번호}번 시약장 좌2단' + [여기에 두기][다른 칸], 아래 '모두 추천대로'·'나중에'. 추천 칸 없음 = '맞는 칸이 없어요 — 시약장 설정에서 칸 분류를 정해 주세요'",
+    "source": "2026-10-07 사용자 결정 (개발 세션 요청 2-3)"
+  },
+  "list_filter": {
+    "entry": "화면 2 검색 text-input 오른쪽 list-filter-button '필터' pill. 적용 중이면 개수 배지(colors.highlight-soft 채움 + highlight 테두리, ink 글자). 기존 segmented-control '전체 / 재고 부족'은 그대로",
+    "sheet": "list-filter-sheet: 모바일 바텀시트, 데스크톱 드롭다운 패널. 순서 = 정렬(이름순 기본·재고 적은 순·최근 입고순) → 보관 분류 storage-class-chip 여러 개 + '분류 없음' → 보관 위치(시약장 번호·이름 → 칸, '칸 없음만') → 'MSDS 없는 시약만' 토글. 아래 button-outline '초기화' + button-primary '{N}종 보기'",
+    "chips": "filter-chip-row: 목록 위 적용 칩(×로 하나씩 빼기) + '모두 지우기' + 결과 수 '12종'",
+    "empty": "ex-empty-state-card '조건에 맞는 시약이 없어요' + button-outline '필터 지우기'",
+    "msds_link": "MSDS 없는 시약 필터가 켜지면 교사·admin에게 msds-bulk-banner가 함께 보임",
+    "roles": "모든 역할·둘러보기 동일. 상태는 주소창에 유지(개발 쪽)",
+    "source": "2026-10-07 사용자 결정 (개발 세션 요청 3-1)"
+  },
+  "usage_date": {
+    "field": "화면 4 usage-date '사용일' — 화면 7 입고일과 같은 모양(text-input 날짜), 수량 아래. 기본 오늘, 오늘 이후 못 고름",
+    "past_note": "오늘이 아니면 저장 버튼 위 past-date-note 무채색 한 줄 '10월 3일 사용으로 기록해요'",
+    "history": "화면 10은 사용일로 묶고 정렬. 기록한 날이 사용일과 다를 때만 회색 캡션 '10월 6일에 기록'",
+    "auto_threshold": "자동 재주문 기준(최근 28일)도 사용일 기준 (개발 쪽)",
+    "source": "2026-10-07 사용자 결정 (개발 세션 요청 3-2)"
   }
 }
