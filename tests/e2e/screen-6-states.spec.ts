@@ -37,6 +37,7 @@ import {
   cards,
   checkSchoolNames,
   cleanup,
+  commonSearchOf,
   confirmButton,
   countsOf,
   dateText,
@@ -69,6 +70,7 @@ import {
   readOptions,
   schoolNamesOf,
   scrollToEnd,
+  searchHref,
   sharedSnapshot,
   stubExternal,
   tabBarTop,
@@ -227,7 +229,7 @@ for (const who of ["teacher", "admin"] as const) {
 // C1 — 판매처 연결 모달
 // =====================================================================
 
-test(`[C1][S${SCREEN}] 일회용 학교 교사: 판매처 연결 모달 — 행 = 우리 학교 판매처 먼저 → 공통 ${COMMON_SEED.length}곳 · 행 = 판매처명 + 부가 정보 · 웹사이트 없는 판매처 → "확인" 비활성 + 연락처 안내(새 창 없음) · 공통/학교 판매처 "확인" → 새 창 = 그 website · 모달 닫힘 · "${DIRECT_OPEN}"(href·target=_blank·rel noopener) · Esc·취소·같은 버튼으로 닫힘 + 포커스 복귀 · 쓰기 요청 0건 · DB 불변`, async ({ browser }, info) => {
+test(`[C1][S${SCREEN}] 일회용 학교 교사: 판매처 연결 모달 — 행 = 우리 학교 판매처 먼저 → 공통 ${COMMON_SEED.length}곳 · 행 = 판매처명 + 부가 정보 · 웹사이트 없는 판매처 → "확인" 비활성 + 연락처 안내(새 창 없음) · 공통 판매처 "확인" → 새 창 = 검색 주소(d7 §11) / 학교 판매처 → website · 모달 닫힘 · "${DIRECT_OPEN}"(href·target=_blank·rel noopener) · Esc·취소·같은 버튼으로 닫힘 + 포커스 복귀 · 쓰기 요청 0건 · DB 불변`, async ({ browser }, info) => {
   const f = await fresh(info);
   const reagent = await prepReagent(f, { tag: "모달", stock: 3, min: 12, unit: "g" });
   const other = await prepReagent(f, { tag: "모달둘", stock: 9, min: 12, unit: "g" });
@@ -274,26 +276,29 @@ test(`[C1][S${SCREEN}] 일회용 학교 교사: 판매처 연결 모달 — 행 
     await pickVendor(page, bare.name);
     await expect(confirmButton(page), "웹사이트·연락처 없는 판매처 → 확인 비활성").toBeDisabled();
 
-    // 새 창: 공통 판매처 → 학교 판매처
-    for (const pick of [{ name: COMMON_SEED[0].name, website: COMMON_SEED[0].website }, { name: withSite.name, website: withSite.website! }]) {
+    // 새 창: 공통 판매처 → 검색 주소(d7 §11 검색어 자동 입력, {q} = 카드 시약 이름) / 학교 판매처 → website (search_url 없음)
+    for (const pick of [
+      { name: COMMON_SEED[0].name, url: searchHref(commonSearchOf(COMMON_SEED[0].name), reagent.name), what: "공통 판매처 검색 주소" },
+      { name: withSite.name, url: hrefOf(withSite.website!), what: "학교 판매처 website" },
+    ]) {
       dlg = await openLinkModal(page, card);
       await pickVendor(page, pick.name);
       await expect(confirmButton(page), `${pick.name}: 확인 활성`).toBeEnabled();
       const [popup] = await Promise.all([context.waitForEvent("page", { timeout: 20_000 }), confirmButton(page).click()]);
       await popup.waitForURL((u) => u.href !== "about:blank", { timeout: 20_000 });
-      expect(popup.url(), `${pick.name}: 새 창 주소 = website`).toBe(hrefOf(pick.website));
+      expect(popup.url(), `${pick.name}: 새 창 주소 = ${pick.what}`).toBe(pick.url);
       expect(await popup.evaluate(() => window.opener), "새 창은 opener 없음 (noopener)").toBeNull();
       await popup.close();
       await expect(linkDialog(page), "확인 뒤 모달 닫힘").toHaveCount(0);
       expect(new URL(page.url()).pathname, "화면은 그대로").toBe(REORDER_HREF);
       const direct = directLink(page);
       await expect(direct, `"${DIRECT_OPEN}" 링크`).toHaveCount(1);
-      expect(new URL((await direct.getAttribute("href"))!).href, `"${DIRECT_OPEN}" href`).toBe(hrefOf(pick.website));
+      expect(new URL((await direct.getAttribute("href"))!).href, `"${DIRECT_OPEN}" href = 새 창 주소`).toBe(pick.url);
       await expect(direct).toHaveAttribute("target", "_blank");
       expect(((await direct.getAttribute("rel")) ?? "").split(/\s+/), `"${DIRECT_OPEN}" rel`).toContain("noopener");
       await expect(page.getByRole("status").filter({ has: direct }), "안내 줄에 판매처명").toContainText(pick.name);
     }
-    const allowedHosts = [COMMON_SEED[0].website, withSite.website!].map((w) => new URL(w).host);
+    const allowedHosts = [commonSearchOf(COMMON_SEED[0].name), withSite.website!].map((w) => new URL(w).host);
     expect(stub.hits().filter((u) => !allowedHosts.includes(new URL(u).host)), "고르지 않은 주소로의 요청 0").toEqual([]);
 
     // 닫기 3가지 + 포커스 복귀

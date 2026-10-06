@@ -7,7 +7,7 @@ import { ManualUpload } from "@/components/manual-upload";
 import { ReorderAlertItemCard, ReorderAlertList, ReorderAlertListItem } from "@/components/reorder-alert-card";
 import { VendorLink, VendorLinkModal, openVendorWebsite, type VendorLinkOption } from "@/components/vendor-link";
 import { VendorRegisterEntry } from "@/components/vendor-register";
-import { isOpenableWebsite } from "@/lib/vendor-rules";
+import { isOpenableUrl, vendorSearchUrl } from "@/lib/vendor-rules";
 import styles from "./reorder.module.css";
 
 export type ReorderScreenAlert = {
@@ -42,13 +42,13 @@ const NOTICE_MS = 12000;
  * 시안: (데스크톱 screen-title) → manual-upload(재주문 기준 안내 + "실험 매뉴얼 올리기") → 알림 카드 목록(또는 빈 상태)
  *       → (admin) vendor-register "판매처 등록". 데스크톱은 안내·등록 열(400) + 알림 열 2칸.
  * "판매처 연결" → ex-modal-card (모바일: tab-bar 위 하단 시트 / 데스크톱: 화면 오른쪽 아래 카드, 시안 6-desktop).
- * 판매처를 고르고 "확인" → 그 판매처 웹사이트를 새 창으로 연다. 아무것도 저장하지 않는다 (서버 요청 없음).
+ * 판매처를 고르고 "확인" → 그 판매처 웹사이트(공통 목록 4곳은 시약 이름 검색 결과 주소)를 새 창으로 연다. 아무것도 저장하지 않는다 (서버 요청 없음).
  * 카드는 비모달이다 — 뒤 목록을 계속 조작할 수 있다. 닫기: Esc · "취소" · 같은 카드의 "판매처 연결" 다시 누르기.
  */
 export function ReorderScreen({ isAdmin, alerts, vendors }: Props) {
   const [openId, setOpenId] = useState<string | null>(null);
   /** 방금 새 창으로 연 판매처 — 새 창이 막혔을 때 직접 누를 수 있는 링크를 남긴다 */
-  const [opened, setOpened] = useState<{ name: string; website: string } | null>(null);
+  const [opened, setOpened] = useState<{ name: string; url: string } | null>(null);
 
   const pageRef = useRef<HTMLDivElement>(null);
   const dockRef = useRef<HTMLDivElement>(null);
@@ -105,9 +105,11 @@ export function ReorderScreen({ isAdmin, alerts, vendors }: Props) {
   };
 
   const confirm = (vendor: VendorLinkOption) => {
+    // 검색 주소가 있는 판매처(공통 목록 4곳)는 그 카드의 시약 이름으로 검색한 결과 주소, 아니면 웹사이트 (d7 §11)
+    const url = vendorSearchUrl(vendor, open?.name);
     // 새 창은 noopener 로 연다 — 그래서 열렸는지(팝업 차단)를 알 수 없다. 직접 누를 수 있는 링크를 같이 남긴다
-    if (openVendorWebsite(vendor.website) && isOpenableWebsite(vendor.website)) {
-      setOpened({ name: vendor.name, website: vendor.website });
+    if (openVendorWebsite(url) && isOpenableUrl(url)) {
+      setOpened({ name: vendor.name, url });
     }
     close();
   };
@@ -162,7 +164,7 @@ export function ReorderScreen({ isAdmin, alerts, vendors }: Props) {
         <div className={styles.notice} role="status">
           <p className={styles.noticeText}>
             {opened.name} 사이트를 새 창으로 열었어요. 열리지 않았다면{" "}
-            <a className={styles.noticeLink} href={opened.website} target="_blank" rel="noopener noreferrer">
+            <a className={styles.noticeLink} href={opened.url} target="_blank" rel="noopener noreferrer">
               직접 열기
             </a>
           </p>

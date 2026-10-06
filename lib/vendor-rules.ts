@@ -37,7 +37,17 @@ function text(v: unknown): string {
  */
 export function isOpenableWebsite(v: unknown): v is string {
   if (typeof v !== "string") return false;
-  if (v.length === 0 || v.length > VENDOR_WEBSITE_MAX) return false;
+  if (v.length > VENDOR_WEBSITE_MAX) return false;
+  return isOpenableUrl(v);
+}
+
+/**
+ * 새 창으로 열 수 있는 주소인지 (길이 제한 없음): http(s) + 호스트 + 공백·제어 문자 없음.
+ * 검색 주소(vendorSearchUrl)는 인코딩한 시약 이름이 붙어 300자를 넘을 수 있어 이 검사로 연다.
+ */
+export function isOpenableUrl(v: unknown): v is string {
+  if (typeof v !== "string") return false;
+  if (v.length === 0) return false;
   if (/\s/.test(v) || [...v].some((ch) => ch.charCodeAt(0) < 32 || ch.charCodeAt(0) === 127)) return false;
   if (!HTTP_RE.test(v)) return false;
   try {
@@ -94,6 +104,30 @@ export function checkVendor(input: VendorInput): VendorChecked {
   }
 
   return { ok: true, value: { name, contact: contact || null, website, note: note || null } };
+}
+
+/** 검색 주소 틀에서 검색어가 들어갈 자리 (vendors.search_url, d7 §11 검색어 자동 입력) */
+export const VENDOR_SEARCH_PLACEHOLDER = "{q}";
+
+/**
+ * 판매처 연결 "확인" 때 열 주소 (d7 §11 검색어 자동 입력, 2026-10-07 결정).
+ * - searchUrl(검색 주소 틀, 공통 목록 4곳만 있음)이 있고 시약 이름이 앞뒤 공백을 지운 뒤 비지 않으면
+ *   `{q}` 를 encodeURIComponent(이름) 으로 바꾼 검색 결과 주소.
+ * - 아니면 website (없으면 null). 우리 학교 판매처는 searchUrl 이 없어 지금처럼 웹사이트를 연다.
+ * searchUrl 이 https:// 가 아니거나 `{q}` 가 없으면(테이블 제약상 없는 값) 없는 것으로 본다.
+ */
+export function vendorSearchUrl(
+  vendor: { searchUrl?: string | null; website?: string | null },
+  reagentName: string | null | undefined,
+): string | null {
+  const website = vendor.website ?? null;
+  const template = vendor.searchUrl;
+  const q = typeof reagentName === "string" ? reagentName.trim() : "";
+  if (typeof template !== "string" || q === "") return website;
+  if (!template.startsWith("https://") || !template.includes(VENDOR_SEARCH_PLACEHOLDER)) return website;
+  const encoded = encodeURIComponent(q);
+  const url = template.replace(VENDOR_SEARCH_PLACEHOLDER, () => encoded);
+  return isOpenableUrl(url) ? url : website;
 }
 
 /** 같은 학교 안 이름 중복 비교용 값 (대소문자·공백 무시) */

@@ -32,7 +32,14 @@ export default async function ReorderPage() {
         date: reorderAlertDateText(a.lowSince),
       }))}
       // 우리 학교 판매처 먼저, 그다음 공통 목록 (순서는 getReorderScreen 이 정했다)
-      vendors={vendors.map((v) => ({ id: v.id, name: v.name, contact: v.contact, website: v.website, note: v.note }))}
+      vendors={vendors.map((v) => ({
+        id: v.id,
+        name: v.name,
+        contact: v.contact,
+        website: v.website,
+        searchUrl: v.searchUrl,
+        note: v.note,
+      }))}
     />
   );
 }

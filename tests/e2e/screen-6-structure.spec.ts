@@ -42,6 +42,7 @@ import {
   boxOf,
   cancelButton,
   cards,
+  commonSearchOf,
   confirmButton,
   countsOf,
   dbLow,
@@ -51,7 +52,6 @@ import {
   expectCardMatches,
   expectTabBar,
   foreignComponents,
-  hrefOf,
   linkButton,
   linkDialog,
   linksTo,
@@ -65,6 +65,7 @@ import {
   pickVendor,
   readAlerts,
   registerEntry,
+  searchHref,
   shortage,
   stubExternal,
   tabBarTop,
@@ -289,7 +290,7 @@ for (const role of ["teacher", "admin"] as const) {
   });
 }
 
-test(`[C1][S${SCREEN}] 학교A 교사: "${LINK_BUTTON}" → ${MODAL} (판매처 · {시약명} · 판매처 행 = 로그인 세션에 보이는 판매처 = 공통 ${COMMON_SEED.length}곳 · "취소"·"확인") → 고르고 "확인" → 새 창 주소 = 그 판매처 웹사이트 · 모달 닫힘 · "${DIRECT_OPEN}" 링크 · 쓰기 요청 0건`, async ({ browser }, info) => {
+test(`[C1][S${SCREEN}] 학교A 교사: "${LINK_BUTTON}" → ${MODAL} (판매처 · {시약명} · 판매처 행 = 로그인 세션에 보이는 판매처 = 공통 ${COMMON_SEED.length}곳 · "취소"·"확인") → 고르고 "확인" → 새 창 주소 = 그 공통 판매처의 검색 주소(d7 §11, {q} = 시약 이름) · 모달 닫힘 · "${DIRECT_OPEN}" 링크 · 쓰기 요청 0건`, async ({ browser }, info) => {
   test.setTimeout(240_000);
   const { context, page } = await openAs(browser, info, "teacher", SCREEN);
   const stub = await stubExternal(context, info);
@@ -314,9 +315,11 @@ test(`[C1][S${SCREEN}] 학교A 교사: "${LINK_BUTTON}" → ${MODAL} (판매처 
     const pick = COMMON_SEED[COMMON_SEED.length - 1];
     await pickVendor(page, pick.name);
     await expect(confirmButton(page), "웹사이트가 있는 판매처 → 확인 활성").toBeEnabled();
+    // d7 §11 "검색어 자동 입력": 공통 목록 판매처는 웹사이트 대신 그 판매처의 검색 결과 주소({q} = 카드 시약 이름)
+    const want = searchHref(commonSearchOf(pick.name), first.name);
     const [popup] = await Promise.all([context.waitForEvent("page", { timeout: 20_000 }), confirmButton(page).click()]);
     await popup.waitForURL((u) => u.href !== "about:blank", { timeout: 20_000 });
-    expect(popup.url(), "새 창 주소 = 판매처 웹사이트").toBe(hrefOf(pick.website));
+    expect(popup.url(), "새 창 주소 = 공통 판매처 검색 주소 (d7 §11 검색어 자동 입력)").toBe(want);
     expect(await popup.evaluate(() => window.opener), "새 창은 opener 없음 (noopener)").toBeNull();
     await popup.close();
     await expect(linkDialog(page), "확인 뒤 모달 닫힘").toHaveCount(0);
@@ -325,12 +328,12 @@ test(`[C1][S${SCREEN}] 학교A 교사: "${LINK_BUTTON}" → ${MODAL} (판매처 
     const direct = directLink(page);
     await expect(direct, `"${DIRECT_OPEN}" 링크`).toHaveCount(1);
     await expect(direct).toBeVisible();
-    expect(new URL((await direct.getAttribute("href"))!).href, `"${DIRECT_OPEN}" href`).toBe(hrefOf(pick.website));
+    expect(new URL((await direct.getAttribute("href"))!).href, `"${DIRECT_OPEN}" href = 새 창과 같은 검색 주소`).toBe(want);
     await expect(direct).toHaveAttribute("target", "_blank");
     expect(((await direct.getAttribute("rel")) ?? "").split(/\s+/), `"${DIRECT_OPEN}" rel`).toContain("noopener");
     await expect(page.getByRole("status").filter({ has: direct }), "안내 줄에 판매처명").toContainText(pick.name);
 
-    expect(stub.hits().every((u) => new URL(u).host === new URL(pick.website).host), `앱 밖 요청은 고른 판매처 주소뿐 (${stub.hits().join(", ")})`).toBe(true);
+    expect(stub.hits().every((u) => new URL(u).host === new URL(want).host), `앱 밖 요청은 고른 판매처 검색 주소뿐 (${stub.hits().join(", ")})`).toBe(true);
     expect(writes.list(), "쓰기 요청 0건 (아무것도 저장하지 않는다)").toEqual([]);
     expect((await visibleVendors(page)).map((v) => v.id).sort(), "판매처 행 불변").toEqual(visible.map((v) => v.id).sort());
   } finally {
