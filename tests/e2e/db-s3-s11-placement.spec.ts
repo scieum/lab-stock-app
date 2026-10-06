@@ -21,6 +21,7 @@ import { test, expect, type TestInfo } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { placementWarnings } from "../../lib/cabinet-rules";
 import { ROLE_LABEL, anonClient, signIn, type Role, type Session } from "./db-helpers";
+import { autoFromIntake, withoutAutoDrift } from "./reorder-auto-helpers";
 import {
   HAS_SERVICE,
   NO_RESIDUE,
@@ -159,7 +160,7 @@ async function sharedOf(client: SupabaseClient, schoolId: string): Promise<Share
     client.from("cabinets").select("*").eq("school_id", schoolId).order("id"),
     client.from("cabinet_slots").select("*").eq("school_id", schoolId).order("id"),
     client.from("reagents").select("id, slot_id").eq("school_id", schoolId).not("slot_id", "is", null).order("id"),
-    client.from("reagents").select("id, slot_id, min_stock, reorder_per_group, reorder_groups").eq("school_id", schoolId).order("id"),
+    client.from("reagents").select("id, slot_id, min_stock, reorder_per_group, reorder_groups, min_stock_source").eq("school_id", schoolId).order("id"),
   ]);
   for (const q of [cabinets, slots, placed, thresholds]) expect(q.error, `공용 학교 조회: ${q.error?.message}`).toBeNull();
   return {
@@ -177,7 +178,8 @@ function expectSharedSame(now: SharedState, before: SharedState, what: string): 
   const prev = new Map(before.thresholds.map((r) => [r.id, r]));
   const common = now.thresholds.filter((r) => prev.has(r.id));
   expect(common.length, `${what}: 앞뒤 모두 있는 시약 ≥ 1`).toBeGreaterThan(0);
-  expect(common, `${what}: 시약 slot_id·min_stock·근거 열`).toEqual(common.map((r) => prev.get(r.id)));
+  // 출처가 'auto' 인 시약의 min_stock 은 다른 스펙의 사용·입고 기록으로 DB 가 다시 계산한다(d7 §11-1) — 그 값만 빼고 견준다(출처는 견준다)
+  expect(common.map(withoutAutoDrift), `${what}: 시약 slot_id·min_stock·근거 열·출처`).toEqual(common.map((r) => withoutAutoDrift(prev.get(r.id)!)));
 }
 
 const stateA = async () => {
@@ -1026,12 +1028,16 @@ test.describe("일회용 학교", () => {
 
   // ---------- set_reorder_threshold ----------
 
-  test(`[R-db][S3] set_reorder_threshold 교사·admin 성공: 그대로 덮어씀(더 작은 값도), 0·소수·${THRESHOLD_MAX.toLocaleString("en-US")}, 반환 {reagent_id, min_stock, previous_min_stock}, 근거 열 null, 다른 시약 그대로`, async ({}, info) => {
+  test(`[R-db][S3] set_reorder_threshold 교사·admin 성공: 그대로 덮어씀(더 작은 값도), 0·소수·${THRESHOLD_MAX.toLocaleString("en-US")}, 반환 {reagent_id, min_stock, previous_min_stock}, 근거 열 null, 출처 'manual'(자동 근거 null), 다른 시약 그대로`, async ({}, info) => {
     const f = await fresh(info);
     const r = await newReagent(f.teacher, K("산"), "thr", 7);
     const other = await newReagent(f.admin, K("염기"), "thr-other", 7);
     const start = await tempState(f.school.id);
-    expect(num(reagentOf(start, r).min_stock), "새 시약 min_stock 0 (d7 §6)").toBe(0);
+    // d7 §11-1: 새 시약은 자동 기준(첫 입고량 × 20%)으로 시작
+    expect(
+      [num(reagentOf(start, r).min_stock), reagentOf(start, r).min_stock_source, reagentOf(start, r).min_stock_auto_basis],
+      "새 시약 = 자동 기준 (d7 §6 · §11-1)",
+    ).toEqual([autoFromIntake(7), "auto", "intake"]);
 
     const steps: [string, SupabaseClient, number][] = [
       ["교사 10", f.teacher, 10],
@@ -1042,7 +1048,7 @@ test.describe("일회용 학교", () => {
       [`admin ${THRESHOLD_MAX} (경계)`, f.admin, THRESHOLD_MAX],
       ["교사 1 (큰 값에서 작은 값으로)", f.teacher, 1],
     ];
-    let prev = 0;
+    let prev = autoFromIntake(7);
     for (const [what, client, value] of steps) {
       const before = await tempState(f.school.id);
       const out = expectOk(await setThreshold(client, r, value), `set_reorder_threshold ${what}`);
@@ -1056,10 +1062,13 @@ test.describe("일회용 학교", () => {
       const row = reagentOf(after, r);
       expect(num(row.min_stock), `${what}: DB min_stock`).toBe(value);
       expect([row.reorder_per_group, row.reorder_groups], `${what}: 근거 열 null`).toEqual([null, null]);
+      expect([row.min_stock_source, row.min_stock_auto_basis], `${what}: 출처 'manual' · 자동 근거 null (d7 §11-1)`).toEqual(["manual", null]);
       expect(omit(row, ["min_stock", "low_stock_since"]), `${what}: 다른 열 그대로`).toEqual({
         ...omit(reagentOf(before, r), ["min_stock", "low_stock_since"]),
         reorder_per_group: null,
         reorder_groups: null,
+        min_stock_source: "manual",
+        min_stock_auto_basis: null,
       });
       expect(reagentOf(after, other), `${what}: 다른 시약 그대로`).toEqual(reagentOf(before, other));
       prev = value;

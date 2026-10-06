@@ -8,6 +8,7 @@ import { test, expect, type TestInfo } from "@playwright/test";
 import { openAs } from "./auth-state";
 import { browserClient, browserSession, countComponent, rules, sel } from "./screen-helpers";
 import { HAS_SERVICE, openTemp } from "./screen-8-helpers";
+import { autoFromIntake } from "./reorder-auto-helpers";
 import {
   MANUAL_BUTTON,
   NO_RESIDUE_69,
@@ -179,9 +180,11 @@ test(`[C1][S${SCREEN}] 기대값 원본: 시안 4행 = 염산 0.1M 50 mL · 수�
 test(`[C1][S${SCREEN}] 일회용 학교 교사 2단계(시안 4행 · 대응 시약 일부만 등록): ${TABLE} 1 · 머리행 ${HEAD.length}열 · ${CELL} ≥ 프레임 · 행별 시약명·사용량·단위·필요량(× ${GROUPS}) · 표기만 다른 시약은 자동 연결·없는 시약은 "${UNLINKED}" + 저장 제외 안내 · 기존 기준 표시(변경/유지 예고) · 사용량 고치면 그 칸만 연하늘 + 필요량 재계산 · 조 수 ${GROUPS} → 10 재계산(추가 요청 0) · "${OUR_REAGENT}" 수동 연결 · 단위 불일치 → "${SAVE}" 비활성 + 이유 · 행 삭제 · 저장 요청 0건·DB 불변`, async ({ browser }, info) => {
   const f = await fresh(info);
   // 기존 기준: 염산 100 mL (새 필요량 300 이 더 크다 → 변경 예고), 수산화나트륨 20 g (새 필요량 12 가 작다 → 유지 예고), 에탄올 없음
+  // (d7 §11-1: 새 시약은 자동 기준 = 첫 입고량 × 20% 로 시작 → "기준 없음" 은 직접 지정한 0('manual')으로 만든다)
   const hcl = await prepNamed(f, { name: NAME.hcl, unit: HCL.unit, stock: 100, min: 100 });
   const naoh = await prepNamed(f, { name: NAME.naoh, unit: NAOH.unit, stock: 50, min: 20 });
-  const etoh = await prepNamed(f, { name: NAME.etoh, unit: ETOH.unit, stock: 500 });
+  const etoh = await prepNamed(f, { name: NAME.etoh, unit: ETOH.unit, stock: 500, min: 0 });
+  expect(etoh.min_stock, "준비: 에탄올 기준 없음(0)").toBe(0);
   const other = await prepNamed(f, { name: NAME.other, unit: PHPH.unit, stock: 30 });
   const dbBefore = await schoolReagents(f.school.id);
 
@@ -322,13 +325,15 @@ test(`[C1][S${SCREEN}] 일회용 학교 교사 저장: "${SAVE}" 연타에도 �
   const etoh = await prepNamed(f, { name: NAME.etoh, unit: ETOH.unit, stock: 500 });
   const other = await prepNamed(f, { name: NAME.other, unit: PHPH.unit, stock: 3 });
   const dbBefore = basisOf(await schoolReagents(f.school.id));
+  // 염산·에탄올은 자동 기준(첫 입고량 × 20%, d7 §11-1) → 저장하면 필요량으로 바뀐다. 수산화나트륨은 직접 지정한 20 g('manual') → 더 큰 값만
+  expect(dbBefore[hcl.name], "대조: 염산은 자동 기준").toEqual({ min: autoFromIntake(100), per: null, groups: null });
   const want = {
     ...dbBefore,
     [hcl.name]: { min: requiredNumber(HCL.amount!, GROUPS), per: HCL.amount, groups: GROUPS },
     [etoh.name]: { min: requiredNumber(ETOH.amount!, GROUPS), per: ETOH.amount, groups: GROUPS },
   };
   expect(want[naoh.name], "대조: 수산화나트륨은 그대로").toEqual({ min: 20, per: null, groups: null });
-  expect(want[other.name], "대조: 추출 결과에 없는 시약은 그대로").toEqual({ min: 0, per: null, groups: null });
+  expect(want[other.name], "대조: 추출 결과에 없는 시약은 그대로 (등록 때의 자동 기준)").toEqual({ min: autoFromIntake(3), per: null, groups: null });
   expect(requiredNumber(NAOH.amount!, GROUPS), "대조: 새 필요량 < 기존 기준").toBeLessThan(naoh.min_stock);
 
   const { context, page } = await openTemp(browser, info, f.teacher, MANUAL_HREF);
@@ -378,7 +383,7 @@ test(`[C1][S${SCREEN}] 일회용 학교 교사 저장: "${SAVE}" 연타에도 �
   }
 });
 
-test(`[C1][S${SCREEN}] 일회용 학교 admin 저장: 같은 시약 2행은 합산 · 수동 연결한 행 저장 · 고친 사용량·바꾼 조 수(10)로 저장 · 기존 기준보다 크면 바꾸고 작으면 그대로(근거 열 포함) · 미연결 행은 어떤 시약도 바꾸지 않음 → 화면 6 카드 = 저장값`, async ({ browser }, info) => {
+test(`[C1][S${SCREEN}] 일회용 학교 admin 저장: 이름 열쇠·단위가 같은 추출 행은 한 줄로 합침(d7 §13 중복) · 같은 시약에 연결한 2행은 저장 때 합산 · 수동 연결한 행 저장 · 고친 사용량·바꾼 조 수(10)로 저장 · 기존 기준보다 크면 바꾸고 작으면 그대로(근거 열 포함) · 미연결 행은 어떤 시약도 바꾸지 않음 → 화면 6 카드 = 저장값`, async ({ browser }, info) => {
   const f = await fresh(info);
   const hcl = await prepNamed(f, { name: NAME.hcl, unit: "mL", stock: 100 });
   // 기존 기준 20 g (2 g × 10조) — 고친 사용량 2.5 × 10 = 25 가 더 크다 → 바뀐다
@@ -386,6 +391,7 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin 저장: 같은 시약 2행은 합�
   const other = await prepNamed(f, { name: NAME.other, unit: "mL", stock: 3 });
   // 기존 기준 500 g (50 g × 10조) — 새 필요량 5 × 10 = 50 이 작다 → 그대로
   const keep = await prepNamed(f, { name: "아세트산", unit: "g", stock: 1, min: 500, perGroup: 50, groups: 10 });
+  // "염산 0.1M"·"염산(0.1M)" 은 이름 열쇠·단위(mL)가 같다 → 2단계 표에서 한 줄(50 + 30 = 80)로 합쳐진다 (d7 §13 중복, 2026-10-06)
   const items: FakeItem[] = [
     { name: "염산 0.1M", amount: 50, unit: "mL" },
     { name: "염산(0.1M)", amount: 30, unit: "mL" },
@@ -394,16 +400,26 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin 저장: 같은 시약 2행은 합�
     { name: "아세트산", amount: 5, unit: "g" },
     { name: "페놀프탈레인", amount: 1, unit: "mL" },
   ];
+  /** 합친 뒤의 표 (처음 나온 순서·이름) */
+  const MERGED = [
+    { name: "염산 0.1M", amount: 80, unit: "mL" },
+    { name: "수산화나트륨", amount: 2, unit: "g" },
+    { name: "지시약 엑스", amount: 1, unit: "mL" },
+    { name: "아세트산", amount: 5, unit: "g" },
+    { name: "페놀프탈레인", amount: 1, unit: "mL" },
+  ];
   const NEW_GROUPS = 10;
   const EDITED = "2.5";
   const dbBefore = basisOf(await schoolReagents(f.school.id));
+  // 염산 = 합친 줄(80) + 수동 연결한 "지시약 엑스"(1) → 저장 때 합산 81 (d7 §13 "합친 뒤에도 같은 우리 학교 시약에 연결된 행은 … 합산")
+  const HCL_SUM = 80 + 1;
   const want = {
     ...dbBefore,
-    [hcl.name]: { min: requiredNumber(50 + 30, NEW_GROUPS), per: 80, groups: NEW_GROUPS },
+    [hcl.name]: { min: requiredNumber(HCL_SUM, NEW_GROUPS), per: HCL_SUM, groups: NEW_GROUPS },
     [naoh.name]: { min: requiredNumber(EDITED, NEW_GROUPS), per: Number(EDITED), groups: NEW_GROUPS },
-    [other.name]: { min: requiredNumber(1, NEW_GROUPS), per: 1, groups: NEW_GROUPS },
   };
   expect(want[keep.name], "대조: 기존 기준이 더 큰 시약은 그대로").toEqual({ min: 500, per: 50, groups: 10 });
+  expect(want[other.name], "대조: 어떤 행에도 연결하지 않은 시약은 그대로 (등록 때의 자동 기준)").toEqual({ min: autoFromIntake(3), per: null, groups: null });
 
   const { context, page } = await openTemp(browser, info, f.admin, MANUAL_HREF);
   const actions = watchActions(page);
@@ -412,40 +428,45 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin 저장: 같은 시약 2행은 합�
     const mock = await mockExtract(page, okReply(items));
     await toResult(page);
     let rows = await readRows(page);
-    expect(rows.map((r) => r.cells[0]), "추출 행").toEqual(items.map((i) => i.name));
-    expect(rows.map((r) => r.linked), "자동 연결").toEqual([optionLabel(hcl), optionLabel(hcl), optionLabel(naoh), UNLINKED, optionLabel(keep), UNLINKED]);
-    expect(rows.map((r) => r.status)).toEqual(["ok", "ok", "ok", "unlinked", "ok", "unlinked"]);
+    // 중복 합치기: 같은 열쇠·같은 단위 2행 → 한 줄, 1조 사용량 = 합 (처음 나온 이름·순서)
+    expect(rows.map((r) => r.cells[0]), "추출 행 (합친 뒤)").toEqual(MERGED.map((i) => i.name));
+    expect(rows[0].cells.slice(1), "합친 줄: 사용량 50 + 30 · 단위 · 필요량").toEqual([String(MERGED[0].amount), "mL", requiredText(MERGED[0].amount, GROUPS, "mL")]);
+    expect(rows.map((r) => r.edited), "합친 값은 추출값 (고친 칸 아님)").toEqual(MERGED.map(() => false));
+    expect(rows.map((r) => r.linked), "자동 연결").toEqual([optionLabel(hcl), optionLabel(naoh), UNLINKED, optionLabel(keep), UNLINKED]);
+    expect(rows.map((r) => r.status)).toEqual(["ok", "ok", "unlinked", "ok", "unlinked"]);
+    expect(rows[0].detail, "합친 줄은 같은 시약에 연결된 다른 행이 없어 저장 합산 안내가 없다").not.toMatch(/같은 시약 \d+행/);
 
-    // 같은 시약 2행: 행마다 자기 필요량 + 합산 안내(합친 필요량)
-    const total = requiredText(50 + 30, GROUPS, "mL");
-    for (const i of [0, 1]) {
-      expect(rows[i].cells[3], `${rows[i].cells[0]} 행의 필요량은 그 행 것`).toBe(requiredText(items[i].amount!, GROUPS, "mL"));
+    // 기존 기준 표시
+    expect(BASIS_RE.exec(rows[1].detail)?.[1], "수산화나트륨 기존 기준 20").toBe("20");
+    expect(toNumber(BASIS_RE.exec(rows[3].detail)?.[1] ?? "NaN"), "아세트산 기존 기준 500").toBe(500);
+    expect(rows[3].detail, "아세트산: 기존 기준이 더 커서 그대로").toMatch(/그대로|유지/);
+
+    // 수동 연결: "지시약 엑스" → 염산 — 같은 시약에 연결된 2행: 행마다 자기 필요량 + 합산 안내(합친 필요량)
+    await chooseReagent(rowById(page, rows[2].id), (labels) => labels.indexOf(optionLabel(hcl)));
+    await expect.poll(async () => (await readRows(page))[2].status).toBe("ok");
+    rows = await readRows(page);
+    const total = requiredText(HCL_SUM, GROUPS, "mL");
+    for (const i of [0, 2]) {
+      expect(rows[i].cells[3], `${rows[i].cells[0]} 행의 필요량은 그 행 것`).toBe(requiredText(MERGED[i].amount, GROUPS, "mL"));
       expect(rows[i].detail, `${rows[i].cells[0]} 합산 안내`).toMatch(/합쳐|합산|합친/);
       expect(rows[i].detail, `${rows[i].cells[0]} 합친 필요량 ${total}`).toContain(total);
     }
-    // 기존 기준 표시
-    expect(BASIS_RE.exec(rows[2].detail)?.[1], "수산화나트륨 기존 기준 20").toBe("20");
-    expect(toNumber(BASIS_RE.exec(rows[4].detail)?.[1] ?? "NaN"), "아세트산 기존 기준 500").toBe(500);
-    expect(rows[4].detail, "아세트산: 기존 기준이 더 커서 그대로").toMatch(/그대로|유지/);
 
-    // 수동 연결 · 사용량 고치기 · 조 수 바꾸기
-    await chooseReagent(rowById(page, rows[3].id), (labels) => labels.indexOf(optionLabel(other)));
-    await expect.poll(async () => (await readRows(page))[3].status).toBe("ok");
-    await amountInput(rowById(page, rows[2].id)).fill(EDITED);
+    // 사용량 고치기 · 조 수 바꾸기
+    await amountInput(rowById(page, rows[1].id)).fill(EDITED);
     await groupsInput(page).fill(String(NEW_GROUPS));
     await expect
       .poll(async () => (await readRows(page)).map((r) => r.cells[3]), { message: "고친 값·조 수 10 으로 재계산" })
       .toEqual([
-        requiredText(50, NEW_GROUPS, "mL"),
-        requiredText(30, NEW_GROUPS, "mL"),
+        requiredText(80, NEW_GROUPS, "mL"),
         requiredText(EDITED, NEW_GROUPS, "g"),
         requiredText(1, NEW_GROUPS, "mL"),
         requiredText(5, NEW_GROUPS, "g"),
         requiredText(1, NEW_GROUPS, "mL"),
       ]);
     rows = await readRows(page);
-    expect(rows[0].detail, "합친 필요량도 조 수 10 으로").toContain(requiredText(80, NEW_GROUPS, "mL"));
-    expect(rows.map((r) => r.status)).toEqual(["ok", "ok", "ok", "ok", "ok", "unlinked"]);
+    expect(rows[0].detail, "합친 필요량도 조 수 10 으로").toContain(requiredText(HCL_SUM, NEW_GROUPS, "mL"));
+    expect(rows.map((r) => r.status)).toEqual(["ok", "ok", "ok", "ok", "unlinked"]);
     await expect(saveButton(page)).toBeEnabled();
     expect(actions.count(), "누르기 전 저장 요청 0").toBe(0);
 
@@ -460,14 +481,14 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin 저장: 같은 시약 2행은 합�
     expect(basisOf(after), "저장 뒤 재주문 기준 (합산 · 수동 연결 · 더 큰 값 유지)").toEqual(want);
     expect(after.length, "시약 수 그대로 (미연결 행이 시약을 만들지 않는다)").toBe(4);
 
-    // 화면 6: 네 시약 모두 재고 < 기준
+    // 화면 6: 저장한 두 시약 + 기존 기준이 더 큰 시약은 재고 < 기준 (연결하지 않은 시약은 자동 기준 그대로 — 재고보다 작다)
     const own = await ownReagentsOf((await browserClient(page)).client);
     const low = own.filter((r) => r.stock < r.min_stock);
-    expect(low.map((r) => r.name).sort(), "대조: 부족 시약").toEqual([hcl.name, naoh.name, other.name, keep.name].sort());
+    expect(low.map((r) => r.name).sort(), "대조: 부족 시약").toEqual([hcl.name, naoh.name, keep.name].sort());
     const shown = await readAlerts(page);
     expect(shown.map((s) => s.name).sort(), "알림 카드").toEqual(low.map((r) => r.name).sort());
     for (const card of shown) expectCardMatches(card, low.find((r) => r.name === card.name)!, `카드 "${card.name}"`);
-    expect(basisText(low.find((r) => r.name === hcl.name)!), "염산 기준 문구 = 합산값").toBe(`1반 1회 실험량 80 mL × ${NEW_GROUPS}조 기준`);
+    expect(basisText(low.find((r) => r.name === hcl.name)!), "염산 기준 문구 = 합산값").toBe(`1반 1회 실험량 ${HCL_SUM} mL × ${NEW_GROUPS}조 기준`);
     expect(basisText(low.find((r) => r.name === naoh.name)!), "수산화나트륨 기준 문구 = 고친 값").toBe(`1반 1회 실험량 ${EDITED} g × ${NEW_GROUPS}조 기준`);
     expect(basisText(low.find((r) => r.name === keep.name)!), "아세트산 기준 문구는 그대로").toBe("1반 1회 실험량 50 g × 10조 기준");
   } finally {

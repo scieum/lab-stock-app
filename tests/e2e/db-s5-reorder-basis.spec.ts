@@ -8,7 +8,9 @@
 //   거부되어야 하는 호출이 구현 결함으로 통과해도 공용 시약이 바뀌지 않게 두 겹으로 막는다:
 //   (1) 권한·학교 거부를 보는 호출은 필요량을 그 시약의 지금 기준보다 크지 않게 잡는다(통과해도 "유지"),
 //   (2) 호출 앞뒤로 기준 세 열을 견주고, 달라졌으면 service role 로 원래 값으로 되돌린다(정상이라면 호출 없음).
-// - 성공하는 저장은 일회용 학교의 일회용 계정·임시 시약(register_reagent — min_stock 0)으로만 한다.
+// - 성공하는 저장은 일회용 학교의 일회용 계정·임시 시약(register_reagent)으로만 한다.
+//   d7 §11-1 (2026-10-06): 등록 직후 기준은 자동(source 'auto') = 첫 입고량 × 20% — "기준 없음(0)" 이 아니다.
+//   그래서 자동 기준의 첫 저장은 필요량이 작거나 같아도 항상 'changed'(→ 'basis'), 그 뒤로는 더 큰 값만(§13).
 //   service role 은 준비·정리·대조 조회에만 쓰고, 판정 대상 호출은 항상 로그인 세션(publishable 키)으로 한다.
 // - 데모 학교·실사용 학교에는 쓰지 않는다. usage_logs 는 만들지 않는다(임시 시약·계정을 지울 수 있게).
 // - 정리 순서: 시약(intake_logs cascade) → 프로필 → 계정 → 학교. 끝에 잔여물 0 을 단언한다.
@@ -18,6 +20,7 @@ import { join } from "node:path";
 import { test, expect, type TestInfo } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ROLE_LABEL, anonClient, signIn, type Role } from "./db-helpers";
+import { autoFromIntake, withoutAutoDrift, type AutoBasis, type ThresholdSource } from "./reorder-auto-helpers";
 import {
   HAS_SERVICE,
   NO_RESIDUE,
@@ -111,7 +114,8 @@ function expectSaved(res: Res, what: string, count: number): Map<string, Outcome
 
 // ---------- reagents 읽기 ----------
 
-const REAGENT_COLS = "id, school_id, name, unit, stock, min_stock, reorder_per_group, reorder_groups, low_stock_since";
+const REAGENT_COLS =
+  "id, school_id, name, unit, stock, min_stock, reorder_per_group, reorder_groups, low_stock_since, min_stock_source, min_stock_auto_basis";
 
 type Reagent = {
   id: string;
@@ -122,8 +126,10 @@ type Reagent = {
   reorder_per_group: number | null;
   reorder_groups: number | null;
   low_stock_since: string | null;
+  min_stock_source: ThresholdSource;
+  min_stock_auto_basis: AutoBasis;
 };
-type Basis = Pick<Reagent, "id" | "min_stock" | "reorder_per_group" | "reorder_groups">;
+type Basis = Pick<Reagent, "id" | "min_stock" | "reorder_per_group" | "reorder_groups" | "min_stock_source">;
 
 function toReagent(r: Row): Reagent {
   return {
@@ -135,6 +141,8 @@ function toReagent(r: Row): Reagent {
     reorder_per_group: r.reorder_per_group === null ? null : Number(r.reorder_per_group),
     reorder_groups: r.reorder_groups === null ? null : Number(r.reorder_groups),
     low_stock_since: (r.low_stock_since as string | null) ?? null,
+    min_stock_source: r.min_stock_source as ThresholdSource,
+    min_stock_auto_basis: (r.min_stock_auto_basis as AutoBasis) ?? null,
   };
 }
 
@@ -143,6 +151,7 @@ const basisOf = (r: Reagent): Basis => ({
   min_stock: r.min_stock,
   reorder_per_group: r.reorder_per_group,
   reorder_groups: r.reorder_groups,
+  min_stock_source: r.min_stock_source,
 });
 
 /** 다른 스펙이 학교 A·B 에 잠깐 만드는 임시 시약 이름 접두사 (db-helpers pickReagent 가 건너뛰는 것과 같은 목록) */
@@ -189,7 +198,13 @@ async function restoreBasis(before: Reagent): Promise<void> {
   if (!now.data || JSON.stringify(basisOf(toReagent(now.data as Row))) === JSON.stringify(basisOf(before))) return;
   await sb
     .from("reagents")
-    .update({ min_stock: before.min_stock, reorder_per_group: before.reorder_per_group, reorder_groups: before.reorder_groups })
+    .update({
+      min_stock: before.min_stock,
+      reorder_per_group: before.reorder_per_group,
+      reorder_groups: before.reorder_groups,
+      min_stock_source: before.min_stock_source,
+      min_stock_auto_basis: before.min_stock_auto_basis,
+    })
     .eq("id", before.id);
 }
 
@@ -297,8 +312,12 @@ async function sharedAtRest(): Promise<Shared> {
   return prev;
 }
 
-/** 재주문 기준 세 열만 (다른 스펙이 바꾸지 않는 열 — 병렬 실행과 무관하게 언제나 같아야 한다) */
-const basisRows = (rows: Row[]) => rows.map((r) => basisOf(toReagent(r)));
+/**
+ * 재주문 기준 열 + 출처 (다른 스펙이 바꾸지 않는 열 — 병렬 실행과 무관하게 언제나 같아야 한다).
+ * 단 출처가 'auto' 인 시약의 기준 값은 다른 스펙의 사용·입고 기록으로 DB 가 다시 계산한다(d7 §11-1) — 그 값만 뺀다(출처는 견준다).
+ */
+const basisRows = (rows: Row[]) => rows.map((r) => withoutAutoDrift(basisOf(toReagent(r))));
+const stableRows = (rows: Row[]) => rows.map((r) => withoutAutoDrift(r));
 
 // ---------- 일회용 학교 ----------
 
@@ -369,7 +388,7 @@ async function fresh(info: TestInfo): Promise<Fixture> {
 
 const INTAKE_DATE = "2026-09-15";
 
-/** 임시 시약: register_reagent (d7 §6 — min_stock 0 으로 시작) */
+/** 임시 시약: register_reagent (d7 §6 · §11-1 — 자동 기준 = 첫 입고량(stock) × 20%) */
 async function newReagent(c: SupabaseClient, stock: number): Promise<Reagent> {
   const res = await c.rpc("register_reagent", {
     p_name: `S5-시약-${tag()}`,
@@ -382,15 +401,27 @@ async function newReagent(c: SupabaseClient, stock: number): Promise<Reagent> {
   expect(res.error, `register_reagent (준비): ${res.error?.code} ${res.error?.message}`).toBeNull();
   const row = (Array.isArray(res.data) ? res.data[0] : res.data) as Row;
   const made = await readReagent(c, row.id as string);
-  expect(made, "전제: 등록 직후 기준 없음 (d7 §6·§11)").toMatchObject({
+  expect(made, "전제: 등록 직후 자동 기준 = 첫 입고량 × 20% (d7 §6·§11-1)").toMatchObject({
     stock,
-    min_stock: 0,
+    min_stock: autoFromIntake(stock),
     reorder_per_group: null,
     reorder_groups: null,
     low_stock_since: null,
+    min_stock_source: "auto",
+    min_stock_auto_basis: "intake",
   });
   return made;
 }
+
+/** 저장('changed') 뒤 기대 행: 기준 = 필요량, 근거 열 = 1조 사용량·조 수, 출처 'basis', 자동 근거 null (d7 §11-1 · §13) */
+const asBasis = (r: Reagent, min: number, per: number, groups: number): Reagent => ({
+  ...r,
+  min_stock: min,
+  reorder_per_group: per,
+  reorder_groups: groups,
+  min_stock_source: "basis",
+  min_stock_auto_basis: null,
+});
 
 /** d7 §11 "아래로 내려가면 그 시각": 방금 일어난 일의 시각 */
 const NEAR_NOW_MS = 120_000;
@@ -442,16 +473,20 @@ test.afterAll(async ({}, info) => {
   if (sharedBefore) {
     const before = sharedBefore;
     let after: Shared = await sharedRead();
-    // 재주문 기준 세 열은 기다릴 것 없이 같아야 한다 (이 열을 바꾸는 다른 스펙이 없다)
-    expect(basisRows(after.reagentsA), "학교 A reagents 의 min_stock·reorder_per_group·reorder_groups").toEqual(basisRows(before.reagentsA));
-    expect(basisRows(after.reagentsB), "학교 B reagents 의 min_stock·reorder_per_group·reorder_groups").toEqual(basisRows(before.reagentsB));
-    for (let i = 0; i < 30 && JSON.stringify(after) !== JSON.stringify(before); i++) {
+    // 재주문 기준 열·출처는 기다릴 것 없이 같아야 한다 (이 열을 바꾸는 다른 스펙이 없다 — 자동 기준 값만 예외)
+    expect(basisRows(after.reagentsA), "학교 A reagents 의 min_stock·reorder_per_group·reorder_groups·min_stock_source").toEqual(basisRows(before.reagentsA));
+    expect(basisRows(after.reagentsB), "학교 B reagents 의 min_stock·reorder_per_group·reorder_groups·min_stock_source").toEqual(basisRows(before.reagentsB));
+    const same = (x: Shared, y: Shared) =>
+      JSON.stringify([x.reagentsDemo, stableRows(x.reagentsA), stableRows(x.reagentsB)]) ===
+      JSON.stringify([y.reagentsDemo, stableRows(y.reagentsA), stableRows(y.reagentsB)]);
+    for (let i = 0; i < 30 && !same(after, before); i++) {
       await sleep(2_000);
       after = await sharedRead();
     }
+    // 데모 학교는 자동 다시 계산에서 빠진다 (d7 §11-1 · §5) — 전체 열 그대로
     expect(after.reagentsDemo, "데모 학교 reagents (전체 열)").toEqual(before.reagentsDemo);
-    expect(after.reagentsA, "학교 A reagents (전체 열)").toEqual(before.reagentsA);
-    expect(after.reagentsB, "학교 B reagents (전체 열)").toEqual(before.reagentsB);
+    expect(stableRows(after.reagentsA), "학교 A reagents (전체 열, 자동 기준 값 제외)").toEqual(stableRows(before.reagentsA));
+    expect(stableRows(after.reagentsB), "학교 B reagents (전체 열, 자동 기준 값 제외)").toEqual(stableRows(before.reagentsB));
   }
 });
 
@@ -558,7 +593,7 @@ test.describe("일회용 학교", () => {
 
   // ---------- 역할 ----------
 
-  test(`[R-db][S5] 교사·admin 저장 성공(필요량 = 1조 사용량 × 조 수 → min_stock·reorder_per_group·reorder_groups), 학생 ${DENIED}·값 그대로`, async ({}, info) => {
+  test(`[R-db][S5] 교사·admin 저장 성공(필요량 = 1조 사용량 × 조 수 → min_stock·reorder_per_group·reorder_groups, 출처 'basis'), 학생 ${DENIED}·값 그대로`, async ({}, info) => {
     const f = await fresh(info);
     const r1 = await newReagent(f.teacher, 100);
     const r2 = await newReagent(f.admin, 100);
@@ -569,32 +604,33 @@ test.describe("일회용 학교", () => {
     expectRejected(await save(f.student, [{ reagent_id: r1.id, per_group: 3, groups: 6 }, { reagent_id: r2.id, per_group: 1, groups: 1 }]), "학생 save_reorder_basis(2개)", DENIED);
     expect(await readMany(f.teacher, [r1.id, r2.id]), "학생 시도 뒤").toEqual([r1, r2].sort((a, b) => a.id.localeCompare(b.id)));
 
-    // 교사
+    // 교사 (자동 기준 → 필요량이 지금 자동 값보다 작아도 바뀐다, d7 §11-1)
     const byTeacher = expectSaved(await save(f.teacher, [{ reagent_id: r1.id, per_group: 3, groups: 6 }]), "교사 save_reorder_basis", 1);
-    expect(byTeacher.get(r1.id)).toEqual({ reagent_id: r1.id, required: 18, previous_min_stock: 0, outcome: "changed" });
-    expect(await readReagent(f.teacher, r1.id), "교사 저장 뒤").toEqual({ ...r1, min_stock: 18, reorder_per_group: 3, reorder_groups: 6 });
+    expect(byTeacher.get(r1.id)).toEqual({ reagent_id: r1.id, required: 18, previous_min_stock: r1.min_stock, outcome: "changed" });
+    expect(await readReagent(f.teacher, r1.id), "교사 저장 뒤").toEqual(asBasis(r1, 18, 3, 6));
 
     // admin
     const byAdmin = expectSaved(await save(f.admin, [{ reagent_id: r2.id, per_group: 2.5, groups: 4 }]), "admin save_reorder_basis", 1);
-    expect(byAdmin.get(r2.id)).toEqual({ reagent_id: r2.id, required: 10, previous_min_stock: 0, outcome: "changed" });
-    expect(await readReagent(f.admin, r2.id), "admin 저장 뒤").toEqual({ ...r2, min_stock: 10, reorder_per_group: 2.5, reorder_groups: 4 });
+    expect(byAdmin.get(r2.id)).toEqual({ reagent_id: r2.id, required: 10, previous_min_stock: r2.min_stock, outcome: "changed" });
+    expect(await readReagent(f.admin, r2.id), "admin 저장 뒤").toEqual(asBasis(r2, 10, 2.5, 4));
 
     // 학생에게도 저장된 기준이 그대로 읽힌다 (같은 학교), 다시 시도해도 거부
     expectRejected(await save(f.student, [{ reagent_id: r1.id, per_group: 100, groups: GROUPS_MAX }]), "학생 save_reorder_basis(더 큰 값)", DENIED);
-    expect(await readReagent(f.student, r1.id), "학생 시도 뒤").toMatchObject({ min_stock: 18, reorder_per_group: 3, reorder_groups: 6 });
+    expect(await readReagent(f.student, r1.id), "학생 시도 뒤").toMatchObject({ min_stock: 18, reorder_per_group: 3, reorder_groups: 6, min_stock_source: "basis" });
   });
 
   // ---------- 더 큰 값 유지 (d7 §13 "저장") ----------
 
-  test(`[R-db][S5] 더 큰 값 유지: 소수(0.1 × 3 = 0.3) 정확히 저장 → 더 작은 필요량 'kept'·세 열 그대로 → 같은 필요량 'kept' → 더 큰 필요량 'changed'`, async ({}, info) => {
+  test(`[R-db][S5] 더 큰 값 유지: 자동 기준에 소수(0.1 × 3 = 0.3) 정확히 저장('changed'·'basis') → 더 작은 필요량 'kept'·세 열 그대로 → 같은 필요량 'kept' → 더 큰 필요량 'changed'`, async ({}, info) => {
     const f = await fresh(info);
     const made = await newReagent(f.teacher, 100);
     const id = made.id;
 
     let res = expectSaved(await save(f.teacher, [{ reagent_id: id, per_group: 0.1, groups: 3 }]), "0.1 × 3", 1);
-    expect(res.get(id), "0.1 × 3 = 0.3 (부동소수 오차 없이)").toEqual({ reagent_id: id, required: 0.3, previous_min_stock: 0, outcome: "changed" });
+    expect(res.get(id), "0.1 × 3 = 0.3 (부동소수 오차 없이) · 자동 기준(더 큼)이어도 바뀜").toEqual({ reagent_id: id, required: 0.3, previous_min_stock: made.min_stock, outcome: "changed" });
+    expect(made.min_stock, "대조: 자동 기준이 새 필요량보다 컸다").toBeGreaterThan(0.3);
     const first = await readReagent(f.teacher, id);
-    expect(first, "0.1 × 3 저장 뒤").toEqual({ ...made, min_stock: 0.3, reorder_per_group: 0.1, reorder_groups: 3 });
+    expect(first, "0.1 × 3 저장 뒤").toEqual(asBasis(made, 0.3, 0.1, 3));
 
     // 더 작은 필요량 → 유지
     res = expectSaved(await save(f.teacher, [{ reagent_id: id, per_group: 0.1, groups: 2 }]), "0.1 × 2", 1);
@@ -613,7 +649,7 @@ test.describe("일회용 학교", () => {
     // 더 큰 필요량 → 바뀜 (1조 사용량은 작아도 조 수가 많아 필요량이 큼)
     res = expectSaved(await save(f.admin, [{ reagent_id: id, per_group: 0.05, groups: 7 }]), "0.05 × 7", 1);
     expect(res.get(id)).toEqual({ reagent_id: id, required: 0.35, previous_min_stock: 0.3, outcome: "changed" });
-    expect(await readReagent(f.teacher, id), "더 큰 필요량 뒤").toEqual({ ...made, min_stock: 0.35, reorder_per_group: 0.05, reorder_groups: 7 });
+    expect(await readReagent(f.teacher, id), "더 큰 필요량 뒤").toEqual(asBasis(made, 0.35, 0.05, 7));
 
     // 1조 사용량이 더 커도 필요량이 작으면 유지
     res = expectSaved(await save(f.teacher, [{ reagent_id: id, per_group: 0.3, groups: 1 }]), "0.3 × 1 (필요량은 더 작음)", 1);
@@ -621,14 +657,14 @@ test.describe("일회용 학교", () => {
     expect(await readReagent(f.teacher, id)).toMatchObject({ min_stock: 0.35, reorder_per_group: 0.05, reorder_groups: 7 });
   });
 
-  test(`[R-db][S5] 근거 없이 기준만 있는 시약(min_stock 직접 지정): 필요량이 작거나 같으면 'kept'·근거 열 null 그대로, 크면 'changed'`, async ({}, info) => {
+  test(`[R-db][S5] 근거 없이 기준만 있는 시약(min_stock 직접 지정 → 출처 'manual'): 필요량이 작거나 같으면 'kept'·근거 열 null·출처 그대로, 크면 'changed'·'basis'`, async ({}, info) => {
     const f = await fresh(info);
     const made = await newReagent(f.teacher, 100);
     const id = made.id;
     const up = await f.teacher.from("reagents").update({ min_stock: 10 }).eq("id", id).select("id");
     expect(up.error, `준비: min_stock 직접 지정 (${up.error?.message})`).toBeNull();
     const base = await readReagent(f.teacher, id);
-    expect(base, "전제").toMatchObject({ min_stock: 10, reorder_per_group: null, reorder_groups: null });
+    expect(base, "전제: 직접 지정한 기준은 'manual' (d7 §11-1)").toMatchObject({ min_stock: 10, reorder_per_group: null, reorder_groups: null, min_stock_source: "manual", min_stock_auto_basis: null });
 
     let res = expectSaved(await save(f.teacher, [{ reagent_id: id, per_group: 3, groups: 3 }]), "3 × 3 = 9 < 10", 1);
     expect(res.get(id)).toEqual({ reagent_id: id, required: 9, previous_min_stock: 10, outcome: "kept" });
@@ -638,7 +674,64 @@ test.describe("일회용 학교", () => {
 
     res = expectSaved(await save(f.teacher, [{ reagent_id: id, per_group: 5.5, groups: 2 }]), "5.5 × 2 = 11 > 10", 1);
     expect(res.get(id)).toEqual({ reagent_id: id, required: 11, previous_min_stock: 10, outcome: "changed" });
-    expect(await readReagent(f.teacher, id)).toEqual({ ...base, min_stock: 11, reorder_per_group: 5.5, reorder_groups: 2 });
+    expect(await readReagent(f.teacher, id)).toEqual(asBasis(base, 11, 5.5, 2));
+  });
+
+  // ---------- 출처별 (d7 §11-1 "화면 5 와의 관계") ----------
+
+  test(`[R-db][S5] 출처별 'changed'/'kept': auto 는 더 작은·같은 필요량도 'changed'(→ 'basis'), manual(set_reorder_threshold) 은 작거나 같으면 'kept'·출처 'manual' 그대로·크면 'changed'(→ 'basis'), basis 는 더 큰 값만`, async ({}, info) => {
+    const f = await fresh(info);
+    // auto: 더 작은 필요량
+    const small = await newReagent(f.teacher, 100);
+    expect(small.min_stock, "전제: 자동 값 > 1").toBeGreaterThan(1);
+    let res = expectSaved(await save(f.teacher, [{ reagent_id: small.id, per_group: 1, groups: 1 }]), "auto · 더 작은 필요량", 1);
+    expect(res.get(small.id)).toEqual({ reagent_id: small.id, required: 1, previous_min_stock: small.min_stock, outcome: "changed" });
+    expect(await readReagent(f.teacher, small.id), "auto → 'basis' 1").toEqual(asBasis(small, 1, 1, 1));
+
+    // auto: 같은 필요량
+    const equal = await newReagent(f.teacher, 100);
+    const eq = equal.min_stock;
+    res = expectSaved(await save(f.admin, [{ reagent_id: equal.id, per_group: eq, groups: 1 }]), "auto · 같은 필요량", 1);
+    expect(res.get(equal.id)).toEqual({ reagent_id: equal.id, required: eq, previous_min_stock: eq, outcome: "changed" });
+    expect(await readReagent(f.teacher, equal.id), "auto → 'basis' (값은 같고 근거·출처가 바뀜)").toEqual(asBasis(equal, eq, eq, 1));
+
+    // manual: set_reorder_threshold → 작거나 같으면 유지(출처도 manual 그대로), 크면 basis
+    const man = await newReagent(f.teacher, 100);
+    const set = await f.teacher.rpc("set_reorder_threshold", { p_reagent_id: man.id, p_min_stock: 30 });
+    expect(set.error, `준비: set_reorder_threshold 30 (${set.error?.message})`).toBeNull();
+    const manBase = await readReagent(f.teacher, man.id);
+    expect(manBase, "전제: manual 30").toMatchObject({ min_stock: 30, min_stock_source: "manual", min_stock_auto_basis: null, reorder_per_group: null });
+    res = expectSaved(await save(f.teacher, [{ reagent_id: man.id, per_group: 5, groups: 6 }]), "manual · 같은 필요량 30", 1);
+    expect(res.get(man.id)).toEqual({ reagent_id: man.id, required: 30, previous_min_stock: 30, outcome: "kept" });
+    res = expectSaved(await save(f.teacher, [{ reagent_id: man.id, per_group: 1, groups: 2 }]), "manual · 더 작은 필요량 2", 1);
+    expect(res.get(man.id)).toEqual({ reagent_id: man.id, required: 2, previous_min_stock: 30, outcome: "kept" });
+    expect(await readReagent(f.teacher, man.id), "manual 'kept' 뒤 그대로 (출처 manual)").toEqual(manBase);
+    res = expectSaved(await save(f.admin, [{ reagent_id: man.id, per_group: 4, groups: 8 }]), "manual · 더 큰 필요량 32", 1);
+    expect(res.get(man.id)).toEqual({ reagent_id: man.id, required: 32, previous_min_stock: 30, outcome: "changed" });
+    expect(await readReagent(f.teacher, man.id), "manual → 'basis' 32").toEqual(asBasis(manBase, 32, 4, 8));
+
+    // basis: 더 큰 값만 (위에서 basis 가 된 small = 1)
+    res = expectSaved(await save(f.teacher, [{ reagent_id: small.id, per_group: 0.5, groups: 1 }]), "basis · 더 작은 필요량", 1);
+    expect(res.get(small.id)?.outcome).toBe("kept");
+    res = expectSaved(await save(f.teacher, [{ reagent_id: small.id, per_group: 0.5, groups: 3 }]), "basis · 더 큰 필요량", 1);
+    expect(res.get(small.id)).toEqual({ reagent_id: small.id, required: 1.5, previous_min_stock: 1, outcome: "changed" });
+    expect(await readReagent(f.teacher, small.id)).toEqual(asBasis(small, 1.5, 0.5, 3));
+
+    // 한 번에 섞어도 출처별 규칙 (auto 작은 값 changed · manual 작은 값 kept)
+    const a2 = await newReagent(f.teacher, 50);
+    const m2 = await newReagent(f.teacher, 50);
+    expect((await f.teacher.rpc("set_reorder_threshold", { p_reagent_id: m2.id, p_min_stock: 40 })).error, "준비: m2 manual 40").toBeNull();
+    res = expectSaved(
+      await save(f.teacher, [
+        { reagent_id: a2.id, per_group: 0.5, groups: 1 },
+        { reagent_id: m2.id, per_group: 0.5, groups: 1 },
+      ]),
+      "auto + manual 한 번에",
+      2,
+    );
+    expect(res.get(a2.id)).toEqual({ reagent_id: a2.id, required: 0.5, previous_min_stock: a2.min_stock, outcome: "changed" });
+    expect(res.get(m2.id)).toEqual({ reagent_id: m2.id, required: 0.5, previous_min_stock: 40, outcome: "kept" });
+    expect(await readReagent(f.teacher, m2.id)).toMatchObject({ min_stock: 40, min_stock_source: "manual" });
   });
 
   // ---------- 여러 시약 ----------
@@ -651,6 +744,7 @@ test.describe("일회용 학교", () => {
     const untouched = await newReagent(f.teacher, 100);
     expectSaved(await save(f.teacher, [{ reagent_id: b.id, per_group: 5, groups: 4 }]), "준비: b 기준 20", 1);
     const bBefore = await readReagent(f.teacher, b.id);
+    expect(bBefore, "준비: b 는 'basis' 20").toMatchObject({ min_stock: 20, min_stock_source: "basis" });
 
     const res = expectSaved(
       await save(f.teacher, [
@@ -661,13 +755,14 @@ test.describe("일회용 학교", () => {
       "3개 한 번에",
       3,
     );
-    expect(res.get(a.id)).toEqual({ reagent_id: a.id, required: 12, previous_min_stock: 0, outcome: "changed" });
+    // a·c 는 자동 기준 → 항상 'changed' (c 는 지금 자동 값보다 작아도), b 는 'basis' 20 > 18 → 'kept'
+    expect(res.get(a.id)).toEqual({ reagent_id: a.id, required: 12, previous_min_stock: a.min_stock, outcome: "changed" });
     expect(res.get(b.id)).toEqual({ reagent_id: b.id, required: 18, previous_min_stock: 20, outcome: "kept" });
-    expect(res.get(c.id)).toEqual({ reagent_id: c.id, required: 0.5, previous_min_stock: 0, outcome: "changed" });
+    expect(res.get(c.id)).toEqual({ reagent_id: c.id, required: 0.5, previous_min_stock: c.min_stock, outcome: "changed" });
 
-    expect(await readReagent(f.teacher, a.id)).toEqual({ ...a, min_stock: 12, reorder_per_group: 2, reorder_groups: 6 });
+    expect(await readReagent(f.teacher, a.id)).toEqual(asBasis(a, 12, 2, 6));
     expect(await readReagent(f.teacher, b.id), "kept 는 그대로").toEqual(bBefore);
-    expect(await readReagent(f.teacher, c.id)).toEqual({ ...c, min_stock: 0.5, reorder_per_group: 0.5, reorder_groups: GROUPS_MIN });
+    expect(await readReagent(f.teacher, c.id)).toEqual(asBasis(c, 0.5, 0.5, GROUPS_MIN));
     expect(await readReagent(f.teacher, untouched.id), "목록에 없는 시약").toEqual(untouched);
   });
 
@@ -685,8 +780,8 @@ test.describe("일회용 학교", () => {
     const res = expectSaved(await save(f.teacher, made.slice(0, ITEMS_MAX).map(itemOf)), `${ITEMS_MAX}개`, ITEMS_MAX);
     const after = new Map((await readMany(f.teacher, ids)).map((r) => [r.id, r]));
     made.slice(0, ITEMS_MAX).forEach((r, i) => {
-      expect(res.get(r.id), `${i + 1}번째 결과`).toEqual({ reagent_id: r.id, required: (i + 1) * 2, previous_min_stock: 0, outcome: "changed" });
-      expect(after.get(r.id), `${i + 1}번째 시약`).toEqual({ ...r, min_stock: (i + 1) * 2, reorder_per_group: i + 1, reorder_groups: 2 });
+      expect(res.get(r.id), `${i + 1}번째 결과`).toEqual({ reagent_id: r.id, required: (i + 1) * 2, previous_min_stock: r.min_stock, outcome: "changed" });
+      expect(after.get(r.id), `${i + 1}번째 시약`).toEqual(asBasis(r, (i + 1) * 2, i + 1, 2));
     });
     expect(after.get(made[ITEMS_MAX].id), "목록에 넣지 않은 시약").toEqual(made[ITEMS_MAX]);
   });
@@ -732,7 +827,7 @@ test.describe("일회용 학교", () => {
     // 이미 부족한 시약의 기준이 더 커져도 알림 시각은 유지 (d7 §11 "이미 부족한 상태가 이어지면 유지")
     const more = expectSaved(await save(f.admin, [{ reagent_id: low.id, per_group: 2, groups: 6 }]), "2 × 6 (더 큼)", 1);
     expect(more.get(low.id)).toEqual({ reagent_id: low.id, required: 12, previous_min_stock: 6, outcome: "changed" });
-    expect(await readReagent(f.teacher, low.id)).toEqual({ ...lowAfter, min_stock: 12, reorder_per_group: 2, reorder_groups: 6 });
+    expect(await readReagent(f.teacher, low.id)).toEqual(asBasis(lowAfter, 12, 2, 6));
 
     // 넉넉하던 시약도 기준이 재고를 넘으면 알림 대상이 된다
     const now = expectSaved(await save(f.teacher, [{ reagent_id: plenty.id, per_group: 50.5, groups: 2 }]), "50.5 × 2 = 101 > 100", 1);
@@ -752,11 +847,11 @@ test.describe("일회용 학교", () => {
     const c = await newReagent(f.teacher, 1);
 
     let res = expectSaved(await save(f.teacher, [{ reagent_id: a.id, per_group: 0.001, groups: GROUPS_MIN }]), "per_group 0.001", 1);
-    expect(res.get(a.id)).toEqual({ reagent_id: a.id, required: 0.001 * GROUPS_MIN, previous_min_stock: 0, outcome: "changed" });
+    expect(res.get(a.id)).toEqual({ reagent_id: a.id, required: 0.001 * GROUPS_MIN, previous_min_stock: a.min_stock, outcome: "changed" });
     expect(await readReagent(f.teacher, a.id)).toMatchObject({ min_stock: 0.001 * GROUPS_MIN, reorder_per_group: 0.001, reorder_groups: GROUPS_MIN });
 
     res = expectSaved(await save(f.teacher, [{ reagent_id: b.id, per_group: PER_GROUP_MAX, groups: GROUPS_MAX }]), "최대 × 최대", 1);
-    expect(res.get(b.id)).toEqual({ reagent_id: b.id, required: PER_GROUP_MAX * GROUPS_MAX, previous_min_stock: 0, outcome: "changed" });
+    expect(res.get(b.id)).toEqual({ reagent_id: b.id, required: PER_GROUP_MAX * GROUPS_MAX, previous_min_stock: b.min_stock, outcome: "changed" });
     expect(await readReagent(f.teacher, b.id)).toMatchObject({
       min_stock: PER_GROUP_MAX * GROUPS_MAX,
       reorder_per_group: PER_GROUP_MAX,
@@ -765,7 +860,7 @@ test.describe("일회용 학교", () => {
 
     // admin 도 같은 규칙
     res = expectSaved(await save(f.admin, [{ reagent_id: c.id, per_group: 1.5, groups: 6 }]), "admin 1.5 × 6", 1);
-    expect(res.get(c.id)).toEqual({ reagent_id: c.id, required: 9, previous_min_stock: 0, outcome: "changed" });
+    expect(res.get(c.id)).toEqual({ reagent_id: c.id, required: 9, previous_min_stock: c.min_stock, outcome: "changed" });
     const cAfter = await readReagent(f.teacher, c.id);
     expect(cAfter).toMatchObject({ min_stock: 9, reorder_per_group: 1.5, reorder_groups: 6 });
 
@@ -860,7 +955,7 @@ test.describe("일회용 학교", () => {
     // 양성 대조군: 같은 항목이 자기 학교에서는 저장된다 — 그리고 그 저장은 다른 학교 시약에 닿지 않는다
     const ok = expectSaved(await save(f.teacher, [{ reagent_id: mineA.id, per_group: 4, groups: 5 }]), "A' 교사: 자기 학교 시약", 1);
     expect(ok.get(mineA.id)?.outcome).toBe("changed");
-    expect(await stateA()).toEqual({ ...mineA, min_stock: 20, reorder_per_group: 4, reorder_groups: 5 });
+    expect(await stateA()).toEqual(asBasis(mineA, 20, 4, 5));
     expect(await stateB(), "A' 저장 뒤 B' 시약").toEqual(mineB);
   });
 

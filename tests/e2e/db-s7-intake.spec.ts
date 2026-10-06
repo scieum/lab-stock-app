@@ -14,6 +14,7 @@ import { join } from "node:path";
 import { test, expect, type TestInfo } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ROLE_LABEL, anonClient, signIn, uniqueTag, type Role, type Session } from "./db-helpers";
+import { autoFromIntake } from "./reorder-auto-helpers";
 
 test.describe.configure({ mode: "default" });
 
@@ -26,7 +27,8 @@ const STORAGE_CLASSES = rules.cabinet.storage_classes;
 const UNITS = ["병", "mL", "g"] as const;
 
 const TEMP_PREFIX = "R-db-S7-";
-const REAGENT_COLS = "id, school_id, name, cas_no, unit, stock, min_stock, msds_url, slot_id, intake_date, storage_class";
+const REAGENT_COLS =
+  "id, school_id, name, cas_no, unit, stock, min_stock, msds_url, slot_id, intake_date, storage_class, min_stock_source, min_stock_auto_basis";
 const LOG_COLS = "id, school_id, reagent_id, user_id, amount, intake_date, created_at";
 
 type Row = Record<string, unknown>;
@@ -168,7 +170,7 @@ test(`[R-db][S7] 학생 register_reagent 거부 (reagents·intake_logs 행 없�
 // ======================================================================
 
 for (const role of ["teacher", "admin"] as Role[]) {
-  test(`[R-db][S7] ${ROLE_LABEL[role]} record_intake 성공: stock +amount·intake_date 갱신·intake_logs 1행`, async ({}, info) => {
+  test(`[R-db][S7] ${ROLE_LABEL[role]} record_intake 성공: stock +amount·intake_date 갱신·intake_logs 1행 · 자동 기준 = 마지막 입고량 × 20% (d7 §11-1)`, async ({}, info) => {
     const s = await signIn(role);
     expect(s.profileRole).toBe(role);
     const r = await tempReagent(s, info);
@@ -183,8 +185,15 @@ for (const role of ["teacher", "admin"] as Role[]) {
       const after = await readReagent(s, id);
       expect(Number(after?.stock), "stock 은 정확히 amount 만큼 증가").toBe(before + amount);
       expect(after?.intake_date).toBe(date);
-      // 입고가 바꾸는 것은 stock·intake_date 뿐
-      expect({ ...after, stock: r.stock, intake_date: r.intake_date }).toEqual(r);
+      // 직접 넣은 임시 시약(min_stock 0)은 자동 기준(d7 §11-1) → 입고하면 기준 = 이번 입고량 × 20%
+      expect(r.min_stock_source, "전제: min_stock 0 으로 직접 넣은 시약은 자동 기준").toBe("auto");
+      expect([Number(after?.min_stock), after?.min_stock_source, after?.min_stock_auto_basis], "입고 뒤 자동 기준").toEqual([
+        autoFromIntake(amount),
+        "auto",
+        "intake",
+      ]);
+      // 입고가 바꾸는 것은 stock·intake_date 와 자동 기준(값·근거)뿐
+      expect({ ...after, stock: r.stock, intake_date: r.intake_date, min_stock: r.min_stock, min_stock_auto_basis: r.min_stock_auto_basis }).toEqual(r);
 
       const logs = await logsOf(s, id);
       expect(logs).toHaveLength(1);
@@ -205,6 +214,7 @@ for (const role of ["teacher", "admin"] as Role[]) {
       const after2 = await readReagent(s, id);
       expect(Number(after2?.stock)).toBe(before + amount + 1);
       expect(after2?.intake_date).toBe(date2);
+      expect(Number(after2?.min_stock), "자동 기준 = 마지막(두 번째) 입고량 × 20% — 합이 아니다").toBe(autoFromIntake(1));
       expect(await logsOf(s, id)).toHaveLength(2);
     } finally {
       await dropReagent(s, id);
@@ -214,7 +224,7 @@ for (const role of ["teacher", "admin"] as Role[]) {
     expect(await logsOf(s, id)).toHaveLength(0);
   });
 
-  test(`[R-db][S7] ${ROLE_LABEL[role]} register_reagent 성공: reagents 1행(자기 학교·min_stock 0·slot_id null) + intake_logs 1행`, async ({}, info) => {
+  test(`[R-db][S7] ${ROLE_LABEL[role]} register_reagent 성공: reagents 1행(자기 학교·자동 기준 = 첫 재고 × 20%·slot_id null) + intake_logs 1행`, async ({}, info) => {
     const s = await signIn(role);
     const name = tempName(info);
     const storageClass = STORAGE_CLASSES[role === "teacher" ? 1 : STORAGE_CLASSES.length - 1];
@@ -239,7 +249,8 @@ for (const role of ["teacher", "admin"] as Role[]) {
       expect(row.storage_class).toBe(storageClass);
       expect(row.unit).toBe(unit);
       expect(Number(row.stock)).toBe(stock);
-      expect(Number(row.min_stock)).toBe(0);
+      // d7 §11-1: 등록 때 자동 기준 = 첫 입고량(= 첫 재고) × 20%, 소수 3자리
+      expect([Number(row.min_stock), row.min_stock_source, row.min_stock_auto_basis], "등록 직후 자동 기준").toEqual([autoFromIntake(stock), "auto", "intake"]);
       expect(row.slot_id).toBeNull();
       expect(row.cas_no).toBeNull();
       expect(row.intake_date).toBe(date);

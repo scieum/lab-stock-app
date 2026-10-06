@@ -164,9 +164,17 @@ function frameCounts(name: string): Record<string, number> {
   return out;
 }
 
-type DbReagent = { id: string; slot_id: string | null; min_stock: number; stock: number; reorder_per_group: number | null; reorder_groups: number | null };
+type DbReagent = {
+  id: string;
+  slot_id: string | null;
+  min_stock: number;
+  stock: number;
+  reorder_per_group: number | null;
+  reorder_groups: number | null;
+  min_stock_source: string;
+};
 async function reagentByService(id: string): Promise<DbReagent> {
-  const r = await service().from("reagents").select("id, slot_id, min_stock, stock, reorder_per_group, reorder_groups").eq("id", id).single();
+  const r = await service().from("reagents").select("id, slot_id, min_stock, stock, reorder_per_group, reorder_groups, min_stock_source").eq("id", id).single();
   if (r.error) throw new Error(`시약 대조 조회 실패: ${r.error.message}`);
   const d = r.data as Record<string, unknown>;
   return {
@@ -176,7 +184,19 @@ async function reagentByService(id: string): Promise<DbReagent> {
     stock: Number(d.stock),
     reorder_per_group: d.reorder_per_group === null ? null : Number(d.reorder_per_group),
     reorder_groups: d.reorder_groups === null ? null : Number(d.reorder_groups),
+    min_stock_source: d.min_stock_source as string,
   };
+}
+
+/**
+ * 준비: 재주문 기준을 'manual' 0(알림 없음)으로 — 일회용 교사 세션의 set_reorder_threshold (d7 §14).
+ * d7 §11-1(2026-10-06) 부터 새 시약은 자동 기준(첫 입고량 × 20%)으로 시작하므로, "기준 없음(아직 없어요)" 상태는 이렇게 만든다.
+ */
+async function prepNoThreshold(f: S11Fixture, id: string): Promise<void> {
+  const teacher = await clientFor(f.teacher);
+  const res = await teacher.rpc("set_reorder_threshold", { p_reagent_id: id, p_min_stock: 0 });
+  expect(res.error, `준비: set_reorder_threshold 0 (${res.error?.message})`).toBeNull();
+  expect(await reagentByService(id), "준비: 기준 없음 (manual 0)").toMatchObject({ min_stock: 0, min_stock_source: "manual" });
 }
 
 // =====================================================================
@@ -351,6 +371,8 @@ test.describe("일회용 학교", () => {
   test(`[R-ui][S${SCREEN}] 일회용 학생 시약 상세: ${LOC}·${THRESH} 값은 보임 · ${LOC_EDIT}·${THRESH_EDIT}·${PICKER} 0 (R5·R7) · 응답 본문에 그 컴포넌트·피커 데이터(다른 시약장 이름) 없음 — 같은 시약의 교사 응답에는 있음(대조) · 쓰기 0건`, async ({ browser }, info) => {
     const f = await fresh(info);
     const st = await prepLocState(f);
+    // 학생에게 보이는 재주문 기준 줄 = "아직 없어요" 상태로 (새 시약의 자동 기준 대신 manual 0 — 화면 문구가 바뀌는 D3 전까지 값만 보는 단언 유지)
+    await prepNoThreshold(f, st.x.id);
     expect(R5.components, "R5 에 threshold-edit").toContain(THRESH_EDIT);
     expect(R7.components, "R7 에 location-edit").toContain(LOC_EDIT);
     // 대조: 교사 응답에는 피커 데이터(옮길 수 있는 다른 시약장 이름)가 있다
@@ -391,9 +413,11 @@ test.describe("일회용 학교", () => {
     const r2 = await teacherClient.rpc("set_reorder_threshold", { p_reagent_id: direct.id, p_min_stock: 5 });
     expect(r2.error, `준비: set_reorder_threshold (${r2.error?.message})`).toBeNull();
     const none = await prepReagent(f, "없음", 7, "g", CAB.storage_classes[0], nameOf("시약다"));
-    expect(await reagentByService(basis.id), "대조: 근거 있는 시약").toMatchObject({ min_stock: 60, reorder_per_group: 10, reorder_groups: 6 });
-    expect(await reagentByService(direct.id), "대조: 직접 값 시약").toMatchObject({ min_stock: 5, reorder_per_group: null });
-    expect(await reagentByService(none.id), "대조: 기준 없음").toMatchObject({ min_stock: 0 });
+    await prepNoThreshold(f, none.id);
+    // 근거 있는 시약: 자동 기준(새 시약)에 save_reorder_basis → 항상 바뀜 → 'basis' (d7 §11-1)
+    expect(await reagentByService(basis.id), "대조: 근거 있는 시약").toMatchObject({ min_stock: 60, reorder_per_group: 10, reorder_groups: 6, min_stock_source: "basis" });
+    expect(await reagentByService(direct.id), "대조: 직접 값 시약").toMatchObject({ min_stock: 5, reorder_per_group: null, min_stock_source: "manual" });
+    expect(await reagentByService(none.id), "대조: 기준 없음").toMatchObject({ min_stock: 0, min_stock_source: "manual" });
 
     const { context, page } = await openTemp(browser, info, f.teacher, detailPath(basis.id));
     const actions = watchActions(page);
@@ -436,6 +460,7 @@ test.describe("일회용 학교", () => {
       await expectToast(page, toastThreshold("9", "g"));
       expect(actions.count(), "연타에도 저장 요청 1건").toBe(1);
       await expect.poll(async () => (await reagentByService(none.id)).min_stock, { timeout: SAVE_TIMEOUT }).toBe(9);
+      expect((await reagentByService(none.id)).min_stock_source, "직접 입력 → 'manual'").toBe("manual");
       await expect.poll(() => thresholdText(page), { timeout: SAVE_TIMEOUT }).toBe(`${THRESH_CAPTION} 9g`);
       await expect(card(page).locator(sel(BADGE)), "재고 7 < 기준 9 → 재고 부족 배지").toHaveCount(1, { timeout: SAVE_TIMEOUT });
       // 화면 6 알림에 나타남
@@ -467,7 +492,7 @@ test.describe("일회용 학교", () => {
       await thrInput(page).fill("2");
       await save.click();
       await expectToast(page, toastThreshold("2", "g"));
-      await expect.poll(async () => reagentByService(basis.id), { timeout: SAVE_TIMEOUT }).toMatchObject({ min_stock: 2, reorder_per_group: null, reorder_groups: null });
+      await expect.poll(async () => reagentByService(basis.id), { timeout: SAVE_TIMEOUT }).toMatchObject({ min_stock: 2, reorder_per_group: null, reorder_groups: null, min_stock_source: "manual" });
       await expect.poll(() => thresholdText(page), { timeout: SAVE_TIMEOUT }).toBe(`${THRESH_CAPTION} 2g`);
       await expect(card(page).locator(sel(BADGE)), "재고 30 ≥ 기준 2 → 배지 없음").toHaveCount(0);
       expect(actions.count(), "쓰기 요청 = 9 · 0 · 2 세 번").toBe(3);
