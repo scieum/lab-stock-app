@@ -6,7 +6,7 @@ import { ButtonPillSoft } from "@/components/button-pill-soft";
 import { ButtonPrimary } from "@/components/button-primary";
 import { ModalCard } from "@/components/ex-modal-card";
 import { Icon } from "@/components/icons";
-import { countFavorites, isOpenableUrl, isOpenableWebsite, vendorInfo, visibleVendors } from "@/lib/vendor-rules";
+import { isOpenableUrl, isOpenableWebsite, vendorInfo, visibleVendors } from "@/lib/vendor-rules";
 import { VendorFavoriteToggle } from "./favorite-toggle";
 import styles from "./styles.module.css";
 
@@ -138,14 +138,29 @@ export function VendorLinkModal({
   favoriteError = null,
 }: ModalProps) {
   const [picked, setPicked] = useState<string | null>(defaultSelectedId ?? null);
-  const [showAll, setShowAll] = useState(defaultShowAll);
+  /**
+   * 보이는 행(id 순서) — 모달을 열 때 정한다 (d7 §12-1): 즐겨찾기가 1곳 이상이면 즐겨찾기만, 없으면 전체.
+   * 열린 동안 별표를 누르거나 풀어도 행 목록·순서·선택은 그대로(별표 모양만 바뀐다). 다음에 열 때 새 즐겨찾기 기준.
+   * "모든 판매처 보기" 를 누르면 그때의 즐겨찾기 먼저 + 기존 순서로 전체를 펼친다.
+   */
+  const [rowIds, setRowIds] = useState<string[]>(() => visibleVendors(vendors, defaultShowAll).map((v) => v.id));
+  const [expanded, setExpanded] = useState(defaultShowAll);
   const labelId = useId();
   const hintId = useId();
 
-  // 즐겨찾기가 1곳 이상이면 즐겨찾기만, "모든 판매처 보기" 를 누르면 전체(즐겨찾기 먼저). 없으면 처음부터 전체 (d7 §12-1)
-  const favorites = countFavorites(vendors);
-  const shown = visibleVendors(vendors, showAll);
-  const canShowAll = favorites > 0 && !showAll && shown.length < vendors.length;
+  const byId = new Map(vendors.map((v) => [v.id, v]));
+  // 지금 값(별표 상태)은 vendors 에서, 행 목록·순서는 열 때 정한 것으로. 목록에서 사라진(삭제된) 판매처만 빠진다
+  const shown = rowIds.flatMap((id) => {
+    const v = byId.get(id);
+    return v ? [v] : [];
+  });
+  const canShowAll = !expanded && shown.length < vendors.length;
+  const showAll = () => {
+    // 펼쳐도 지금 고른 행은 그대로 (아직 안 골랐으면 지금 보이는 첫 줄을 고른 것으로 남긴다)
+    if (selected) setPicked(selected.id);
+    setExpanded(true);
+    setRowIds(visibleVendors(vendors, true).map((v) => v.id));
+  };
   // 고른 판매처가 보이는 목록에서 사라졌으면(또는 아직 안 골랐으면) 첫 줄
   const selected = shown.find((v) => v.id === picked) ?? shown[0] ?? null;
   const canOpen = selected !== null && isOpenableWebsite(selected.website);
@@ -199,7 +214,7 @@ export function VendorLinkModal({
               data-testid="vendor-show-all"
               className={styles.showAll}
               aria-expanded={false}
-              onClick={() => setShowAll(true)}
+              onClick={showAll}
             >
               모든 판매처 보기
             </button>
