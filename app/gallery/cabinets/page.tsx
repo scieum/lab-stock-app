@@ -22,9 +22,10 @@ const [first] = sampleCabinets;
 const slotL2 = sampleInSlot(first.id, "L2").map((r) => ({ id: r.id, name: r.name, amount: r.amount, storageClass: r.storageClass }));
 const slotL1 = sampleInSlot(first.id, "L1").map((r) => ({ id: r.id, name: r.name, amount: r.amount, storageClass: r.storageClass }));
 
-function Item({ id, name, children }: { id: string; name: string; children: React.ReactNode }) {
+/** wide: 화면 11 전체 배치(CabinetScreen 2단)를 그리는 구역 — 데스크톱 2열 격자에서 전체 폭으로 펼쳐 실제 화면 폭과 맞춘다 */
+function Item({ id, name, wide, children }: { id: string; name: string; wide?: boolean; children: React.ReactNode }) {
   return (
-    <section className={styles.item} aria-labelledby={`g-${id}`}>
+    <section className={wide ? `${styles.item} ${styles.wide}` : styles.item} aria-labelledby={`g-${id}`}>
       <h2 id={`g-${id}`} className={styles.itemName}>
         {name}
       </h2>
@@ -54,11 +55,11 @@ export default function GalleryCabinetsPage() {
       </p>
 
       <div className={styles.grid}>
-        <Item id="default" name="기본 — 교사·admin (시안 11: 시약장 2개, 1번 활성, 좌1단 산 + 염기 선택 · 칸 안 시약 수)">
+        <Item id="default" wide name="기본 — 교사·admin (시안 11: 시약장 2개, 1번 활성, 좌1단 산 + 염기 선택 · 칸 안 시약 수)">
           <CabinetsDemo role="teacher" cabinets={sampleCabinets} unassigned={sampleUnassigned} />
         </Item>
 
-        <Item id="student" name="학생 — 보기 전용 (cabinet-add · cabinet-edit · qr-print 없음, 칸을 누르면 목록만)">
+        <Item id="student" wide name="학생 — 보기 전용 (cabinet-add · cabinet-edit · qr-print 없음, 칸을 누르면 목록만)">
           <CabinetsDemo role="student" cabinets={sampleCabinets} unassigned={sampleUnassigned} />
         </Item>
 
@@ -141,7 +142,7 @@ export default function GalleryCabinetsPage() {
           <CabinetUnsavedConfirm sheet={false} cabinetLabel={first.label} />
         </Item>
 
-        <Item id="unsaved-flow" name="저장 안 한 편집 — 동작 (분류를 바꾼 채 2번 시약장을 누른 상태)">
+        <Item id="unsaved-flow" wide name="저장 안 한 편집 — 동작 (분류를 바꾼 채 2번 시약장을 누른 상태)">
           <CabinetsDemo role="teacher" cabinets={sampleCabinets} unassigned={sampleUnassigned} open="unsaved" dirty />
         </Item>
 
