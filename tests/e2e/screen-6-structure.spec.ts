@@ -16,6 +16,7 @@ import {
   BUSY,
   CARD,
   COMMON_NAMES,
+  COMMON_SEARCH,
   COMMON_SEED,
   DIRECT_OPEN,
   EMPTY,
@@ -301,7 +302,7 @@ test(`[C1][S${SCREEN}] 학교A 교사: "${LINK_BUTTON}" → ${MODAL} (판매처 
     expect(low.length, "대조: 학교 A 에 부족 시약이 있다 (seed)").toBeGreaterThan(0);
     const visible = await visibleVendors(page);
     expect(visible.filter((v) => v.school_id !== null), "대조: 학교 A 에는 학교 판매처가 없다 (공용 학교에 만들지 않는다)").toHaveLength(0);
-    expect(visible.map((v) => v.name).sort(), "대조: 공통 목록 = d7 §12 seed").toEqual([...COMMON_NAMES].sort());
+    expect(visible.map((v) => v.name).sort(), "대조: 공통 목록 = d7 §12·§12-1 seed").toEqual([...COMMON_NAMES].sort());
     for (const s of COMMON_SEED) expect(visible.find((v) => v.name === s.name)?.website, `대조: ${s.name} 웹사이트`).toBe(s.website);
 
     const first = (await readAlerts(page))[0];
@@ -312,7 +313,8 @@ test(`[C1][S${SCREEN}] 학교A 교사: "${LINK_BUTTON}" → ${MODAL} (판매처 
     await expect(cancelButton(page), `${OUTLINE} "취소"`).toHaveCount(1);
     await expect(confirmButton(page), `button-primary "확인"`).toHaveCount(1);
 
-    const pick = COMMON_SEED[COMMON_SEED.length - 1];
+    // 검색 주소가 있는 공통 판매처 중 마지막 (d7 §11·§12-1 — 검색 주소 없는 곳은 웹사이트를 연다, screen-6-favorites 에서 확인)
+    const pick = COMMON_SEARCH[COMMON_SEARCH.length - 1];
     await pickVendor(page, pick.name);
     await expect(confirmButton(page), "웹사이트가 있는 판매처 → 확인 활성").toBeEnabled();
     // d7 §11 "검색어 자동 입력": 공통 목록 판매처는 웹사이트 대신 그 판매처의 검색 결과 주소({q} = 카드 시약 이름)

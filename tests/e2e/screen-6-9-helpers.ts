@@ -85,30 +85,68 @@ export const BUTTON_TAB_GAP = 16;
 
 const d7 = readFileSync(join(process.cwd(), "harness", "d7-data.md"), "utf8");
 
-/** d7 §12 "공통 목록" 의 처음 seed: "이름(https://…)" 목록을 문서에서 읽는다 */
-export const COMMON_SEED: { name: string; website: string }[] = (() => {
-  const line = d7.split(/\r?\n/).find((l) => l.startsWith("| 공통 목록 |"));
-  if (!line) throw new Error("harness/d7-data.md §12 에서 '공통 목록' 행을 찾지 못했습니다");
+/** d7 §11 "검색어 자동 입력": 검색어가 들어갈 자리 */
+export const SEARCH_Q = "{q}";
+
+const d7Line = (head: string, where: string): string => {
+  const line = d7.split(/\r?\n/).find((l) => l.startsWith(head));
+  if (!line) throw new Error(`harness/d7-data.md ${where} 에서 '${head}' 행을 찾지 못했습니다`);
+  return line;
+};
+
+/** d7 §12 "공통 목록" 의 처음 seed: "이름(https://…)" */
+const SEED_12 = (() => {
+  const line = d7Line("| 공통 목록 |", "§12");
   const tail = line.slice(line.indexOf("처음 seed"));
   const list = tail.slice(tail.indexOf("):") + 2);
   const out = [...list.matchAll(/([^\s,()|]+)\((https?:\/\/[^)\s]+)\)/g)].map((m) => ({ name: m[1], website: m[2] }));
   if (out.length === 0) throw new Error("harness/d7-data.md §12 공통 목록 seed 를 읽지 못했습니다");
   return out;
 })();
-export const COMMON_NAMES = COMMON_SEED.map((v) => v.name);
 
-/** d7 §11 "검색어 자동 입력": 검색어가 들어갈 자리 */
-export const SEARCH_Q = "{q}";
+/**
+ * d7 §12-1 "공통 목록 추가 seed": "이름(https://웹사이트, `https://…{q}…`)" 또는 "이름(https://웹사이트, 검색 주소 없음 …)".
+ * 끝의 "공통 목록은 모두 N곳" 도 읽는다.
+ */
+const SEED_12_1 = (() => {
+  const line = d7Line("| 공통 목록 추가 seed |", "§12-1");
+  const out = [...line.matchAll(/([^\s,()|:`]+)\((https?:\/\/[^,\s)]+)(?:, `(https:\/\/[^`\s]+)`)?/g)].map((m) => ({
+    name: m[1],
+    website: m[2],
+    searchUrl: m[3] ?? null,
+  }));
+  if (out.length === 0) throw new Error("harness/d7-data.md §12-1 공통 목록 추가 seed 를 읽지 못했습니다");
+  const total = line.match(/공통 목록은 모두 (\d+)곳/);
+  if (!total) throw new Error("harness/d7-data.md §12-1 에서 '공통 목록은 모두 N곳' 을 찾지 못했습니다");
+  return { out, total: Number(total[1]) };
+})();
 
-/** d7 §11 "검색어 자동 입력" 행의 공통 목록 검색 주소: "이름 `https://…{q}…`" 목록을 문서에서 읽는다 */
-export const COMMON_SEARCH: { name: string; searchUrl: string }[] = (() => {
-  const line = d7.split(/\r?\n/).find((l) => l.startsWith("| 검색어 자동 입력 |"));
-  if (!line) throw new Error("harness/d7-data.md §11 에서 '검색어 자동 입력' 행을 찾지 못했습니다");
-  const out = [...line.matchAll(/([^\s,()|:`]+) `(https:\/\/[^`\s]+)`/g)].map((m) => ({ name: m[1], searchUrl: m[2] }));
-  if (out.length === 0) throw new Error("harness/d7-data.md §11 공통 목록 검색 주소를 읽지 못했습니다");
-  for (const s of out) if (!s.searchUrl.includes(SEARCH_Q)) throw new Error(`d7 §11 ${s.name} 검색 주소에 ${SEARCH_Q} 없음`);
+/** d7 §12-1 "공통 목록은 모두 N곳" */
+export const COMMON_TOTAL = SEED_12_1.total;
+
+/** 공통 목록 seed 전체 = d7 §12 처음 seed + §12-1 추가 seed (이름 중복은 건너뜀) */
+export const COMMON_SEED: { name: string; website: string }[] = (() => {
+  const out = [...SEED_12];
+  for (const s of SEED_12_1.out) if (!out.some((o) => o.name === s.name)) out.push({ name: s.name, website: s.website });
+  if (out.length !== COMMON_TOTAL) throw new Error(`d7 §12·§12-1 공통 seed ${out.length}곳 ≠ "모두 ${COMMON_TOTAL}곳"`);
   return out;
 })();
+export const COMMON_NAMES = COMMON_SEED.map((v) => v.name);
+
+/**
+ * 공통 목록 검색 주소 = d7 §11 "검색어 자동 입력" 행의 "이름 `https://…{q}…`" + d7 §12-1 추가 seed 중 검색 주소가 있는 곳.
+ */
+export const COMMON_SEARCH: { name: string; searchUrl: string }[] = (() => {
+  const line = d7Line("| 검색어 자동 입력 |", "§11");
+  const out = [...line.matchAll(/([^\s,()|:`]+) `(https:\/\/[^`\s]+)`/g)].map((m) => ({ name: m[1], searchUrl: m[2] }));
+  if (out.length === 0) throw new Error("harness/d7-data.md §11 공통 목록 검색 주소를 읽지 못했습니다");
+  for (const s of SEED_12_1.out) if (s.searchUrl && !out.some((o) => o.name === s.name)) out.push({ name: s.name, searchUrl: s.searchUrl });
+  for (const s of out) if (!s.searchUrl.includes(SEARCH_Q)) throw new Error(`d7 ${s.name} 검색 주소에 ${SEARCH_Q} 없음`);
+  return out;
+})();
+
+/** 검색 주소가 없는 공통 판매처 (d7 §12-1 "검색 주소 없음 → 웹사이트") */
+export const COMMON_NO_SEARCH: { name: string; website: string }[] = COMMON_SEED.filter((s) => !COMMON_SEARCH.some((c) => c.name === s.name));
 
 /** d7 §11: 검색어 = 시약 이름(앞뒤 공백만 정리, URL 인코딩) → `{q}` 자리에 넣은 주소 (URL 정규화 표기) */
 export function searchHref(template: string, reagentName: string): string {
@@ -515,7 +553,8 @@ export const hex = (n = 3) => randomBytes(n).toString("hex");
 export async function purge(schoolIds: string[]): Promise<void> {
   if (!schoolIds.length) return;
   const sb = service();
-  for (const table of ["usage_logs", "reagents", "vendors"]) {
+  // vendor_favorites 먼저 (d7 §12-1 — 공통 판매처 즐겨찾기는 판매처 삭제로 지워지지 않고, 학교 삭제를 막는다)
+  for (const table of ["vendor_favorites", "usage_logs", "reagents", "vendors"]) {
     const r = await sb.from(table).delete().in("school_id", schoolIds);
     expect(r.error, `일회용 학교 ${table} 정리: ${r.error?.message}`).toBeNull();
   }
@@ -575,8 +614,19 @@ export async function prepVendor(f: Fx, spec: VendorSpec = {}, tag = "판매처"
 /** 외부로 나가지 않는 판매처 주소 (.test 는 실제로 풀리지 않는 최상위 도메인) */
 export const fakeSite = (tag: string) => `https://${tag}-${hex()}.example.test/shop`;
 
-export type Residue69 = Residue & { vendors: number; reagents: number; intake_logs: number; usage_logs: number; cabinets: number };
-export const NO_RESIDUE_69: Residue69 = { users: 0, schools: 0, invites: 0, profiles: 0, vendors: 0, reagents: 0, intake_logs: 0, usage_logs: 0, cabinets: 0 };
+export type Residue69 = Residue & { vendors: number; vendor_favorites: number; reagents: number; intake_logs: number; usage_logs: number; cabinets: number };
+export const NO_RESIDUE_69: Residue69 = {
+  users: 0,
+  schools: 0,
+  invites: 0,
+  profiles: 0,
+  vendors: 0,
+  vendor_favorites: 0,
+  reagents: 0,
+  intake_logs: 0,
+  usage_logs: 0,
+  cabinets: 0,
+};
 
 /** 이 묶음(group)·프로젝트의 일회용 학교·계정과 그 학교의 기록·시약·판매처·시약장을 지우고 남은 수를 돌려준다 */
 export async function cleanup(group: string, project: string): Promise<Residue69> {
@@ -584,12 +634,13 @@ export async function cleanup(group: string, project: string): Promise<Residue69
   const schools = await sb.from("schools").select("id").like("neis_code", `S8UI-${group}-${project}-%`);
   const ids = (schools.data ?? []).map((s) => s.id as string);
   if (ids.length) {
-    for (const table of ["usage_logs", "reagents", "vendors", "cabinets"]) await sb.from(table).delete().in("school_id", ids);
+    for (const table of ["vendor_favorites", "usage_logs", "reagents", "vendors", "cabinets"]) await sb.from(table).delete().in("school_id", ids);
   }
   const left = await sweep(group, project);
   const rest: Record<string, number> = {};
-  for (const table of ["vendors", "reagents", "intake_logs", "usage_logs", "cabinets"]) {
-    const r = ids.length ? await sb.from(table).select("id").in("school_id", ids) : { data: [] as unknown[] };
+  for (const table of ["vendors", "vendor_favorites", "reagents", "intake_logs", "usage_logs", "cabinets"]) {
+    const r = ids.length ? await sb.from(table).select("school_id").in("school_id", ids) : { data: [] as unknown[], error: null };
+    if (r.error) throw new Error(`잔여물 대조 조회(${table}) 실패: ${r.error.message}`);
     rest[table] = (r.data ?? []).length;
   }
   return { ...left, ...(rest as Omit<Residue69, keyof Residue>) };
@@ -609,15 +660,18 @@ export async function sharedSnapshot(): Promise<string[]> {
   if (schools.error) throw new Error(`schools 대조 조회 실패: ${schools.error.message}`);
   const ids = (schools.data ?? []).map((s) => s.id as string);
   expect(ids.length, "대조: 학교 A·B·데모 학교").toBeGreaterThanOrEqual(3);
-  const [common, own, reagents] = await Promise.all([
+  const [common, own, reagents, favorites] = await Promise.all([
     sb.from("vendors").select("*").is("school_id", null).order("id"),
     sb.from("vendors").select("*").in("school_id", ids).order("id"),
     sb.from("reagents").select("id, school_id, name, unit, min_stock, reorder_per_group, reorder_groups, min_stock_source").in("school_id", ids).order("id"),
+    // d7 §12-1 즐겨찾기 — 공용 학교 A·B·데모의 행 (이 스펙들은 공용 학교 즐겨찾기를 쓰지 않는다)
+    sb.from("vendor_favorites").select("*").in("school_id", ids).order("school_id").order("vendor_id"),
   ]);
-  for (const q of [common, own, reagents]) if (q.error) throw new Error(`대조 조회 실패: ${q.error.message}`);
+  for (const q of [common, own, reagents, favorites]) if (q.error) throw new Error(`대조 조회 실패: ${q.error.message}`);
   return [
     ...(common.data ?? []).map((v) => `common|${JSON.stringify(v)}`),
     ...(own.data ?? []).map((v) => `vendor|${JSON.stringify(v)}`),
+    ...(favorites.data ?? []).map((v) => `favorite|${JSON.stringify(v)}`),
     ...(reagents.data ?? [])
       .filter((r) => !FOREIGN_TEMP.some((p) => String(r.name).startsWith(p)))
       // 출처가 'auto' 인 시약의 min_stock 은 다른 스펙의 사용·입고 기록으로 DB 가 다시 계산한다(d7 §11-1) — 값 대신 출처만 견준다

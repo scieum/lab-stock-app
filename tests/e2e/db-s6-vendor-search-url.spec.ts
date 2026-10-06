@@ -1,6 +1,6 @@
 // [R-db][S6] · [R-db][S9] · [N1-db][S6]
 // 판매처 검색어 자동 입력 (d7 §11 "검색어 자동 입력", 2026-10-07 사용자 결정) — vendors.search_url
-//   - 공통 seed 4곳만 검색 주소를 가진다 (주소는 d7 §11 문장에서 읽는다). 우리 학교 판매처는 null (웹사이트를 연다).
+//   - 공통 seed 중 d7 §11·§12-1 이 검색 주소를 준 곳만 값이 있고(덕산종합과학 등 "검색 주소 없음" 은 null), 우리 학교 판매처는 null (웹사이트를 연다).
 //   - 화면·API 로는 search_url 을 쓸 수 없다 (마이그레이션으로만): 로그인 세션의 insert(값 있음)·update(값 바꿈) → 거부(42501).
 //     같은 판매처의 다른 열(이름·연락처·웹사이트·note) 수정은 그대로 된다 (d7 §12 admin 쓰기).
 //   - 열 형식: null 또는 https:// + {q} 정확히 1번 + 300자 이하 → 위반 23514 (builder 마이그레이션 제약. service role 로만 확인 —
@@ -18,8 +18,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ROLE_LABEL, anonClient, signIn, type Role } from "./db-helpers";
 import { HAS_SERVICE, clientFor, service, tempSchool, type TempSchool } from "./screen-8-helpers";
 import {
+  COMMON_NAMES,
+  COMMON_NO_SEARCH,
   COMMON_SEARCH,
   COMMON_SEED,
+  COMMON_TOTAL,
   NO_RESIDUE_69,
   SEARCH_Q,
   cleanup,
@@ -119,24 +122,30 @@ test.afterAll(async ({}, info) => {
 // 공용 계정 — 읽기와 거부 호출만
 // ======================================================================
 
-test(`[R-db][S6] 공통 목록 ${COMMON_SEARCH.length}곳 search_url = d7 §11 검색 주소 (학교 A 교사·admin · 학교 B 교사 세션) · 공통 행 수 = d7 §12 seed 수`, async () => {
-  expect(byName(COMMON_SEARCH).map((s) => s.name), "d7 §11 검색 주소 판매처 = d7 §12 공통 seed").toEqual(byName(COMMON_SEED).map((s) => s.name));
+test(`[R-db][S6] 공통 목록 ${COMMON_SEED.length}곳(d7 §12·§12-1) search_url = 검색 주소 ${COMMON_SEARCH.length}곳(d7 §11·§12-1) + 검색 주소 없음 ${COMMON_NO_SEARCH.length}곳 null (학교 A 교사·admin · 학교 B 교사 세션)`, async () => {
+  expect(COMMON_SEED.length, "d7 §12-1 공통 목록은 모두 N곳").toBe(COMMON_TOTAL);
+  expect(COMMON_SEARCH.length + COMMON_NO_SEARCH.length, "검색 주소 있음 + 없음 = 공통 seed").toBe(COMMON_SEED.length);
+  for (const s of COMMON_SEARCH) expect(COMMON_NAMES, `검색 주소 판매처 "${s.name}" 는 공통 seed`).toContain(s.name);
+  const want = byName([
+    ...COMMON_SEARCH.map((s) => ({ name: s.name, searchUrl: s.searchUrl as string | null })),
+    ...COMMON_NO_SEARCH.map((s) => ({ name: s.name, searchUrl: null as string | null })),
+  ]);
   for (const role of ["teacher", "admin", "schoolB"] as Role[]) {
     const s = await signIn(role);
     const r = await s.client.from("vendors").select("name, website, search_url").is("school_id", null);
     expect(r.error, `${ROLE_LABEL[role]} 공통 목록 조회: ${r.error?.message}`).toBeNull();
     const got = byName(((r.data ?? []) as Row[]).map((v) => ({ name: v.name as string, searchUrl: v.search_url as string | null })));
-    expect(got, `${ROLE_LABEL[role]} 에게 보이는 공통 목록 search_url`).toEqual(byName(COMMON_SEARCH));
+    expect(got, `${ROLE_LABEL[role]} 에게 보이는 공통 목록 search_url`).toEqual(want);
     // 웹사이트는 그대로 (search_url 은 웹사이트를 바꾸지 않는다)
     const sites = byName(((r.data ?? []) as Row[]).map((v) => ({ name: v.name as string, website: v.website as string })));
-    expect(sites, `${ROLE_LABEL[role]} 공통 목록 website = d7 §12`).toEqual(byName(COMMON_SEED));
+    expect(sites, `${ROLE_LABEL[role]} 공통 목록 website = d7 §12·§12-1`).toEqual(byName(COMMON_SEED));
   }
 });
 
 test(`[N1-db][S6] 학생(학교 A)·anon: search_url 열 포함 vendors 0행 (공통 검색 주소도 못 읽음)`, async () => {
   const st = await signIn("student");
   expect(st.profileRole, "전제: 학생").toBe("student");
-  expect(await commonRows(), "전제(양성 대조군): admin 에게 공통 목록이 보임").toHaveLength(COMMON_SEARCH.length);
+  expect(await commonRows(), "전제(양성 대조군): admin 에게 공통 목록이 보임").toHaveLength(COMMON_SEED.length);
   for (const [who, c] of [["학생", st.client], ["anon", anonClient()]] as [string, SupabaseClient][]) {
     const r = await c.from("vendors").select("id, search_url");
     expect(r.error ? [] : r.data ?? [], `${who} 에게 보이는 vendors(search_url)`).toHaveLength(0);
@@ -159,7 +168,7 @@ for (const role of ["student", "teacher", "admin", "schoolB"] as Role[]) {
   test(`[R-db][S6] ${ROLE_LABEL[role]}: 공통 행 search_url update(다른 주소·null) 0행 · 공통 목록 전체 열 그대로`, async () => {
     const s = await signIn(role);
     const before = await commonRows();
-    expect(before.length, "전제: 공통 행").toBe(COMMON_SEARCH.length);
+    expect(before.length, "전제: 공통 행").toBe(COMMON_SEED.length);
     try {
       for (const v of before) {
         for (const patch of [{ search_url: `https://evil.example.test/?q=${SEARCH_Q}` }, { search_url: null }, { search_url: v.search_url }] as Row[]) {

@@ -34,6 +34,8 @@ import {
   type TempUser,
 } from "./screen-8-helpers";
 
+import { COMMON_SEED as D7_COMMON_SEED } from "./screen-6-9-helpers";
+
 test.describe.configure({ mode: "default" });
 
 // ---------- 규칙 (d7 §12 · §11) ----------
@@ -44,17 +46,8 @@ const CONTACT_MAX = 40;
 const WEBSITE_MAX = 300;
 const NOTE_MAX = 60;
 
-/** d7 §12 "공통 목록" 행의 처음 seed: "이름(https://…)" 목록을 문서에서 읽는다 */
-const COMMON_SEED: { name: string; website: string }[] = (() => {
-  const doc = readFileSync(join(process.cwd(), "harness", "d7-data.md"), "utf8");
-  const line = doc.split(/\r?\n/).find((l) => l.startsWith("| 공통 목록 |"));
-  if (!line) throw new Error("harness/d7-data.md §12 에서 '공통 목록' 행을 찾지 못했습니다");
-  const tail = line.slice(line.indexOf("처음 seed"));
-  const list = tail.slice(tail.indexOf("):") + 2);
-  const out = [...list.matchAll(/([^\s,()|]+)\((https?:\/\/[^)\s]+)\)/g)].map((m) => ({ name: m[1], website: m[2] }));
-  if (out.length === 0) throw new Error("harness/d7-data.md §12 공통 목록 seed 를 읽지 못했습니다");
-  return out.sort((a, b) => a.name.localeCompare(b.name));
-})();
+/** 공통 목록 seed = d7 §12 처음 seed + §12-1 추가 seed ("공통 목록은 모두 N곳" 과 같은 수 — screen-6-9-helpers 가 문서에서 읽는다) */
+const COMMON_SEED: { name: string; website: string }[] = [...D7_COMMON_SEED].sort((a, b) => a.name.localeCompare(b.name));
 
 /** 데모 학교 고정 id — lib/supabase/demo-data.ts (server-only 모듈이라 소스 텍스트에서 읽는다) */
 const DEMO_SCHOOL_ID = (() => {
