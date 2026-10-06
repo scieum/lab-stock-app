@@ -50,6 +50,79 @@ export function thresholdText(minStock: number | null | undefined, unit: string)
   return `${thresholdFmt.format(minStock)}${unit}`;
 }
 
+/* ───────── 재주문 기준의 출처 (d7 §11-1: 자동 · 매뉴얼 · 직접 입력) ───────── */
+
+/** reagents.min_stock_source */
+export type ThresholdSource = "auto" | "basis" | "manual";
+/** reagents.min_stock_auto_basis — 자동 값의 근거 (마지막 계산 때). 근거 없음(값 0) = null */
+export type AutoBasis = "usage" | "intake" | null;
+
+/** 자동 기준 표시 */
+export const AUTO_LABEL = "자동";
+/** 자동 근거: 최근 28일 사용량 ÷ 4 × 2주 */
+export const AUTO_BASIS_USAGE_TEXT = "최근 4주 사용량 기준";
+/** 자동 근거: 마지막 입고량 × 20% */
+export const AUTO_BASIS_INTAKE_TEXT = "마지막 입고량의 20%";
+/** 직접 입력한 기준 */
+export const MANUAL_SOURCE_TEXT = "직접 입력";
+/** "자동으로 돌리기" 버튼 문구 */
+export const RESET_AUTO_LABEL = "자동으로 돌리기";
+
+function positiveNum(v: number | null | undefined): v is number {
+  return typeof v === "number" && Number.isFinite(v) && v > 0;
+}
+
+/**
+ * DB 값 → 출처. 값이 없거나 모르는 값이면(열이 아직 없는 DB 등) 기존 규칙으로 추정:
+ * 근거(1조 사용량·조 수)가 있으면 'basis', 기준 > 0 이면 'manual', 아니면 'auto'.
+ */
+export function toThresholdSource(
+  v: unknown,
+  fallback?: { minStock?: number | null; perGroup?: number | null; groups?: number | null },
+): ThresholdSource {
+  if (v === "auto" || v === "basis" || v === "manual") return v;
+  if (fallback && positiveNum(fallback.perGroup) && positiveNum(fallback.groups)) return "basis";
+  if (fallback && positiveNum(fallback.minStock)) return "manual";
+  return "auto";
+}
+
+/** DB 값 → 자동 근거 ('usage' | 'intake' | null) */
+export function toAutoBasis(v: unknown): AutoBasis {
+  return v === "usage" || v === "intake" ? v : null;
+}
+
+/**
+ * 자동 근거 한 줄 (d7 §11-1 표시): 값이 0 이하·없음 → "아직 없어요",
+ * 'usage' → "최근 4주 사용량 기준", 'intake' → "마지막 입고량의 20%". 근거를 모르면 "자동".
+ */
+export function autoBasisText(r: { minStock: number | null | undefined; autoBasis: AutoBasis | undefined }): string {
+  if (!positiveNum(r.minStock ?? null)) return THRESHOLD_NONE_LABEL;
+  if (r.autoBasis === "usage") return AUTO_BASIS_USAGE_TEXT;
+  if (r.autoBasis === "intake") return AUTO_BASIS_INTAKE_TEXT;
+  return AUTO_LABEL;
+}
+
+/**
+ * 화면 3 reorder-threshold 의 근거 한 줄 (출처별):
+ *   auto   → autoBasisText ("최근 4주 사용량 기준" / "마지막 입고량의 20%" / "아직 없어요")
+ *   basis  → "1반 1회 실험량 10 g × 6조 기준" (근거 열이 비어 있으면 "직접 입력"과 같은 취급)
+ *   manual → "직접 입력"
+ */
+export function thresholdSourceText(r: {
+  source: ThresholdSource;
+  autoBasis?: AutoBasis;
+  minStock: number;
+  unit: string;
+  perGroup?: number | null;
+  groups?: number | null;
+}): string {
+  if (r.source === "auto") return autoBasisText({ minStock: r.minStock, autoBasis: r.autoBasis ?? null });
+  if (r.source === "basis" && positiveNum(r.perGroup) && positiveNum(r.groups)) {
+    return `1반 1회 실험량 ${formatStock(r.perGroup, r.unit)} × ${r.groups}조 기준`;
+  }
+  return MANUAL_SOURCE_TEXT;
+}
+
 /** 알림 대상: 재고가 필요량(min_stock)보다 적은 시약 (홈의 재고 부족과 같은 기준) */
 export function isReorderNeeded(stock: number, minStock: number): boolean {
   return stock < minStock;
@@ -65,15 +138,20 @@ function positive(v: number | null | undefined): v is number {
 }
 
 /**
- * 기준 문구 (d7 §11): 1조 사용량·조 수가 둘 다 있으면 "1반 1회 실험량 10 g × 6조 기준",
- * 하나라도 없으면 "재주문 기준 60 g".
+ * 화면 6 알림 카드 기준 문구 (d7 §11 · §11-1):
+ *   source = 'auto' → "최근 4주 사용량 기준" / "마지막 입고량의 20%" / "아직 없어요" (autoBasisText)
+ *   그 밖(source 없음 포함) → 1조 사용량·조 수가 둘 다 있으면 "1반 1회 실험량 10 g × 6조 기준",
+ *   하나라도 없으면 "재주문 기준 60 g".
  */
 export function reorderBasisText(r: {
   minStock: number;
   unit: string;
   perGroup?: number | null;
   groups?: number | null;
+  source?: ThresholdSource;
+  autoBasis?: AutoBasis;
 }): string {
+  if (r.source === "auto") return autoBasisText({ minStock: r.minStock, autoBasis: r.autoBasis ?? null });
   if (positive(r.perGroup) && positive(r.groups)) {
     return `1반 1회 실험량 ${formatStock(r.perGroup, r.unit)} × ${r.groups}조 기준`;
   }

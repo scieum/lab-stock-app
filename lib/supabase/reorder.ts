@@ -1,6 +1,13 @@
 import "server-only";
 import { getServerClient, getServerSession } from "./server";
-import { isReorderNeeded, sortByShortage } from "@/lib/reorder-rules";
+import {
+  isReorderNeeded,
+  sortByShortage,
+  toAutoBasis,
+  toThresholdSource,
+  type AutoBasis,
+  type ThresholdSource,
+} from "@/lib/reorder-rules";
 import { orderVendorsForLink } from "@/lib/vendor-rules";
 
 export type ReorderAlert = {
@@ -14,6 +21,10 @@ export type ReorderAlert = {
   perGroup: number | null;
   /** 조 수 (reagents.reorder_groups). 없으면 null */
   groups: number | null;
+  /** 기준의 출처 (reagents.min_stock_source, d7 §11-1) */
+  source: ThresholdSource;
+  /** 자동 값의 근거 (reagents.min_stock_auto_basis) — source 가 'auto' 일 때만 값 */
+  autoBasis: AutoBasis;
   /** 재고가 기준 아래로 내려간 시각 (ISO, reagents.low_stock_since — DB 가 맞춘다) */
   lowSince: string | null;
 };
@@ -69,7 +80,9 @@ export async function getReorderScreen(): Promise<ReorderScreenResult> {
   const [reagents, vendors] = await Promise.all([
     supabase
       .from("reagents")
-      .select("id, name, unit, stock, min_stock, reorder_per_group, reorder_groups, low_stock_since")
+      .select(
+        "id, name, unit, stock, min_stock, reorder_per_group, reorder_groups, low_stock_since, min_stock_source, min_stock_auto_basis",
+      )
       .eq("school_id", schoolId)
       .order("name"),
     supabase
@@ -80,16 +93,24 @@ export async function getReorderScreen(): Promise<ReorderScreenResult> {
   ]);
 
   const low = (reagents.data ?? [])
-    .map((r) => ({
-      id: r.id,
-      name: r.name,
-      unit: r.unit,
-      stock: Number(r.stock),
-      minStock: Number(r.min_stock),
-      perGroup: numOrNull(r.reorder_per_group),
-      groups: numOrNull(r.reorder_groups),
-      lowStockSince: r.low_stock_since,
-    }))
+    .map((r) => {
+      const minStock = Number(r.min_stock);
+      const perGroup = numOrNull(r.reorder_per_group);
+      const groups = numOrNull(r.reorder_groups);
+      const source = toThresholdSource(r.min_stock_source, { minStock, perGroup, groups });
+      return {
+        id: r.id,
+        name: r.name,
+        unit: r.unit,
+        stock: Number(r.stock),
+        minStock,
+        perGroup,
+        groups,
+        source,
+        autoBasis: source === "auto" ? toAutoBasis(r.min_stock_auto_basis) : null,
+        lowStockSince: r.low_stock_since,
+      };
+    })
     .filter((r) => isReorderNeeded(r.stock, r.minStock));
 
   const alerts: ReorderAlert[] = sortByShortage(low).map(({ lowStockSince, ...r }) => ({ ...r, lowSince: lowStockSince }));

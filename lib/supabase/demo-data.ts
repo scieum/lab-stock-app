@@ -5,7 +5,7 @@ import { isStorageClass } from "@/lib/cabinet-rules";
 import { isLowStock } from "@/lib/types";
 import type { HomeData } from "./home-data";
 import type { ReagentListItem } from "./reagents-data";
-import { toPlacement, type ReagentDetail } from "./reagent-detail";
+import { toPlacement, toThreshold, type ReagentDetail } from "./reagent-detail";
 
 /**
  * 둘러보기(비회원) 데이터 — harness/d7-data.md §5.
@@ -112,7 +112,7 @@ export async function getDemoReagentDetail(id: string): Promise<DemoReagentDetai
     supabase
       .from("reagents")
       .select(
-        "id, name, cas_no, unit, stock, min_stock, msds_url, intake_date, storage_class, reorder_per_group, reorder_groups, slot:cabinet_slots(*, cabinet:cabinets(*))",
+        "id, name, cas_no, unit, stock, min_stock, msds_url, intake_date, storage_class, reorder_per_group, reorder_groups, min_stock_source, min_stock_auto_basis, slot:cabinet_slots(*, cabinet:cabinets(*))",
       )
       .eq("school_id", DEMO_SCHOOL_ID)
       .eq("id", id)
@@ -122,7 +122,6 @@ export async function getDemoReagentDetail(id: string): Promise<DemoReagentDetai
   const r = reagentRes.data;
   if (reagentRes.error || !r) return null;
   const placement = toPlacement(r.slot);
-  const num = (v: unknown) => (v === null || v === undefined || !Number.isFinite(Number(v)) ? null : Number(v));
 
   return {
     reagent: {
@@ -138,12 +137,7 @@ export async function getDemoReagentDetail(id: string): Promise<DemoReagentDetai
       storageClass: typeof r.storage_class === "string" && isStorageClass(r.storage_class) ? r.storage_class : null,
     },
     placement,
-    threshold: {
-      minStock: Number(r.min_stock),
-      perGroup: num(r.reorder_per_group),
-      groups: num(r.reorder_groups),
-      unit: r.unit,
-    },
+    threshold: toThreshold(r),
     // 둘러보기: 위치 바꾸기 없음 (guest.hidden_components)
     picker: null,
     usage: (usageRes.data ?? []).map((u) => ({

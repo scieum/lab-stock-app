@@ -199,6 +199,11 @@ export type ManualReagent = {
   unit: string;
   /** 지금의 재주문 기준 (0 = 기준 없음) */
   minStock: number;
+  /**
+   * 지금 기준의 출처 (reagents.min_stock_source, d7 §11-1). 'auto' 면 저장하면 필요량으로 항상 바뀐다.
+   * 없으면 기존 규칙(더 큰 값만)으로 본다.
+   */
+  source?: "auto" | "basis" | "manual";
 };
 
 /*
@@ -373,30 +378,70 @@ export type ExtractionRow = {
   unit: ManualUnit | "";
   /** 연결한 우리 학교 시약 (없으면 null = 등록되지 않은 시약, 저장에서 빠진다) */
   reagentId: string | null;
+  /**
+   * 이 행으로 합친 추출 행 수 (d7 §13 중복 합치기). 1 = 합치지 않음, 2 이상이면 화면이 "N개 행을 합쳤어요" 를 보인다.
+   * 없으면 1 로 본다.
+   */
+  mergedCount?: number;
 };
+
+/** 추출 행 합치기 안내 (mergedCount ≥ 2 일 때만, 아니면 null) */
+export function mergedRowsText(row: Pick<ExtractionRow, "mergedCount">): string | null {
+  const n = row.mergedCount ?? 1;
+  return n >= 2 ? `${n}개 행을 합쳤어요` : null;
+}
 
 /**
  * 추출 결과 정리: 이름이 빈 줄은 버리고(이름은 80자까지), 단위를 병·mL·g 로 정리·환산하고,
  * 우리 학교 시약과 자동 연결한다. 최대 50행. 행 id 는 "row-1" 부터.
+ *
+ * 중복 합치기 (d7 §13): 시약명 열쇠(reagentNameKey)와 정리한 단위가 같은 행은 한 줄로 합친다.
+ *   - 1조 사용량 = 수량이 있는 행들의 합 (수량을 못 읽은 행은 합에서 빠지지만 행은 흡수된다).
+ *     모두 수량이 없으면 null. 합이 상한(1,000,000)을 넘으면 null (사용자가 채운다).
+ *   - 이름·연결 시약은 처음 나온 행의 것, 순서도 처음 나온 순서.
+ *   - 단위가 다르거나 단위가 미확정("")이면 합치지 않는다. 열쇠가 빈 이름도 합치지 않는다.
+ *   - 합친 행 수는 mergedCount 에 남긴다.
  */
 export function normalizeExtraction(items: readonly ExtractedItem[], reagents: readonly ManualReagent[]): ExtractionRow[] {
-  const rows: ExtractionRow[] = [];
+  type Acc = { name: string; unit: ManualUnit | ""; scaled: number | null; count: number; reagentId: string | null };
+  const groups: Acc[] = [];
+  const byKey = new Map<string, Acc>();
   for (const item of items) {
-    if (rows.length >= EXTRACTION_ROWS_MAX) break;
     if (!item || typeof item !== "object") continue;
     const name = typeof item.name === "string" ? item.name.replace(/\s+/g, " ").trim().slice(0, EXTRACTION_NAME_MAX) : "";
     if (name === "") continue;
     const { amount, unit } = normalizeUnit(item.amount, item.unit);
-    rows.push({
-      id: `row-${rows.length + 1}`,
+    const nameKey = reagentNameKey(name);
+    const mergeKey = nameKey !== "" && unit !== "" ? `${nameKey}\u0000${unit}` : null;
+    const hit = mergeKey ? byKey.get(mergeKey) : undefined;
+    if (hit) {
+      hit.count += 1;
+      if (amount !== null) hit.scaled = (hit.scaled ?? 0) + toScaled(amount);
+      continue;
+    }
+    if (groups.length >= EXTRACTION_ROWS_MAX) continue;
+    const acc: Acc = {
       name,
+      unit,
+      scaled: amount === null ? null : toScaled(amount),
+      count: 1,
+      reagentId: matchReagent(name, reagents)?.id ?? null,
+    };
+    groups.push(acc);
+    if (mergeKey) byKey.set(mergeKey, acc);
+  }
+  return groups.map((g, i) => {
+    const amount = g.scaled === null ? null : parseAmount(fromScaled(g.scaled));
+    return {
+      id: `row-${i + 1}`,
+      name: g.name,
       perGroup: amountInputText(amount),
       extractedPerGroup: amount,
-      unit,
-      reagentId: matchReagent(name, reagents)?.id ?? null,
-    });
-  }
-  return rows;
+      unit: g.unit,
+      reagentId: g.reagentId,
+      mergedCount: g.count,
+    };
+  });
 }
 
 /** 사용자가 고친 칸인가 (추출값과 숫자가 다르다 — "50" 과 "50.0" 은 같은 값) */
@@ -429,8 +474,13 @@ export function mismatchMessage(reagentUnit: string): string {
 
 export type BasisOutcome = "changed" | "kept";
 
-/** 저장 결과 예측 (더 큰 값 유지): 새 필요량이 기존 기준보다 클 때만 바뀐다. 같거나 작으면 유지 */
-export function basisOutcome(required: number, minStock: number): BasisOutcome {
+/**
+ * 저장 결과 예측 (save_reorder_basis 와 같은 규칙, d7 §11-1 · §13):
+ * 지금 기준이 자동(source = auto)이면 항상 바뀐다. 매뉴얼·직접 입력 기준이면 새 필요량이 더 클 때만 바뀌고
+ * 같거나 작으면 유지 (더 큰 값 유지). source 를 모르면 매뉴얼·직접 입력과 같이 본다.
+ */
+export function basisOutcome(required: number, minStock: number, source?: ManualReagent["source"]): BasisOutcome {
+  if (source === "auto") return "changed";
   return toScaled(required) > toScaled(minStock) ? "changed" : "kept";
 }
 
@@ -526,7 +576,7 @@ export function planSave(rows: readonly ExtractionRow[], reagents: readonly Manu
       edited: isAmountEdited(row),
       mergedCount: sum?.count ?? 0,
       mergedRequired,
-      outcome: mergedRequired !== null && reagent ? basisOutcome(mergedRequired, reagent.minStock) : null,
+      outcome: mergedRequired !== null && reagent ? basisOutcome(mergedRequired, reagent.minStock, reagent.source) : null,
     };
   });
 

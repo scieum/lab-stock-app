@@ -9,6 +9,7 @@ import {
   type BasisOutcome,
   type ManualReagent,
 } from "@/lib/manual-rules";
+import { toThresholdSource } from "@/lib/reorder-rules";
 
 const STAFF_ONLY = "실험 매뉴얼은 교사·관리자만 쓸 수 있어요";
 const SIGNED_OUT = "다시 로그인해 주세요";
@@ -95,7 +96,7 @@ export async function getManualScreen(): Promise<ManualScreenResult> {
   const supabase = await getServerClient();
   const { data } = await supabase
     .from("reagents")
-    .select("id, name, unit, min_stock, reorder_per_group, reorder_groups")
+    .select("id, name, unit, min_stock, reorder_per_group, reorder_groups, min_stock_source")
     .eq("school_id", access.schoolId)
     .order("name")
     .order("id");
@@ -104,14 +105,21 @@ export async function getManualScreen(): Promise<ManualScreenResult> {
     kind: "ok",
     data: {
       schoolName: access.schoolName,
-      reagents: (data ?? []).map((r) => ({
-        id: r.id,
-        name: r.name,
-        unit: r.unit,
-        minStock: Number(r.min_stock),
-        perGroup: numOrNull(r.reorder_per_group),
-        groups: numOrNull(r.reorder_groups),
-      })),
+      reagents: (data ?? []).map((r) => {
+        const minStock = Number(r.min_stock);
+        const perGroup = numOrNull(r.reorder_per_group);
+        const groups = numOrNull(r.reorder_groups);
+        return {
+          id: r.id,
+          name: r.name,
+          unit: r.unit,
+          minStock,
+          perGroup,
+          groups,
+          // d7 §11-1: 자동 기준이면 저장 때 항상 바뀐다 (planSave 의 결과 예측)
+          source: toThresholdSource(r.min_stock_source, { minStock, perGroup, groups }),
+        };
+      }),
     },
   };
 }
