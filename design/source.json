@@ -1,6 +1,6 @@
 {
     "repo":  "https://github.com/scieum/harness",
-    "commit":  "e67e9dd",
+    "commit":  "f5bc668",
     "path":  "harness/rules.json",
     "sha256":  "357f2a9a9cbd1cb443f5ebe1bdb48e17b70271a0f138a1607b70a73dd835a2b4",
     "figma_file":  "https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2",
@@ -20,8 +20,6 @@
                              "2-guest-desktop":  "runs/20261003-1212",
                              "3-guest-mobile":  "runs/20261003-1212",
                              "3-guest-desktop":  "runs/20261003-1212",
-                             "8-mobile":  "runs/20261002-1441",
-                             "8-desktop":  "runs/20261002-1441",
                              "11-mobile":  "runs/20261006-1223",
                              "11-desktop":  "runs/20261006-1223",
                              "11-empty-mobile":  "runs/20261004-2256",
@@ -38,12 +36,6 @@
                              "12-desktop":  "runs/20261006-1223",
                              "12-result-mobile":  "runs/20261006-1223",
                              "12-result-desktop":  "runs/20261006-1223",
-                             "6-mobile":  "runs/20261002-1441",
-                             "6-desktop":  "runs/20261002-1441",
-                             "9-mobile":  "runs/20261002-1441",
-                             "9-desktop":  "runs/20261002-1441",
-                             "5-mobile":  "runs/20261002-1441",
-                             "5-desktop":  "runs/20261002-1441",
                              "2-msds-bulk-desktop":  "runs/20261007-0002",
                              "2-msds-bulk-mobile":  "runs/20261007-0002",
                              "3-desktop":  "runs/20261007-0002",
@@ -75,7 +67,15 @@
                              "4-desktop":  "runs/20261007-0744",
                              "4-mobile":  "runs/20261007-0744",
                              "4-past-date-desktop":  "runs/20261007-0744",
-                             "4-past-date-mobile":  "runs/20261007-0744"
+                             "4-past-date-mobile":  "runs/20261007-0744",
+                             "5-desktop":  "runs/20261007-0848",
+                             "5-mobile":  "runs/20261007-0848",
+                             "6-desktop":  "runs/20261007-0848",
+                             "6-mobile":  "runs/20261007-0848",
+                             "8-desktop":  "runs/20261007-0848",
+                             "8-mobile":  "runs/20261007-0848",
+                             "9-desktop":  "runs/20261007-0848",
+                             "9-mobile":  "runs/20261007-0848"
                          },
-    "copied":  "2026-10-07 (10차: rules.json 1.17 — 서류로 입고·MSDS 찾기·위치 추천·자동 재주문 기준 표시(요청 2), 목록 필터·정렬·사용일(요청 3). 화면 2·3·4·7·10 프레임 + 상태 프레임 2-msds-bulk·2-filter·2-filter-empty·3-msds·4-past-date·7-doc-upload·7-doc-review·7-doc-fail·7-suggest·7-msds. 화면 5·6·8·9 예외 시안은 디자인 run 20261007-0848 진행 중 — 끝나면 다시 가져오기)"
+    "copied":  "2026-10-07 (11차: rules.json 1.17 그대로, 화면 5·6·8·9 프레임 — 개발 세션 예외 1~6 시안 반영, 디자인 run 20261007-0848, Figma S4-screens-v13 node 325:2)"
 }
