@@ -1,4 +1,5 @@
 import type { Database, Tables } from "./database";
+import type { SchoolKind } from "@/lib/school-kinds";
 
 export type { Database, Tables };
 export type Role = "student" | "teacher" | "admin";
@@ -21,4 +22,6 @@ export type NeisSchool = {
   name: string;
   sido: string;
   region: string;
+  /** 학교급 (lib/school-kinds SCHOOL_KINDS 중 하나, d7 §19) */
+  kind: SchoolKind;
 };

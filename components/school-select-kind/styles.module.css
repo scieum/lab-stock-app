@@ -1,0 +1,28 @@
+/* 시안 1.18 school-select-kind: field-label-row(학교급 12 회색 + 필수 12 연회색, 사이 4) · 아래 4 · segmented-control 52 */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.label,
+.required {
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.label {
+  color: var(--color-text-muted);
+}
+
+.required {
+  color: var(--color-text-placeholder);
+}

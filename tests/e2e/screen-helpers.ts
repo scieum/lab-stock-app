@@ -32,7 +32,18 @@ export type DesignRules = {
       school_select_screen: number;
     };
   };
-  neis: { default_sido: string; default_region: string; exclude_sido: string[]; school_kind: string };
+  neis: {
+    default_sido: string;
+    default_region: string;
+    exclude_sido: string[];
+    /** 1.18: 가입할 수 있는 학교급 (school-select-kind 칸 순서) */
+    school_kinds: string[];
+    /** 1.18: 시안 예시 데이터용 학교급 (화면 기본값 아님) */
+    default_kind: string;
+  };
+  school_kind_select: { component: string; shape: string; default: string; no_school: string };
+  /** 상태 프레임별 필수 컴포넌트 ("source" 키는 문자열) */
+  variants: Record<string, Record<string, string[]>>;
   guest: {
     screens: number[];
     entry_screen: number;

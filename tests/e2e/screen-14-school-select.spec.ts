@@ -1,9 +1,11 @@
-// 화면 14 (/signup) 학교 선택 (N1-d): rules.json never.N1.school_select_levels 순서 강제,
+// 화면 14 (/signup) 학교 선택 (N1-d): rules.json never.N1.school_select_levels(1.18: 시/도 → 지역 → 학교급 → 학교) 순서 강제,
 // 목록은 /api/neis 응답에서만, rules.json neis.exclude_sido 미포함, 브라우저가 NEIS 직접 호출 0,
 // 가입 요청은 학교를 NEIS 코드로만 보낸다 (학교명·역할을 보내지 않는다).
 import { test, expect, type Page } from "@playwright/test";
 import { routeOf, rules, useProjectViewport } from "./screen-helpers";
 import {
+  KIND,
+  KINDS,
   NEIS_PREFIX,
   REGION,
   SCHOOL,
@@ -12,6 +14,9 @@ import {
   SIGNUP_API,
   expectLocked,
   jsonList,
+  kindSelected,
+  kindTab,
+  kindTabs,
   optionLabels,
   pickOption,
   selectBox,
@@ -21,7 +26,14 @@ import {
 } from "./screen-14-helpers";
 
 const N1 = rules.never.N1;
-type NeisSchool = { name: string; sido: string; region: string; neis_code: string };
+type NeisSchool = { name: string; sido: string; region: string; neis_code: string; kind: string };
+const KIND_FIRST = rules.school_kind_select.default.match(/'([^']+)'/)?.[1] ?? "";
+
+/** 학교급 단계가 잠겼는지: 칸 rules.json neis.school_kinds 개수 모두 비활성 */
+async function expectKindLocked(page: Page): Promise<void> {
+  await expect(kindTabs(page), `${KIND} 칸 수`).toHaveCount(KINDS.length);
+  for (const k of KINDS) await expect(kindTab(page, k), `${KIND} ${k} 비활성`).toBeDisabled();
+}
 
 /** 요청 감시: 목록용 fetch/xhr 는 같은 출처 /api/neis/* 만, 외부 NEIS 직접 호출 0 */
 function watchRequests(page: Page) {
@@ -73,8 +85,10 @@ test(`[N1-d][S${SCREEN}] ${N1.school_select_levels.join(" → ")} 순서 강제 
   expect(new URL(page.url()).pathname, "비로그인 /signup 진입").toBe(routeOf(SCREEN));
   await waitSignupScreen(page);
 
-  // 시/도 고르기 전: 지역·학교 잠김, 지역·학교 목록 요청 없음
+  // 시/도 고르기 전: 지역·학교급·학교 잠김(학교급 기본값 없음), 지역·학교 목록 요청 없음
   await expectLocked(page, REGION);
+  await expectKindLocked(page);
+  await expect(kindSelected(page), "첫 화면 학교급 기본값 없음").toHaveCount(0);
   await expectLocked(page, SCHOOL);
   expect(w.neisCalls.filter((p) => p !== NEIS_PREFIX + "sido"), "시/도 선택 전 지역·학교 요청").toEqual([]);
 
@@ -103,18 +117,32 @@ test(`[N1-d][S${SCREEN}] ${N1.school_select_levels.join(" → ")} 순서 강제 
   await selectBox(page, REGION).click();
   expect(await optionLabels(page, REGION)).toEqual(regionList);
 
-  const schoolRes = waitNeis(page, "schools");
+  // 3단계 학교급 — 지역 고르기 전 잠김, 고른 뒤 열림. 기본값 없음 → 학교는 "학교급을 먼저" 잠김, 학교 요청 없음
+  await expectKindLocked(page);
   await pickOption(page, REGION, rules.neis.default_region);
   await expect(selectBox(page, REGION)).toContainText(rules.neis.default_region);
+  for (const k of KINDS) await expect(kindTab(page, k), `${KIND} ${k} 활성`).toBeEnabled();
+  await expect(kindSelected(page), "학교급 기본값 없음").toHaveCount(0);
+  await expectLocked(page, SCHOOL);
+  expect(KIND_FIRST, "rules.json school_kind_select.default 안내 문구").not.toBe("");
+  await expect(selectBox(page, SCHOOL), "학교급 전 안내").toContainText(KIND_FIRST);
+  await page.waitForTimeout(500);
+  expect(w.neisCalls, "학교급 선택 전 학교 요청").not.toContain(NEIS_PREFIX + "schools");
 
-  // 3단계 학교 — 목록 = /api/neis/schools 응답 이름 그대로, 모두 school_kind · 고른 시/도·지역
+  const schoolRes = waitNeis(page, "schools");
+  await kindTab(page, rules.neis.default_kind).click();
+  await expect(kindSelected(page)).toHaveText(rules.neis.default_kind);
+
+  // 4단계 학교 — 목록 = /api/neis/schools 응답 이름 그대로, 모두 고른 학교급 · 고른 시/도·지역
   const sr = await schoolRes;
   expect(new URL(sr.url()).searchParams.get("sido")).toBe(rules.neis.default_sido);
   expect(new URL(sr.url()).searchParams.get("region")).toBe(rules.neis.default_region);
+  expect(new URL(sr.url()).searchParams.get("kind")).toBe(rules.neis.default_kind);
   const schools = await jsonList<NeisSchool>(sr, "schools");
   expect(schools.length, "학교 응답").toBeGreaterThan(0);
   for (const s of schools) {
-    expect(s.name, "학교 종류").toContain(rules.neis.school_kind);
+    expect(s.kind, "학교급").toBe(rules.neis.default_kind);
+    expect(s.name, "학교 이름에 학교급").toContain(rules.neis.default_kind);
     expect(s.sido).toBe(rules.neis.default_sido);
     expect(s.region).toBe(rules.neis.default_region);
   }
@@ -133,8 +161,10 @@ test(`[N1-d][S${SCREEN}] ${N1.school_select_levels.join(" → ")} 순서 강제 
   await pickOption(page, REGION, otherRegion!);
   await expect(selectBox(page, REGION)).toContainText(otherRegion!);
   await expect(selectBox(page, SCHOOL), "지역 변경 후 학교 선택 초기화").not.toContainText(schoolShown[0]);
+  await expect(kindSelected(page), "지역 변경 후 학교급 유지").toHaveText(rules.neis.default_kind);
   const sr2 = await schoolRes2;
   expect(new URL(sr2.url()).searchParams.get("region")).toBe(otherRegion);
+  expect(new URL(sr2.url()).searchParams.get("kind")).toBe(rules.neis.default_kind);
   const schools2 = await jsonList<NeisSchool>(sr2, "schools");
   await expect(selectBox(page, SCHOOL)).toBeEnabled();
   await selectBox(page, SCHOOL).click();
@@ -151,6 +181,8 @@ test(`[N1-d][S${SCREEN}] ${N1.school_select_levels.join(" → ")} 순서 강제 
   await expectLocked(page, SCHOOL);
   await expect(selectBox(page, REGION), "시/도 변경 후 지역 초기화").not.toContainText(otherRegion!);
   await expect(selectBox(page, SCHOOL), "시/도 변경 후 학교 초기화").not.toContainText(schoolShown[0]);
+  await expectKindLocked(page);
+  await expect(kindSelected(page), "시/도 변경 후 학교급 유지").toHaveText(rules.neis.default_kind);
   const rr2 = await regionRes2;
   expect(new URL(rr2.url()).searchParams.get("sido")).toBe(otherSido);
   const regionList2 = await jsonList<string>(rr2, "regions");
@@ -168,7 +200,7 @@ test(`[N1-d][S${SCREEN}] ${N1.school_select_levels.join(" → ")} 순서 강제 
   }
 });
 
-test(`[N1-d][S${SCREEN}] 가입 요청은 학교를 /api/neis 응답의 neis_code 로만 보낸다 (학교명·시/도·지역·역할 미전송)`, async ({ page }, info) => {
+test(`[N1-d][S${SCREEN}] 가입 요청은 학교를 /api/neis 응답의 neis_code 로만 보낸다 (학교명·시/도·지역·학교급·역할 미전송)`, async ({ page }, info) => {
   test.setTimeout(150_000);
   await useProjectViewport(page, info);
   const w = watchRequests(page);
@@ -190,10 +222,11 @@ test(`[N1-d][S${SCREEN}] 가입 요청은 학교를 /api/neis 응답의 neis_cod
   await selectBox(page, SIDO).click();
   await pickOption(page, SIDO, rules.neis.default_sido);
   await regionRes;
-  const schoolRes = waitNeis(page, "schools");
   await expect(selectBox(page, REGION)).toBeEnabled();
   await selectBox(page, REGION).click();
   await pickOption(page, REGION, rules.neis.default_region);
+  const schoolRes = waitNeis(page, "schools");
+  await kindTab(page, rules.neis.default_kind).click();
   const schools = await jsonList<NeisSchool>(await schoolRes, "schools");
   expect(schools.length, "학교 응답").toBeGreaterThan(0);
   const chosen = schools[0];
@@ -220,7 +253,7 @@ test(`[N1-d][S${SCREEN}] 가입 요청은 학교를 /api/neis 응답의 neis_cod
   const body = bodies[0];
 
   expect(body.neisCode, "neisCode = /api/neis/schools 응답의 neis_code").toBe(chosen.neis_code);
-  const forbiddenKeys = /school|sido|region|role|office/i;
+  const forbiddenKeys = /school|sido|region|role|office|kind/i;
   const extra = Object.keys(body).filter((k) => k !== "neisCode" && forbiddenKeys.test(k));
   expect(extra, "학교·역할 관련 추가 필드").toEqual([]);
   const values = JSON.stringify(Object.entries(body).filter(([k]) => k !== "neisCode"));

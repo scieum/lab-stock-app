@@ -1,9 +1,10 @@
 /*
- * 화면 14 — 회원가입
+ * 화면 14 — 회원가입 (시안 1.18)
  * 모바일(14-mobile): content padding 16/16/64/16 · gap 16, 카드 padding 24 · gap 24
- *   순서 = 제목 → 학교 → 계정 → 약관, 가입하기는 bottom-action-bar(하단 고정, padding 12/16/32/16)
- * 데스크톱(14-desktop): content padding 24/64/32/64 · gap 24, 카드 padding 32
- *   signup-columns(gap 64) = [학교 + 약관] | [계정 + 가입하기]
+ *   순서 = 제목 → 학교 → 계정 → 약관, 카드 아래 login-row, 가입하기는 bottom-action-bar(하단 고정, padding 12/16/32/16)
+ * 데스크톱(14-desktop): content padding 24/64/64/64 · gap 24, 가운데 한 열 카드(폭 640, padding 32)
+ *   순서 = 제목 → 학교 → 계정 → 약관 → 가입하기, 카드 아래 login-row
+ * 학교 묶음: 제목 → info-box → step-progress(4칸) → 시/도 · 지역 · 학교급 · 학교 (사이 12)
  */
 .page {
   display: flex;
@@ -18,36 +19,25 @@
 .main {
   display: flex;
   flex-direction: column;
+  gap: var(--space-16);
+}
+
+/* 카드 아래: "이미 계정이 있으신가요?" + 로그인 pill */
+.loginRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+}
+
+.loginPrompt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
 }
 
 form.card {
   gap: var(--space-24);
-}
-
-/* 모바일: 두 열 묶음을 풀어 카드의 세로 흐름에 순서대로 놓는다 */
-.columns,
-.column {
-  display: contents;
-}
-
-.schoolBlock {
-  order: 1;
-}
-
-.accountBlock {
-  order: 2;
-}
-
-.terms {
-  order: 3;
-}
-
-.message {
-  order: 4;
-}
-
-.actionBar {
-  order: 5;
 }
 
 .schoolBlock,
@@ -64,6 +54,29 @@ form.card {
   font-size: var(--font-size-18);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
+}
+
+/* 학교 안내 (연하늘 바탕, info 하늘색 16, 13 기본색) */
+.infoBox {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-8);
+  margin: 0;
+  padding: var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--color-highlight-soft);
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+  word-break: keep-all;
+}
+
+.infoIcon {
+  flex-shrink: 0;
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  margin-top: var(--border-width);
+  color: var(--color-highlight);
 }
 
 .progress {
@@ -281,25 +294,18 @@ form.card {
 @media (min-width: 1024px) {
   .page {
     gap: var(--space-24);
-    padding: var(--space-24) var(--space-64) var(--space-32);
+    padding: var(--space-24) var(--space-64) var(--space-64);
+  }
+
+  .main {
+    gap: var(--space-24);
+    width: 100%;
+    max-width: calc(var(--space-64) * 10);
+    margin: 0 auto;
   }
 
   form.card {
     padding: var(--space-32);
-  }
-
-  .columns {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--space-64);
-  }
-
-  .column {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    gap: var(--space-24);
-    min-width: 0;
   }
 
   .actionBar {

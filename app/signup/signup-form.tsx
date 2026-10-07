@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { ButtonPrimary } from "@/components/button-primary";
 import { AuthFormCard } from "@/components/ex-auth-form-card";
 import { Icon } from "@/components/icons";
+import { SchoolSelectKind } from "@/components/school-select-kind";
 import { SchoolSelectRegion } from "@/components/school-select-region";
 import { SchoolSelectSchool } from "@/components/school-select-school";
 import { SchoolSelectSido } from "@/components/school-select-sido";
 import type { SelectOption } from "@/components/select-field";
 import { TextInput } from "@/components/text-input";
 import { DISPLAY_NAME_MAX, PASSWORD_MIN, signupProblem, type SignupFields } from "@/lib/auth/signup-rules";
+import { KIND_FIRST_TEXT, noSchoolText } from "@/lib/school-kinds";
 import { useSchoolSelect } from "./use-school-select";
 import styles from "./signup.module.css";
 
@@ -133,178 +135,179 @@ export function SignupForm() {
       aria-label="회원가입"
       className={styles.card}
     >
-      <div className={styles.columns}>
-        <div className={styles.column}>
-          <section className={styles.schoolBlock} aria-labelledby="signup-school-title">
-            <h2 id="signup-school-title" className={styles.sectionTitle}>
-              학교
-            </h2>
-            <div
-              className={styles.progress}
-              role="progressbar"
-              aria-label="학교 선택 단계"
-              aria-valuemin={0}
-              aria-valuemax={3}
-              aria-valuenow={sel.done}
-            >
-              {[0, 1, 2].map((i) => (
-                <span key={i} className={i < sel.done ? styles.barDone : styles.bar} />
-              ))}
-            </div>
-            <div className={styles.group}>
-              <SchoolSelectSido
-                options={toOptions(sel.sidoList)}
-                value={sel.sido}
-                onChange={sel.chooseSido}
-                placeholder={sel.sidoList.length ? "시/도 선택" : "불러오는 중…"}
-                disabled={sel.sidoList.length === 0}
-              />
-              <SchoolSelectRegion
-                options={toOptions(sel.regionList)}
-                value={sel.region}
-                onChange={sel.chooseRegion}
-                placeholder={sel.sido ? "지역 선택" : "시/도를 먼저 선택하세요"}
-                disabled={!sel.sido || sel.regionList.length === 0}
-              />
-              <SchoolSelectSchool
-                options={sel.schoolList.map((s) => ({ value: s.neis_code, label: s.name }))}
-                value={sel.school}
-                onChange={sel.chooseSchool}
-                placeholder={sel.region ? "학교 선택" : "지역을 먼저 선택하세요"}
-                disabled={!sel.region || sel.schoolList.length === 0}
-              />
-              {sel.loadError ? (
-                <p className={styles.message} role="alert">
-                  {sel.loadError}
-                </p>
-              ) : null}
-            </div>
-          </section>
-
-          <fieldset className={styles.terms}>
-            <legend className={styles.srOnly}>약관 동의</legend>
-            <label className={styles.termAll}>
-              <input type="checkbox" className={styles.checkInput} checked={allAgreed} onChange={toggleAll} />
-              <span className={styles.checkHit} aria-hidden="true">
-                <span className={styles.checkCircle}>
-                  <Icon name="check" className={styles.checkIcon} />
-                </span>
-              </span>
-              <span className={styles.termAllLabel}>모두 동의</span>
-            </label>
-            <hr className={styles.divider} />
-            {TERMS.map((t) => (
-              <div key={t.key} className={styles.termItem}>
-                <div className={styles.termRow}>
-                  <label className={styles.termLabelWrap}>
-                    <input
-                      type="checkbox"
-                      className={styles.checkInput}
-                      checked={agree[t.key]}
-                      onChange={(e) => setAgree((a) => ({ ...a, [t.key]: e.target.checked }))}
-                    />
-                    <span className={styles.checkHit} aria-hidden="true">
-                      <span className={styles.checkCircle}>
-                        <Icon name="check" className={styles.checkIcon} />
-                      </span>
-                    </span>
-                    <span className={styles.termLabel}>{t.label}</span>
-                  </label>
-                  <button
-                    type="button"
-                    className={styles.termView}
-                    aria-expanded={openTerm === t.key}
-                    aria-controls={`term-${t.key}`}
-                    aria-label={`${t.label} 내용 보기`}
-                    onClick={() => setOpenTerm((k) => (k === t.key ? null : t.key))}
-                  >
-                    <Icon
-                      name={openTerm === t.key ? "chevron-down" : "chevron-right"}
-                      className={styles.termViewIcon}
-                    />
-                  </button>
-                </div>
-                {openTerm === t.key ? (
-                  <p id={`term-${t.key}`} className={styles.termSummary}>
-                    {t.summary}
-                  </p>
-                ) : null}
-              </div>
-            ))}
-          </fieldset>
+      <section className={styles.schoolBlock} aria-labelledby="signup-school-title">
+        <h2 id="signup-school-title" className={styles.sectionTitle}>
+          학교
+        </h2>
+        <p className={styles.infoBox}>
+          <Icon name="info" className={styles.infoIcon} aria-hidden="true" />
+          <span>고른 학교의 시약·기록만 보여요. 가입한 뒤에는 바꿀 수 없어요</span>
+        </p>
+        <div
+          className={styles.progress}
+          role="progressbar"
+          aria-label="학교 선택 단계"
+          aria-valuemin={0}
+          aria-valuemax={sel.steps}
+          aria-valuenow={sel.done}
+        >
+          {Array.from({ length: sel.steps }, (_, i) => (
+            <span key={i} className={i < sel.done ? styles.barDone : styles.bar} />
+          ))}
         </div>
-
-        <div className={styles.column}>
-          <section className={styles.accountBlock} aria-labelledby="signup-account-title">
-            <h2 id="signup-account-title" className={styles.sectionTitle}>
-              계정
-            </h2>
-            <TextInput
-              label="이름"
-              required
-              name="displayName"
-              placeholder="이름을 입력하세요"
-              autoComplete="name"
-              maxLength={DISPLAY_NAME_MAX}
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-            />
-            <TextInput
-              label="개인 이메일"
-              required
-              type="email"
-              name="email"
-              placeholder="name@example.com"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <TextInput
-              label="비밀번호"
-              required
-              type={showPassword ? "text" : "password"}
-              name="password"
-              placeholder={`${PASSWORD_MIN}자 이상 입력하세요`}
-              autoComplete="new-password"
-              minLength={PASSWORD_MIN}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              trailing={
-                <button
-                  type="button"
-                  className={styles.eye}
-                  aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
-                  aria-pressed={showPassword}
-                  onClick={() => setShowPassword((v) => !v)}
-                >
-                  <Icon name={showPassword ? "eye-off" : "eye"} className={styles.eyeIcon} />
-                </button>
-              }
-            />
-            <TextInput
-              label="비밀번호 확인"
-              required
-              type={showPassword ? "text" : "password"}
-              name="passwordConfirm"
-              placeholder="비밀번호를 한 번 더 입력하세요"
-              autoComplete="new-password"
-              value={passwordConfirm}
-              onChange={(e) => setPasswordConfirm(e.target.value)}
-            />
-          </section>
-
-          {error ? (
+        <div className={styles.group}>
+          <SchoolSelectSido
+            options={toOptions(sel.sidoList)}
+            value={sel.sido}
+            onChange={sel.chooseSido}
+            placeholder={sel.sidoList.length ? "시/도 선택" : "불러오는 중…"}
+            disabled={sel.sidoList.length === 0}
+          />
+          <SchoolSelectRegion
+            options={toOptions(sel.regionList)}
+            value={sel.region}
+            onChange={sel.chooseRegion}
+            placeholder={sel.sido ? "지역 선택" : "시/도를 먼저 선택하세요"}
+            disabled={!sel.sido || sel.regionList.length === 0}
+          />
+          <SchoolSelectKind value={sel.kind} onChange={sel.chooseKind} disabled={!sel.region} />
+          <SchoolSelectSchool
+            options={sel.schoolList.map((s) => ({ value: s.neis_code, label: s.name, sub: `${s.sido} ${s.region}` }))}
+            value={sel.school}
+            onChange={sel.chooseSchool}
+            placeholder={!sel.region ? "지역을 먼저 선택하세요" : !sel.kind ? KIND_FIRST_TEXT : sel.schoolsLoaded ? "학교 선택" : "불러오는 중…"}
+            disabled={!sel.region || !sel.kind || sel.schoolList.length === 0}
+            context={sel.kind ? `${sel.sido} ${sel.region} · ${sel.kind} ${sel.schoolList.length}곳` : undefined}
+            emptyNote={sel.noSchool && sel.kind ? noSchoolText(sel.kind) : undefined}
+          />
+          {sel.loadError ? (
             <p className={styles.message} role="alert">
-              {error}
+              {sel.loadError}
             </p>
           ) : null}
-
-          <div className={styles.actionBar}>
-            <ButtonPrimary type="submit" fullWidth disabled={submitting} aria-busy={submitting}>
-              {submitting ? "가입하는 중…" : "가입하기"}
-            </ButtonPrimary>
-          </div>
         </div>
+      </section>
+
+      <section className={styles.accountBlock} aria-labelledby="signup-account-title">
+        <h2 id="signup-account-title" className={styles.sectionTitle}>
+          계정
+        </h2>
+        <TextInput
+          label="이름"
+          required
+          name="displayName"
+          placeholder="이름을 입력하세요"
+          autoComplete="name"
+          maxLength={DISPLAY_NAME_MAX}
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+        />
+        <TextInput
+          label="개인 이메일"
+          required
+          type="email"
+          name="email"
+          placeholder="name@example.com"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <TextInput
+          label="비밀번호"
+          required
+          type={showPassword ? "text" : "password"}
+          name="password"
+          placeholder={`${PASSWORD_MIN}자 이상 입력하세요`}
+          autoComplete="new-password"
+          minLength={PASSWORD_MIN}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          trailing={
+            <button
+              type="button"
+              className={styles.eye}
+              aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
+              aria-pressed={showPassword}
+              onClick={() => setShowPassword((v) => !v)}
+            >
+              <Icon name={showPassword ? "eye-off" : "eye"} className={styles.eyeIcon} />
+            </button>
+          }
+        />
+        <TextInput
+          label="비밀번호 확인"
+          required
+          type={showPassword ? "text" : "password"}
+          name="passwordConfirm"
+          placeholder="비밀번호를 한 번 더 입력하세요"
+          autoComplete="new-password"
+          value={passwordConfirm}
+          onChange={(e) => setPasswordConfirm(e.target.value)}
+        />
+      </section>
+
+      <fieldset className={styles.terms}>
+        <legend className={styles.srOnly}>약관 동의</legend>
+        <label className={styles.termAll}>
+          <input type="checkbox" className={styles.checkInput} checked={allAgreed} onChange={toggleAll} />
+          <span className={styles.checkHit} aria-hidden="true">
+            <span className={styles.checkCircle}>
+              <Icon name="check" className={styles.checkIcon} />
+            </span>
+          </span>
+          <span className={styles.termAllLabel}>모두 동의</span>
+        </label>
+        <hr className={styles.divider} />
+        {TERMS.map((t) => (
+          <div key={t.key} className={styles.termItem}>
+            <div className={styles.termRow}>
+              <label className={styles.termLabelWrap}>
+                <input
+                  type="checkbox"
+                  className={styles.checkInput}
+                  checked={agree[t.key]}
+                  onChange={(e) => setAgree((a) => ({ ...a, [t.key]: e.target.checked }))}
+                />
+                <span className={styles.checkHit} aria-hidden="true">
+                  <span className={styles.checkCircle}>
+                    <Icon name="check" className={styles.checkIcon} />
+                  </span>
+                </span>
+                <span className={styles.termLabel}>{t.label}</span>
+              </label>
+              <button
+                type="button"
+                className={styles.termView}
+                aria-expanded={openTerm === t.key}
+                aria-controls={`term-${t.key}`}
+                aria-label={`${t.label} 내용 보기`}
+                onClick={() => setOpenTerm((k) => (k === t.key ? null : t.key))}
+              >
+                <Icon
+                  name={openTerm === t.key ? "chevron-down" : "chevron-right"}
+                  className={styles.termViewIcon}
+                />
+              </button>
+            </div>
+            {openTerm === t.key ? (
+              <p id={`term-${t.key}`} className={styles.termSummary}>
+                {t.summary}
+              </p>
+            ) : null}
+          </div>
+        ))}
+      </fieldset>
+
+      {error ? (
+        <p className={styles.message} role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <div className={styles.actionBar}>
+        <ButtonPrimary type="submit" fullWidth disabled={submitting} aria-busy={submitting}>
+          {submitting ? "가입하는 중…" : "가입하기"}
+        </ButtonPrimary>
       </div>
     </AuthFormCard>
   );

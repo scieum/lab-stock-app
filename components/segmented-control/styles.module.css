@@ -26,6 +26,11 @@
   cursor: pointer;
 }
 
+.option:disabled {
+  color: var(--color-text-placeholder);
+  cursor: not-allowed;
+}
+
 .option:focus-visible {
   outline: var(--border-width) solid var(--color-highlight);
 }
