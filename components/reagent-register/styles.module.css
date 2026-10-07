@@ -27,6 +27,23 @@
   min-width: 0;
 }
 
+/* 시안 1.17 7-msds msds-field: MSDS 칸 + 오른쪽 msds-search(사이 8), 버튼은 입력 상자 아래 끝에 맞춘다 */
+.msdsRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.msdsInput {
+  flex: 1 1 0;
+}
+
+/* 라벨 줄(13 × 1.5) + 사이 4 만큼 내려 입력 상자와 같은 줄에 둔다 */
+.msdsSearch {
+  margin-top: calc(var(--font-size-13) * var(--line-height-normal) + var(--space-4));
+}
+
 .units {
   display: flex;
   flex-wrap: wrap;

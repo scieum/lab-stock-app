@@ -1,0 +1,49 @@
+/* 시안 1.17 msds-search: 회색(surface-muted) stadium pill, 높이 44, 안쪽 0 16 0 12, 사이 4, 하늘색 돋보기 16 + 15/600(화면 3)·13/600(화면 7) */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  flex-shrink: 0;
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-16) 0 var(--space-12);
+  border: 0;
+  border-radius: var(--radius-button);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.sm {
+  font-size: var(--font-size-13);
+}
+
+.icon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  flex-shrink: 0;
+  color: var(--color-highlight);
+}
+
+.button:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: var(--space-4);
+}
+
+.button:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.button:disabled .icon {
+  color: var(--color-text-placeholder);
+}
+
+.button:active:not(:disabled) {
+  opacity: var(--pressed-opacity);
+}

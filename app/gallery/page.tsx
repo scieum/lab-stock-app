@@ -36,7 +36,10 @@ import { LandingHero } from "@/components/landing-hero";
 import { ManualUpload } from "@/components/manual-upload";
 import { REORDER_GUIDE_TEXT } from "@/lib/reorder-rules";
 import { MixWarning } from "@/components/mix-warning";
+import { MsdsBulkBanner } from "@/components/msds-bulk-banner";
+import { MsdsCandidates } from "@/components/msds-candidates";
 import { MsdsEntry } from "@/components/msds-entry";
+import { MsdsSearch } from "@/components/msds-search";
 import { MsdsQrTile } from "@/components/msds-qr-tile";
 import { NavAccountMenu } from "@/components/nav-account-menu";
 import { NavPill } from "@/components/nav-pill";
@@ -85,6 +88,7 @@ import {
 import { SAMPLE_GROUPS, samplePdf, sampleReagents, sampleRowsFrame } from "./manual/sample";
 import { sampleInvites, sampleMemberCounts, sampleMembers } from "./users/sample";
 import { sampleFilterCabinets } from "./filter/sample";
+import { sampleMsdsCandidates } from "./msds/sample";
 import styles from "./gallery.module.css";
 
 export const metadata: Metadata = { title: "컴포넌트 갤러리 · Lab_Stock" };
@@ -699,6 +703,25 @@ export default function GalleryPage() {
             ]}
             count={0}
           />
+        </Item>
+
+        <Item name="msds-search (화면 3 MSDS 없는 시약 · 화면 7 MSDS 칸 옆 — 교사·admin)">
+          <div className={styles.row}>
+            <MsdsSearch />
+            <MsdsSearch size="sm" />
+            <MsdsSearch size="sm" disabled />
+          </div>
+        </Item>
+
+        <Item name="msds-candidates (후보 시트 — 물질명 · CAS 고르기, 첫 행 선택)">
+          <MsdsCandidates sheet={false} caption="질산은" query="질산은" status="ready" candidates={sampleMsdsCandidates} />
+          <Link href="/gallery/msds" className={styles.more}>
+            MSDS 찾기 상태 보기 — 0개 · 불러오는 중 · 오류 · 직접 입력 · 일괄 · 동작 예시 (/gallery/msds)
+          </Link>
+        </Item>
+
+        <Item name="msds-bulk-banner (화면 2 — MSDS 없는 시약만 필터를 켠 교사·admin)">
+          <MsdsBulkBanner count={4} bleed={false} />
         </Item>
 
         <Item name="usage-date · past-date-note (화면 4 사용일 — 오늘이 아니면 안내 한 줄)">

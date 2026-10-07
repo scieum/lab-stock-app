@@ -4,6 +4,7 @@ import { ButtonPrimary } from "@/components/button-primary";
 import { GuestLockedButton } from "@/components/guest-lock/locked-button";
 import { Icon } from "@/components/icons";
 import { MsdsEntry } from "@/components/msds-entry";
+import { MSDS_TEXT } from "@/lib/msds-rules";
 import { QrCodeSvg } from "@/components/msds-qr-tile";
 import { ReagentDetailCard } from "@/components/reagent-detail-card";
 import { locationText, slotLabel } from "@/lib/cabinet-rules";
@@ -15,6 +16,7 @@ import type { ReagentDetail } from "@/lib/supabase/reagent-detail";
 import type { Role } from "@/lib/types";
 import { DetailSummary } from "./detail-summary";
 import { DetailTabs, type InfoRow } from "./detail-tabs";
+import { MsdsFind, MsdsSavedToast } from "./msds-find";
 import styles from "./detail.module.css";
 
 type Props = {
@@ -59,7 +61,9 @@ export async function ReagentDetailView({ data, role, openPicker = false, selfPa
     <MsdsEntry
       href={reagent.msdsUrl ?? undefined}
       caption={reagent.msdsUrl ? "QR로 MSDS 열기" : "QR로 이 시약 정보 열기"}
-      notice={staff || guest ? "MSDS 링크가 아직 등록되지 않았어요" : "MSDS 링크가 아직 등록되지 않았어요. 선생님께 문의하세요"}
+      notice={MSDS_TEXT.missing}
+      // d7 §20: MSDS 없는 시약 — 교사·admin 은 "MSDS 찾기", 학생·둘러보기는 "MSDS가 아직 없어요"만 (R5 · guest 숨김)
+      missingAction={staff ? <MsdsFind reagentId={reagent.id} reagentName={reagent.name} /> : null}
       qr={
         <QrCodeSvg size={qr.size} d={qr.d} label={reagent.msdsUrl ? `${reagent.name} MSDS QR 코드` : `${reagent.name} 상세 QR 코드`} />
       }
@@ -122,6 +126,7 @@ export async function ReagentDetailView({ data, role, openPicker = false, selfPa
         />
         <DetailTabs info={info} usage={usage} />
         {msds}
+        {staff ? <MsdsSavedToast /> : null}
         <div className={[styles.actions, styles.columnActions].join(" ")}>
           <ButtonPrimary href={`/usage/new?reagent=${reagent.id}`} className={styles.primary}>
             사용 기록

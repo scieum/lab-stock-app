@@ -107,10 +107,14 @@ test(`[R-ui][S${SCREEN}] rules.json R5 = 학생 ${INTAKE}·${REGISTER} max 0 이
   // 화면 7 컴포넌트가 dev-rules 에 있어야 교사·admin 존재 검사가 의미 있다.
   // rules 1.15 R5 에 더해진 threshold-edit(재주문 기준 직접 입력)는 화면 3 소속 — R5 중 stock-intake·reagent-register 가 화면 7 이다
   for (const c of [INTAKE, REGISTER]) expect(devRules.components[c] ?? [], `dev-rules components ${c}`).toContain(SCREEN);
-  // 1.17 R5 에 더해진 doc-upload·msds-search·msds-bulk-banner 는 dev-rules components 밖(서류로 입고·MSDS 찾기 = 다음 run) — 그때 화면 소속을 본다
+  // R5 의 나머지 컴포넌트 화면 소속 (dev-rules 1.8): threshold-edit [3] · msds-search [3,7] · msds-bulk-banner [2].
+  // doc-upload 는 dev-rules components 밖(서류로 입고 = 다른 run) — 들어오면 그때 소속을 본다
+  const R5_HOME: Record<string, number[]> = { "threshold-edit": [3], "msds-search": [3, SCREEN], "msds-bulk-banner": [2] };
   for (const c of R5_COMPONENTS.filter((x) => ![INTAKE, REGISTER].includes(x) && x in devRules.components)) {
-    expect(devRules.components[c] ?? [], `R5 ${c} 은 화면 ${SCREEN} 이 아니면 화면 3 (threshold-edit)`).toContain(3);
+    expect(Object.keys(R5_HOME), `R5 ${c} 의 화면 소속을 이 테스트가 안다`).toContain(c);
+    expect([...(devRules.components[c] ?? [])].sort(), `R5 ${c} 화면 소속`).toEqual(R5_HOME[c]);
   }
+  for (const c of ["msds-search", "msds-bulk-banner"]) expect(R5_COMPONENTS, `1.17 R5 에 ${c}`).toContain(c);
 });
 
 for (const q of [{}, { tab: "register" }, { reagent: "own" }] as const) {

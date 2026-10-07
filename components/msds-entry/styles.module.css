@@ -21,3 +21,19 @@
   line-height: var(--line-height-tight);
   text-align: center;
 }
+
+/* 시안 1.17 3-msds: MSDS 없는 시약 — 캡션 12 회색 → (교사·admin) msds-search, 사이 12 */
+.missing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.missingCaption {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+  text-align: center;
+}

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!-- getChemList001 결과 0건 표본 (공공데이터포털 공통 모양: 정상 코드 + 빈 items). 단위 테스트용, 키·개인정보 없음 -->
+<response>
+  <header>
+    <resultCode>00</resultCode>
+    <resultMsg>NORMAL SERVICE.</resultMsg>
+  </header>
+  <body>
+    <items/>
+    <numOfRows>10</numOfRows>
+    <pageNo>1</pageNo>
+    <totalCount>0</totalCount>
+  </body>
+</response>

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  getChemList001 응답 표본 (searchWrd=질산 은, searchCnd=0, numOfRows=10, pageNo=1) — 단위 테스트용 (d7 §20).
+  2026-10-07: .env.local 에 KOSHA_MSDS_API_KEY 가 없어 실제 정상 응답을 받지 못했다. 모양은 공공데이터포털 15157612
+  명세(swagger: response > header{resultCode,resultMsg} · body{items>item{casNo,chemId,chemNameKor,enNo,keNo,unNo,lastDate,
+  openYn,koshaConfirm}, numOfRows, pageNo, totalCount})를 따랐다.
+  첫 줄의 chemId·국문명·CAS(000699 · 질산 은 · 7761-88-8)는 안전보건공단 MSDS 검색 화면에서 확인한 실제 값이다. 나머지 줄은 파싱 경우(앞 0 없는 ID ·
+  CAS 없음 · 엔티티 · 비공개 · 중복 ID)를 보이려고 만든 값이다. 키·개인정보 없음.
+-->
+<response>
+  <header>
+    <resultCode>00</resultCode>
+    <resultMsg>NORMAL SERVICE.</resultMsg>
+  </header>
+  <body>
+    <items>
+      <item>
+        <casNo>7761-88-8</casNo>
+        <chemId>000699</chemId>
+        <chemNameKor>질산 은</chemNameKor>
+        <enNo>231-853-9</enNo>
+        <keNo/>
+        <unNo>1493</unNo>
+        <lastDate/>
+        <openYn>Y</openYn>
+        <koshaConfirm>Y</koshaConfirm>
+      </item>
+      <item>
+        <casNo>7783-99-5</casNo>
+        <chemId>12345</chemId>
+        <chemNameKor>아질산 은</chemNameKor>
+        <enNo/>
+        <keNo/>
+        <unNo/>
+        <lastDate>2022-01-01</lastDate>
+        <openYn>Y</openYn>
+        <koshaConfirm>Y</koshaConfirm>
+      </item>
+      <item>
+        <casNo></casNo>
+        <chemId>023456</chemId>
+        <chemNameKor>질산 은 &amp; 질산 칼륨 혼합물</chemNameKor>
+        <enNo/>
+        <keNo/>
+        <unNo/>
+        <lastDate>2021-01-01</lastDate>
+        <openYn>Y</openYn>
+        <koshaConfirm>N</koshaConfirm>
+      </item>
+      <item>
+        <casNo>0000-00-0</casNo>
+        <chemId>034567</chemId>
+        <chemNameKor>비공개 물질</chemNameKor>
+        <enNo/>
+        <keNo/>
+        <unNo/>
+        <lastDate>2021-01-01</lastDate>
+        <openYn>N</openYn>
+        <koshaConfirm>N</koshaConfirm>
+      </item>
+      <item>
+        <casNo>7761-88-8</casNo>
+        <chemId>699</chemId>
+        <chemNameKor>질산 은 (중복 ID)</chemNameKor>
+        <enNo/>
+        <keNo/>
+        <unNo/>
+        <lastDate>2021-01-01</lastDate>
+        <openYn>Y</openYn>
+        <koshaConfirm>Y</koshaConfirm>
+      </item>
+    </items>
+    <numOfRows>10</numOfRows>
+    <pageNo>1</pageNo>
+    <totalCount>5</totalCount>
+  </body>
+</response>
