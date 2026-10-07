@@ -48,6 +48,16 @@ async function lowStockCount(page: Page): Promise<number> {
   return (data ?? []).filter((r) => Number(r.stock) < Number(r.min_stock)).length;
 }
 
+const MSDS_BANNER = "msds-bulk-banner";
+
+/** 자기 세션(RLS)으로 읽은 MSDS 없는(msds_url 비어 있음) 시약 수 */
+async function noMsdsCount(page: Page): Promise<number> {
+  const { client } = await browserClient(page);
+  const { data, error } = await client.from("reagents").select("msds_url");
+  expect(error, "자기 학교 reagents msds_url 조회").toBeNull();
+  return (data ?? []).filter((r) => !String(r.msds_url ?? "").trim()).length;
+}
+
 // ---------- C1 ----------
 for (const role of ROLES) {
   test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]}: screens_required[${SCREEN}] · dev-rules components 중 화면 ${SCREEN} 컴포넌트 표시`, async ({ browser }, info) => {
@@ -64,10 +74,13 @@ for (const role of ROLES) {
     expect(fromDev.length, `dev-rules components 에 화면 ${SCREEN} 컴포넌트가 있어야 함`).toBeGreaterThan(0);
     // 디자인 1.17: 기본 프레임 2-{폭} 에 없고 rules.json variants[2] 상태 프레임에만 있는 컴포넌트
     // (list-filter-sheet · storage-class-chip · filter-chip-row · ex-empty-state-card)는 기본 상태 0, 그 상태를 만들어 ≥ 1.
-    // msds-bulk(msds-bulk-banner · msds-candidates)는 dev-rules components 밖 — MSDS 찾기 run(다음 run)에서.
+    // dev-rules 1.8: msds-bulk(variants[2]["msds-bulk"]) — msds-candidates 는 상태 프레임 2-msds-bulk 에만(일괄 찾기를 연 상태 → screen-2-msds-bulk.spec).
+    // msds-bulk-banner 는 기본 프레임 2-{폭}(교사 시안)에도 있지만 d7 §20 상 교사·admin 이 "MSDS 없는 시약만"(?nomsds=1)을 켰을 때만 → 아래 MSDS_BANNER.
     const baseFrame = frameNames(`${SCREEN}-${info.project.name}`);
     const variantOnly = [...new Set(Object.values(VARIANTS2).flat())].filter((n) => fromDev.includes(n) && !baseFrame.has(n));
-    expect(variantOnly.sort(), "variants[2] 에만 있는 화면 2 컴포넌트").toEqual(["ex-empty-state-card", "filter-chip-row", "list-filter-sheet", "storage-class-chip"]);
+    expect(variantOnly.sort(), "variants[2] 에만 있는 화면 2 컴포넌트").toEqual(["ex-empty-state-card", "filter-chip-row", "list-filter-sheet", "msds-candidates", "storage-class-chip"]);
+    expect(VARIANTS2["msds-bulk"] ?? [], "variants[2].msds-bulk 에 msds-bulk-banner").toContain(MSDS_BANNER);
+    const staff = role !== "student";
 
     const { context, page } = await openAs(browser, info, role, SCREEN);
     try {
@@ -88,7 +101,7 @@ for (const role of ROLES) {
           else expect(await countComponent(page, name), `${name} (부족 0종)`).toBe(0);
           continue;
         }
-        if (variantOnly.includes(name)) {
+        if (variantOnly.includes(name) || name === MSDS_BANNER) {
           expect(await countComponent(page, name), `${name} 기본 상태(필터 없음·시트 닫힘) 0`).toBe(0);
           continue;
         }
@@ -115,6 +128,12 @@ for (const role of ROLES) {
         await expect(page.locator(sel(name)).first(), `variants[2].filter-empty ${name} 보임`).toBeVisible();
       }
       await expect(page.locator(sel("list-filter-sheet")), "빈 결과 상태에서 시트는 닫힘").toHaveCount(0);
+      // d7 §20: "MSDS 없는 시약만"(?nomsds=1) — 교사·admin 이고 MSDS 없는 시약이 있으면 msds-bulk-banner 1, 학생(R5)은 0. 후보 시트는 열지 않음
+      const noMsds = await noMsdsCount(page);
+      await page.goto(`${routeOf(SCREEN)}?nomsds=1`);
+      await waitList(page);
+      await expect(page.locator(sel(MSDS_BANNER)), `?nomsds=1 ${MSDS_BANNER} (${staff ? "교사·admin" : "학생 R5"}, MSDS 없음 ${noMsds}종)`).toHaveCount(staff && noMsds > 0 ? 1 : 0);
+      expect(await countComponent(page, "msds-candidates"), "띠만 — 후보 시트 닫힘").toBe(0);
     } finally {
       await context.close();
     }

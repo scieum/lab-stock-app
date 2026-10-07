@@ -31,6 +31,9 @@ function frameNames(name: string): Set<string> {
 const ROLES: Role[] = [...SCHOOL_A_ROLES, "schoolB"];
 const BADGE = "badge-low-stock";
 const AUTO_BADGE = "auto-threshold-badge";
+const MSDS_SEARCH = "msds-search";
+const MSDS_CANDIDATES = "msds-candidates";
+const PILL_SOFT = "button-pill-soft";
 
 /** 이 역할 계정이 볼 seed 시약 하나 (재고 부족이 있으면 그것) */
 function pickFor(role: Role) {
@@ -73,7 +76,14 @@ for (const role of ROLES) {
     expect(variant.filter((n) => !devRules.components[n]), "variants 3.location 은 모두 dev-rules components 안").toEqual([]);
     for (const n of variant) expect(stateOnly, `variants["${SCREEN}"].location ${n} 은 기본 프레임에 없는 상태 컴포넌트`).toContain(n);
     // mix-warning 은 고른 칸이 분류와 안 맞을 때만 나오는 조건부 상태 — 1.17 3-location 시안은 추천 칸을 고른 상태라 없다 (경고 동작은 screen-3-location)
-    for (const n of stateOnly.filter((x) => x !== "mix-warning")) expect(frameNames(`${SCREEN}-location-${viewportName}`), `상태 컴포넌트 ${n} 은 3-location 프레임에 있다`).toContain(n);
+    // 1.18 variants["3"].msds (msds-search · msds-candidates — dev-rules 1.8): MSDS 없는 시약의 상태 프레임 3-msds 소속
+    const msdsVariant = (rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants[String(SCREEN)].msds ?? [];
+    expect(msdsVariant, "variants 3.msds").toEqual(expect.arrayContaining([MSDS_SEARCH, MSDS_CANDIDATES]));
+    for (const n of msdsVariant) {
+      expect(stateOnly, `variants["${SCREEN}"].msds ${n} 은 기본 프레임에 없는 상태 컴포넌트`).toContain(n);
+      expect(frameNames(`${SCREEN}-msds-${viewportName}`), `상태 컴포넌트 ${n} 은 3-msds 프레임에 있다`).toContain(n);
+    }
+    for (const n of stateOnly.filter((x) => x !== "mix-warning" && !msdsVariant.includes(x))) expect(frameNames(`${SCREEN}-location-${viewportName}`), `상태 컴포넌트 ${n} 은 3-location 프레임에 있다`).toContain(n);
     const fromDev = fromDevAll.filter((n) => baseFrame.has(n));
     expect(fromDev.length, `dev-rules components 에 화면 ${SCREEN} 컴포넌트가 있어야 함`).toBeGreaterThan(0);
 
@@ -94,6 +104,11 @@ for (const role of ROLES) {
       }
       const db = await dbDetail(page, pick.id);
       expect(db, "자기 세션으로 이 시약이 읽힘").not.toBeNull();
+      // 이 시약에 MSDS 가 있는지 (그 계정 세션 RLS) — 3-msds 상태 판단
+      const { client: own } = await browserClient(page);
+      const m = await own.from("reagents").select("msds_url").eq("id", pick.id).single();
+      expect(m.error, `RLS 로 msds_url 읽기 (${m.error?.message})`).toBeNull();
+      const missing = !String((m.data as { msds_url: string | null }).msds_url ?? "").trim();
       for (const name of fromDev) {
         // 탭바는 C2 에서 폭별 기대값으로 본다
         if (name === rules.tab_bar.component || name === rules.tab_bar.item) continue;
@@ -117,11 +132,32 @@ for (const role of ROLES) {
           if (auto) await expect(page.locator(`main ${sel("reorder-threshold")} ${sel(name)}`), `${name} 은 reorder-threshold 줄 안`).toHaveCount(1);
           continue;
         }
+        if (name === PILL_SOFT && missing && forbidden.has("location-edit")) {
+          // 시안 3-msds: MSDS 없는 시약의 msds-entry 는 캡션(+ 교사·admin msds-search)만 — 옛 비활성 "MSDS 보기"(button-pill-soft) 없음.
+          // 화면 3 의 다른 button-pill-soft 는 location-edit 안(학생 R7 0)뿐이라 학생 + MSDS 없음 = 0
+          const pillParents = (JSON.parse(readFileSync(join(process.cwd(), "design", "frames", `${SCREEN}-msds-${viewportName}.json`), "utf8")) as {
+            frames: { nodes: { name: string; path: string[] }[] }[];
+          }).frames[0].nodes
+            .filter((n) => n.name === name)
+            .map((n) => n.path[n.path.length - 2]);
+          expect(pillParents, "시안 3-msds 의 button-pill-soft 는 location-edit 안에만").toEqual(["location-edit"]);
+          expect(await countComponent(page, name), `${name} (학생 · MSDS 없음 → 3-msds: 0)`).toBe(0);
+          continue;
+        }
         expect(await countComponent(page, name), `${name}`).toBeGreaterThanOrEqual(1);
         await expect(page.locator(sel(name)).first(), `${name} 보임`).toBeVisible();
       }
       // 상태 컴포넌트: 기본 상태에는 없다 → 교사·admin 은 "위치 바꾸기"를 열면 variants["3"].location 이 모두 보인다 (저장하지 않고 닫는다)
-      for (const name of stateOnly) expect(await countComponent(page, name), `기본 상태에 상태 컴포넌트 ${name} 없음`).toBe(0);
+      // d7 §20 (3-msds 상태): MSDS 없는 시약이면 교사·admin 기본 화면에 msds-search 1 (학생 R5 0). 후보 시트(msds-candidates)는 누르기 전 0
+      for (const name of stateOnly) {
+        if (name === MSDS_SEARCH) {
+          const want = missing && !forbidden.has(MSDS_SEARCH) ? 1 : 0;
+          expect(await countComponent(page, name), `${name} (MSDS ${missing ? "없음" : "있음"}, ${ROLE_LABEL[role]})`).toBe(want);
+          if (want) await expect(page.locator(`main ${sel("msds-entry")} ${sel(name)}`), `${name} 은 msds-entry 안`).toHaveCount(1);
+          continue;
+        }
+        expect(await countComponent(page, name), `기본 상태에 상태 컴포넌트 ${name} 없음`).toBe(0);
+      }
       if (forbidden.has("location-edit")) {
         expect(await countComponent(page, "location-edit"), "학생 location-edit (R7)").toBe(0);
       } else {
