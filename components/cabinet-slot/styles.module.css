@@ -78,6 +78,14 @@
   background: var(--color-highlight-soft);
 }
 
+/* 추천 칸: suggest-badge + 분류 이름 (시안 1.17 slot-left, 사이 8) */
+.left {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
 .label,
 .unset {
   overflow: hidden;

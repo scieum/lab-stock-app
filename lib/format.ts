@@ -53,6 +53,12 @@ function parts(d: Date): Record<"year" | "month" | "day" | "hour" | "minute", st
   return out;
 }
 
+/** 화면 10 기록 행의 기록 시각: "14:05" (한국 시간, 24시간) */
+export function formatTimeHm(d: Date): string {
+  const p = parts(d);
+  return `${p.hour}:${p.minute}`;
+}
+
 /** 화면 10 기록 행 날짜: "10.02" (한국 시간) */
 export function formatMonthDay(d: Date): string {
   const p = parts(d);

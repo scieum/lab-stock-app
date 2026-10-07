@@ -43,6 +43,7 @@ import {
   withJosa,
   type SlotKey,
 } from "@/lib/cabinet-rules";
+import { isSuggestedSlot, suggestLocation } from "@/lib/location-suggest";
 import { SAMPLE_ORIGIN, samplePlaced, type SampleCabinet, type SamplePlacedReagent, type SampleReagent } from "./sample";
 import styles from "./cabinets.module.css";
 
@@ -276,7 +277,24 @@ export function CabinetsDemo({
         >
           <SlotAssign
             key={`${active.id}-${slotId(selectedKey)}`}
-            candidates={unassigned}
+            candidates={unassigned.map((u) => {
+              // 위치 추천 (d7 §17) — 저장된 칸 분류(saved)와 지금 놓인 시약으로 계산, 이 칸이 추천 칸이면 배지 + 위로
+              const s = suggestLocation(
+                { id: u.id, storageClass: u.storageClass },
+                saved.map((c) => ({
+                  id: c.id,
+                  number: c.number,
+                  label: c.label,
+                  doorType: c.doorType,
+                  shelves: c.shelves,
+                  slots: c.slots.map((sl) => ({
+                    ...sl,
+                    reagents: placed.filter((r) => r.cabinetId === c.id && r.slot === slotId(sl)).map((r) => ({ id: r.id, storageClass: r.storageClass })),
+                  })),
+                })),
+              );
+              return { ...u, suggested: isSuggestedSlot(s, active.id, selectedKey) };
+            })}
             slotClasses={selectedClasses}
             slotReagentClasses={inSlot.map((r) => r.storageClass)}
             onAssign={(id) => {

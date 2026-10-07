@@ -11,7 +11,8 @@ import { cabinetQrUrl, slotTitle } from "@/lib/cabinet-rules";
 import styles from "../gallery.module.css";
 import local from "./cabinets.module.css";
 import { CabinetsDemo, NavLogoutDemo } from "./demo";
-import { SAMPLE_ORIGIN, sampleCabinets, sampleCandidates, sampleInSlot, sampleUnassigned } from "./sample";
+import { isSuggestedSlot } from "@/lib/location-suggest";
+import { SAMPLE_ORIGIN, sampleCabinets, sampleCandidates, sampleInSlot, sampleSuggestion, sampleUnassigned } from "./sample";
 
 export const metadata: Metadata = { title: "시약장 설정 컴포넌트 · Lab_Stock" };
 
@@ -107,6 +108,19 @@ export default function GalleryCabinetsPage() {
         <Item id="slot-danger" name="slot-sheet + slot-assign — 섞으면 위험한 조합 (좌 2단 유기 칸에 과망가니즈산칼륨(산화제))">
           <SlotSheet sheet={false} canEdit title={slotTitle({ side: "L", shelf: 2 }, first.doorType)} classes={["유기"]} reagents={slotL2}>
             <SlotAssign candidates={sampleCandidates} slotClasses={["유기"]} slotReagentClasses={slotL2.map((r) => r.storageClass)} defaultSelectedId="u-3" />
+          </SlotSheet>
+        </Item>
+
+        <Item id="slot-suggest" name="slot-sheet + slot-assign — 위치 추천 (2번 시약장 우 2단 산화제 칸: 과망가니즈산칼륨의 추천 칸 → suggest-badge, 목록 맨 위)">
+          <SlotSheet sheet={false} canEdit title={slotTitle({ side: "R", shelf: 2 }, "양문형")} classes={["산화제"]} reagents={[]}>
+            <SlotAssign
+              candidates={sampleCandidates.map((c) => ({
+                ...c,
+                suggested: isSuggestedSlot(sampleSuggestion({ id: c.id, storageClass: c.storageClass }), "c-2", { side: "R", shelf: 2 }),
+              }))}
+              slotClasses={["산화제"]}
+              defaultOpen
+            />
           </SlotSheet>
         </Item>
 

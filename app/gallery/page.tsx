@@ -27,6 +27,7 @@ import { FeatureCard } from "@/components/feature-card";
 import { GuestBanner } from "@/components/guest-banner";
 import { LocationEdit } from "@/components/location-edit";
 import { LocationPicker } from "@/components/location-picker";
+import { LocationSuggest } from "@/components/location-suggest";
 import { GuestEntry } from "@/components/guest-entry";
 import { GuestLock } from "@/components/guest-lock";
 import { CabinetSummaryCard, HomeSummary, StockSummaryCard } from "@/components/home-summary";
@@ -59,6 +60,7 @@ import { SlotCount } from "@/components/slot-count";
 import { SlotSheet } from "@/components/slot-sheet";
 import { StockIntake } from "@/components/stock-intake";
 import { StorageClassChip, StorageClassPicker } from "@/components/storage-class-chip";
+import { SuggestBadge } from "@/components/suggest-badge";
 import { TabBar } from "@/components/tab-bar";
 import { TabItem } from "@/components/tab-item";
 import { TextInput, TextInputSelect } from "@/components/text-input";
@@ -91,19 +93,30 @@ const usageRows = [
   { date: "2026.09.18", user: "박서연", amount: "10 g" },
 ];
 
-/** 시안 10 (디자인 1.17) 기록 — 행 날짜 = 사용일, 기록한 날이 다르면 캡션 (d7 §15). 묶음은 d7 §7 월 그룹 */
+/**
+ * 시안 10 (디자인 1.17) 기록 — 사용일별 묶음 "10월 7일 · 오늘" (d7 §15). 기록한 날 = 사용일이면 사용자 옆 기록 시각,
+ * 다르면 사용자만 + 캡션 "10월 7일에 기록". 행에 날짜 열 없음
+ */
 const historyGroups: {
   label: string;
-  rows: { id: string; date: string; name: string; user: string; amount: string; caption?: string; selected?: boolean }[];
+  rows: { id: string; name: string; user: string; amount: string; caption?: string; selected?: boolean }[];
 }[] = [
   {
-    label: "2026년 10월",
+    label: "10월 7일 · 오늘",
     rows: [
-      { id: "h-1", date: "10.07", name: "염산", user: "학생 이OO", amount: "20 mL" },
-      { id: "h-2", date: "10.07", name: "질산은", user: "교사 김OO", amount: "2 g" },
-      { id: "h-3", date: "10.06", name: "수산화나트륨", user: "학생 박OO", amount: "10 g" },
-      { id: "h-4", date: "10.03", name: "에탄올", user: "교사 김OO", amount: "50 mL", caption: "10월 7일에 기록", selected: true },
-      { id: "h-5", date: "10.03", name: "염산", user: "학생 최OO", amount: "30 mL", caption: "10월 6일에 기록" },
+      { id: "h-1", name: "염산", user: "학생 이OO · 14:05", amount: "20 mL" },
+      { id: "h-2", name: "질산은", user: "교사 김OO · 10:20", amount: "2 g" },
+    ],
+  },
+  {
+    label: "10월 6일",
+    rows: [{ id: "h-3", name: "수산화나트륨", user: "학생 박OO · 15:40", amount: "10 g" }],
+  },
+  {
+    label: "10월 3일",
+    rows: [
+      { id: "h-4", name: "에탄올", user: "교사 김OO", amount: "50 mL", caption: "10월 7일에 기록", selected: true },
+      { id: "h-5", name: "염산", user: "학생 최OO", amount: "30 mL", caption: "10월 6일에 기록" },
     ],
   },
 ];
@@ -291,7 +304,6 @@ export default function GalleryPage() {
                 {g.rows.map((r) => (
                   <DataRecordRow
                     key={r.id}
-                    date={r.date}
                     title={r.name}
                     subtitle={r.user}
                     caption={r.caption}
@@ -404,6 +416,31 @@ export default function GalleryPage() {
 
         <Item name="reagent-register">
           <ReagentRegister storageClasses={storageClasses} defaultIntakeDate="2026-10-02" stickyActions={false} />
+        </Item>
+
+        <Item name="location-suggest (화면 7 등록 직후 — 시안 1.17 7-suggest: 질산칼륨 추천 위치 + 아세트산 맞는 칸 없음, 모두 추천대로 · 나중에)">
+          <Toast>3개 품목을 입고했어요</Toast>
+          <LocationSuggest
+            items={[
+              { id: "s-1", name: "질산칼륨", storageClass: "산화제", suggestion: { cabinetNumber: 2, text: "2번 시약장 · 우 2단" } },
+              { id: "s-2", name: "아세트산", storageClass: "산", suggestion: null },
+            ]}
+            otherHref={() => "/gallery/placement"}
+          />
+        </Item>
+
+        <Item name="location-suggest — 새 시약 1개 (나중에만) · 추천 위치에 둔 뒤">
+          <LocationSuggest
+            items={[{ id: "s-3", name: "과산화수소", storageClass: "산화제", suggestion: { cabinetNumber: 1, text: "1번 시약장 · 우 1단" } }]}
+            otherHref={() => "/gallery/placement"}
+          />
+          <LocationSuggest
+            items={[
+              { id: "s-4", name: "질산칼륨", storageClass: "산화제", suggestion: { cabinetNumber: 2, text: "2번 시약장 · 우 2단" }, placed: true },
+              { id: "s-5", name: "에탄올", storageClass: "유기", suggestion: { cabinetNumber: 1, text: "1번 시약장 · 좌 2단" } },
+            ]}
+            otherHref={() => "/gallery/placement"}
+          />
         </Item>
 
         <Item name="ex-empty-state-card">
@@ -565,7 +602,33 @@ export default function GalleryPage() {
           <ThresholdEdit mode="form" unit="병" defaultValue="3" />
         </Item>
 
-        <Item name="location-picker (교사 — 시안 3-location: 2번 시약장 좌 2단, 섞으면 위험한 조합 경고)">
+        <Item name="suggest-badge (위치 추천 — 연하늘 채움 + 하늘색 테두리, 글자 기본색)">
+          <div className={styles.row}>
+            <SuggestBadge />
+          </div>
+          <CabinetLayout
+            doorType={pickerCabinets[1].doorType}
+            shelves={pickerCabinets[1].shelves}
+            slots={pickerCabinets[1].slots}
+            counts={pickerCabinets[1].counts}
+            selected={{ side: "R", shelf: 2 }}
+            suggested={{ side: "R", shelf: 2 }}
+            onSelect={undefined}
+          />
+        </Item>
+
+        <Item name="location-picker (교사 — 시안 1.17 3-location: 추천 칸 2번 시약장 우 2단 = 처음 선택)">
+          <LocationPicker
+            sheet={false}
+            reagentName="과산화수소"
+            reagentClass="산화제"
+            cabinets={pickerCabinets}
+            current={{ cabinetId: cabinet.id, side: "R", shelf: 1 }}
+            suggestion={{ cabinetId: "c-2", side: "R", shelf: 2 }}
+          />
+        </Item>
+
+        <Item name="location-picker (교사 — 2번 시약장 좌 2단, 섞으면 위험한 조합 경고)">
           <LocationPicker
             sheet={false}
             reagentName="과산화수소"

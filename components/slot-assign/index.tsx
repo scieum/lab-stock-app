@@ -5,6 +5,7 @@ import { ButtonPrimary } from "@/components/button-primary";
 import { MixWarning } from "@/components/mix-warning";
 import { ReagentRow } from "@/components/reagent-row";
 import { SheetNote, SheetSection } from "@/components/sheet-panel";
+import { SuggestBadge } from "@/components/suggest-badge";
 import { TextInput } from "@/components/text-input";
 import { PLACEMENT_NOTE_PUT, UNASSIGNED_LABEL, placementWarnings } from "@/lib/cabinet-rules";
 import styles from "./styles.module.css";
@@ -16,6 +17,8 @@ export type SlotAssignCandidate = {
   amount: string;
   /** 시약 보관 분류 (없으면 경고 없음) */
   storageClass?: string | null;
+  /** 이 칸이 이 시약의 추천 칸 (d7 §17) — 이름 옆 suggest-badge, 목록 위로 */
+  suggested?: boolean;
 };
 
 type Props = {
@@ -43,6 +46,7 @@ const matches = (name: string, query: string) => name.toLocaleLowerCase("ko").in
 /**
  * 시약 넣기 (디자인 1.15 slot-assign, 교사·admin 만 — R7: 학생 0개). 칸 시트(slot-sheet) 아래쪽에 둔다.
  * 처음에는 button-primary "시약 넣기" 만 있고, 누르면 "넣을 시약 고르기"(검색 + "칸 없음" 시약 목록)가 열린다.
+ * 이 칸이 추천 칸인 시약(d7 §17)은 이름 옆 suggest-badge "추천" 과 함께 목록 맨 위에 둔다.
  * 시약을 고르면 분류 불일치 경고(mix-warning — 막지 않음)가 보이고, "시약 넣기" 가 그 시약을 이 칸에 넣는다.
  *
  * data-component="slot-assign" 은 시안대로 맨 아래 버튼 묶음에 붙는다 (고르기 목록·경고는 시트의 형제 노드).
@@ -62,7 +66,9 @@ export function SlotAssign({
   const [query, setQuery] = useState(defaultQuery);
   const [selectedId, setSelectedId] = useState<string | null>(defaultSelectedId);
 
-  const shown = query.trim() === "" ? candidates : candidates.filter((c) => matches(c.name, query));
+  // 추천 칸인 시약을 위로 (그 안·나머지는 받은 순서 그대로)
+  const ordered = [...candidates.filter((c) => c.suggested), ...candidates.filter((c) => !c.suggested)];
+  const shown = query.trim() === "" ? ordered : ordered.filter((c) => matches(c.name, query));
   const selected = candidates.find((c) => c.id === selectedId) ?? null;
   const warning = selected ? placementWarnings(selected.storageClass, slotClasses, slotReagentClasses) : { kind: "none" as const };
 
@@ -98,6 +104,7 @@ export function SlotAssign({
                   title={c.name}
                   body={c.amount}
                   caption={[c.storageClass, UNASSIGNED_LABEL].filter(Boolean).join(" · ")}
+                  badge={c.suggested ? <SuggestBadge /> : undefined}
                   selected={c.id === selectedId}
                   onSelect={() => setSelectedId((id) => (id === c.id ? null : c.id))}
                 />

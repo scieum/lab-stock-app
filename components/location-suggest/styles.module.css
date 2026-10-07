@@ -1,0 +1,211 @@
+/* 시안 1.17 7-suggest location-suggest: 세로 묶음 사이 12. 제목 20/700 + caption 12 회색(사이 4) */
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.heading {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}
+
+.caption {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 시약 카드: 회색 채움, radius 16, 안쪽 16, 사이 12 */
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+  padding: var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+.rowTitle {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+  margin: 0;
+  min-width: 0;
+}
+
+.name {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cls {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+/* "추천 위치:" + 번호 원 + 위치 + 추천 배지 (사이 8, 15/400) */
+.suggestLine {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.value {
+  min-width: 0;
+}
+
+.noSlot {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+/* [다른 칸] [여기에 두기] — 모바일 두 칸 반반 (사이 8) */
+.actions {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.actionButton {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.settings {
+  align-self: flex-start;
+}
+
+.done {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.doneIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex-shrink: 0;
+  color: var(--color-highlight);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+/* "모두 추천대로" + "나중에" (사이 4) */
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* "나중에": 조용한 텍스트 동작 15/600, 높이 44 — 모바일은 가운데 */
+.later {
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-8);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+}
+
+.later:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.later:active:not(:disabled) {
+  background: var(--color-surface-muted);
+}
+
+.later:disabled {
+  color: var(--color-text-placeholder);
+  cursor: not-allowed;
+}
+
+@media (min-width: 1024px) {
+  /* 데스크톱: 추천이 있는 카드는 글자(왼쪽) · 버튼 둘(오른쪽, 각 140)을 한 줄에 (사이 16) */
+  .rowSuggested {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-16);
+  }
+
+  .actions {
+    flex-shrink: 0;
+  }
+
+  .actionButton {
+    flex: 0 0 auto;
+    width: calc(var(--space-64) * 2 + var(--space-12));
+  }
+
+  .footer {
+    gap: var(--space-8);
+    padding-top: var(--space-12);
+  }
+
+  .later {
+    align-self: flex-start;
+  }
+}

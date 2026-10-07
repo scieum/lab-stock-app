@@ -1,5 +1,6 @@
 // 화면 11 갤러리 예시 데이터 (design/frames/11-mobile.json · 11-delete-mobile.json · 11-slot · 11-print · 3-location 의 예시 상태)
 import type { DoorType, ShelfCount, SlotClasses } from "@/lib/cabinet-rules";
+import { suggestLocation, type SuggestCabinet } from "@/lib/location-suggest";
 
 export type SampleCabinet = {
   id: string;
@@ -27,7 +28,7 @@ export type SamplePlacedReagent = {
   slot: string;
 };
 
-/** 시안 11: 시약장 2개, 1번 = 양문형 4단 8칸 (좌1단 산 + 염기), 2번 = 양문형 3단 (배치된 시약 6개) */
+/** 시안 11: 시약장 2개, 1번 = 양문형 4단 8칸 (좌1단 산 + 염기), 2번 = 양문형 3단 (배치된 시약 6개 · 1.17 3-location: 우2단 산화제) */
 export const sampleCabinets: SampleCabinet[] = [
   {
     id: "c-1",
@@ -58,7 +59,7 @@ export const sampleCabinets: SampleCabinet[] = [
       { side: "L", shelf: 1, classes: ["산"] },
       { side: "R", shelf: 1, classes: ["염기"] },
       { side: "L", shelf: 2, classes: ["유기"] },
-      { side: "R", shelf: 2, classes: ["인화성"] },
+      { side: "R", shelf: 2, classes: ["산화제"] },
       { side: "L", shelf: 3, classes: [] },
       { side: "R", shelf: 3, classes: ["기타"] },
     ],
@@ -128,3 +129,22 @@ export const samplePickerCabinets = sampleCabinets.map((c) => ({
   counts: sampleCounts(c.id),
   reagentClasses: sampleSlotClasses(c.id),
 }));
+
+/** 위치 추천 입력 (lib/location-suggest) — 시약장 · 칸 분류 · 칸에 놓인 시약 */
+export const sampleSuggestCabinets: SuggestCabinet[] = sampleCabinets.map((c) => ({
+  id: c.id,
+  number: c.number,
+  label: c.label,
+  doorType: c.doorType,
+  shelves: c.shelves,
+  slots: c.slots.map((s) => ({
+    ...s,
+    reagents: samplePlaced.filter((r) => r.cabinetId === c.id && r.slot === `${s.side}${s.shelf}`).map((r) => ({ id: r.id, storageClass: r.storageClass })),
+  })),
+}));
+
+/** 시약 하나의 추천 칸 (갤러리 동작 예시) */
+export function sampleSuggestion(reagent: { id?: string; storageClass: string | null }) {
+  const s = suggestLocation(reagent, sampleSuggestCabinets);
+  return s ? { cabinetId: s.cabinetId, side: s.side, shelf: s.shelf } : null;
+}

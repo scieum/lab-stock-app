@@ -32,6 +32,8 @@ export type UsageHistoryItem = {
   recordedCaption: string | null;
   reagentName: string;
   userName: string;
+  /** 행의 사용자 줄: 기록한 날 = 사용일이면 "학생 이OO · 14:05", 다르면 "교사 김OO" */
+  subtitle: string;
   /** "5" */
   amount: string;
   unit: string;
@@ -42,9 +44,9 @@ export type UsageHistoryItem = {
 };
 
 export type UsageHistoryGroup = {
-  /** "2026-10" */
+  /** 사용일 "2026-10-07" */
   key: string;
-  /** "2026년 10월" */
+  /** "10월 7일 · 오늘" · "10월 6일" */
   label: string;
   records: UsageHistoryItem[];
 };
@@ -54,7 +56,7 @@ type Filter = { onlyMine: boolean; period: UsagePeriod; query: string };
 type Props = {
   /** 서버가 실제로 적용한 필터 */
   filter: Filter;
-  /** 사용일 최신순(같은 날은 기록 시각 최신순), 사용일의 월 그룹 */
+  /** 사용일 최신순(같은 날은 기록 시각 최신순), 사용일별 묶음 */
   groups: UsageHistoryGroup[];
   /** 상한(200건)에 닿아 더 있을 수 있음 */
   truncated: boolean;
@@ -79,7 +81,7 @@ function hrefOf(f: Filter): string {
 
 /**
  * 화면 10 사용 기록 내역.
- * 시안: (데스크톱 screen-title) → filter-row(전체/내 기록 · 기간 · 시약명 검색) → record-list(월 그룹)
+ * 시안: (데스크톱 screen-title) → filter-row(전체/내 기록 · 기간 · 시약명 검색) → record-list(사용일별 묶음 "10월 7일 · 오늘")
  *       + 누른 기록의 ex-modal-card (모바일: tab-bar 위 하단 시트 / 데스크톱: history-layout 의 목록 옆 열).
  * 필터는 주소(?mine · ?period · ?q)에 두고 서버가 다시 조회한다. 학교·사용자 값은 보내지 않는다.
  */
@@ -256,9 +258,8 @@ export function UsageHistoryScreen({ filter, groups, truncated }: Props) {
                         if (el) rows.current.set(r.id, el);
                         else rows.current.delete(r.id);
                       }}
-                      date={r.date}
                       title={r.reagentName}
-                      subtitle={r.userName}
+                      subtitle={r.subtitle}
                       caption={r.recordedCaption ?? undefined}
                       amount={r.amountLabel}
                       selected={r.id === openId}

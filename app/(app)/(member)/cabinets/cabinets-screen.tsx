@@ -47,6 +47,7 @@ import {
 } from "@/lib/cabinet-rules";
 import { useUnsavedGuard } from "@/lib/use-unsaved-guard";
 import { addCabinetAction, deleteCabinetAction, placeReagentAction, renameCabinetAction, saveCabinetLayoutAction } from "./actions";
+import { isSuggestedSlot } from "@/lib/location-suggest";
 import styles from "./cabinets.module.css";
 
 /** 칸 시트·칸 없음 목록의 시약 한 줄 (재고는 서버가 만든 글자) */
@@ -80,8 +81,8 @@ type Props = {
   cabinets: { id: string; number: number; label: string }[];
   /** `?c=` 의 시약장 (없으면 첫 시약장). 시약장이 0개면 null */
   active: CabinetsScreenActive | null;
-  /** 칸 없음 시약 (이름순) */
-  unassigned: CabinetsScreenReagent[];
+  /** 칸 없음 시약 (이름순) — 교사·admin 이면 시약마다 위치 추천 칸(d7 §17, 없으면 null) */
+  unassigned: (CabinetsScreenReagent & { suggestion?: { cabinetId: string; side: SlotSide; shelf: number } | null })[];
 };
 
 /** 저장하지 않은 편집 — 어느 시약장의 것인지 같이 쥔다 (다른 시약장으로 바꾸면 버려진다) */
@@ -519,7 +520,14 @@ export function CabinetsScreen({ canManage, schoolName, origin, cabinets, active
           {slotSaved?.slotId ? (
             <SlotAssign
               key={`${active.id}-${slotId(slotKey)}-${assignRound}`}
-              candidates={unassigned}
+              candidates={unassigned.map((u) => ({
+                id: u.id,
+                name: u.name,
+                amount: u.amount,
+                storageClass: u.storageClass,
+                // 이 칸이 이 시약의 추천 칸이면 suggest-badge + 목록 위로 (d7 §17)
+                suggested: isSuggestedSlot(u.suggestion, active.id, slotKey),
+              }))}
               slotClasses={slotSaved.classes}
               slotReagentClasses={slotSaved.reagents.map((r) => r.storageClass)}
               pending={pending && op === "place"}

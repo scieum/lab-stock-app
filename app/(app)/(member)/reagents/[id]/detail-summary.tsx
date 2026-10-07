@@ -8,7 +8,7 @@ import { ReagentLocation } from "@/components/reagent-location";
 import { ReorderThreshold } from "@/components/reorder-threshold";
 import { UNASSIGNED_LABEL } from "@/lib/cabinet-rules";
 import { thresholdText } from "@/lib/reorder-rules";
-import type { PickerCabinet, ReagentPlacement, ReagentThreshold } from "@/lib/supabase/reagent-detail";
+import type { PickerCabinet, PickerSuggestion, ReagentPlacement, ReagentThreshold } from "@/lib/supabase/reagent-detail";
 import type { StorageClass } from "@/lib/cabinet-rules";
 import { placeReagentAtAction, resetReorderThresholdAction, setReorderThresholdAction } from "./actions";
 
@@ -33,6 +33,10 @@ type Props = {
    * 있으면 location-edit "위치 바꾸기" · threshold-edit 연필을 그린다 (R5·R7: 학생 0개)
    */
   picker: PickerCabinet[] | null;
+  /** 위치 추천 칸 (d7 §17) — 피커가 그 칸에 suggest-badge 를 달고 처음 선택으로 둔다 */
+  suggestion?: PickerSuggestion | null;
+  /** true = 피커를 연 채로 시작 (화면 7 [다른 칸]) */
+  initialPicking?: boolean;
 };
 
 /**
@@ -41,9 +45,9 @@ type Props = {
  * 교사·admin: 위치 바꾸기 → location-picker(모바일 tab-bar 위 하단 시트 · 데스크톱 가운데) → 저장/칸 없음으로 → place_reagent,
  * 연필 → 숫자 입력(0 = 알림 없음) → set_reorder_threshold, 출처가 자동이 아니면 입력 상태의 "자동으로 돌리기" → reset_reorder_threshold. 저장하면 토스트 + 서버가 화면을 다시 내려 준다(revalidatePath).
  */
-export function DetailSummary({ reagent, placement, threshold, picker }: Props) {
+export function DetailSummary({ reagent, placement, threshold, picker, suggestion = null, initialPicking = false }: Props) {
   const canEdit = picker !== null;
-  const [picking, setPicking] = useState(false);
+  const [picking, setPicking] = useState(canEdit && initialPicking);
   const [editing, setEditing] = useState(false);
   const [placeError, setPlaceError] = useState<string | null>(null);
   const [thresholdError, setThresholdError] = useState<string | null>(null);
@@ -190,6 +194,7 @@ export function DetailSummary({ reagent, placement, threshold, picker }: Props) 
           reagentClass={reagent.storageClass}
           cabinets={picker}
           current={current}
+          suggestion={suggestion}
           pending={pending && op === "place"}
           error={placeError}
           onSave={savePlace}

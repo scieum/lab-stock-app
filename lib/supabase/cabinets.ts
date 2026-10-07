@@ -20,6 +20,7 @@ import {
   type SlotSide,
   type StorageClass,
 } from "@/lib/cabinet-rules";
+import { suggestLocation, toSuggestCabinets } from "@/lib/location-suggest";
 
 const STAFF_ONLY = "시약장 설정은 교사·관리자만 바꿀 수 있어요";
 const SIGNED_OUT = "다시 로그인해 주세요";
@@ -57,7 +58,10 @@ export type ActiveCabinet = CabinetSummary & {
   placedBySlot: { side: SlotSide; shelf: number; count: number }[];
 };
 
-export type UnassignedReagent = SlotReagent;
+export type UnassignedReagent = SlotReagent & {
+  /** 위치 추천 칸 (d7 §17) — 교사·admin 일 때만 계산, 추천이 없거나 학생이면 null */
+  suggestion: { cabinetId: string; side: SlotSide; shelf: number } | null;
+};
 
 export type CabinetScreen = {
   schoolName: string;
@@ -193,14 +197,24 @@ export async function getCabinetScreen(input: { cabinetId?: string | null } = {}
     };
   }
 
+  const canManage = me.role === "teacher" || me.role === "admin";
+  // 위치 추천 (d7 §17): 칸 시트의 시약 넣기 목록(교사·admin)에서 "이 칸이 추천 칸인 시약"을 가린다
+  const suggestInput = canManage ? toSuggestCabinets(cabinetsRes.data ?? [], slotRows, reagents) : [];
+  const unassigned: UnassignedReagent[] = reagents
+    .filter((r) => !r.slot_id)
+    .map((r) => {
+      const s = canManage ? suggestLocation({ id: r.id, storageClass: r.storage_class }, suggestInput) : null;
+      return { ...toReagent(r), suggestion: s ? { cabinetId: s.cabinetId, side: s.side, shelf: s.shelf } : null };
+    });
+
   return {
     kind: "ok",
     data: {
       schoolName: me.school.name,
-      canManage: me.role === "teacher" || me.role === "admin",
+      canManage,
       cabinets,
       active,
-      unassigned: reagents.filter((r) => !r.slot_id).map(toReagent),
+      unassigned,
     },
   };
 }

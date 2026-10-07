@@ -150,6 +150,7 @@ export async function getDemoReagentDetail(id: string): Promise<DemoReagentDetai
     threshold: toThreshold(r),
     // 둘러보기: 위치 바꾸기 없음 (guest.hidden_components)
     picker: null,
+    suggestion: null,
     usage: (usageRes.data ?? []).map((u) => ({
       id: u.id,
       date: formatDateDots(SEOUL_DATE.format(new Date(u.used_at))),

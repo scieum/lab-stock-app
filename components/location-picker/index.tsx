@@ -2,13 +2,16 @@
 
 import { useState } from "react";
 import { ButtonPrimary } from "@/components/button-primary";
+import { CabinetNumber } from "@/components/cabinet-number";
 import { CabinetLayout } from "@/components/cabinet-slot";
 import { CabinetSwitcher } from "@/components/cabinet-switcher";
 import { MixWarning } from "@/components/mix-warning";
-import { SheetNote, SheetPanel, SheetTextAction } from "@/components/sheet-panel";
+import { SheetNote, SheetPanel, SheetSection, SheetTextAction } from "@/components/sheet-panel";
+import { SuggestBadge } from "@/components/suggest-badge";
 import {
   PLACEMENT_NOTE_SAVE,
   UNASSIGNED_LABEL,
+  locationText,
   placementWarnings,
   sameSlot,
   slotId,
@@ -45,7 +48,12 @@ type Props = {
   cabinets: readonly LocationPickerCabinet[];
   /** 지금 위치 (없으면 "칸 없음") — 처음 보여 줄 시약장 */
   current?: LocationChoice;
-  /** 처음 보여 줄 시약장 · 처음 고른 칸 (갤러리·시안 상태) */
+  /**
+   * 추천 칸 (d7 §17, lib/location-suggest suggestLocation) — 그 칸에 suggest-badge, 위에 "추천" 줄.
+   * 지금 위치와 다르면 처음 선택으로 두고 그 시약장으로 연다. 지금 위치와 같으면 처음 선택 없이 지금 시약장으로 연다.
+   */
+  suggestion?: ({ cabinetId: string } & SlotKey) | null;
+  /** 처음 보여 줄 시약장 · 처음 고른 칸 (갤러리·시안 상태 — suggestion 보다 앞선다) */
   defaultCabinetId?: string;
   defaultSlot?: SlotKey | null;
   /** "저장" (고른 칸) · "칸 없음으로" (null) — place_reagent (D2) */
@@ -61,6 +69,8 @@ type Props = {
 
 /**
  * 보관 위치 바꾸기 (디자인 1.15 location-picker, d7 §14 — 교사·admin, 화면 3 의 location-edit 로 연다).
+ * 디자인 1.17(d7 §17): 추천 칸이 있으면 "추천" 소제목 + 추천 줄(번호 원 + "2번 시약장 · 우 2단" + suggest-badge, 누르면 그 칸 선택)
+ * → "전체" 소제목, 배치도의 추천 칸에도 suggest-badge.
  * 제목 "보관 위치 바꾸기" + × → caption "시약명 · 분류" → cabinet-switcher(번호 + 이름, cabinet-add 없음)
  * → 고른 시약장 배치도(cabinet-slot + slot-count, 눌러서 칸 고르기) → 조용한 텍스트 동작 "칸 없음으로"
  * → 분류 불일치·섞으면 위험한 조합이면 mix-warning(막지 않음) → button-primary "저장"(칸을 고르기 전에는 비활성).
@@ -70,6 +80,7 @@ export function LocationPicker({
   reagentClass,
   cabinets,
   current = null,
+  suggestion = null,
   defaultCabinetId,
   defaultSlot = null,
   onSave,
@@ -78,12 +89,21 @@ export function LocationPicker({
   error,
   sheet = true,
 }: Props) {
+  const suggestCabinet = suggestion ? (cabinets.find((c) => c.id === suggestion.cabinetId) ?? null) : null;
+  const suggestKey: SlotKey | null =
+    suggestion && suggestCabinet && slotKeys(suggestCabinet.doorType, suggestCabinet.shelves).some((k) => sameSlot(k, suggestion))
+      ? { side: suggestion.side, shelf: suggestion.shelf }
+      : null;
+  const suggestIsCurrent = Boolean(suggestKey && current && suggestCabinet && current.cabinetId === suggestCabinet.id && sameSlot(current, suggestKey));
+  // 처음 선택: 갤러리 기본값 → 추천 칸(지금 위치가 아닐 때) → 없음
+  const startSuggest = !defaultCabinetId && suggestCabinet && suggestKey && !suggestIsCurrent;
   const startId =
     (defaultCabinetId && cabinets.some((c) => c.id === defaultCabinetId) ? defaultCabinetId : undefined) ??
+    (startSuggest ? suggestCabinet.id : undefined) ??
     (current && cabinets.some((c) => c.id === current.cabinetId) ? current.cabinetId : undefined) ??
     cabinets[0]?.id;
   const [cabinetId, setCabinetId] = useState<string | undefined>(startId);
-  const [picked, setPicked] = useState<SlotKey | null>(defaultSlot);
+  const [picked, setPicked] = useState<SlotKey | null>(defaultSlot ?? (startSuggest ? suggestKey : null));
 
   const cabinet = cabinets.find((c) => c.id === cabinetId) ?? null;
   const pickedKey = cabinet && picked && slotKeys(cabinet.doorType, cabinet.shelves).some((k) => sameSlot(k, picked)) ? picked : null;
@@ -120,6 +140,30 @@ export function LocationPicker({
         <SheetNote>아직 시약장이 없어요</SheetNote>
       ) : (
         <>
+          {suggestCabinet && suggestKey ? (
+            <>
+              <SheetSection title="추천">
+                <button
+                  type="button"
+                  className={styles.suggestRow}
+                  data-testid="location-picker-suggest"
+                  aria-label={`추천 위치 ${suggestCabinet.number}번 ${locationText(suggestCabinet, suggestKey)}${suggestIsCurrent ? " (지금 위치)" : ""}`}
+                  disabled={pending}
+                  onClick={() => {
+                    setCabinetId(suggestCabinet.id);
+                    setPicked(suggestKey);
+                  }}
+                >
+                  <span className={styles.suggestLoc}>
+                    <CabinetNumber number={suggestCabinet.number} />
+                    <span className={styles.suggestText}>{locationText(suggestCabinet, suggestKey)}</span>
+                  </span>
+                  <SuggestBadge />
+                </button>
+              </SheetSection>
+              <h3 className={styles.sectionTitle}>전체</h3>
+            </>
+          ) : null}
           <CabinetSwitcher
             label="시약장 고르기"
             items={cabinets.map((c) => ({ id: c.id, label: c.label, number: c.number }))}
@@ -137,6 +181,7 @@ export function LocationPicker({
             slots={cabinet.slots}
             counts={cabinet.counts}
             selected={pickedKey}
+            suggested={suggestCabinet && suggestKey && suggestCabinet.id === cabinet.id ? suggestKey : null}
             onSelect={setPicked}
             disabled={pending}
           />

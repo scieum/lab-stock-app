@@ -7,7 +7,7 @@ import { ReagentDetailCard } from "@/components/reagent-detail-card";
 import { ReagentLocation } from "@/components/reagent-location";
 import { ReorderThreshold } from "@/components/reorder-threshold";
 import { formatAmount } from "@/lib/format";
-import { sampleCabinets, samplePickerCabinets } from "../cabinets/sample";
+import { sampleCabinets, samplePickerCabinets, sampleSuggestion } from "../cabinets/sample";
 
 /**
  * 화면 3 칸 배치·재주문 기준 동작 예시 (교사) — 실제 화면(/reagents/[id], D3)과 같은 컴포넌트를 갤러리 안 상태로만 움직인다.
@@ -55,6 +55,7 @@ export function PlacementDemo() {
           reagentClass="산화제"
           cabinets={samplePickerCabinets}
           current={location}
+          suggestion={sampleSuggestion({ id: "p-6", storageClass: "산화제" })}
           onClose={() => setPicking(false)}
           onSave={(choice) => {
             setLocation(choice);
