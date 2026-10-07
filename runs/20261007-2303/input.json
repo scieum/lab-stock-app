@@ -1,0 +1,15 @@
+{
+    "stages":  [
+                   "D1",
+                   "D2",
+                   "D3",
+                   "G",
+                   "D4"
+               ],
+    "screens":  [
+                    2,
+                    3,
+                    7
+                ],
+    "reason":  "디자인 1.17 ③: MSDS 찾기 — KOSHA API(/api/msds/search), set_reagent_msds, 화면 7 새 시약 폼·화면 3 MSDS 없는 시약·화면 2 일괄 띠 (d7 §20)"
+}
