@@ -1,0 +1,261 @@
+/* 시안 2-filter list-filter-sheet (디자인 1.17):
+ * 흰 바탕 + border-strong 한 줄 테두리, radius 24, 안쪽 위·좌우 24 · 아래 16, 묶음 사이 16, 딤·그림자 없음.
+ * sheet-header(제목 20/700 + × 44) → sheet-body(묶음 사이 24) → sheet-footer(위 선 + 위 16, 초기화 + {N}종 보기, 사이 8).
+ * 모바일 = tab-bar 위쪽 선에 붙는 전폭 하단 시트(위쪽만 둥글게), 데스크톱 = 필터 버튼 아래 오른쪽 맞춤 400 폭 드롭다운 */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+  padding: var(--space-24) var(--space-24) var(--space-16);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-none);
+  box-sizing: border-box;
+}
+
+.panel:focus {
+  outline: none;
+}
+
+.panel:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.sheet {
+  position: fixed;
+  right: 0;
+  bottom: var(--tab-bar-height);
+  left: 0;
+  z-index: 20;
+  max-height: calc(100% - var(--tab-bar-height) - var(--space-24));
+  border-bottom: 0;
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-none) var(--radius-none);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: var(--button-min-height);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+  margin-right: calc(var(--space-12) * -1);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.close:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.close:active {
+  opacity: var(--pressed-opacity);
+}
+
+.closeIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+}
+
+/* 본문: 길면 이 안만 스크롤 */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  min-width: 0;
+  min-height: 0;
+}
+
+.sheet .body {
+  overflow-y: auto;
+  /* 포커스 테두리가 스크롤 상자에 잘리지 않게 */
+  margin: calc(var(--space-4) * -1);
+  padding: var(--space-4);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-8);
+  /* 제목과 칩 사이는 12 (보관 위치의 입력 상자 사이는 8) */
+  margin-bottom: var(--space-4);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.hint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-tight);
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+/* 정렬 선택지 (시안 sort-option: 높이 44, 좌우 16, 13/600, 선택 = 연하늘 채움 + 하늘색 테두리) */
+.option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-16);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.optionOn {
+  border-color: var(--color-highlight);
+  background: var(--color-highlight-soft);
+}
+
+.option:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: calc(var(--border-width) * 2);
+}
+
+.option:active {
+  opacity: var(--pressed-opacity);
+}
+
+/* 켜고 끄는 줄 (시안 toggle-row: 높이 44, 라벨 15/400, 스위치 44 × 24 · 손잡이 20) */
+.toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: var(--button-min-height);
+}
+
+.toggleLabel {
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.toggle {
+  position: relative;
+  flex-shrink: 0;
+  width: var(--button-min-height);
+  height: var(--icon-lg);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-border-strong);
+  cursor: pointer;
+}
+
+/* 누름 영역은 44 높이로 넓힌다 */
+.toggle::before {
+  position: absolute;
+  inset: calc((var(--button-min-height) - var(--icon-lg)) / -2) 0;
+  content: "";
+}
+
+.toggleOn {
+  background: var(--color-highlight);
+}
+
+.toggle:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: calc(var(--border-width) * 2);
+}
+
+.toggle:disabled {
+  cursor: not-allowed;
+  opacity: var(--pressed-opacity);
+}
+
+.knob {
+  position: absolute;
+  top: calc((var(--icon-lg) - var(--icon-md)) / 2);
+  left: calc((var(--icon-lg) - var(--icon-md)) / 2);
+  width: var(--icon-md);
+  height: var(--icon-md);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  transition: transform 0.15s ease;
+}
+
+.toggleOn .knob {
+  transform: translateX(calc(var(--button-min-height) - var(--icon-lg)));
+}
+
+.footer {
+  display: flex;
+  gap: var(--space-8);
+  padding-top: var(--space-16);
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+/* 시안 초기화 110 : {N}종 보기 나머지 */
+.reset {
+  flex: 0 0 auto;
+  min-width: calc(var(--space-64) + var(--space-48));
+}
+
+.apply {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .sheet {
+    position: absolute;
+    top: calc(100% + var(--space-8));
+    right: 0;
+    bottom: auto;
+    left: auto;
+    width: var(--side-column-width);
+    max-width: calc(100vw - var(--space-64) * 2);
+    max-height: min(calc(var(--space-64) * 8 - var(--space-8)), calc(100vh - var(--space-64) * 2));
+    border-bottom: var(--border-width) solid var(--color-border-strong);
+    border-radius: var(--radius-lg);
+  }
+}

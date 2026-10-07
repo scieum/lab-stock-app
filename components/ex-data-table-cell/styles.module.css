@@ -85,6 +85,14 @@
   line-height: var(--line-height-normal);
 }
 
+/* 기록한 날 캡션 (디자인 1.17 10: record-caption 12/400 회색) */
+.recordCaption {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-tight);
+}
+
 .recordAmount {
   flex-shrink: 0;
   font-size: var(--font-size-15);

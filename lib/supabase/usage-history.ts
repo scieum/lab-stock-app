@@ -4,6 +4,7 @@ import { recordUserName } from "@/lib/users-rules";
 import {
   USAGE_HISTORY_LIMIT,
   normalizeUsageQuery,
+  seoulDate,
   toUsagePeriod,
   usagePeriodSince,
   type UsagePeriod,
@@ -20,8 +21,12 @@ export type UsageHistoryFilter = {
 
 export type UsageRecord = {
   id: string;
-  /** ISO 시각 (usage_logs.used_at) */
+  /** ISO 시각 (usage_logs.used_at) = 기록한 시각 */
   usedAt: string;
+  /** 사용일 "YYYY-MM-DD" (usage_logs.used_on, d7 §15). 열이 아직 없는 DB 면 기록 시각의 한국 날짜 */
+  usedOn: string;
+  /** 기록한 날 "YYYY-MM-DD" (used_at 의 한국 날짜) */
+  recordedOn: string;
   amount: number;
   unit: string;
   memo: string | null;
@@ -47,6 +52,7 @@ export type UsageHistoryResult = { kind: "ok"; data: UsageHistory } | { kind: "s
 /**
  * 화면 10 사용 기록 내역 — 로그인 세션(publishable 키 + 쿠키)으로 DB 함수 public.usage_history 를 부른다.
  * 함수는 SECURITY INVOKER 라 usage_logs·reagents RLS 가 자기 학교 행만 돌려준다 (service role 미사용).
+ * 기간·정렬은 사용일 기준(d7 §15) — 사용일 최신순, 같은 날은 기록 시각 최신순 (DB 함수가 정렬한다).
  */
 export async function getUsageHistory(filter: UsageHistoryFilter = {}): Promise<UsageHistoryResult> {
   const onlyMine = filter.onlyMine === true;
@@ -76,6 +82,8 @@ export async function getUsageHistory(filter: UsageHistoryFilter = {}): Promise<
       records: rows.map((u) => ({
         id: u.id,
         usedAt: u.used_at,
+        usedOn: typeof u.used_on === "string" && u.used_on ? u.used_on.slice(0, 10) : seoulDate(new Date(u.used_at)),
+        recordedOn: seoulDate(new Date(u.used_at)),
         amount: Number(u.amount),
         unit: u.unit,
         memo: u.memo ?? null,

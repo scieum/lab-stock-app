@@ -11,14 +11,23 @@ type ChipProps = {
   /** 누르면 선택을 켜고 끈다 (여러 개 선택 가능 — 묶음 쪽이 목록을 쥔다) */
   onToggle?: () => void;
   disabled?: boolean;
+  /** filter = 화면 2 필터 시트 칩 (높이 44 · 좌우 16 · 13/600, 디자인 1.17 2-filter) */
+  size?: "default" | "filter";
 };
 
 /**
- * 보관 분류 칩 (화면 11). 고르는 칩 = 눌림 상태가 있는 버튼(aria-pressed), 범례 칩 = 글자만.
+ * 보관 분류 칩 (화면 11 · 화면 2 필터 시트). 고르는 칩 = 눌림 상태가 있는 버튼(aria-pressed), 범례 칩 = 글자만.
  * 선택 = 연하늘 바탕 + 하늘색 테두리, 글자는 기본색.
  */
-export function StorageClassChip({ label, selected = false, readOnly = false, onToggle, disabled }: ChipProps) {
-  const cls = [styles.chip, selected ? styles.selected : "", readOnly ? styles.legend : styles.toggle].filter(Boolean).join(" ");
+export function StorageClassChip({ label, selected = false, readOnly = false, onToggle, disabled, size = "default" }: ChipProps) {
+  const cls = [
+    styles.chip,
+    selected ? styles.selected : "",
+    readOnly ? styles.legend : styles.toggle,
+    size === "filter" && !readOnly ? styles.filter : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
   if (readOnly) {
     return (
       <span data-component="storage-class-chip" className={cls}>

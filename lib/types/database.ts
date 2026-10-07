@@ -336,6 +336,7 @@ export type Database = {
           reagent_id: string
           school_id: string
           used_at: string
+          used_on: string
           user_id: string | null
         }
         Insert: {
@@ -346,6 +347,7 @@ export type Database = {
           reagent_id: string
           school_id: string
           used_at?: string
+          used_on?: string
           user_id?: string | null
         }
         Update: {
@@ -356,6 +358,7 @@ export type Database = {
           reagent_id?: string
           school_id?: string
           used_at?: string
+          used_on?: string
           user_id?: string | null
         }
         Relationships: [
@@ -577,7 +580,12 @@ export type Database = {
         }
       }
       record_usage: {
-        Args: { amount: number; memo?: string; reagent_id: string }
+        Args: {
+          amount: number
+          memo?: string
+          reagent_id: string
+          used_on?: string
+        }
         Returns: {
           amount: number
           demo_user_name: string | null
@@ -586,6 +594,7 @@ export type Database = {
           reagent_id: string
           school_id: string
           used_at: string
+          used_on: string
           user_id: string | null
         }
         SetofOptions: {
@@ -720,6 +729,7 @@ export type Database = {
           reagent_name: string
           unit: string
           used_at: string
+          used_on: string
           user_name: string
         }[]
       }

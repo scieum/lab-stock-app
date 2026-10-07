@@ -70,3 +70,21 @@ export function formatDateTimeDots(d: Date): string {
   const p = parts(d);
   return `${p.year}.${p.month}.${p.day} ${p.hour}:${p.minute}`;
 }
+
+/** 화면 10 기록 상세 "기록한 날": "2026-10-07 09:12" (한국 시간, 시안 10-desktop) */
+export function formatDateTimeDashes(d: Date): string {
+  const p = parts(d);
+  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;
+}
+
+/** date 열 "2026-10-03" → 행 날짜 "10.03" (시간대 변환 없음) */
+export function formatMonthDayOf(ymd: string): string {
+  const m = /^\d{4}-(\d{2})-(\d{2})/.exec(ymd);
+  return m ? `${m[1]}.${m[2]}` : ymd;
+}
+
+/** date 열 "2026-10-03" → 월 그룹 { key "2026-10", label "2026년 10월" } (시간대 변환 없음) */
+export function formatYearMonthOf(ymd: string): { key: string; label: string } {
+  const m = /^(\d{4})-(\d{2})/.exec(ymd);
+  return m ? { key: `${m[1]}-${m[2]}`, label: `${m[1]}년 ${Number(m[2])}월` } : { key: ymd, label: ymd };
+}

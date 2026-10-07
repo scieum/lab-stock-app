@@ -24,6 +24,10 @@ type Props = {
   trailing?: React.ReactNode;
   /** 상자 아래 오른쪽 글자 수 ("6/20", caption 회색 — 화면 11 이름 시트). 세는 것은 부르는 쪽이 한다 */
   counter?: string;
+  /**
+   * 바깥 틀의 data-component (기본 "text-input"). 같은 모양을 쓰는 시안 컴포넌트(usage-date)가 자기 이름을 넘긴다.
+   */
+  "data-component"?: string;
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "required">;
 
 /** 입력 상자 (회색 바탕, radius 16). 라벨이 있으면 라벨 + 필수 표시 + 상자. */
@@ -41,6 +45,7 @@ export function TextInput({
   edited,
   id,
   className,
+  "data-component": component = "text-input",
   ...rest
 }: Props) {
   const autoId = useId();
@@ -50,7 +55,7 @@ export function TextInput({
   const describedBy = [error ? errorId : "", counter ? counterId : ""].filter(Boolean).join(" ") || undefined;
   const cls = [styles.field, labelTone === "strong" ? styles.strong : "", className ?? ""].filter(Boolean).join(" ");
   return (
-    <div data-component="text-input" data-edited={edited ? "" : undefined} className={cls}>
+    <div data-component={component} data-edited={edited ? "" : undefined} className={cls}>
       {label ? (
         <div className={styles.labelRow}>
           <label htmlFor={inputId} className={styles.label}>

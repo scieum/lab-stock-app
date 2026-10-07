@@ -1,12 +1,13 @@
-/* 화면 2 시약 목록
- * 모바일: 제목 → segmented-control → 검색 → 목록, 사이 16
- * 데스크톱: 제목 → toolbar(segmented-control 400 : 검색 896, 사이 16) → 목록, 사이 24
+/* 화면 2 시약 목록 (디자인 1.17)
+ * 모바일: 제목 → segmented-control → search-row(검색 + list-filter-button, 사이 8) → (filter-chip-row) → 목록, 사이 12
+ * 데스크톱: 가운데 720 열(page-column) — 제목 → list-body(segmented-control 360 → search-row 720 → (filter-chip-row) → 목록, 사이 12), 사이 24
+ * list-filter-sheet: 모바일 = tab-bar 위 하단 시트, 데스크톱 = 필터 버튼 아래 오른쪽 맞춤 드롭다운 (컴포넌트가 배치)
  */
 
 .page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-16);
+  gap: var(--space-12);
 }
 
 .title {
@@ -20,7 +21,7 @@
 .toolbar {
   display: flex;
   flex-direction: column;
-  gap: var(--space-16);
+  gap: var(--space-12);
 }
 
 .segment {
@@ -29,8 +30,27 @@
   min-width: 0;
 }
 
-.search {
+.searchRow {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-8);
   min-width: 0;
+}
+
+.search {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* 필터 버튼 + 데스크톱 드롭다운의 기준 상자 */
+.filterAnchor {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+}
+
+.filterButton {
+  align-self: stretch;
 }
 
 .list {
@@ -54,13 +74,20 @@
 }
 
 @media (min-width: 1024px) {
+  /* 시안 page-column 720 = 옆 열 400 + 320, 가운데 */
   .page {
-    gap: var(--space-24);
+    width: 100%;
+    max-width: calc(var(--side-column-width) + var(--space-64) * 5);
+    margin: 0 auto;
   }
 
-  .toolbar {
-    display: grid;
-    grid-template-columns: minmax(0, 4fr) minmax(0, 9fr);
-    align-items: center;
+  /* 제목 → list-body 24 (list-body 안은 12) */
+  .title {
+    margin-bottom: var(--space-12);
+  }
+
+  /* 시안 segmented-control 360 = 720 의 절반 */
+  .segment {
+    width: 50%;
   }
 }

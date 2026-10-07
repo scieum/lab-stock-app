@@ -1,0 +1,57 @@
+/* 시안 2 list-filter-button: pill(회색 채움), 높이 = 검색 상자(47), 좌우 16, 사이 8.
+ * 아이콘 20 하늘색 · 라벨 15/600 · filter-count = 연하늘 채움 + 하늘색 테두리 pill(좌우 8), 글자 12/600 기본색 */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  flex-shrink: 0;
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-16);
+  border: 0;
+  border-radius: var(--radius-button);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.button:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: var(--border-width);
+}
+
+.button:active {
+  opacity: var(--pressed-opacity);
+}
+
+.icon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex-shrink: 0;
+  color: var(--color-highlight);
+}
+
+.label {
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
+.count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--icon-md);
+  padding: 0 var(--space-8);
+  border: var(--border-width) solid var(--color-highlight);
+  border-radius: var(--radius-pill);
+  background: var(--color-highlight-soft);
+  color: var(--color-text);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
+}

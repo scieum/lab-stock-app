@@ -19,6 +19,10 @@ import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { ModalCard } from "@/components/ex-modal-card";
 import { Toast } from "@/components/ex-toast";
 import { ExtractionTable } from "@/components/extraction-table";
+import { FilterChipRow } from "@/components/filter-chip-row";
+import { ListFilterButton } from "@/components/list-filter-button";
+import { ListFilterSheet } from "@/components/list-filter-sheet";
+import { PastDateNote } from "@/components/past-date-note";
 import { FeatureCard } from "@/components/feature-card";
 import { GuestBanner } from "@/components/guest-banner";
 import { LocationEdit } from "@/components/location-edit";
@@ -59,6 +63,7 @@ import { TabBar } from "@/components/tab-bar";
 import { TabItem } from "@/components/tab-item";
 import { TextInput, TextInputSelect } from "@/components/text-input";
 import { ThresholdEdit } from "@/components/threshold-edit";
+import { UsageDate } from "@/components/usage-date";
 import { UserManage } from "@/components/user-manage";
 import { VendorLink } from "@/components/vendor-link";
 import { VendorRegisterEntry } from "@/components/vendor-register";
@@ -73,6 +78,7 @@ import {
 } from "./cabinets/sample";
 import { SAMPLE_GROUPS, samplePdf, sampleReagents, sampleRowsFrame } from "./manual/sample";
 import { sampleInvites, sampleMemberCounts, sampleMembers } from "./users/sample";
+import { sampleFilterCabinets } from "./filter/sample";
 import styles from "./gallery.module.css";
 
 export const metadata: Metadata = { title: "컴포넌트 갤러리 · Lab_Stock" };
@@ -567,6 +573,45 @@ export default function GalleryPage() {
             defaultCabinetId="c-2"
             defaultSlot={{ side: "L", shelf: 2 }}
           />
+        </Item>
+
+        <Item name="list-filter-button (화면 2 검색 오른쪽 — 적용 개수 배지)">
+          <div className={styles.row}>
+            <ListFilterButton />
+            <ListFilterButton count={1} />
+          </div>
+        </Item>
+
+        <Item name="list-filter-sheet (화면 2 필터 — 정렬 · 보관 분류 · 보관 위치 · MSDS)">
+          <ListFilterSheet
+            sheet={false}
+            value={{ sort: "stock", classes: ["산", "산화제"], cabinetId: null, slot: null, noSlot: false, noMsds: false }}
+            cabinets={sampleFilterCabinets}
+            resultCount={18}
+          />
+          <Link href="/gallery/filter" className={styles.more}>
+            필터 상태 보기 — 칩 줄 · 0종 빈 상태 · 동작 예시 · 사용일 (/gallery/filter)
+          </Link>
+        </Item>
+
+        <Item name="filter-chip-row (적용 칩 · 모두 지우기 · N종)">
+          <FilterChipRow chips={[{ key: "class:산", label: "산" }]} count={12} />
+          <FilterChipRow
+            chips={[
+              { key: "class:독성", label: "독성" },
+              { key: "location", label: "2번 시약장", cabinetNumber: 2 },
+            ]}
+            count={0}
+          />
+        </Item>
+
+        <Item name="usage-date · past-date-note (화면 4 사용일 — 오늘이 아니면 안내 한 줄)">
+          <UsageDate value="2026-10-03" max="2026-10-07" />
+          <PastDateNote>10월 3일 사용으로 기록해요</PastDateNote>
+        </Item>
+
+        <Item name="past-date-note">
+          <PastDateNote>10월 3일 사용으로 기록해요</PastDateNote>
         </Item>
 
         <Item name="nav-account-menu (학교명 옆 ▾ — 누르면 로그아웃 메뉴)">

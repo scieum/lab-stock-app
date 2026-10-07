@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { isUuid } from "@/lib/supabase/usage-entry";
 import { formatStock } from "@/lib/format";
-import { checkUsageMemo } from "@/lib/usage-history-rules";
+import { checkUsageMemo, checkUsedOn, seoulDate } from "@/lib/usage-history-rules";
 
 export type RecordUsageResult =
   | { ok: true; stock: number }
@@ -26,11 +26,13 @@ function parseAmount(raw: string): number | string {
 /**
  * 사용 기록 저장 — 로그인 세션 클라이언트로 DB 함수 public.record_usage 하나만 호출한다
  * (usage_logs insert 와 reagents.stock 차감은 그 함수 안에서 한 트랜잭션).
+ * rawUsedOn = 사용일 "YYYY-MM-DD" (d7 §15, 선택 — 비우면 오늘). 오늘(한국 날짜) 이후는 거부.
  */
 export async function recordUsageAction(
   reagentId: string,
   rawAmount: string,
   rawMemo?: string | null,
+  rawUsedOn?: string | null,
 ): Promise<RecordUsageResult> {
   if (!isUuid(reagentId)) return { ok: false, error: NOT_FOUND };
   const amount = parseAmount(rawAmount);
@@ -38,6 +40,10 @@ export async function recordUsageAction(
   // 메모는 선택 — 비우면 인자를 보내지 않는다 (DB 기본값 null)
   const memo = checkUsageMemo(rawMemo);
   if (!memo.ok) return { ok: false, error: memo.error };
+  // 사용일 — 오늘이면 인자를 보내지 않는다 (DB 기본값 = 한국 오늘)
+  const today = seoulDate();
+  const usedOn = checkUsedOn(rawUsedOn, today);
+  if (!usedOn.ok) return { ok: false, error: usedOn.error };
 
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
@@ -47,6 +53,7 @@ export async function recordUsageAction(
     reagent_id: reagentId,
     amount,
     ...(memo.value ? { memo: memo.value } : {}),
+    ...(usedOn.value !== today ? { used_on: usedOn.value } : {}),
   });
 
   const current = await supabase.from("reagents").select("stock, unit").eq("id", reagentId).maybeSingle();
@@ -62,6 +69,8 @@ export async function recordUsageAction(
             : "현재 재고보다 많이 기록할 수 없어요",
           stock,
         };
+      case "22008":
+        return { ok: false, error: "오늘 이후 날짜는 고를 수 없어요", stock };
       case "22023":
         // 사용량·메모 길이는 위에서 먼저 걸러지므로 여기까지 오는 22023 은 사용량 쪽
         return { ok: false, error: "사용량은 0보다 커야 해요", stock };
