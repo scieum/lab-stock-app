@@ -36,7 +36,10 @@ const root = process.cwd();
 const rules = JSON.parse(readFileSync(join(root, "design/rules.json"), "utf8")) as Rules;
 const dev = JSON.parse(readFileSync(join(root, "harness/dev-rules.json"), "utf8")) as Dev;
 const D7 = readFileSync(join(root, "harness/d7-data.md"), "utf8");
-const loadFrame = (name: string) => (JSON.parse(readFileSync(join(root, `design/frames/${name}.json`), "utf8")) as Frame).frames[0].nodes;
+// 시안 1.17(디자인 run 20261007-0848) 메모: 갤러리 예시 데이터(app/gallery/*/sample.ts)는 1.16 시안의 예시 그대로다.
+// 그래서 이 파일의 프레임 기대값은 1.16 프레임 사본(tests/e2e/fixtures/frames-1.16/ — design/frames 의 커밋 ae3f3b7^ 사본)에서 읽는다.
+// 1.17 이 바꾼 동작(d7 §18)은 화면 테스트(screen-*)와 tests/e2e/screen-3-5-6-8-9-s18.spec.ts 가 design/frames(1.17)로 검사한다.
+const loadFrame = (name: string) => (JSON.parse(readFileSync(join(root, `tests/e2e/fixtures/frames-1.16/${name}.json`), "utf8")) as Frame).frames[0].nodes;
 const m5 = loadFrame(`${S5}-mobile`);
 const d5 = loadFrame(`${S5}-desktop`);
 
@@ -329,7 +332,16 @@ async function readRows(scope: Locator): Promise<RowData[]> {
           .join(" ")
           .replace(/\s+/g, " ")
           .trim();
-        const picker = Array.from(tb.querySelectorAll('button[aria-haspopup="listbox"]'))[0] as HTMLElement | undefined;
+        // 시안 1.17: 선택 칸 안 왼쪽에 작은 라벨 "우리 학교 시약"(버튼의 aria-labelledby) — 고른 값 글자만 읽는다
+        const pickerEl = Array.from(tb.querySelectorAll('button[aria-haspopup="listbox"]'))[0] as HTMLElement | undefined;
+        const picker = pickerEl
+          ? (() => {
+              const copy = pickerEl.cloneNode(true) as HTMLElement;
+              const ids = (pickerEl.getAttribute("aria-labelledby") ?? "").split(/\s+/).filter(Boolean);
+              for (const x of Array.from(copy.querySelectorAll("[id]"))) if (ids.includes(x.id)) x.remove();
+              return { innerText: copy.textContent ?? "" };
+            })()
+          : undefined;
         return {
           id: tb.getAttribute("data-row-id") ?? "",
           status: tb.getAttribute("data-status") ?? "",
@@ -651,14 +663,28 @@ test.describe("화면 5 추출 결과 확인 표 (/gallery/manual)", () => {
     const heads = t.getByRole("columnheader");
     await expect(heads, "머리행 열 이름과 순서").toHaveText(HEAD.map(exact));
     expect(await heads.evaluateAll((els) => els.map((e) => e.getAttribute("data-component"))), "머리 셀 = ex-data-table-cell").toEqual(HEAD.map(() => CELL));
-    const xs: number[] = [];
-    for (let i = 0; i < HEAD.length; i += 1) xs.push((await box(heads.nth(i), HEAD[i])).x);
-    expect(xs, "열이 왼쪽→오른쪽 순서").toEqual([...xs].sort((a, b) => a - b));
-    expect(new Set(xs).size, "4열이 한 줄에 나란히").toBe(HEAD.length);
     const viewport = page.viewportSize()!.width;
-    const lastHead = await box(heads.last(), "마지막 열");
-    expect(xs[0], "표 왼쪽이 화면 안").toBeGreaterThanOrEqual(0);
-    expect(lastHead.x + lastHead.width, "표 오른쪽이 화면 안(4열이 390 폭에 다 보인다)").toBeLessThanOrEqual(viewport + 0.5);
+    if (viewport >= 768) {
+      // 데스크톱(시안 1.17 5-desktop): 머리행 4열 한 줄
+      const xs: number[] = [];
+      for (let i = 0; i < HEAD.length; i += 1) xs.push((await box(heads.nth(i), HEAD[i])).x);
+      expect(xs, "열이 왼쪽→오른쪽 순서").toEqual([...xs].sort((a, b) => a - b));
+      expect(new Set(xs).size, "4열이 한 줄에 나란히").toBe(HEAD.length);
+      const lastHead = await box(heads.last(), "마지막 열");
+      expect(xs[0], "표 왼쪽이 화면 안").toBeGreaterThanOrEqual(0);
+      expect(lastHead.x + lastHead.width, "표 오른쪽이 화면 안").toBeLessThanOrEqual(viewport + 0.5);
+    } else {
+      // 모바일(시안 1.17 5-mobile extraction-row 카드): 행마다 윗줄 = 시약명(왼쪽)·필요량(오른쪽), 아랫줄 = 사용량·단위 (머리행은 읽기 도구용으로 남는다)
+      const firstRow = bodyRows(sec).first();
+      const cells = firstRow.locator(`td${sel(CELL)}`);
+      const [nameB, amountB, unitB, needB] = [await box(cells.nth(0), "시약명"), await box(cells.nth(1), "사용량"), await box(cells.nth(2), "단위"), await box(cells.nth(3), "필요량")];
+      expect(Math.abs(nameB.y - needB.y), "시약명·필요량이 한 줄").toBeLessThan(nameB.height);
+      expect(needB.x, "필요량은 시약명 오른쪽").toBeGreaterThan(nameB.x);
+      expect(amountB.y, "사용량은 시약명 아래 줄").toBeGreaterThanOrEqual(nameB.y + nameB.height - 1);
+      expect(Math.abs(amountB.y - unitB.y), "사용량·단위가 한 줄").toBeLessThan(amountB.height);
+      expect(unitB.x, "단위는 사용량 오른쪽").toBeGreaterThan(amountB.x);
+      for (const b of [nameB, amountB, unitB, needB]) expect(b.x + b.width, "칸이 화면 안").toBeLessThanOrEqual(viewport + 0.5);
+    }
 
     expect(await t.locator(sel(CELL)).count(), `ex-data-table-cell (프레임 ${COUNTS_5M[CELL]})`).toBeGreaterThanOrEqual(COUNTS_5M[CELL]);
     const rows = await readRows(sec);

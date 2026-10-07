@@ -13,6 +13,8 @@ import {
   CHANGE_BUTTON,
   CONFIRM_TITLE,
   DELETE_BUTTON,
+  deleteBodyText,
+  deleteButtonLabel,
   DELETE_USER_BUTTON,
   EMPTY,
   HOME_SCREEN,
@@ -129,14 +131,14 @@ test.afterAll(async ({}, info) => {
 // C1 — 시안과 같은 상태 (멤버 목록 + 초대 대기 + 다른 멤버의 역할 변경 시트)
 // =====================================================================
 
-test(`[C1][S${SCREEN}] 일회용 학교 admin, 시안과 같은 상태(멤버·초대 대기 + 다른 멤버의 역할 변경 시트): 시안 8 프레임에 있는 화면 ${SCREEN} 컴포넌트가 프레임 개수 이상 · nav-pill·${USER_MANAGE}·${MODAL}·${INPUT} 는 정확히 프레임 개수 · 프레임에 없는 상태 컴포넌트는 0`, async ({ browser }, info) => {
+test(`[C1][S${SCREEN}] 일회용 학교 admin, 시안 1.17 과 같은 상태(멤버·초대 대기 + 다른 멤버의 삭제 확인 시트): 시안 8 프레임에 있는 화면 ${SCREEN} 컴포넌트가 프레임 개수 이상 · nav-pill·${USER_MANAGE}·${MODAL}·${INPUT} 는 정확히 프레임 개수 · 프레임에 없는 상태 컴포넌트는 0`, async ({ browser }, info) => {
   test.setTimeout(240_000);
   const school = await sharedSchool(info);
   const viewport = viewportOf(info).name;
   const frame = frameCounts(viewport);
-  // 시안의 멤버 행 수 = name 노드, 초대 대기 행 수 = email 노드
-  const wantMembers = frame["name"] ?? 0;
-  const wantInvites = frame["email"] ?? 0;
+  // 시안 1.17 의 멤버 행 수 = member-name 노드, 초대 대기 행 수 = invite-email 노드
+  const wantMembers = frame["member-name"] ?? 0;
+  const wantInvites = frame["invite-email"] ?? 0;
   expect(wantMembers + wantInvites, `시안 ${ROW} = 멤버 + 초대`).toBe(frame[ROW]);
   expect(wantMembers, "시안 멤버 행").toBeGreaterThanOrEqual(2);
   while ((await membersByService(school.id)).length < wantMembers) await addMember(school, info, GROUP);
@@ -156,7 +158,10 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin, 시안과 같은 상태(멤버·�
     expect(members.length, "멤버 ≥ 시안").toBeGreaterThanOrEqual(wantMembers);
     expect(invites.length, "초대 대기 ≥ 시안").toBeGreaterThanOrEqual(wantInvites);
     const target = members.find((m) => m.user_id !== school.admin.id)!;
-    const dialog = await openRoleSheet(page, target.display_name);
+    // 시안 1.17 8 = 다른 멤버의 삭제 확인 시트 (역할 변경 시트 → "사용자 삭제" → 확인 시트)
+    await outlineIn(await openRoleSheet(page, target.display_name), DELETE_USER_BUTTON).click();
+    const dialog = confirmDialog(page);
+    await expect(dialog, "삭제 확인 시트").toBeVisible();
 
     const tb = rules.tab_bar;
     const absent = [PILL_SOFT, SEGMENT, SEGMENT_ACTIVE, EMPTY, TOAST];
@@ -185,11 +190,13 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin, 시안과 같은 상태(멤버·�
     expect(checked, "프레임과 비교한 컴포넌트 수").toBeGreaterThanOrEqual(7);
     await expect(manage(page).locator(sel(ROW)), `${ROW} = 멤버 + 초대 대기`).toHaveCount(members.length + invites.length);
     await expect(manage(page).getByRole("heading", { name: exact(invitesHeading(invites.length)) }), `"초대 대기 (N)"`).toBeVisible();
-    // 시트 안: 라디오 3 · button-primary "변경" · button-outline "사용자 삭제" (시안 개수)
-    await expect(dialog.getByRole("radio"), "시안 radio").toHaveCount(frame["radio"]);
-    await expect(dialog.locator(sel(OUTLINE)), `시트 안 ${OUTLINE}`).toHaveCount(frame[OUTLINE]);
-    await expect(primaryIn(dialog, CHANGE_BUTTON)).toHaveCount(1);
-    await expect(outlineIn(dialog, DELETE_USER_BUTTON)).toHaveCount(1);
+    // 시트 안 (시안 1.17 8): 제목 · × 닫기 · "{이름} · 사용·입고 기록은 남아요" · button-outline "취소" · button-primary "{이름} 삭제"
+    await expect(dialog.locator(sel(OUTLINE)), `시트 안 ${OUTLINE} = 시안 ${frame[OUTLINE]}`).toHaveCount(frame[OUTLINE]);
+    await expect(outlineIn(dialog, CANCEL_BUTTON)).toHaveCount(1);
+    await expect(primaryIn(dialog, deleteButtonLabel(target.display_name))).toHaveCount(1);
+    await expect(dialog.getByText(exact(deleteBodyText(target.display_name)))).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "닫기", exact: true }), "× 닫기").toHaveCount(1);
+    await expect(dialog.getByRole("radio"), "삭제 확인 시트에는 역할 라디오 없음").toHaveCount(0);
     // 학교명은 자기 학교 하나
     await expect(page.locator(sel("nav-pill"))).toContainText(school.name);
     expect((await readHeader(page)).school).toBe(school.name);
@@ -371,7 +378,7 @@ test(`[C1][S${SCREEN}] 역할 변경 학생 → 교사: "${CHANGE_BUTTON}" → $
 // C1 — 사용자 삭제(내보내기)
 // =====================================================================
 
-test(`[C1][S${SCREEN}] 사용자 삭제: "${DELETE_USER_BUTTON}" → 확인 카드("${CONFIRM_TITLE}" · ${OUTLINE} "${CANCEL_BUTTON}" · ${PRIMARY} "${DELETE_BUTTON}") → "${CANCEL_BUTTON}" 은 역할 시트로 복귀(요청 0) → "${DELETE_BUTTON}" → ${TOAST} "${TOAST_REMOVED}" → 목록에서 사라짐·인원 감소 → DB profiles 행 없음·로그인 계정 존속`, async ({ browser }, info) => {
+test(`[C1][S${SCREEN}] 사용자 삭제: "${DELETE_USER_BUTTON}" → 확인 카드("${CONFIRM_TITLE}" · × 닫기 · "{이름} · 사용·입고 기록은 남아요" · ${OUTLINE} "${CANCEL_BUTTON}" · ${PRIMARY} "{이름} ${DELETE_BUTTON}" — d7 §18) → "${CANCEL_BUTTON}" 은 역할 시트로 복귀(요청 0) → "${DELETE_BUTTON}" → ${TOAST} "${TOAST_REMOVED}" → 목록에서 사라짐·인원 감소 → DB profiles 행 없음·로그인 계정 존속`, async ({ browser }, info) => {
   test.setTimeout(240_000);
   const school = await sharedSchool(info);
   const m = await addMember(school, info, GROUP, "내보내기");
@@ -391,8 +398,10 @@ test(`[C1][S${SCREEN}] 사용자 삭제: "${DELETE_USER_BUTTON}" → 확인 카�
     await expect(confirm.locator(sel(OUTLINE)), `확인 카드 ${OUTLINE}`).toHaveCount(1);
     await expect(outlineIn(confirm, CANCEL_BUTTON)).toHaveCount(1);
     await expect(confirm.locator(sel(PRIMARY)), `확인 카드 ${PRIMARY}`).toHaveCount(1);
-    await expect(primaryIn(confirm, DELETE_BUTTON)).toHaveCount(1);
-    await expect(primaryIn(confirm, DELETE_BUTTON)).toBeEnabled();
+    await expect(primaryIn(confirm, deleteButtonLabel(m.name)), `"${deleteButtonLabel(m.name)}"`).toHaveCount(1);
+    await expect(primaryIn(confirm, deleteButtonLabel(m.name))).toBeEnabled();
+    await expect(confirm.getByText(exact(deleteBodyText(m.name))), `본문 "${deleteBodyText(m.name)}"`).toBeVisible();
+    await expect(confirm.getByRole("button", { name: "닫기", exact: true }), "오른쪽 위 × 닫기").toHaveCount(1);
 
     // "취소" → 역할 시트로 복귀, 아무것도 지워지지 않는다
     await outlineIn(confirm, CANCEL_BUTTON).click();
@@ -406,7 +415,7 @@ test(`[C1][S${SCREEN}] 사용자 삭제: "${DELETE_USER_BUTTON}" → 확인 카�
     // "사용자 삭제" → "삭제"
     await outlineIn(roleDialog(page, m.name), DELETE_USER_BUTTON).click();
     await expect(confirmDialog(page)).toBeVisible();
-    await primaryIn(confirmDialog(page), DELETE_BUTTON).click();
+    await primaryIn(confirmDialog(page), deleteButtonLabel(m.name)).click();
     await expect(toast(page), `${TOAST}`).toHaveText(exact(TOAST_REMOVED), { timeout: SAVE_TIMEOUT });
     await expect(modal(page), "저장 후 카드 닫힘").toHaveCount(0);
     await expect(memberRow(page, m.name), "목록에서 사라짐").toHaveCount(0, { timeout: SAVE_TIMEOUT });
@@ -452,7 +461,7 @@ test(`[C1][S${SCREEN}] 연타에도 요청 1건: "${CHANGE_BUTTON}" 3연타 · "
     const d2 = await openRoleSheet(page, m2.name);
     await outlineIn(d2, DELETE_USER_BUTTON).click();
     await expect(confirmDialog(page)).toBeVisible();
-    await primaryIn(confirmDialog(page), DELETE_BUTTON).click({ clickCount: TIMES });
+    await primaryIn(confirmDialog(page), deleteButtonLabel(m2.name)).click({ clickCount: TIMES });
     await expect(toast(page)).toHaveText(exact(TOAST_REMOVED), { timeout: SAVE_TIMEOUT });
     await expect(memberRow(page, m2.name)).toHaveCount(0, { timeout: SAVE_TIMEOUT });
     await expect(toast(page)).toHaveCount(0, { timeout: TOAST_GONE_TIMEOUT });

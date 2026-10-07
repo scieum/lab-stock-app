@@ -39,7 +39,12 @@ const root = process.cwd();
 const rules = JSON.parse(readFileSync(join(root, "design/rules.json"), "utf8")) as Rules;
 const dev = JSON.parse(readFileSync(join(root, "harness/dev-rules.json"), "utf8")) as Dev;
 const D7 = readFileSync(join(root, "harness/d7-data.md"), "utf8");
-const loadFrame = (name: string) => (JSON.parse(readFileSync(join(root, `design/frames/${name}.json`), "utf8")) as Frame).frames[0].nodes;
+// 시안 1.17(디자인 run 20261007-0848) 메모: 갤러리 예시 데이터(app/gallery/*/sample.ts)는 1.16 시안의 예시 그대로다.
+// 그래서 이 파일의 프레임 기대값은 1.16 프레임 사본(tests/e2e/fixtures/frames-1.16/ — design/frames 의 커밋 ae3f3b7^ 사본)에서 읽는다.
+// 1.17 이 바꾼 동작(d7 §18)은 화면 테스트(screen-*)와 tests/e2e/screen-3-5-6-8-9-s18.spec.ts 가 design/frames(1.17)로 검사한다.
+const loadFrame = (name: string) => (JSON.parse(readFileSync(join(root, `tests/e2e/fixtures/frames-1.16/${name}.json`), "utf8")) as Frame).frames[0].nodes;
+/** 시안 1.17 프레임 (d7 §18 로 바뀐 부분만) */
+const loadFrame117 = (name: string) => (JSON.parse(readFileSync(join(root, `design/frames/${name}.json`), "utf8")) as Frame).frames[0].nodes;
 const d6 = loadFrame(`${S6}-desktop`);
 const m6 = loadFrame(`${S6}-mobile`);
 const d9 = loadFrame(`${S9}-desktop`);
@@ -144,6 +149,19 @@ const FORM = {
   save: labelOf(groups(formNodes, "button-primary")[0]),
 };
 const [F_NAME, F_CONTACT, F_WEBSITE] = FORM.fields;
+// 시안 1.17 9-mobile 등록 시트 (d7 §18: × 닫기 · 안내 · 취소 · 저장, 부가 정보 칸 없음)
+const sheet117 = (() => {
+  const nodes = loadFrame117(`${S9}-mobile`).filter((n) => n.path.includes("ex-modal-card"));
+  const label = (btn: string) => nodes.find((n) => n.name === "label" && n.path.includes("action-row") && n.path.includes(btn))?.text?.characters ?? "";
+  return {
+    title: texts(nodes, "sheet-title")[0],
+    helper: texts(nodes, "sheet-helper")[0],
+    hasClose: nodes.some((n) => n.name === "sheet-close"),
+    fields: texts(nodes, "field-label"),
+    cancel: label("button-outline"),
+    save: label("button-primary"),
+  };
+})();
 
 // 프레임의 컴포넌트 개수 (dev-rules components 이름만, nav-pill·tab-bar 는 갤러리 예시 구역 밖이라 뺀다)
 const componentNames = Object.keys(dev.components);
@@ -614,7 +632,16 @@ test.describe("화면 6 재주문 알림 (/gallery/reorder)", () => {
     expect(await action.evaluate((el) => el.tagName.toLowerCase()), "화면 5 로 가는 링크").toBe("a");
     await expect(action).toHaveAttribute("href", MANUAL_ROUTE);
     await expectMinHeight(action, `"${GUIDE.action}"`);
-    expect((await box(action, "버튼")).y, "버튼은 안내 글 아래(박스 끝)").toBeGreaterThanOrEqual((await box(body, "본문")).y);
+    // 시안 1.17 6-mobile: 버튼은 안내 글 아래 / 6-desktop: 글자 칸 왼쪽 · 버튼 오른쪽 (d7 §18 화면 6 배치)
+    if (isMobile(page)) {
+      expect((await box(action, "버튼")).y, "모바일: 버튼은 안내 글 아래(박스 끝)").toBeGreaterThanOrEqual((await box(body, "본문")).y);
+    } else {
+      const a = await box(action, "버튼");
+      const t = await box(title, "제목");
+      expect(a.x, "데스크톱: 버튼은 안내 글 오른쪽").toBeGreaterThan(t.x + t.width);
+      const bx = await box(boxEl, "안내 박스");
+      expect(a.x + a.width, "데스크톱: 버튼은 박스 오른쪽 끝 쪽").toBeGreaterThan(bx.x + bx.width / 2);
+    }
 
     const paint = await groupPaint(boxEl);
     expect(paint.icons, "정보 아이콘 = 하늘색").toContain(hexToRgb(GUIDE.iconColors[0]));
@@ -638,9 +665,19 @@ test.describe("화면 6 재주문 알림 (/gallery/reorder)", () => {
       await expectMinHeight(linkButton(card), `카드 ${i + 1} "${want.link}"`);
       // 줄 순서 = 프레임 노드 순서
       expect(await cardLines(card), `카드 ${i + 1} 줄 순서`).toEqual([want.badge, want.name, want.amount, want.basis, want.date, want.link]);
-      const ys: number[] = [];
-      for (const t of [want.badge, want.name, want.amount, want.basis, want.date, want.link]) ys.push((await box(card.getByText(t, { exact: true }), t)).y);
-      expect(ys, `카드 ${i + 1} 위→아래 배치`).toEqual([...ys].sort((a, b) => a - b));
+      // 시안 1.17 6: 모바일 = 한 열 위→아래, 데스크톱 = 왼쪽 정보 칸(배지→시약명→수량→기준→날짜) · 오른쪽 vendor-link
+      const info = [want.badge, want.name, want.amount, want.basis, want.date];
+      const boxes = [];
+      for (const t of info) boxes.push(await box(card.getByText(t, { exact: true }), t));
+      const ys = boxes.map((b) => b.y);
+      expect(ys, `카드 ${i + 1} 정보 칸 위→아래 배치`).toEqual([...ys].sort((a, b) => a - b));
+      const lb = await box(card.getByText(want.link, { exact: true }), want.link);
+      if (isMobile(page)) {
+        expect(lb.y, `카드 ${i + 1} 모바일: "${want.link}" 은 날짜 아래`).toBeGreaterThan(ys[ys.length - 1]);
+      } else {
+        const right = Math.max(...boxes.map((b) => b.x + b.width));
+        expect(lb.x, `카드 ${i + 1} 데스크톱: "${want.link}" 은 정보 칸 오른쪽`).toBeGreaterThanOrEqual(right);
+      }
       expect(await card.evaluate((el) => getComputedStyle(el).backgroundColor), `카드 ${i + 1} 바탕 = 프레임 채움`).toBe(hexToRgb(want.fill));
     }
   });
@@ -972,9 +1009,9 @@ test.describe("화면 9 판매처 설정 (/gallery/vendors)", () => {
     await expect(sec.locator(sel("text-input")), "text-input = 검색 1 + 폼 3").toHaveCount(COUNTS_9D["text-input"]);
     await expect(register(sec).locator(sel("button-primary")), `vendor-register 안 button-primary = "${REGISTER}" + "${FORM.save}"`).toHaveCount(COUNTS_9D["button-primary"]);
     await expect(register(sec), "vendor-register 는 하나").toHaveCount(1);
-    // 데스크탑(시안 9-desktop): 목록 옆에 폼 — 목록 행은 그대로 보인다. 모바일은 목록 자리에 폼이 온다
-    if (!isMobile(page)) await expect(rows(sec), "데스크탑: 목록 행은 그대로").toHaveCount(FRAME_ROWS.length);
-    else await expect(form(sec), "모바일: 폼이 보인다").toBeVisible();
+    // 시안 1.17 9: 폼은 목록 위에 뜬다(모바일 하단 시트 · 데스크톱 가운데 카드) — 뒤의 목록 행은 그대로 있다
+    await expect(rows(sec), "목록 행은 그대로").toHaveCount(FRAME_ROWS.length);
+    await expect(form(sec), "폼이 보인다").toBeVisible();
   });
 
   test(`[K1][S${S9}] 수정 폼 예시(시안 9-desktop): 프레임 개수 중 폼·목록 부분(text-input ${COUNTS_9D["text-input"]} · button-primary ${COUNTS_9D["button-primary"]}) 과 같다`, async ({ page }) => {
@@ -1067,15 +1104,18 @@ test.describe("화면 9 판매처 설정 (/gallery/vendors)", () => {
     await expect(none.locator(sel("ex-empty-state-card"))).toHaveCount(0);
   });
 
-  test(`[K1][S${S9}] vendor-register 목록: 행 ${FRAME_ROWS.length}개 = 판매처명 + 부가 정보(연락처 · note) 시안 문구 그대로, 행마다 더보기 버튼(하늘색 아이콘), 첫 행만 연하늘 강조`, async ({ page }) => {
+  test(`[K1][S${S9}] vendor-register 목록: 행 ${FRAME_ROWS.length}개 = 판매처명 + 부가 정보 = 연락처만(d7 §18 — note 는 보이지 않음), 행마다 더보기 버튼(하늘색 아이콘), 첫 행만 연하늘 강조`, async ({ page }) => {
     const sec = await area(page, "default");
     await expect(rows(sec)).toHaveCount(FRAME_ROWS.length);
     for (const [i, want] of FRAME_ROWS.entries()) {
       const row = rows(sec).nth(i);
       const lines = (await row.innerText()).split("\n").map(squash).filter(Boolean);
-      expect(lines, `행 ${i + 1} 글자`).toEqual([want.name, want.info]);
+      const contact = PHONE_RE.exec(want.info)![0];
+      const note = want.info.slice(want.info.indexOf(" · ") + 3);
+      expect(lines, `행 ${i + 1} 글자 = 판매처명 + 연락처`).toEqual([want.name, contact]);
+      expect((await row.innerText()).includes(note), `행 ${i + 1}: note "${note}" 는 보이지 않는다`).toBe(false);
       const nameBox = await box(row.getByText(want.name, { exact: true }), "이름");
-      const infoBox = await box(row.getByText(want.info, { exact: true }), "부가 정보");
+      const infoBox = await box(row.getByText(contact, { exact: true }), "연락처");
       expect(nameBox.y, `행 ${i + 1}: 이름이 부가 정보 위`).toBeLessThan(infoBox.y);
       const more = moreButton(row);
       await expect(more, `행 ${i + 1} 더보기`).toHaveCount(1);
@@ -1217,9 +1257,24 @@ test.describe("화면 9 판매처 설정 (/gallery/vendors)", () => {
     await expect(save, "판매처명이 비면 저장 비활성").toBeDisabled();
     const sb = await box(save, FORM.save);
     expect(sb.y, "저장은 입력 아래").toBeGreaterThan(ys[ys.length - 1]);
-    const nb = await box(field(sec, F_NAME.label), F_NAME.label);
-    expect(sb.width, "저장은 전폭 (입력 칸 폭 이상)").toBeGreaterThanOrEqual(nb.width - 1);
     await expectMinHeight(save, FORM.save);
+    // 시안 1.17 9 등록 시트(d7 §18): × 닫기 · 안내 · 취소(button-outline) + 저장(button-primary) 한 줄, 부가 정보 칸 없음
+    expect([sheet117.title, sheet117.helper, sheet117.cancel, sheet117.save, sheet117.hasClose], "기대값 원본: 시안 1.17 9 등록 시트").toEqual([CREATE_TITLE, "우리 학교에서만 보여요", CANCEL, FORM.save, true]);
+    expect(sheet117.fields, "시안 1.17 입력 칸 = 판매처명·연락처·웹사이트 주소 (부가 정보 없음)").toEqual(FORM.fields.map((x) => x.label));
+    await expect(f.getByText(sheet117.helper, { exact: true }), `안내 "${sheet117.helper}"`).toBeVisible();
+    await expect(f.getByRole("button", { name: "닫기", exact: true }), "오른쪽 위 × 닫기").toHaveCount(1);
+    await expect(f.getByLabel("부가 정보"), "부가 정보 칸 없음").toHaveCount(0);
+    const cancel = f.locator(sel("button-outline")).filter({ hasText: exact(sheet117.cancel) });
+    await expect(cancel, `button-outline "${sheet117.cancel}"`).toHaveCount(1);
+    await expectMinHeight(cancel, sheet117.cancel);
+    const cb = await box(cancel, sheet117.cancel);
+    expect(Math.abs(cb.y + cb.height / 2 - (sb.y + sb.height / 2)), "취소·저장 한 줄").toBeLessThan(2);
+    expect(cb.x + cb.width, "취소가 저장 왼쪽").toBeLessThanOrEqual(sb.x + 0.5);
+    expect(sb.width, "저장이 취소보다 넓다 (시안 116:232 · 140:284)").toBeGreaterThan(cb.width);
+    const closeB = await box(f.getByRole("button", { name: "닫기", exact: true }), "닫기");
+    const titleB = await box(f.getByRole("heading", { name: CREATE_TITLE, exact: true }), "제목");
+    expect(closeB.x, "× 닫기는 제목 오른쪽").toBeGreaterThan(titleB.x + titleB.width);
+    expect(closeB.y, "× 닫기는 입력 칸 위").toBeLessThan(ys[0]);
 
     // 다른 칸만 채워도 비활성, 공백만이어도 비활성, 글자를 쓰면 활성, 지우면 다시 비활성
     await field(sec, F_CONTACT.label).fill("043-000-0000");
@@ -1340,15 +1395,9 @@ test.describe("화면 9 판매처 설정 (/gallery/vendors)", () => {
     await expect(saveButton(sec), "판매처명이 있으니 저장 활성").toBeEnabled();
     await field(sec, F_NAME.label).fill("");
     await expect(saveButton(sec), "판매처명을 지우면 비활성").toBeDisabled();
-    if (!isMobile(page)) {
-      // 데스크탑: 목록 옆 칸 (시안 9-desktop vendor-form)
-      const listBox = await box(rows(sec).first(), "첫 행");
-      const formBox = await box(f, "폼");
-      expect(formBox.x, "데스크탑: 폼이 목록 오른쪽").toBeGreaterThanOrEqual(listBox.x + listBox.width - 1);
-    }
   });
 
-  test(`[K1][S${S9}] 수정 흐름: 더보기 "${MENU_EDIT}" → 기존 값이 채워진 폼 → 연락처를 바꿔 "${FORM.save}" → 그 행의 부가 정보가 바뀌고(note 유지) 그 행만 강조 + ex-toast "${TOAST_SAVED}"`, async ({ page }) => {
+  test(`[K1][S${S9}] 수정 흐름: 더보기 "${MENU_EDIT}" → 기존 값이 채워진 폼 → 연락처를 바꿔 "${FORM.save}" → 그 행의 연락처가 바뀌고(행 = 연락처만, d7 §18) 그 행만 강조 + ex-toast "${TOAST_SAVED}"`, async ({ page }) => {
     const sec = await area(page, "default");
     const target = FRAME_ROWS[2];
     const oldContact = PHONE_RE.exec(target.info)![0];
@@ -1363,7 +1412,8 @@ test.describe("화면 9 판매처 설정 (/gallery/vendors)", () => {
     await expect(form(sec), "저장하면 폼이 닫힌다").toHaveCount(0);
     await expect(rows(sec), "행 수 그대로 (새 행이 생기지 않는다)").toHaveCount(FRAME_ROWS.length);
     const lines = (await rowOf(sec, target.name).innerText()).split("\n").map(squash).filter(Boolean);
-    expect(lines, "행 글자 = 이름 + '새 연락처 · 기존 note'").toEqual([target.name, `${contact} · ${note}`]);
+    expect(lines, "행 글자 = 이름 + 새 연락처 (note 는 행에 보이지 않는다)").toEqual([target.name, contact]);
+    expect(lines.join(" ").includes(note), `note "${note}" 는 보이지 않는다`).toBe(false);
     expect(await rowNames(sec), "행 순서 그대로").toEqual(FRAME_ROWS.map((r) => r.name));
     expect(await highlightedRows(sec), "방금 수정한 행만 연하늘").toEqual([target.name]);
     await expect(toasts(sec, TOAST_SAVED)).toHaveCount(1);

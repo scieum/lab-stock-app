@@ -73,8 +73,14 @@ const S11_1 = section("### 11-1.");
 const SHOW = quotes(row(S11_1, "표시"));
 /** 값 옆 "자동" 표시 */
 const AUTO_LABEL = SHOW[0];
-const USAGE_TEXT = pick(SHOW, /사용량/, "자동 근거(사용량)");
-const INTAKE_TEXT = pick(SHOW, /입고량/, "자동 근거(입고량)");
+// d7 §18 "자동 기준 표시": 자동이면 auto-threshold-badge "자동" + 캡션 한 줄 — 캡션 문구는 §18 의 굵은 따옴표 두 개
+// (§11-1 "표시" 의 옛 근거 문구 "최근 4주 사용량 기준"·"마지막 입고량의 20%" 를 대신한다. 값 0 은 §11-1 그대로 "아직 없어요")
+const S18 = section("## 18.");
+const S18_CAPTIONS = [...row(S18, "자동 기준 표시").matchAll(/\*\*"([^"]+)"\*\*/g)].map((m) => m[1]);
+const USAGE_TEXT = pick(S18_CAPTIONS, /사용량/, "§18 자동 캡션(사용 기록)");
+const INTAKE_TEXT = pick(S18_CAPTIONS, /입고량/, "§18 자동 캡션(입고량)");
+/** 자동 기준 배지 컴포넌트 (dev-rules components, rules.json reorder.auto) */
+const AUTO_BADGE = "auto-threshold-badge";
 const NONE_TEXT = pick(SHOW, /아직/, "자동 0");
 const RESET_LABEL = pick(quotes(row(S11_1, "화면 3 직접 입력")), /자동/, "자동으로 돌리기");
 /** 'manual'(화면 3 직접 입력) */
@@ -324,6 +330,9 @@ test(`[C1][S3] 일회용 학교 교사·admin·학생 시약 상세 ${THRESH}: �
         if (s[k].min_stock_source === "auto") {
           const bg = await thrRow(page).getByTestId(AUTO_TESTID).evaluate((el) => getComputedStyle(el).backgroundColor);
           for (const a of ACCENTS) expect(bg, `"${AUTO_LABEL}" 표시 바탕은 accent(${a}) 아님`).not.toBe(hexToRgb(a));
+          await expect(thrRow(page).locator(sel(AUTO_BADGE)), `${who} ${k}: "${AUTO_LABEL}" 표시 = ${AUTO_BADGE} 1개`).toHaveCount(1);
+        } else {
+          await expect(thrRow(page).locator(sel(AUTO_BADGE)), `${who} ${k}: 자동이 아니면 ${AUTO_BADGE} 0`).toHaveCount(0);
         }
       }
       expect(actions.count(), `${who}: 쓰기 요청 0건`).toBe(0);
@@ -521,7 +530,7 @@ test(`[GM-ui][S3g] 둘러보기 시약 상세: ${THRESH_EDIT}·"${RESET_LABEL}" 
 // 화면 6 — 알림 카드 기준 문구
 // =====================================================================
 
-test(`[C1][S6] 일회용 학교 교사 재주문 알림 카드 기준 문구(d7 §11-1 "같은 세 형태 + 기존 두 형태"): 자동(사용) "${AUTO_LABEL}"+"${USAGE_TEXT}" · 자동(입고) "${AUTO_LABEL}"+"${INTAKE_TEXT}" · 매뉴얼 "1반 1회 실험량 …" · 직접 입력 "재주문 기준 N" ("${AUTO_LABEL}" 없음) · 필요량/재고 = DB · 부족하지 않은 자동·0 은 카드 없음`, async ({ browser }, info) => {
+test(`[C1][S6] 일회용 학교 교사 재주문 알림 카드 기준 문구(d7 §11-1 "같은 세 형태 + 기존 두 형태" · §18 배지·캡션): 자동(사용) "${AUTO_LABEL}"+"${USAGE_TEXT}" · 자동(입고) "${AUTO_LABEL}"+"${INTAKE_TEXT}" · 매뉴얼 "1반 1회 실험량 …" · 직접 입력 "재주문 기준 N" ("${AUTO_LABEL}" 없음) · 필요량/재고 = DB · 부족하지 않은 자동·0 은 카드 없음`, async ({ browser }, info) => {
   const f = await fresh(info);
   // 자동(사용): 재고 10 → 사용 9 → 재고 1 < 사용량 근거 값
   const usage = await prepReagent(f, "사용", 10);
@@ -559,13 +568,23 @@ test(`[C1][S6] 일회용 학교 교사 재주문 알림 카드 기준 문구(d7 
     for (const r of low) {
       const card = shown.find((c) => c.name === r.name)!;
       const sq = card.lines.map(nospace);
-      expect(sq, `${r.name}: 필요량·재고`).toContain(nospace(`필요량 ${r.min_stock} ${r.unit} / 현재 재고 ${r.stock} ${r.unit}`));
+      const cardEl = page.locator(sel("reorder-alert-card")).filter({ has: page.getByRole("heading", { name: r.name, exact: true }) });
+      await expect(cardEl, `${r.name}: 카드 1장`).toHaveCount(1);
       if (r.min_stock_source === "auto") {
+        // d7 §18 · 시안 6 stock-line: "필요량 N [자동] / 현재 재고 M" — 배지는 수량 줄 안 두 조각 사이, 그 아래 캡션 한 줄
         const text = r.min_stock_auto_basis === "usage" ? USAGE_TEXT : INTAKE_TEXT;
-        const re = new RegExp(`^${escapeRe(AUTO_LABEL)}\\s*·?\\s*${escapeRe(text)}$`);
-        expect(card.lines.filter((l) => re.test(l.trim())), `${r.name}: 기준 문구 "${AUTO_LABEL}" + "${text}" 한 줄`).toHaveLength(1);
+        expect(sq.join(""), `${r.name}: 필요량 + "${AUTO_LABEL}" + 재고`).toContain(nospace(`필요량 ${r.min_stock} ${r.unit} ${AUTO_LABEL} / 현재 재고 ${r.stock} ${r.unit}`));
+        await expect(cardEl.locator(sel(AUTO_BADGE)), `${r.name}: ${AUTO_BADGE} 1개`).toHaveCount(1);
+        await expect(cardEl.locator(sel(AUTO_BADGE)), `${r.name}: ${AUTO_BADGE} "${AUTO_LABEL}"`).toHaveText(exact(AUTO_LABEL));
+        expect(card.lines.filter((l) => l.trim() === text), `${r.name}: 캡션 "${text}" 한 줄`).toHaveLength(1);
+        for (const old of quotes(row(S11_1, "표시")).filter((q) => /최근 4주|마지막 입고량의/.test(q))) {
+          expect(card.lines.map((l) => l.trim()), `${r.name}: §11-1 옛 근거 문구 "${old}" 줄 없음`).not.toContain(old);
+          expect(card.lines.map((l) => l.trim()), `${r.name}: 옛 형태 "${AUTO_LABEL} · ${old}" 줄 없음`).not.toContain(`${AUTO_LABEL} · ${old}`);
+        }
         expect(sq, `${r.name}: 자동이면 "재주문 기준 N" 형태가 아니다`).not.toContain(nospace(`재주문 기준 ${r.min_stock} ${r.unit}`));
       } else {
+        expect(sq, `${r.name}: 필요량·재고`).toContain(nospace(`필요량 ${r.min_stock} ${r.unit} / 현재 재고 ${r.stock} ${r.unit}`));
+        await expect(cardEl.locator(sel(AUTO_BADGE)), `${r.name}: 자동이 아니면 ${AUTO_BADGE} 0`).toHaveCount(0);
         const text = r.min_stock_source === "basis" ? basisLine(r.reorder_per_group!, r.unit, r.reorder_groups!) : `재주문 기준 ${r.min_stock} ${r.unit}`;
         expect(sq, `${r.name}: 기준 문구 "${text}"`).toContain(nospace(text));
         expect(card.lines.filter((l) => l.includes(AUTO_LABEL)), `${r.name}: "${AUTO_LABEL}" 없음`).toEqual([]);

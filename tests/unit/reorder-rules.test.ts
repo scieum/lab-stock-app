@@ -1,6 +1,6 @@
 // 화면 6 재주문 알림 순수 규칙 (lib/reorder-rules).
 // 기대값: harness/d7-data.md §11(알림 대상 stock < min_stock · 카드 문구 틀 · 기준 문구 두 형태 · 알림 날짜 "YYYY.MM.DD 알림"(한국 시간) ·
-//         부족한 정도가 큰 순), design/frames/6-desktop.json(시안 알림 카드 2건의 문구).
+//         부족한 정도가 큰 순), design/frames/6-desktop.json(시안 1.17 알림 카드 3건의 값·자동 배지·캡션 — 문구 틀은 d7).
 //         구현에서 읽지 않는다.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -15,33 +15,53 @@ import {
 } from "../../lib/reorder-rules";
 import { ROOT } from "./helpers";
 
-// ---------- 시안 프레임 6-desktop 의 알림 카드 2건 ----------
+// ---------- 시안 프레임 6-desktop (1.17) 의 알림 카드 ----------
+// 시안 1.17 카드: alert-info(badge-low-stock · reagent-name · stock-line · [auto-caption] · alert-date).
+// 자동 기준 카드는 stock-line 이 threshold · auto-threshold-badge "자동" · stock 세 조각, 그 아래 auto-caption.
+// 시안의 수량 줄 문구("재주문 기준 … / 현재 재고 …")와 날짜 모양("YYYY-MM-DD 알림")은 d7 §11 의 틀
+// ("필요량 … / 현재 재고 …", "YYYY.MM.DD 알림")과 다르다 — d7 §18 이 바꾸지 않았으므로 문구 틀은 d7 §11 이 기대값이고,
+// 시안에서는 값(재고 < 기준, 날짜 숫자, 자동 배지·캡션)만 읽는다.
 type FrameNode = { name: string; path: string[]; text: { characters: string } | null };
 const frame = JSON.parse(readFileSync(join(ROOT, "design/frames/6-desktop.json"), "utf8")) as { frames: { nodes: FrameNode[] }[] };
-const frameText = (name: string) => frame.frames[0].nodes.filter((n) => n.name === name && n.text).map((n) => n.text!.characters);
-const FRAME_AMOUNTS = frameText("amount");
-const FRAME_BASIS = frameText("basis-note");
-const FRAME_DATES = frameText("alert-date");
+type FrameCard = { name: string; line: string; badge: string | null; caption: string | null; date: string };
+const FRAME_CARDS: FrameCard[] = (() => {
+  const out: FrameCard[] = [];
+  let cur: FrameCard | null = null;
+  for (const n of frame.frames[0].nodes) {
+    if (n.name === "reorder-alert-card") { cur = { name: "", line: "", badge: null, caption: null, date: "" }; out.push(cur); continue; }
+    if (!cur || !n.path.includes("reorder-alert-card") || !n.text) continue;
+    const t = n.text.characters;
+    if (n.name === "reagent-name") cur.name = t;
+    else if (n.path.includes("stock-line") && n.path.includes("auto-threshold-badge")) cur.badge = t;
+    else if (n.name === "stock-line" || n.name === "threshold" || n.name === "stock") cur.line = cur.line ? `${cur.line} ${t}` : t;
+    else if (n.name === "auto-caption") cur.caption = t;
+    else if (n.name === "alert-date") cur.date = t;
+  }
+  return out;
+})();
+const FRAME_LINE_RE = /^재주문 기준 (\d+) (\S+) \/ 현재 재고 (\d+) (\S+)$/;
+const FRAME_DATE_RE = /^(\d{4})-(\d{2})-(\d{2}) 알림$/;
+/** 시안 카드 중 수량 줄이 "숫자 단위 / 숫자 단위" 꼴인 것 (1병(50 mL 남음) 같은 병 표기는 제외) */
+const FRAME_SIMPLE = FRAME_CARDS.filter((c) => FRAME_LINE_RE.test(c.line)).map((c) => {
+  const m = FRAME_LINE_RE.exec(c.line)!;
+  return { ...c, minStock: Number(m[1]), unit: m[2], stock: Number(m[3]) };
+});
 
 // d7 §11 문구 틀
 const AMOUNT_RE = /^필요량 (\d+) (\S+) \/ 현재 재고 (\d+) (\S+)$/;
 const BASIS_RE = /^1반 1회 실험량 (\d+) (\S+) × (\d+)조 기준$/;
 const DATE_RE = /^(\d{4})\.(\d{2})\.(\d{2}) 알림$/;
 
-const CARDS = FRAME_AMOUNTS.map((amount, i) => {
-  const a = AMOUNT_RE.exec(amount)!;
-  const b = BASIS_RE.exec(FRAME_BASIS[i])!;
-  return {
-    amount,
-    basis: FRAME_BASIS[i],
-    date: FRAME_DATES[i],
-    minStock: Number(a[1]),
-    stock: Number(a[3]),
-    unit: a[2],
-    perGroup: Number(b[1]),
-    groups: Number(b[3]),
-  };
-});
+// d7 §11 틀로 만든 카드 예시 (시안 1.17 에는 근거 문구 카드가 없다): 필요량 = 1조 사용량 × 조 수
+const CARDS = [
+  { minStock: 60, stock: 30, unit: "g", perGroup: 10, groups: 6 },
+  { minStock: 40, stock: 15, unit: "g", perGroup: 5, groups: 8 },
+  ...FRAME_SIMPLE.map((c) => ({ minStock: c.minStock, stock: c.stock, unit: c.unit, perGroup: c.minStock, groups: 1 })),
+].map((c) => ({
+  ...c,
+  amount: `필요량 ${c.minStock} ${c.unit} / 현재 재고 ${c.stock} ${c.unit}`,
+  basis: `1반 1회 실험량 ${c.perGroup} ${c.unit} × ${c.groups}조 기준`,
+}));
 
 const ORIGINAL_TZ = process.env.TZ;
 afterEach(() => {
@@ -50,22 +70,28 @@ afterEach(() => {
 });
 
 describe("reorder rules: 기대값 원본", () => {
-  it("[K1][S6] 기대값 원본: 프레임 6-desktop 알림 카드 2건의 문구가 d7 §11 틀과 맞고, 필요량 = 1조 사용량 × 조 수", () => {
-    expect(FRAME_AMOUNTS.length).toBe(2);
-    expect(FRAME_BASIS.length).toBe(FRAME_AMOUNTS.length);
-    expect(FRAME_DATES.length).toBe(FRAME_AMOUNTS.length);
-    for (let i = 0; i < FRAME_AMOUNTS.length; i++) {
-      expect(FRAME_AMOUNTS[i]).toMatch(AMOUNT_RE);
-      expect(FRAME_BASIS[i]).toMatch(BASIS_RE);
-      expect(FRAME_DATES[i]).toMatch(DATE_RE);
+  it("[K1][S6] 기대값 원본: 프레임 6-desktop(1.17) 알림 카드 3건 — 재고 < 기준, 날짜, 자동 카드 1건(배지 \"자동\" + 캡션)", () => {
+    expect(FRAME_CARDS.length).toBe(3);
+    for (const c of FRAME_CARDS) {
+      expect(c.name, "시약명").not.toBe("");
+      expect(c.date, `${c.name} 날짜`).toMatch(FRAME_DATE_RE);
     }
+    expect(FRAME_SIMPLE.length, "숫자 단위 / 숫자 단위 꼴 카드").toBe(2);
+    for (const c of FRAME_SIMPLE) expect(c.stock, `${c.name}: 재고 < 기준`).toBeLessThan(c.minStock);
+    const autos = FRAME_CARDS.filter((c) => c.badge !== null);
+    expect(autos.length).toBe(1);
+    expect(autos[0].badge).toBe("자동");
+    expect(autos[0].caption).toBe("최근 사용량으로 계산했어요");
+    for (const c of FRAME_CARDS.filter((x) => x.badge === null)) expect(c.caption, `${c.name}: 자동 아니면 캡션 없음`).toBeNull();
+  });
+
+  it("[K1][S6] d7 §11 틀: 카드 예시가 틀과 맞고, 필요량 = 1조 사용량 × 조 수, 재고 < 필요량", () => {
     for (const c of CARDS) {
+      expect(c.amount).toMatch(AMOUNT_RE);
+      expect(c.basis).toMatch(BASIS_RE);
       expect(c.perGroup * c.groups).toBe(c.minStock);
       expect(c.stock).toBeLessThan(c.minStock);
     }
-    expect(FRAME_AMOUNTS[0]).toBe("필요량 60 g / 현재 재고 30 g");
-    expect(FRAME_BASIS[0]).toBe("1반 1회 실험량 10 g × 6조 기준");
-    expect(FRAME_DATES[0]).toBe("2026.09.30 알림");
   });
 });
 
@@ -95,7 +121,7 @@ describe("reorder rules: 알림 대상 (stock < min_stock)", () => {
 });
 
 describe('reorder rules: "필요량 {min_stock} {unit} / 현재 재고 {stock} {unit}"', () => {
-  it("[K1][S6] 시안 카드 2건의 값 → 프레임 amount 문구 그대로", () => {
+  it("[K1][S6] 카드 예시(d7 §11 틀 · 시안 카드 값) → amount 문구", () => {
     for (const c of CARDS) expect(reorderAmountText({ minStock: c.minStock, stock: c.stock, unit: c.unit })).toBe(c.amount);
   });
 
@@ -109,7 +135,7 @@ describe('reorder rules: "필요량 {min_stock} {unit} / 현재 재고 {stock} {
 });
 
 describe("reorder rules: 기준 문구 두 형태", () => {
-  it('[K1][S6] 1조 사용량·조 수가 있으면 "1반 1회 실험량 {per_group} {unit} × {groups}조 기준" (프레임 basis-note 문구 그대로)', () => {
+  it('[K1][S6] 1조 사용량·조 수가 있으면 "1반 1회 실험량 {per_group} {unit} × {groups}조 기준" (d7 §11 틀)', () => {
     for (const c of CARDS) {
       expect(reorderBasisText({ minStock: c.minStock, unit: c.unit, perGroup: c.perGroup, groups: c.groups })).toBe(c.basis);
     }
@@ -131,9 +157,12 @@ describe("reorder rules: 기준 문구 두 형태", () => {
 });
 
 describe('reorder rules: 알림 날짜 "YYYY.MM.DD 알림" (한국 시간)', () => {
-  it("[K1][S6] 시안 날짜: 한국 시간 2026-09-30 낮 → 프레임 alert-date 문구 그대로", () => {
-    expect(reorderAlertDateText("2026-09-30T02:10:00Z")).toBe(FRAME_DATES[0]);
-    expect(reorderAlertDateText("2026-09-30T11:10:00+09:00")).toBe(FRAME_DATES[0]);
+  it("[K1][S6] 시안 날짜(alert-date)의 한국 날짜 낮 → 같은 날짜 숫자, d7 §11 모양 \"YYYY.MM.DD 알림\"", () => {
+    const [, y, m, d] = FRAME_DATE_RE.exec(FRAME_CARDS[0].date)!;
+    const want = `${y}.${m}.${d} 알림`;
+    expect(want).toMatch(DATE_RE);
+    expect(reorderAlertDateText(`${y}-${m}-${d}T02:10:00Z`)).toBe(want);
+    expect(reorderAlertDateText(`${y}-${m}-${d}T11:10:00+09:00`)).toBe(want);
   });
 
   it.each([

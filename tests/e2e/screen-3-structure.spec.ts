@@ -30,6 +30,7 @@ function frameNames(name: string): Set<string> {
 
 const ROLES: Role[] = [...SCHOOL_A_ROLES, "schoolB"];
 const BADGE = "badge-low-stock";
+const AUTO_BADGE = "auto-threshold-badge";
 
 /** 이 역할 계정이 볼 seed 시약 하나 (재고 부족이 있으면 그것) */
 function pickFor(role: Role) {
@@ -103,6 +104,17 @@ for (const role of ROLES) {
         if (name === BADGE) {
           // 재고 부족 배지는 그 시약 데이터에 따라 (값 일치는 screen-3-detail 에서)
           expect(await countComponent(page, name), `${name} (${db!.low ? "부족" : "충분"})`).toBe(db!.low ? 1 : 0);
+          continue;
+        }
+        if (name === AUTO_BADGE) {
+          // auto-threshold-badge 는 자동 기준(min_stock_source = 'auto')일 때만 (d7 §18). 공용 데이터는 바꾸지 않고
+          // 그 계정 세션(RLS)으로 읽은 출처로 기대값을 정한다 (자동 상태의 배지·캡션은 일회용 학교 — screen-3-6-5-reorder-source · screen-3-5-6-8-9-s18)
+          const { client } = await browserClient(page);
+          const src = await client.from("reagents").select("min_stock_source").eq("id", pick.id).single();
+          expect(src.error, `RLS 로 기준 출처 읽기 (${src.error?.message})`).toBeNull();
+          const auto = (src.data as { min_stock_source: string }).min_stock_source === "auto";
+          expect(await countComponent(page, name), `${name} (출처 ${auto ? "자동" : "자동 아님"})`).toBe(auto ? 1 : 0);
+          if (auto) await expect(page.locator(`main ${sel("reorder-threshold")} ${sel(name)}`), `${name} 은 reorder-threshold 줄 안`).toHaveCount(1);
           continue;
         }
         expect(await countComponent(page, name), `${name}`).toBeGreaterThanOrEqual(1);

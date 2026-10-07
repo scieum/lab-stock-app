@@ -52,35 +52,67 @@ const one = (list: string[], what: string): string => {
   return list[0];
 };
 
+// 시안 1.17 (디자인 run 20261007-0848, d7 §18): 5-mobile 은 2단계(추출 결과) 한 장 —
+//   top-bar/nav-pill · content/manual-upload(file-tile + badge-overlay 파일 이름, group-count: field-label "조 수" + text-input value)
+//   · content/extraction-table(table-header: heading·helper, extraction-row 카드 ×N: row-head(reagent-name·needed-amount "1반 1회 …")
+//     · usage-line(text-input 사용량 · text-input 단위 선택) · link-row(우리 학교 시약 선택 · 삭제) · threshold-note · [merge-note])
+//   · action-row(button-outline "다시 추출" · button-primary "확인 후 저장") · tab-bar.
+//   5-desktop 은 같은 내용을 머리행(col-head 4열) + 행마다 한 줄로 그린다.
+// 1단계 문구(업로드 안내·처리 중 문구)와 "닫기"·조 수 단위 "조" 는 1.17 프레임에 그려지지 않았다 — 처리 중 문구는 d7 §13 에서 읽고,
+// 나머지는 이전 시안(1.16 5-mobile)의 문구를 그대로 기대한다(d7 §18 이 바꾸지 않았다).
+const m5d = loadFrame(`${MANUAL_SCREEN}-desktop`);
 const tableNodes = under(m5, TABLE);
-const actionNodes = under(m5, "bottom-actions");
-const groupsNodes = m5.filter((n) => n.path.includes(INPUT) && !n.path.includes(TABLE));
+const actionNodes = under(m5, "action-row");
+const groupsNodes = under(m5, "group-count");
 
 export const NAV_TITLE = one(textOf(under(m5, NAV), "nav-title"), "nav-title");
-export const GUIDE = one(textOf(under(m5, UPLOAD), "upload-guide"), "upload-guide");
+/** 1단계 업로드 안내 (1.16 시안 문구 — 1.17 프레임은 2단계만 그렸다) */
+export const GUIDE = "실험 매뉴얼을 올리면 시약별 사용량을 찾아드려요";
 export const FRAME_FILE = one(textOf(under(m5, OVERLAY), "label"), "badge-overlay label");
-export const PROGRESS_LABEL = one(textOf(under(m5, UPLOAD), "progress-label"), "progress-label");
-export const GROUPS_LABEL = one(textOf(groupsNodes, "field-label"), "조 수 field-label");
-export const GROUPS_UNIT = one(textOf(groupsNodes, "input-unit"), "조 수 input-unit");
+export const GROUPS_LABEL = one(textOf(groupsNodes, "field-label"), "group-count field-label");
+/** 조 수 칸 뒤 단위 (1.16 시안 input-unit — 1.17 프레임 group-count 에는 값만) */
+export const GROUPS_UNIT = "조";
 /** 시안의 조 수 */
-export const GROUPS = Number(one(textOf(groupsNodes, "input-value"), "조 수 input-value"));
-export const TITLE = one(textOf(tableNodes, "table-title"), "table-title");
-export const CLOSE = one(textOf(tableNodes, "close"), "close");
-export const HEAD = textOf(tableNodes, "cell-label");
-/** 시안 본문 행: [시약명, 1조 사용량, 단위, 1반 1회 필요량] */
+export const GROUPS = Number(one(textOf(groupsNodes, "value"), "group-count value"));
+export const TITLE = one(textOf(tableNodes, "heading"), "table-header heading");
+/** 표 제목 아래 안내 (시안 1.17 helper) */
+export const TABLE_HELPER = one(textOf(tableNodes, "helper"), "table-header helper");
+/** 2단계 → 1단계 버튼 (1.16 시안 close — d7 §13 흐름 그대로) */
+export const CLOSE = "닫기";
+/** 머리행 4열 (5-desktop col-head) */
+export const HEAD = textOf(under(m5d, TABLE), "col-head");
+/** 행 카드의 필요량 앞말 (5-mobile needed-amount "1반 1회 80 mL") */
+export const NEED_PREFIX = "1반 1회 ";
+/** 시안 추출 행: [시약명, 1조 사용량, 단위, 1반 1회 필요량] */
 export const FRAME_ROWS: string[][] = (() => {
-  const values = tableNodes.filter((n) => (n.name === "cell-value" || n.name === "input-value") && n.text).map((n) => n.text!.characters);
   const out: string[][] = [];
-  for (let i = 0; i < values.length; i += HEAD.length || 1) out.push(values.slice(i, i + HEAD.length));
+  let cur: string[] | null = null;
+  for (const n of tableNodes) {
+    if (n.name === "extraction-row" && n.path[n.path.length - 1] === "extraction-row" && !n.text) {
+      cur = [];
+      out.push(cur);
+      continue;
+    }
+    if (!cur || !n.text) continue;
+    if (n.name === "reagent-name") cur[0] = n.text.characters;
+    else if (n.name === "needed-amount") cur[3] = n.text.characters.replace(NEED_PREFIX, "");
+    else if (n.name === "value" && n.path.includes("usage-line")) cur[cur[1] === undefined ? 1 : 2] = n.text.characters;
+  }
   return out;
 })();
+/** 시안 각 행의 "우리 학교 시약" 선택 값 */
+export const FRAME_LINKED = tableNodes.filter((n) => n.name === "value" && n.path.includes("link-row") && n.text).map((n) => n.text!.characters);
+/** 시안 각 행의 기존 기준 줄 ("기존 기준 100 · 바뀌어요") */
+export const FRAME_THRESHOLD_NOTES = textOf(tableNodes, "threshold-note");
+/** 시안 합치기 줄 ("2개 행을 합쳤어요") */
+export const FRAME_MERGE_NOTE = one(textOf(under(m5, "merge-note"), "label"), "merge-note label");
 export const RETRY = actionNodes.find((n) => n.name === "label" && n.path.includes(OUTLINE))?.text?.characters ?? "";
 export const SAVE = actionNodes.find((n) => n.name === "label" && n.path.includes(PRIMARY))?.text?.characters ?? "";
-/** 시안 bottom-actions 의 아래 안쪽 여백 = 버튼 아래 끝과 tab-bar 위쪽 선 사이 (padding = [위, 오른쪽, 아래, 왼쪽]) */
+/** 시안 action-row 의 아래 안쪽 여백 = 버튼 아래 끝과 tab-bar 위쪽 선 사이 (padding = [위, 오른쪽, 아래, 왼쪽]) */
 export const BOTTOM_GAP = (() => {
-  const node = m5.find((n) => n.name === "bottom-actions");
+  const node = m5.find((n) => n.name === "action-row");
   const pad = node?.padding;
-  if (!pad || pad.length !== 4) throw new Error("design/frames/5-mobile.json bottom-actions padding 을 읽지 못했습니다");
+  if (!pad || pad.length !== 4) throw new Error("design/frames/5-mobile.json action-row padding 을 읽지 못했습니다");
   return pad[2];
 })();
 
@@ -105,6 +137,8 @@ const groupsRange = /(\d+)~(\d+) 정수/.exec(d7Line("조 수"));
 export const G_MIN = Number(groupsRange?.[1] ?? Number.NaN);
 export const G_MAX = Number(groupsRange?.[2] ?? Number.NaN);
 export const UNITS = (/추출 단위는 (\S+) 중 하나로 정리/.exec(d7Line("단위"))?.[1] ?? "").split("·");
+/** 처리 중 문구 (d7 §13 흐름: 처리 중("…")) */
+export const PROGRESS_LABEL = /처리 중\("([^"]+)"\)/.exec(d7Line("흐름"))?.[1] ?? "";
 /** 키가 없으면 503 "…" */
 export const NO_KEY_TEXT = /키가 없으면 503 "([^"]+)"/.exec(d7Line("AI 추출 (N2)"))?.[1] ?? "";
 export const EXTRACT = "AI 추출";
@@ -373,7 +407,16 @@ export async function readRows(page: Page): Promise<RowData[]> {
           .join(" ")
           .replace(/\s+/g, " ")
           .trim();
-        const picker = Array.from(tb.querySelectorAll('button[aria-haspopup="listbox"]'))[0] as HTMLElement | undefined;
+        // 시안 1.17: 선택 칸 안 왼쪽에 작은 라벨 "우리 학교 시약"(버튼의 aria-labelledby) — 고른 값 글자만 읽는다
+        const pickerEl = Array.from(tb.querySelectorAll('button[aria-haspopup="listbox"]'))[0] as HTMLElement | undefined;
+        const picker = pickerEl
+          ? (() => {
+              const copy = pickerEl.cloneNode(true) as HTMLElement;
+              const ids = (pickerEl.getAttribute("aria-labelledby") ?? "").split(/\s+/).filter(Boolean);
+              for (const e of Array.from(copy.querySelectorAll("[id]"))) if (ids.includes(e.id)) e.remove();
+              return { innerText: copy.textContent ?? "" };
+            })()
+          : undefined;
         return {
           id: tb.getAttribute("data-row-id") ?? "",
           status: tb.getAttribute("data-status") ?? "",

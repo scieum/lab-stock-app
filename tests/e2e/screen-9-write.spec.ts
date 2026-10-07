@@ -3,6 +3,8 @@
 //       harness/dev-rules.json (components_note 화면 9: 프레임 = 목록 + 저장 직후 토스트).
 // 모든 쓰기는 일회용 학교의 일회용 admin 세션으로 한다 — 공용 학교 A·B·공통 목록에는 쓰지 않는다 (공용 admin 은 N1 대조 화면을 읽기만).
 // service role 은 준비·정리·대조 조회에만 쓴다. 판정 대상은 브라우저 화면과 그 화면이 보낸 요청의 결과(DB)다.
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { test, expect, type TestInfo } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { openAs } from "./auth-state";
@@ -58,7 +60,6 @@ import {
   hex,
   highlightSoft,
   hrefOf,
-  infoOf,
   linksTo,
   main,
   makeSchool,
@@ -109,6 +110,14 @@ const SCREEN = VENDORS;
 const GROUP = "s9wr";
 const TIMEOUT = 420_000;
 const BUTTON_MIN_HEIGHT = (rules as unknown as { button: { min_height: number } }).button.min_height;
+
+/** 시안 1.17 9-mobile 등록 시트(ex-modal-card)의 아래 안쪽 여백 (padding = [위, 오른쪽, 아래, 왼쪽]) */
+const SHEET_PAD_BOTTOM = (() => {
+  const j = JSON.parse(readFileSync(join(process.cwd(), "design", "frames", "9-mobile.json"), "utf8")) as { frames: { nodes: { name: string; padding?: number[] | null }[] }[] };
+  const pad = j.frames[0].nodes.find((n) => n.name === "ex-modal-card")?.padding;
+  if (!pad || pad.length !== 4) throw new Error("design/frames/9-mobile.json ex-modal-card padding 을 읽지 못했습니다");
+  return pad[2];
+})();
 
 let before: string[] | null = null;
 let fixtureCache: Promise<Fx> | null = null;
@@ -311,14 +320,16 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin: 같은 이름(대소문자·공�
 // C1 — 수정
 // =====================================================================
 
-test(`[C1][S${SCREEN}] 일회용 학교 admin: 더보기 "${EDIT_ITEM}" → 폼에 기존 값 → 값 변경 "${SAVE_BUTTON}" → ${TOAST} "${TOAST_SAVED}" · 행 반영(이름 + 연락처 · 부가 정보)·강조 · DB 같은 행이 바뀜(다른 행 불변)`, async ({ browser }, info) => {
+test(`[C1][S${SCREEN}] 일회용 학교 admin: 더보기 "${EDIT_ITEM}" → 폼에 기존 값 → 값 변경 "${SAVE_BUTTON}" → ${TOAST} "${TOAST_SAVED}" · 행 반영(이름 + 연락처만, d7 §18)·강조 · DB 같은 행이 바뀜(note 는 그대로, 다른 행 불변)`, async ({ browser }, info) => {
   const f = await fresh(info);
   const target = await prepVendor(f, { name: `청주 실험기자재-${hex()}`, contact: "043-270-1188", note: "실험 기구", website: fakeSite("old") });
   const other = await prepVendor(f, { name: `그린케미칼-${hex()}`, contact: "031-778-3021", note: "시약·소모품" });
   const { context, page, viewport } = await openTemp(browser, info, f.admin, VENDORS_HREF);
   try {
     await waitVendors(page);
-    expect((await readVendorRows(page)).sort(), "행 = 판매처명 + '연락처 · 부가 정보'").toEqual([[target.name, infoOf(target)], [other.name, infoOf(other)]].sort());
+    // d7 §18: 우리 학교 행의 부가 정보 = 연락처만 (note 는 DB 에 있어도 보이지 않는다)
+    expect((await readVendorRows(page)).sort(), "행 = 판매처명 + 연락처").toEqual([[target.name, target.contact!], [other.name, other.contact!]].sort());
+    for (const v of [target, other]) expect(await vendorRow(page, v.name).innerText(), `${v.name}: note "${v.note}" 는 보이지 않는다`).not.toContain(v.note!);
 
     await chooseRowMenu(page, target.name, EDIT_ITEM);
     await expect(fieldInput(page, FIELD_NAME), "폼: 기존 판매처명").toHaveValue(target.name);
@@ -334,14 +345,15 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin: 더보기 "${EDIT_ITEM}" → 폼�
     await expect(vendorRow(page, target.name), "옛 이름의 행은 없다").toHaveCount(0);
     const row = vendorRow(page, next.name);
     await expect(row, "바뀐 행").toHaveCount(1);
-    expect((await readVendorRows(page)).sort(), "행 반영").toEqual([[next.name, `${next.contact} · ${target.note}`], [other.name, infoOf(other)]].sort());
+    expect((await readVendorRows(page)).sort(), "행 반영 (연락처만)").toEqual([[next.name, next.contact], [other.name, other.contact!]].sort());
     await expect(row, "방금 수정한 행 강조").toHaveCSS("background-color", highlightSoft());
     await expect(vendorRow(page, other.name), "다른 행은 강조 없음").not.toHaveCSS("background-color", highlightSoft());
     if (viewport === "mobile") await expect(fieldInput(page, FIELD_NAME), "모바일: 저장 후 목록 복귀").toHaveCount(0);
 
     const db = await vendorsBySchool(f.school.id);
     expect(db, "DB 행 수 그대로").toHaveLength(2);
-    expect(db.find((v) => v.id === target.id), "같은 행이 바뀜").toEqual({ ...target, ...next });
+    expect(db.find((v) => v.id === target.id), "같은 행이 바뀜 (폼에 없는 note 는 기존 값 그대로)").toEqual({ ...target, ...next });
+    expect(db.find((v) => v.id === target.id)?.note, "DB note 유지").toBe(target.note);
     expect(db.find((v) => v.id === other.id), "다른 행 불변").toEqual(other);
 
     // 판매처명을 지우면 저장할 수 없다
@@ -398,7 +410,7 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin: 더보기 "${DELETE_ITEM}" → ${
     await expectToast(page, TOAST_DELETED);
     await expect(deleteDialog(page), "삭제 뒤 확인 카드 닫힘").toHaveCount(0);
     await expect(vendorRow(page, target.name), "목록에서 사라짐").toHaveCount(0);
-    expect(await readVendorRows(page), "남은 행").toEqual([[keep.name, infoOf(keep)]]);
+    expect(await readVendorRows(page), "남은 행 (연락처만)").toEqual([[keep.name, keep.contact!]]);
     expect(await vendorsBySchool(f.school.id), "DB: 지운 행 없음 · 다른 행 불변").toEqual([keep]);
 
     // 마지막 행까지 지우면 0건 안내
@@ -460,7 +472,7 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin: "${SAVE_BUTTON}"·"${DELETE_ITEM}
 // C1 — 프레임 개수 · 검색
 // =====================================================================
 
-test(`[C1][S${SCREEN}] 일회용 학교 admin(판매처 3 + 화면에서 1 등록 = 4): 저장 직후 화면이 프레임 9 의 컴포넌트 개수 이상 · "${SEARCH_PLACEHOLDER}" 부분 일치·0건(${EMPTY}) · 공통 탭에는 학교 판매처 없음`, async ({ browser }, info) => {
+test(`[C1][S${SCREEN}] 일회용 학교 admin(판매처 3 + 화면에서 1 등록 = 4): 등록 폼을 연 상태(시안 1.17 9)가 프레임 9 의 컴포넌트 개수 이상 · 저장 → 토스트·행 · "${SEARCH_PLACEHOLDER}" 부분 일치·0건(${EMPTY}) · 공통 탭에는 학교 판매처 없음`, async ({ browser }, info) => {
   const f = await fresh(info);
   const seeded = [
     await prepVendor(f, { name: `한빛 과학상사-${hex()}`, contact: "02-555-0192", note: "시약" }),
@@ -468,20 +480,22 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin(판매처 3 + 화면에서 1 등�
     await prepVendor(f, { name: `그린케미칼-${hex()}`, contact: "031-778-3021", note: "시약·소모품" }),
   ];
   const frame = frameCounts(`${SCREEN}-${info.project.name}`);
-  expect(frame[TOAST], "프레임은 저장 직후 (토스트 있음)").toBe(1);
+  // 시안 1.17 9 = 판매처 3곳 목록 위에 등록 시트(ex-modal-card)가 열린 상태 (토스트 없음)
+  expect(frame[MODAL], "프레임은 등록 시트가 열린 상태").toBe(1);
+  expect(frame[TOAST] ?? 0, "1.17 프레임에는 토스트 없음").toBe(0);
   const { context, page, viewport } = await openTemp(browser, info, f.admin, VENDORS_HREF);
   try {
     await waitVendors(page);
     await expect(vendorRows(page)).toHaveCount(seeded.length);
     const name = `과학나라 교육사-${hex()}`;
     await openCreateForm(page);
+    const got = await countsOf(page, Object.keys(frame));
+    for (const [comp, n] of Object.entries(frame)) expect(got[comp], `${viewport} 등록 폼 열림 ${comp} ≥ 프레임 ${n}`).toBeGreaterThanOrEqual(n);
+    expect(got[REGISTER], REGISTER).toBe(1);
     await fillForm(page, { name, contact: "043-221-4560", website: "www.sciencenara.example.test" });
     await saveButton(page).click();
     await expectToast(page, TOAST_SAVED);
     await expect(vendorRow(page, name)).toHaveCount(1);
-    const got = await countsOf(page, Object.keys(frame));
-    for (const [comp, n] of Object.entries(frame)) expect(got[comp], `${viewport} ${comp} ≥ 프레임 ${n}`).toBeGreaterThanOrEqual(n);
-    expect(got[REGISTER], REGISTER).toBe(1);
     const all = [...seeded.map((v) => v.name), name];
     expect((await readVendorRows(page)).map((r) => r[0]).sort(), "행 = DB 의 학교 판매처").toEqual([...all].sort());
     expect((await vendorsBySchool(f.school.id)).map((v) => v.name).sort()).toEqual([...all].sort());
@@ -570,7 +584,7 @@ test(`[C1][S${SCREEN}] 일회용 학교: admin 이 화면 9 에서 등록한 판
 // C2
 // =====================================================================
 
-test(`[C2][S${SCREEN}] 일회용 학교 admin(판매처 12개): 390 tab-bar 1·tab-item ${rules.tab_bar.items}·활성 "시약" / 1440 = 0 · 모바일 하단 고정 "${REGISTER_BUTTON}"·폼 "${SAVE_BUTTON}" 이 tab-bar 바로 위(사이 ${BUTTON_TAB_GAP}, 가려지지 않음) · 마지막 행의 더보기 메뉴가 고정 줄·tab-bar 에 가려지지 않고 눌림`, async ({ browser }, info) => {
+test(`[C2][S${SCREEN}] 일회용 학교 admin(판매처 12개): 390 tab-bar 1·tab-item ${rules.tab_bar.items}·활성 "시약" / 1440 = 0 · 모바일 하단 고정 "${REGISTER_BUTTON}" 이 tab-bar 바로 위(사이 ${BUTTON_TAB_GAP}) · 폼 "${SAVE_BUTTON}" 은 tab-bar 위 하단 시트 안(사이 = 시안 1.17 시트 아래 여백 ${SHEET_PAD_BOTTOM}) · 가려지지 않음 · 마지막 행의 더보기 메뉴가 고정 줄·tab-bar 에 가려지지 않고 눌림`, async ({ browser }, info) => {
   const f = await fresh(info);
   const made: DbVendor[] = [];
   for (let i = 0; i < 12; i++) made.push(await prepVendor(f, { name: `줄${String(i).padStart(2, "0")} 판매처-${hex()}`, contact: `043-100-00${String(i).padStart(2, "0")}`, note: "시약" }));
@@ -582,7 +596,7 @@ test(`[C2][S${SCREEN}] 일회용 학교 admin(판매처 12개): 390 tab-bar 1·t
     const vp = page.viewportSize()!;
     const limit = viewport === "mobile" ? await tabBarTop(page) : vp.height;
 
-    const pinned = async (btn: import("@playwright/test").Locator, what: string) => {
+    const pinned = async (btn: import("@playwright/test").Locator, what: string, gap = BUTTON_TAB_GAP) => {
       // 데스크탑에는 하단 고정이 없다 — 목록 아래 제자리의 버튼을 화면 안으로 올려서 본다
       if (viewport !== "mobile") await btn.scrollIntoViewIfNeeded();
       await expect(btn, `${what} 보임`).toBeVisible();
@@ -591,7 +605,7 @@ test(`[C2][S${SCREEN}] 일회용 학교 admin(판매처 12개): 390 tab-bar 1·t
       expect(await onTop(btn), `${what}: 다른 요소에 덮이지 않음`).toBe(true);
       if (viewport !== "mobile") return;
       expect(b.bottom, `${what}: 아래 끝 ≤ tab-bar 위쪽 선`).toBeLessThanOrEqual(limit + 0.5);
-      expect(Math.abs(limit - b.bottom - BUTTON_TAB_GAP), `${what}: tab-bar 와 사이 ${BUTTON_TAB_GAP} (실제 ${limit - b.bottom})`).toBeLessThanOrEqual(1.5);
+      expect(Math.abs(limit - b.bottom - gap), `${what}: tab-bar 와 사이 ${gap} (실제 ${limit - b.bottom})`).toBeLessThanOrEqual(1.5);
     };
 
     // 하단 고정 "판매처 등록": 처음·끝까지 내린 뒤 모두
@@ -621,7 +635,8 @@ test(`[C2][S${SCREEN}] 일회용 학교 admin(판매처 12개): 390 tab-bar 1·t
 
     // 폼 "저장"
     await expectTabBar(page, viewport, SCREEN, "폼 열림");
-    await pinned(saveButton(page), `폼 "${SAVE_BUTTON}"`);
+    // 시안 1.17 9-mobile: 등록·수정 폼 = tab-bar 바로 위 하단 시트 — "저장" 은 시트 아래 여백만큼 위
+    await pinned(saveButton(page), `폼 "${SAVE_BUTTON}"`, SHEET_PAD_BOTTOM);
     for (const label of [FIELD_NAME, FIELD_CONTACT, FIELD_WEBSITE]) {
       await fieldInput(page, label).scrollIntoViewIfNeeded();
       expect(await onTop(fieldInput(page, label)), `입력 "${label}" 이 고정 버튼·tab-bar 에 가려지지 않음`).toBe(true);

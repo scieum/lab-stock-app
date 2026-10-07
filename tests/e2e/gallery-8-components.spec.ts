@@ -22,7 +22,10 @@ type Dev = { components: Record<string, number[]> };
 const root = process.cwd();
 const rules = JSON.parse(readFileSync(join(root, "design/rules.json"), "utf8")) as Rules;
 const dev = JSON.parse(readFileSync(join(root, "harness/dev-rules.json"), "utf8")) as Dev;
-const frame = JSON.parse(readFileSync(join(root, `design/frames/${SCREEN}-mobile.json`), "utf8")) as Frame;
+// 시안 1.17(디자인 run 20261007-0848) 메모: 갤러리 예시 데이터(app/gallery/*/sample.ts)는 1.16 시안의 예시 그대로다.
+// 그래서 이 파일의 프레임 기대값은 1.16 프레임 사본(tests/e2e/fixtures/frames-1.16/ — design/frames 의 커밋 ae3f3b7^ 사본)에서 읽는다.
+// 1.17 이 바꾼 동작(d7 §18)은 화면 테스트(screen-*)와 tests/e2e/screen-3-5-6-8-9-s18.spec.ts 가 design/frames(1.17)로 검사한다.
+const frame = JSON.parse(readFileSync(join(root, `tests/e2e/fixtures/frames-1.16/${SCREEN}-mobile.json`), "utf8")) as Frame;
 const nodes = frame.frames[0].nodes;
 
 // ---------- 기대값: 프레임 ----------
@@ -751,7 +754,8 @@ test.describe("ex-modal-card 초대 시트", () => {
 // ---------- ex-modal-card ③ 삭제 확인 ----------
 test(`[K1][S${SCREEN}] 삭제 확인 카드: "${DELETE_TITLE}" · button-outline "${DELETE_CANCEL}" · button-primary "${DELETE_CONFIRM}"`, async ({ page }) => {
   await open(page);
-  const card = await modalWithHeading(page, DELETE_TITLE);
+  // 갤러리에는 1.17 이름 있는 삭제 확인(g-delete-named)도 있다 — 이 테스트는 기본 예시(g-delete)
+  const card = await modalWithHeading(page, DELETE_TITLE, (m) => page.locator('section[aria-labelledby="g-delete"]').locator(m));
   const cancel = card.locator(sel("button-outline"));
   await expect(cancel, "button-outline").toHaveCount(1);
   await expect(cancel).toHaveText(exact(DELETE_CANCEL));
@@ -772,7 +776,8 @@ test(`[K1][S${SCREEN}] ex-modal-card 3종(역할 변경·초대·삭제 확인):
   const cards: [string, Locator][] = [
     ["역할 변경", await roleSheet(page)],
     ["초대", await inviteSheet(page)],
-    ["삭제 확인", await modalWithHeading(page, DELETE_TITLE)],
+    ["삭제 확인", await modalWithHeading(page, DELETE_TITLE, (m) => page.locator('section[aria-labelledby="g-delete"]').locator(m))],
+    ["삭제 확인(1.17 이름)", await modalWithHeading(page, DELETE_TITLE, (m) => page.locator('section[aria-labelledby="g-delete-named"]').locator(m))],
   ];
   for (const [name, card] of cards) {
     const style = await card.evaluate((el) => {
