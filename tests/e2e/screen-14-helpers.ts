@@ -9,7 +9,9 @@ export const SCREEN = 14;
 export const NEIS_PREFIX = "/api/neis/";
 export const SIGNUP_API = "/api/auth/signup";
 
-export const [SIDO, REGION, SCHOOL] = rules.never.N1.school_select_levels;
+// rules.json 1.18: 시/도 → 지역 → 학교급 → 학교 (4단계)
+export const [SIDO, REGION, KIND, SCHOOL] = rules.never.N1.school_select_levels;
+export const KINDS = rules.neis.school_kinds;
 
 export const selectBox = (page: Page, level: string) => page.locator(`${sel(level)} button[aria-haspopup="listbox"]`);
 export const selectOptions = (page: Page, level: string) => page.locator(`${sel(level)} [role=option]`);
@@ -38,6 +40,12 @@ const exact = (t: string) => new RegExp(`^\\s*${escapeRe(t)}\\s*$`);
 export const pickOption = (page: Page, level: string, label: string) =>
   selectOptions(page, level).filter({ hasText: exact(label) }).click();
 
+/** 학교급(school-select-kind) 칸 — segmented-control 의 role=tab 버튼 (rules.json school_kind_select.shape) */
+export const kindTabs = (page: Page) => page.locator(`${sel(KIND)} [role="tab"]`);
+export const kindTab = (page: Page, kind: string) => kindTabs(page).filter({ hasText: exact(kind) });
+/** 고른 학교급 칸 (aria-selected=true) */
+export const kindSelected = (page: Page) => page.locator(`${sel(KIND)} [role="tab"][aria-selected="true"]`);
+
 export async function optionLabels(page: Page, level: string): Promise<string[]> {
   return (await selectOptions(page, level).allTextContents()).map((t) => t.trim());
 }
@@ -64,7 +72,7 @@ export function frameCount(screen: number, viewport: string, name: string): numb
 type NeisSchoolRow = { name: string; neis_code: string };
 
 /**
- * 비로그인 /signup 에서 학교(rules.json neis 기본 시/도·지역의 첫 학교, 실제 /api/neis 응답)를 고르고
+ * 비로그인 /signup 에서 학교(rules.json neis 기본 시/도·지역·default_kind 의 첫 학교, 실제 /api/neis 응답)를 고르고
  * 계정 입력·필수 약관 동의까지 채운다. 형식이 모두 맞아 클라이언트 검사를 통과하는 상태가 된다.
  * 가입 요청 자체는 호출한 테스트가 page.route 로 가로채야 한다 (실제 계정 생성 금지).
  */
@@ -78,10 +86,14 @@ export async function fillValidSignup(page: Page, email: string): Promise<NeisSc
   await selectBox(page, SIDO).click();
   await pickOption(page, SIDO, rules.neis.default_sido);
   await regionRes;
-  const schoolRes = waitNeis(page, "schools");
   await expect(selectBox(page, REGION)).toBeEnabled();
   await selectBox(page, REGION).click();
   await pickOption(page, REGION, rules.neis.default_region);
+  await expect(selectBox(page, REGION)).toContainText(rules.neis.default_region);
+  // 학교급(1.18) — 고르기 전에는 학교 목록 요청이 없다. 고른 뒤 schools?kind= 응답을 기다린다
+  const schoolRes = waitNeis(page, "schools");
+  await expect(kindTab(page, rules.neis.default_kind)).toBeEnabled();
+  await kindTab(page, rules.neis.default_kind).click();
   const schools = await jsonList<NeisSchoolRow>(await schoolRes, "schools");
   expect(schools.length, "학교 응답").toBeGreaterThan(0);
   const chosen = schools[0];
