@@ -41,6 +41,7 @@ import {
   tempName,
   todayDigits,
   waitIntake,
+  DIRECT_PATH,
 } from "./screen-7-helpers";
 import { AUTO_INTAKE_PERCENT, autoFromIntake } from "./reorder-auto-helpers";
 
@@ -79,7 +80,7 @@ for (const role of STAFF) {
     test.setTimeout(180_000);
     const name = tempName(info, GROUP);
     const amount = 5;
-    const { context, page } = await openAs(browser, info, role, SCREEN);
+    const { context, page } = await openAs(browser, info, role, SCREEN, DIRECT_PATH);
     try {
       await waitIntake(page, "intake");
       const me = await browserSession(page);
@@ -90,7 +91,7 @@ for (const role of STAFF) {
       expect(await dbIntakeLogs(page, temp.id), "입고 전 intake_logs").toHaveLength(0);
 
       // 새로 만든 시약이 목록에 나오도록 다시 연다 → 이름으로 검색해 선택
-      await page.goto(intakePath());
+      await page.goto(DIRECT_PATH);
       await waitIntake(page, "intake");
       await searchAndSelect(page, name, name);
       await chip(intakeForm(page), amount).click();
@@ -130,7 +131,7 @@ test(`[C1][S${SCREEN}] ${ROLE_LABEL.teacher} 입고 중복 제출 방지: "입�
   test.setTimeout(180_000);
   const name = tempName(info, GROUP);
   const amount = 10;
-  const { context, page } = await openAs(browser, info, "teacher", SCREEN);
+  const { context, page } = await openAs(browser, info, "teacher", SCREEN, DIRECT_PATH);
   try {
     await waitIntake(page, "intake");
     const temp = await createTempReagent(page, name, START_STOCK, UNITS[2]);
@@ -205,7 +206,7 @@ STAFF.forEach((role, i) => {
       expect(logs[0].school_id, "intake_logs.school_id = 자기 학교").toBe(schoolId);
 
       // 등록한 시약이 기존 시약 입고 갈래에서 검색·선택된다
-      await page.goto(intakePath());
+      await page.goto(DIRECT_PATH);
       await waitIntake(page, "intake");
       await searchAndSelect(page, name, name);
       await chip(intakeForm(page), 1).click();
@@ -249,7 +250,7 @@ test(`[C1][S${SCREEN}] ${ROLE_LABEL.teacher} 입고일을 바꿔 저장: intake_
   test.setTimeout(180_000);
   const name = tempName(info, GROUP);
   const picked = "2026-09-15";
-  const { context, page } = await openAs(browser, info, "teacher", SCREEN);
+  const { context, page } = await openAs(browser, info, "teacher", SCREEN, DIRECT_PATH);
   try {
     await waitIntake(page, "intake");
     const temp = await createTempReagent(page, name, START_STOCK, UNITS[1]);

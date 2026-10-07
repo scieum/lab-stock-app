@@ -51,16 +51,28 @@ export const STORAGE_CLASSES = (
 
 export const TEMP_PREFIX = S7_UI_TEMP_PREFIX;
 
-export type IntakeQuery = { tab?: string; reagent?: string };
+export type IntakeQuery = { mode?: "direct" | "doc"; tab?: string; reagent?: string };
 
-/** routes["7"] + ?tab · ?reagent */
+/** routes["7"] + ?mode · ?tab · ?reagent */
 export function intakePath(q: IntakeQuery = {}): string {
   const p = new URLSearchParams();
+  if (q.mode) p.set("mode", q.mode);
   if (q.tab) p.set("tab", q.tab);
   if (q.reagent) p.set("reagent", q.reagent);
   const s = p.toString();
   return s ? `${routeOf(SCREEN)}?${s}` : routeOf(SCREEN);
 }
+
+// ---- d7 §21 · rules.json 1.18 intake.entry: 화면 7 맨 위 intake-mode, 기본 = 서류로 입고 ----
+export const INTAKE_MODE = "intake-mode";
+/** "직접 입력" · "서류로 입고" (rules.json intake.entry 의 segmented-control 'A / B' 순서 그대로) */
+export const [MODE_DIRECT, MODE_DOC] = ((/segmented-control '([^']+)'/.exec(
+  (JSON.parse(readFileSync(join(process.cwd(), "design", "rules.json"), "utf8")) as { intake: { entry: string } }).intake.entry,
+) ?? [])[1] ?? "")
+  .split("/")
+  .map((s) => s.trim()) as [string, string];
+/** 직접 입력 갈래로 바로 여는 주소 (d7 §21: 주소창 ?mode=direct) */
+export const DIRECT_PATH = intakePath({ mode: "direct" });
 
 export const exact = (s: string) => new RegExp(`^\\s*${s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`);
 
@@ -123,8 +135,30 @@ export const chip = (scope: Locator, label: string | number) =>
   scope.locator(sel("button-pill-soft")).filter({ hasText: exact(String(label)) });
 export const stepperButton = (page: Page, label: "−" | "+") =>
   intakeForm(page).locator(sel("button-outline")).filter({ hasText: exact(label) });
-export const activeSegment = (page: Page) => page.locator(`main ${sel(SEGMENT)} ${sel(SEGMENT_ACTIVE)}`);
-export const segmentOption = (page: Page, label: string) => page.locator(`main ${sel(SEGMENT)}`).getByText(exact(label));
+/** 직접 입력 갈래의 segmented-control (기존 시약 입고 / 새 시약 등록) — 맨 위 intake-mode 안의 것은 뺀다 */
+export const directSegment = (page: Page) => page.locator(`main ${sel(SEGMENT)}:not(${sel(INTAKE_MODE)} *)`);
+export const activeSegment = (page: Page) => directSegment(page).locator(sel(SEGMENT_ACTIVE));
+export const segmentOption = (page: Page, label: string) => directSegment(page).getByText(exact(label));
+/** 맨 위 intake-mode 와 그 안의 선택된 칸 */
+export const modeControl = (page: Page) => page.locator(`main ${sel(INTAKE_MODE)}`);
+export const activeMode = (page: Page) => modeControl(page).locator(sel(SEGMENT_ACTIVE));
+
+/** intake-mode 로 입고 방법 전환 (누른 뒤 선택 칸 글자가 바뀔 때까지) */
+export async function switchMode(page: Page, mode: "direct" | "doc"): Promise<void> {
+  const label = mode === "direct" ? MODE_DIRECT : MODE_DOC;
+  await page.waitForFunction(
+    (s) => {
+      const f = document.querySelector(s);
+      return !!f && Object.keys(f).some((k) => k.startsWith("__reactProps"));
+    },
+    `main ${sel(INTAKE_MODE)} ${sel(SEGMENT)}`,
+    { timeout: 30_000 },
+  );
+  await expect(async () => {
+    if (!exact(label).test(await activeMode(page).innerText())) await modeControl(page).getByText(exact(label)).click();
+    await expect(activeMode(page)).toHaveText(exact(label), { timeout: 1_000 });
+  }).toPass({ timeout: 15_000 });
+}
 
 /** reagent-row 첫 줄 = 시약명 */
 export async function rowNames(page: Page): Promise<string[]> {

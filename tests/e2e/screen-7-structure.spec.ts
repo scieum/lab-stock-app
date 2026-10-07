@@ -71,6 +71,14 @@ import {
   switchTab,
   todayDigits,
   waitIntake,
+  DIRECT_PATH,
+  INTAKE_MODE,
+  MODE_DIRECT,
+  MODE_DOC,
+  activeMode,
+  directSegment,
+  modeControl,
+  switchMode,
 } from "./screen-7-helpers";
 
 const STAFF: Role[] = ["teacher", "admin"];
@@ -107,9 +115,10 @@ test(`[R-ui][S${SCREEN}] rules.json R5 = 학생 ${INTAKE}·${REGISTER} max 0 이
   // 화면 7 컴포넌트가 dev-rules 에 있어야 교사·admin 존재 검사가 의미 있다.
   // rules 1.15 R5 에 더해진 threshold-edit(재주문 기준 직접 입력)는 화면 3 소속 — R5 중 stock-intake·reagent-register 가 화면 7 이다
   for (const c of [INTAKE, REGISTER]) expect(devRules.components[c] ?? [], `dev-rules components ${c}`).toContain(SCREEN);
-  // R5 의 나머지 컴포넌트 화면 소속 (dev-rules 1.8): threshold-edit [3] · msds-search [3,7] · msds-bulk-banner [2].
-  // doc-upload 는 dev-rules components 밖(서류로 입고 = 다른 run) — 들어오면 그때 소속을 본다
-  const R5_HOME: Record<string, number[]> = { "threshold-edit": [3], "msds-search": [3, SCREEN], "msds-bulk-banner": [2] };
+  // R5 의 나머지 컴포넌트 화면 소속 (dev-rules 1.9): threshold-edit [3] · msds-search [3,7] · msds-bulk-banner [2] · doc-upload [7](서류로 입고, d7 §21)
+  const R5_HOME: Record<string, number[]> = { "threshold-edit": [3], "msds-search": [3, SCREEN], "msds-bulk-banner": [2], "doc-upload": [SCREEN] };
+  expect(R5_COMPONENTS, "1.17 R5 에 doc-upload").toContain("doc-upload");
+  expect(devRules.components["doc-upload"] ?? [], "dev-rules 1.9 components 에 doc-upload").toContain(SCREEN);
   for (const c of R5_COMPONENTS.filter((x) => ![INTAKE, REGISTER].includes(x) && x in devRules.components)) {
     expect(Object.keys(R5_HOME), `R5 ${c} 의 화면 소속을 이 테스트가 안다`).toContain(c);
     expect([...(devRules.components[c] ?? [])].sort(), `R5 ${c} 화면 소속`).toEqual(R5_HOME[c]);
@@ -168,14 +177,25 @@ test(`[R-ui][S${SCREEN}] ${ROLE_LABEL[STUDENT]} 홈·시약 목록·시약 상�
 });
 
 for (const role of STAFF) {
-  test(`[R-ui][S${SCREEN}] ${ROLE_LABEL[role]} ${routeOf(SCREEN)} 렌더: 기본 갈래 ${INTAKE} = 시안 개수 · 등록 갈래 ${REGISTER} 1 (한 번에 한 갈래) · roles 개수`, async ({ browser }, info) => {
+  test(`[R-ui][S${SCREEN}] ${ROLE_LABEL[role]} ${routeOf(SCREEN)} 렌더: 기본 = ${MODE_DOC}(screens_required ${INTAKE_MODE} · doc-upload 1 · ${INTAKE}·${REGISTER} 0) → intake-mode "${MODE_DIRECT}" 누름 → 기본 갈래 ${INTAKE} = 시안 개수 · 등록 갈래 ${REGISTER} 1 (한 번에 한 갈래) · roles 개수`, async ({ browser }, info) => {
     test.setTimeout(120_000);
     const { context, page, viewport, response } = await openAs(browser, info, role, SCREEN);
     try {
       expect(response?.status(), "화면 7 응답").toBe(200);
+      // 기본 (d7 §21 · rules.json intake.entry): 서류로 입고
+      await expect(modeControl(page), `${INTAKE_MODE} 1개`).toHaveCount(1, { timeout: 30_000 });
+      for (const c of rules.screens_required[String(SCREEN)] ?? []) expect(await countComponent(page, c), `screens_required ${c}`).toBeGreaterThanOrEqual(1);
+      await expect(activeMode(page), `기본 = "${MODE_DOC}"`).toHaveText(exact(MODE_DOC));
+      await expect(page.locator(`main ${sel("doc-upload")}`), "기본 = doc-upload 1").toHaveCount(1);
+      await expect(page.locator(sel(INTAKE)), `서류로 입고에서 ${INTAKE}`).toHaveCount(0);
+      await expect(page.locator(sel(REGISTER)), `서류로 입고에서 ${REGISTER}`).toHaveCount(0);
+      await runRoleChecks(page, ROLE_NAME[role as keyof typeof ROLE_NAME], "서류로 입고 (기본)");
+
+      await switchMode(page, "direct");
       await waitIntake(page, "intake");
       expect(new URL(page.url()).pathname, "교사·admin 은 화면 7 에 머문다").toBe(routeOf(SCREEN));
       expect((await browserSession(page)).role, "테스트 계정 역할").toBe(PROFILE_ROLE[role]);
+      await expect(page.locator(sel("doc-upload")), "직접 입력에서 doc-upload").toHaveCount(0);
 
       const frame = frameCounts(viewport);
       // 1.17 시안 7-{폭} 은 "서류로 입고"(intake-mode·doc-upload, 다음 run) 상태라 stock-intake 가 없다 —
@@ -202,7 +222,7 @@ test(`[R-ui][S${SCREEN}] ${ROLE_LABEL.teacher} 진입점(양성 대조): 시약 
   try {
     await waitDetail(page);
     expect(await intakeLinks(page).count(), `교사 시약 상세의 ${routeOf(SCREEN)} 링크`).toBeGreaterThanOrEqual(1);
-    await page.goto(routeOf(SCREEN));
+    await page.goto(DIRECT_PATH);
     await waitIntake(page, "intake");
     await expect(page.locator(sel("nav-pill")).getByText(NAV_LABEL).locator("visible=true").first(), `nav-pill "${NAV_LABEL}" 보임`).toBeVisible();
     if (viewport === "desktop") {
@@ -247,7 +267,7 @@ for (const role of [...STAFF, "schoolB"] as Role[]) {
       expect(comps, `dev-rules components 화면 ${SCREEN} 에 ${c}`).toContain(c);
     }
     const school = seedSchoolOf(role);
-    const { context, page, response } = await openAs(browser, info, role, SCREEN);
+    const { context, page, response } = await openAs(browser, info, role, SCREEN, DIRECT_PATH);
     try {
       expect(response?.status(), "화면 7 응답").toBe(200);
       await waitIntake(page, "intake");
@@ -263,8 +283,12 @@ for (const role of [...STAFF, "schoolB"] as Role[]) {
       await expect(nav).toContainText("Lab_Stock");
       await expect(nav).toContainText(NAV_LABEL);
       await expect(nav).toContainText(me.schoolName);
-      // 두 갈래, 한 번에 하나만 선택
-      await expect(page.locator(`main ${sel(SEGMENT)}`)).toHaveCount(1);
+      // 맨 위 intake-mode(직접 입력 선택) + 직접 입력의 두 갈래, 각각 한 번에 하나만 선택
+      await expect(modeControl(page), `${INTAKE_MODE} 1개`).toHaveCount(1);
+      await expect(activeMode(page), `?mode=direct → "${MODE_DIRECT}"`).toHaveText(exact(MODE_DIRECT));
+      await expect(page.locator(`main ${sel(SEGMENT)}`), `${SEGMENT} = ${INTAKE_MODE} 안 1 + 갈래 1`).toHaveCount(2);
+      await expect(directSegment(page), "직접 입력 갈래 segmented-control").toHaveCount(1);
+      await expect(page.locator(`main ${sel(SEGMENT_ACTIVE)}`), `${SEGMENT_ACTIVE} = 입고 방법 1 + 갈래 1`).toHaveCount(2);
       await expect(activeSegment(page), `${SEGMENT_ACTIVE} 1개`).toHaveCount(1);
       await expect(activeSegment(page)).toHaveText(exact(TAB_INTAKE));
       await expect(segmentOption(page, TAB_REGISTER), `"${TAB_REGISTER}" 옵션`).toHaveCount(1);
@@ -289,7 +313,7 @@ for (const role of [...STAFF, "schoolB"] as Role[]) {
 for (const role of STAFF) {
   test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]} 검색 → 시약 선택 상태: 시안 7 컴포넌트 개수 이상 · 검색 결과 = 이름에 검색어가 든 자기 학교 시약 · 스테퍼(button-outline − +) · 프리셋 ${PRESETS.join("·")} · "현재 N → 입고 후 M" · 입고일 = 오늘`, async ({ browser }, info) => {
     test.setTimeout(150_000);
-    const { context, page, viewport } = await openAs(browser, info, role, SCREEN);
+    const { context, page, viewport } = await openAs(browser, info, role, SCREEN, DIRECT_PATH);
     try {
       await waitIntake(page, "intake");
       const frame = frameCounts(viewport);
@@ -308,7 +332,7 @@ for (const role of STAFF) {
       let matched = false;
       for (let i = 0; i < 5 && !matched; i++) {
         const before = (await dbReagents(page)).map((r) => r.name).filter((n) => n.includes(query.c)).sort();
-        await page.goto(intakePath());
+        await page.goto(DIRECT_PATH);
         await waitIntake(page, "intake");
         await searchInput(page).fill(query.c);
         await expect(rows(page).first()).toBeVisible();
@@ -341,6 +365,13 @@ for (const role of STAFF) {
       // 시안 프레임에 있는 화면 7 컴포넌트는 프레임 개수 이상 (탭바는 C2)
       for (const name of screenComponents()) {
         if (name === rules.tab_bar.component || name === rules.tab_bar.item) continue;
+        // 1.17 시안 7 은 "서류로 입고" 상태 — 서류 갈래에만 있는 컴포넌트(variants["7"] doc-*, intake-mode 제외)는 직접 입력 갈래에서 세지 않는다
+        // (서류 갈래 개수는 screen-7-doc.spec.ts)
+        const docOnly = Object.entries((rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants[String(SCREEN)])
+          .filter(([k]) => k.startsWith("doc-"))
+          .flatMap(([, v]) => v)
+          .filter((c) => c !== INTAKE_MODE);
+        if (docOnly.includes(name)) continue;
         const want = frame[name];
         if (!want) continue; // 프레임에 없는 상태 컴포넌트(reagent-register·ex-empty-state-card·ex-toast)는 다른 테스트
         expect(await countComponent(page, name), `${name} ≥ 시안 7-${viewport} ${want}개`).toBeGreaterThanOrEqual(want);
@@ -378,7 +409,7 @@ test(`[C1][S${SCREEN}] ${ROLE_LABEL.teacher} 수량 검사: 0 에서 − 비활�
   test.setTimeout(120_000);
   const { own } = seedOwnReagents("teacher");
   const target = own[0];
-  const { context, page } = await openAs(browser, info, "teacher", SCREEN);
+  const { context, page } = await openAs(browser, info, "teacher", SCREEN, DIRECT_PATH);
   try {
     await waitIntake(page, "intake");
     const before = await dbReagent(page, target.id);
@@ -437,7 +468,7 @@ for (const role of STAFF) {
   test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]} 새 시약 등록 갈래: ${REGISTER} · 필수 ${REGISTER_REQUIRED.join("·")} · 종류 = rules.json storage_classes · 단위 ${UNITS.join("·")} · 필수 비면 "시약 등록" 비활성 · 재고량 무효 "${QUANTITY_HINT}"`, async ({ browser }, info) => {
     test.setTimeout(150_000);
     expect(STORAGE_CLASSES.length, "rules.json cabinet.storage_classes").toBeGreaterThan(0);
-    const { context, page } = await openAs(browser, info, role, SCREEN);
+    const { context, page } = await openAs(browser, info, role, SCREEN, DIRECT_PATH);
     try {
       await waitIntake(page, "intake");
       const posts: string[] = [];
@@ -509,7 +540,7 @@ for (const role of STAFF) {
 
 test(`[C1][S${SCREEN}] ${ROLE_LABEL.teacher} 검색 0건: 검색 바 유지 · ${EMPTY} 1("${EMPTY_TITLE}") · reagent-row 0 · button-pill-soft "${TAB_REGISTER}" → 등록 갈래 전환`, async ({ browser }, info) => {
   test.setTimeout(120_000);
-  const { context, page } = await openAs(browser, info, "teacher", SCREEN);
+  const { context, page } = await openAs(browser, info, "teacher", SCREEN, DIRECT_PATH);
   try {
     await waitIntake(page, "intake");
     const none = `없는시약-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -555,11 +586,16 @@ for (const role of STAFF) {
       await waitIntake(page, "register");
       await expect(page.locator(sel(REGISTER))).toHaveCount(1);
       await expect(page.locator(sel(INTAKE))).toHaveCount(0);
+      // 예전 링크(?tab·?reagent)는 mode 가 없어도 직접 입력으로 연다 (d7 §21 진입)
+      await expect(activeMode(page), `?tab=register → "${MODE_DIRECT}"`).toHaveText(exact(MODE_DIRECT));
+      await expect(page.locator(`main ${sel(SEGMENT_ACTIVE)}`), `${SEGMENT_ACTIVE} = 입고 방법 1 + 갈래 1`).toHaveCount(2);
+      await expect(page.locator(sel("doc-upload")), "직접 입력에서 doc-upload").toHaveCount(0);
       await expect(activeSegment(page)).toHaveText(exact(TAB_REGISTER));
 
       const res = await page.goto(intakePath({ reagent: target.id }));
       expect(res?.status()).toBe(200);
       await waitIntake(page, "intake");
+      await expect(activeMode(page), `?reagent → "${MODE_DIRECT}"`).toHaveText(exact(MODE_DIRECT));
       await expect(activeSegment(page)).toHaveText(exact(TAB_INTAKE));
       await expectSelected(page, target.name);
       const db = await dbReagent(page, target.id);
@@ -582,7 +618,7 @@ for (const role of [...STAFF, "schoolB"] as Role[]) {
       test.setTimeout(120_000);
       const tb = rules.tab_bar;
       expect(tb.labels, `tab_bar labels 에 "${ACTIVE_TAB_LABEL}"`).toContain(ACTIVE_TAB_LABEL);
-      const { context, page, viewport } = await openAs(browser, info, role, SCREEN, intakePath(tab === "register" ? { tab } : {}));
+      const { context, page, viewport } = await openAs(browser, info, role, SCREEN, intakePath(tab === "register" ? { tab } : { mode: "direct" }));
       try {
         await waitIntake(page, tab);
         const shown = viewport === "mobile" && tb.mobile_screens.includes(SCREEN);
@@ -661,7 +697,7 @@ const BUTTON_MIN_HEIGHT = (rules as unknown as { button: { min_height: number } 
 // =====================================================================
 test(`[V1][S${SCREEN}] 화면 ${SCREEN} 스크린샷 저장 (교사, 검색 "황산" → 시약 선택 · 수량 5, 저장 전)`, async ({ browser }, info) => {
   test.setTimeout(120_000);
-  const { context, page, viewport } = await openAs(browser, info, "teacher", SCREEN);
+  const { context, page, viewport } = await openAs(browser, info, "teacher", SCREEN, DIRECT_PATH);
   try {
     await (async () => {
       await waitIntake(page, "intake");

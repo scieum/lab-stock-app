@@ -35,6 +35,7 @@ import {
   sweepTemp,
   tempName,
   waitIntake,
+  DIRECT_PATH,
 } from "./screen-7-helpers";
 
 test.describe.configure({ mode: "default" });
@@ -61,7 +62,7 @@ function checkSchoolNames(text: string, mine: string, foreignSchools: string[]):
 async function listSnapshot(page: Page): Promise<{ db: string[]; shown: string[]; html: string } | null> {
   for (let attempt = 0; attempt < 5; attempt++) {
     const before = (await dbReagents(page)).map((r) => r.name).sort();
-    const res = await page.goto(intakePath());
+    const res = await page.goto(DIRECT_PATH);
     await waitIntake(page, "intake");
     await expect(rows(page).first()).toBeVisible();
     const shown = (await rowNames(page)).sort();
@@ -88,7 +89,7 @@ for (const role of ROLES) {
     const demoNames = (await demoReagents()).map((r) => r.name);
     const foreignSchools = [...schools.filter((s) => s.id !== school.id).map((s) => s.name), demo.name];
 
-    const { context, page, response } = await openAs(browser, info, role, SCREEN);
+    const { context, page, response } = await openAs(browser, info, role, SCREEN, DIRECT_PATH);
     try {
       expect(response?.status(), "화면 7 응답").toBe(200);
       await waitIntake(page, "intake");
@@ -224,16 +225,16 @@ for (const role of ["teacher", "schoolB"] as Role[]) {
       expect(made[0].school_id, "school_id = 등록한 사람의 학교").toBe(mySchool.id);
 
       // 양성 대조: 등록한 학교의 입고 목록에는 보인다
-      await page.goto(intakePath());
+      await page.goto(DIRECT_PATH);
       await waitIntake(page, "intake");
       await expect(rows(page).filter({ hasText: name }), "자기 학교 목록에 새 시약").toHaveCount(1);
 
       // 다른 학교: 목록·검색·응답 본문·DB(RLS) 어디에도 없다
-      const o = await openAs(browser, info, other, SCREEN);
+      const o = await openAs(browser, info, other, SCREEN, DIRECT_PATH);
       try {
         await waitIntake(o.page, "intake");
         expect((await browserSession(o.page)).schoolName, "다른 학교 계정").not.toBe(me.schoolName);
-        const res = await o.page.goto(intakePath());
+        const res = await o.page.goto(DIRECT_PATH);
         await waitIntake(o.page, "intake");
         await expect(rows(o.page).first()).toBeVisible();
         expect(await rowNames(o.page), `${ROLE_LABEL[other]} 목록`).not.toContain(name);
