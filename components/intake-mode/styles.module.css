@@ -1,0 +1,6 @@
+/* 시안 7 intake-mode: segmented-control 전폭 (모바일 358 · 데스크톱 720) */
+.root {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}

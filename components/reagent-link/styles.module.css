@@ -1,0 +1,129 @@
+/* 시안 1.17 7-doc-review reagent-link: link-row(caption 12 회색 · 값 상자 · link-action 13/600, 사이 8) + 새 시약 요약(12 회색), 사이 4 */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.caption {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+/* 연결한 시약 이름: text-input 상자 모양 (radius 16, 안쪽 12·16) */
+.value {
+  flex: 0 1 calc(var(--space-48) * 3);
+  min-width: 0;
+  min-height: var(--button-min-height);
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-input);
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.picker {
+  flex: 1 1 calc(var(--space-48) * 4);
+  min-width: 0;
+}
+
+/* new-reagent-option: 선택된 pill — 연하늘 바탕 + 하늘 테두리, 높이 44, 안쪽 0 16 0 12, 13/600 */
+.newOption {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-16) 0 var(--space-12);
+  border: var(--border-width) solid var(--color-highlight);
+  border-radius: var(--radius-pill);
+  background: var(--color-highlight-soft);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+}
+
+.newIcon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  flex-shrink: 0;
+  color: var(--color-highlight);
+}
+
+.excluded {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+/* link-action: 글자 버튼 13/600, 높이 44, 좌우 8 */
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-8);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+}
+
+.action:disabled,
+.newOption:disabled,
+.summary:disabled {
+  cursor: not-allowed;
+  opacity: var(--pressed-opacity);
+}
+
+.action:focus-visible,
+.newOption:focus-visible,
+.summary:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.action:active:not(:disabled),
+.newOption:active:not(:disabled) {
+  opacity: var(--pressed-opacity);
+}
+
+/* new-reagent-summary: 12/400 회색 (누르면 새 시약 칸을 펼친다) */
+.summary {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  text-align: left;
+  cursor: pointer;
+}

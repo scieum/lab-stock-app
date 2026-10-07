@@ -52,7 +52,7 @@ type Props = {
 
 const QUANTITY_ERROR = "1 이상 입력하세요";
 const DEFAULT_PRESETS = [1, 5, 10];
-const DEFAULT_REGISTER_HREF = "/intake?tab=register";
+const DEFAULT_REGISTER_HREF = "/intake?mode=direct&tab=register";
 const numberFmt = new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 2 });
 
 /** 시안 표기: "3병" · "30 g" · "500 mL" */

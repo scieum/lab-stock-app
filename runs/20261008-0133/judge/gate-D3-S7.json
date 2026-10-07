@@ -1,0 +1,28 @@
+{
+  "gate": "gate-D3-S7",
+  "pass": true,
+  "exit": 0,
+  "violations": [],
+  "logs": {},
+  "report": {
+    "V1": {
+      "screenshots": [
+        "test-results/v1-7-desktop.png",
+        "test-results/v1-7-doc-fail-desktop.png",
+        "test-results/v1-7-doc-fail-mobile.png",
+        "test-results/v1-7-doc-processing-desktop.png",
+        "test-results/v1-7-doc-processing-mobile.png",
+        "test-results/v1-7-doc-review-desktop.png",
+        "test-results/v1-7-doc-review-mobile.png",
+        "test-results/v1-7-doc-upload-desktop.png",
+        "test-results/v1-7-doc-upload-mobile.png",
+        "test-results/v1-7-mobile.png",
+        "test-results/v1-7-msds-desktop.png",
+        "test-results/v1-7-msds-mobile.png",
+        "test-results/v1-7-suggest-desktop.png",
+        "test-results/v1-7-suggest-mobile.png"
+      ],
+      "figma_page": "https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2"
+    }
+  }
+}

@@ -14,6 +14,8 @@ import { CabinetLayout, CabinetLegend, CabinetSlot } from "@/components/cabinet-
 import { CabinetSwitcher } from "@/components/cabinet-switcher";
 import { AuthFormCard } from "@/components/ex-auth-form-card";
 import { DataTable, DataTableRow } from "@/components/ex-data-table";
+import { DocIntakeTable } from "@/components/doc-intake-table";
+import { DocUpload } from "@/components/doc-upload";
 import { DataRecordRow, DataTableCell } from "@/components/ex-data-table-cell";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { ModalCard } from "@/components/ex-modal-card";
@@ -30,6 +32,7 @@ import { LocationPicker } from "@/components/location-picker";
 import { LocationSuggest } from "@/components/location-suggest";
 import { GuestEntry } from "@/components/guest-entry";
 import { GuestLock } from "@/components/guest-lock";
+import { IntakeMode } from "@/components/intake-mode";
 import { CabinetSummaryCard, HomeSummary, StockSummaryCard } from "@/components/home-summary";
 import { LandingCta } from "@/components/landing-cta";
 import { LandingHero } from "@/components/landing-hero";
@@ -37,6 +40,7 @@ import { ManualUpload } from "@/components/manual-upload";
 import { REORDER_GUIDE_TEXT } from "@/lib/reorder-rules";
 import { MixWarning } from "@/components/mix-warning";
 import { MsdsBulkBanner } from "@/components/msds-bulk-banner";
+import { NewReagentFields } from "@/components/new-reagent-fields";
 import { MsdsCandidates } from "@/components/msds-candidates";
 import { MsdsEntry } from "@/components/msds-entry";
 import { MsdsSearch } from "@/components/msds-search";
@@ -48,6 +52,7 @@ import { QrPrint } from "@/components/qr-print";
 import { QrPrintSheet } from "@/components/qr-print-sheet";
 import { QuickAction } from "@/components/quick-action";
 import { ReagentDetailCard } from "@/components/reagent-detail-card";
+import { ReagentLink } from "@/components/reagent-link";
 import { ReagentLocation } from "@/components/reagent-location";
 import { ReagentRegister } from "@/components/reagent-register";
 import { ReagentRow } from "@/components/reagent-row";
@@ -89,6 +94,7 @@ import { SAMPLE_GROUPS, samplePdf, sampleReagents, sampleRowsFrame } from "./man
 import { sampleInvites, sampleMemberCounts, sampleMembers } from "./users/sample";
 import { sampleFilterCabinets } from "./filter/sample";
 import { sampleMsdsCandidates } from "./msds/sample";
+import { SAMPLE_TODAY as DOC_TODAY, sampleDocReagents, sampleDocRows } from "./intake/sample";
 import styles from "./gallery.module.css";
 
 export const metadata: Metadata = { title: "컴포넌트 갤러리 · Lab_Stock" };
@@ -435,6 +441,33 @@ export default function GalleryPage() {
 
         <Item name="reagent-register">
           <ReagentRegister storageClasses={storageClasses} defaultIntakeDate="2026-10-02" stickyActions={false} />
+        </Item>
+
+        <Item name="intake-mode (화면 7 맨 위 — 직접 입력 / 서류로 입고, 기본 = 서류로 입고)">
+          <IntakeMode value="doc" />
+          <Link href="/gallery/intake" className={styles.more}>
+            서류로 입고 상태 보기 — 읽는 중 · 품목 0개 · 확인 표 · 동작 예시 (/gallery/intake)
+          </Link>
+        </Item>
+
+        <Item name="doc-upload (서류 올리기 — 촬영하기 · 파일 선택 · AI로 읽기)">
+          <DocUpload file={null} />
+        </Item>
+
+        <Item name="doc-intake-table · reagent-link · new-reagent-fields (시안 7-doc-review 확인 표)">
+          <DocIntakeTable rows={sampleDocRows()} reagents={sampleDocReagents} intakeDate="2026-10-07" today={DOC_TODAY} findMsds={false} />
+        </Item>
+
+        <Item name="reagent-link (우리 학교 시약 연결 · 바꾸기 · 빼기 · 새 시약으로 등록)">
+          <ReagentLink itemName="염산 35% 500mL" link={{ kind: "reagent", reagentId: "r-hcl" }} reagents={sampleDocReagents} />
+          <ReagentLink itemName="아세트산(빙초산) 500mL" link={{ kind: "new" }} reagents={sampleDocReagents} summary="새 시약 · 산 · 1,000 mL" />
+        </Item>
+
+        <Item name="new-reagent-fields (새 시약 칸 — 이름 · 보관 분류 추천 · 단위 · 재고량 · MSDS)">
+          <NewReagentFields
+            itemName="질산칼륨 500g"
+            value={{ name: "질산칼륨", storageClass: "산화제", suggestedClass: "산화제", unit: "g", stock: "500", stockEdited: false, msdsUrl: "" }}
+          />
         </Item>
 
         <Item name="location-suggest (화면 7 등록 직후 — 시안 1.17 7-suggest: 질산칼륨 추천 위치 + 아세트산 맞는 칸 없음, 모두 추천대로 · 나중에)">

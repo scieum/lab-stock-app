@@ -1,0 +1,14 @@
+{
+    "stages":  [
+                   "D1",
+                   "D2",
+                   "D3",
+                   "G",
+                   "D4"
+               ],
+    "screens":  [
+                    7,
+                    13
+                ],
+    "reason":  "디자인 1.17 ④: 서류로 입고 — intake-mode·doc-upload·doc-intake-table·reagent-link·new-reagent-fields, POST /api/intake/extract(Gemini), record_document_intake, 저장 뒤 location-suggest (d7 §21). 홈 quick-action 입고 → 화면 7 확인"
+}
