@@ -1,6 +1,8 @@
 /* 화면 7 입고·시약 등록
- * 모바일(7-mobile): segmented-control(전폭) → 갈래, 사이 16. 제목은 nav-pill 안(nav-title)에 있다
- * 데스크톱(7-desktop): screen-title → segmented-control(폭 400) → 갈래, 사이 24
+ * 모바일(7-mobile): intake-mode(전폭) → 갈래, 사이 24(시안 content gap). 제목은 nav-pill 안(nav-title)에 있다
+ * 데스크톱(7-desktop): page-title → intake-mode(page-column 720) → 갈래, 사이 24
+ * 직접 입력: 그 아래 segmented-control(기존 시약 입고 / 새 시약 등록) → 고른 갈래 (예전 그대로)
+ * 서류로 입고: doc-upload / ex-empty-state-card + doc-upload / doc-intake-table + 하단 "확인 후 입고"
  */
 
 .page {
@@ -8,6 +10,10 @@
   flex-direction: column;
   gap: var(--space-16);
   min-width: 0;
+}
+
+.page[data-mode="doc"] {
+  gap: var(--space-24);
 }
 
 /* 모바일에서는 nav-pill 의 제목이 대신한다 (화면에는 안 보이고 읽기 도구에는 남긴다) */
@@ -25,10 +31,58 @@
   white-space: nowrap;
 }
 
+.mode {
+  min-width: 0;
+}
+
 .segment {
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+
+.docColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  min-width: 0;
+}
+
+/* 확인 표: 고정된 하단 버튼 줄(안내 한 줄 포함)만큼 비워 둔다 */
+.reviewing {
+  padding-bottom: calc(var(--space-12) + var(--control-height) + var(--space-16) + var(--border-width) + var(--space-24));
+}
+
+/* bottom-actions: 모바일은 tab-bar 바로 위 고정 (흰 바탕, 위 가는 선, 안쪽 12 16 16) */
+.docActions {
+  position: fixed;
+  right: 0;
+  bottom: var(--tab-bar-height);
+  left: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-16) var(--space-16);
+  border-top: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.docSubmit {
+  width: 100%;
+}
+
+/* 안내 문구는 기본색 (핑크 금지) */
+.docError,
+.docReason {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.docReason {
+  color: var(--color-text-muted);
 }
 
 @media (min-width: 1024px) {
@@ -44,7 +98,29 @@
     clip-path: none;
   }
 
+  /* page-column 720 */
+  .mode,
+  .docColumn {
+    width: calc(var(--space-48) * 15);
+    max-width: 100%;
+  }
+
   .segment {
     width: var(--side-column-width);
+  }
+
+  .reviewing {
+    padding-bottom: var(--space-0);
+  }
+
+  .docActions {
+    position: static;
+    padding: var(--space-16) 0 0;
+    border-top: var(--border-width) solid var(--color-border);
+    background: transparent;
+  }
+
+  .docSubmit {
+    width: calc(var(--control-height) * 5);
   }
 }

@@ -134,7 +134,7 @@ export async function ReagentDetailView({ data, role, openPicker = false, selfPa
           {/* 입고(stock-intake)는 교사·admin만 (rules.json R5). 학생 자리에는 목록으로 돌아가는 보조 버튼 */}
           {staff ? (
             <span data-component="stock-intake" className={styles.intake}>
-              <ButtonOutline href={`/intake?reagent=${reagent.id}`}>입고</ButtonOutline>
+              <ButtonOutline href={`/intake?mode=direct&reagent=${reagent.id}`}>입고</ButtonOutline>
             </span>
           ) : (
             <span className={styles.intake}>

@@ -1,5 +1,8 @@
 // Gemini generateContent 응답 → 시약별 사용량 목록 (d7 §13). 순수 함수 — 환경변수·네트워크를 쓰지 않는다.
 // (lib/server/gemini.ts 가 호출한다. 가짜 응답으로 단위 검증할 수 있게 따로 둔다.)
+// 서류로 입고(d7 §21)의 품목 응답도 여기서 읽는다(parseDocIntakeResponse).
+
+import { normalizeDocExtraction, type DocExtraction } from "../doc-intake-rules";
 
 export const USAGE_ITEMS_MAX = 50;
 export const USAGE_NAME_MAX = 80;
@@ -58,13 +61,15 @@ function parseJsonText(text: string): { ok: true; value: unknown } | { ok: false
   }
 }
 
+/** 후보의 JSON 답을 꺼낸 결과 (사용량·서류 품목 공용) */
+export type CandidateJsonResult =
+  | { ok: true; value: unknown }
+  | { ok: false; code: "blocked" | "upstream" | "parse"; reason: string };
+
 /**
- * generateContent 응답(JSON 으로 읽은 값)을 사용량 목록으로 바꾼다.
- * - 이름이 문자열이 아니거나 빈 줄은 버린다. 이름 80자·단위 20자까지, 최대 50줄(넘는 줄은 버린다).
- * - 수량은 유한한 양수만 남기고 나머지는 null.
- * - items 에 줄이 있는데 쓸 수 있는 줄이 하나도 없으면 schema 오류.
+ * generateContent 응답에서 첫 후보의 JSON 답을 꺼낸다 (막힘·후보 없음·글자 없음·JSON 아님을 가려낸다).
  */
-export function parseUsageResponse(body: unknown): UsageParseResult {
+export function readCandidateJson(body: unknown): CandidateJsonResult {
   if (!isRecord(body)) return { ok: false, code: "upstream", reason: "bad-body" };
 
   const feedback = body.promptFeedback;
@@ -93,9 +98,22 @@ export function parseUsageResponse(body: unknown): UsageParseResult {
 
   const parsed = parseJsonText(text);
   if (!parsed.ok) return { ok: false, code: "parse", reason: truncated ? "truncated" : "json" };
-  if (!isRecord(parsed.value) || !Array.isArray(parsed.value.items)) return { ok: false, code: "parse", reason: "schema" };
+  return { ok: true, value: parsed.value };
+}
 
-  const raw = parsed.value.items;
+/**
+ * generateContent 응답(JSON 으로 읽은 값)을 사용량 목록으로 바꾼다.
+ * - 이름이 문자열이 아니거나 빈 줄은 버린다. 이름 80자·단위 20자까지, 최대 50줄(넘는 줄은 버린다).
+ * - 수량은 유한한 양수만 남기고 나머지는 null.
+ * - items 에 줄이 있는데 쓸 수 있는 줄이 하나도 없으면 schema 오류.
+ */
+export function parseUsageResponse(body: unknown): UsageParseResult {
+  const read = readCandidateJson(body);
+  if (!read.ok) return read;
+  const value = read.value;
+  if (!isRecord(value) || !Array.isArray(value.items)) return { ok: false, code: "parse", reason: "schema" };
+
+  const raw = value.items;
   if (raw.length === 0) return { ok: false, code: "empty", reason: "no-items" };
 
   const items: ExtractedUsage[] = [];
@@ -108,4 +126,25 @@ export function parseUsageResponse(body: unknown): UsageParseResult {
   }
   if (items.length === 0) return { ok: false, code: "parse", reason: "schema" };
   return { ok: true, items };
+}
+
+export type DocIntakeParseResult =
+  | { ok: true; extraction: DocExtraction }
+  /** empty = 품목을 하나도 못 찾았다 (items = []) — 화면이 "서류에서 품목을 찾지 못했어요"를 보여 준다 */
+  | { ok: false; code: "blocked" | "upstream" | "parse" | "empty"; reason: string };
+
+/**
+ * generateContent 응답 → 서류 품목 (d7 §21). 모양 정리는 화면과 같은 lib/doc-intake-rules normalizeDocExtraction.
+ * - { items: [...] } 모양이 아니면 schema 오류
+ * - items 가 비었으면 empty, 줄은 있는데 쓸 수 있는 품목(이름 있는 것)이 없으면 schema 오류
+ */
+export function parseDocIntakeResponse(body: unknown): DocIntakeParseResult {
+  const read = readCandidateJson(body);
+  if (!read.ok) return read;
+  const extraction = normalizeDocExtraction(read.value);
+  if (!extraction) return { ok: false, code: "parse", reason: "schema" };
+  const rawCount = (read.value as { items: unknown[] }).items.length;
+  if (rawCount === 0) return { ok: false, code: "empty", reason: "no-items" };
+  if (extraction.items.length === 0) return { ok: false, code: "parse", reason: "schema" };
+  return { ok: true, extraction };
 }

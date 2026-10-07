@@ -4,8 +4,10 @@ import { revalidatePath } from "next/cache";
 import { placeReagent } from "@/lib/supabase/cabinets";
 import { getLocationSuggestions, type LocationSuggestions } from "@/lib/supabase/location-suggest";
 import {
+  recordDocumentIntake,
   recordIntake,
   registerReagent,
+  type RecordDocumentIntakeResult,
   type RecordIntakeResult,
   type RegisterReagentResult,
 } from "@/lib/supabase/intake";
@@ -84,4 +86,20 @@ export async function placeSuggestedAction(input: unknown): Promise<PlaceSuggest
   }
   if (placed.length > 0) revalidatePath("/", "layout");
   return { placed, error };
+}
+
+/**
+ * 서류로 입고 "확인 후 입고" (d7 §21). 입력은 lib/doc-intake-rules checkDocIntakeInput 으로 다시 맞추고
+ * DB 함수 record_document_intake 하나로 저장한다(한 트랜잭션). 학교·역할 값은 받지 않는다.
+ * 새 시약이 있으면 위치 추천(d7 §17)을 함께 돌려준다 — 읽기에 실패해도 저장은 성공(화면은 화면 2 로).
+ */
+export async function recordDocumentIntakeAction(
+  input: unknown,
+): Promise<RecordDocumentIntakeResult & { suggest?: LocationSuggestions | null }> {
+  const result = await recordDocumentIntake(input);
+  if (!result.ok) return result;
+  revalidatePath("/", "layout");
+  if (result.newReagentIds.length === 0) return result;
+  const suggest = await getLocationSuggestions(result.newReagentIds).catch(() => null);
+  return { ...result, suggest };
 }

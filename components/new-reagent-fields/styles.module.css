@@ -1,0 +1,139 @@
+/* 시안 1.17 7-doc-review new-reagent-fields: 위 여백 12, 사이 12
+ * 모바일: 이름 → 보관 분류 칩 → [단위 | 재고량] 반반(사이 12) → MSDS
+ * 데스크톱: [이름 376 | 단위 160 | 재고량 160] → 보관 분류 → MSDS
+ */
+
+.root {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "name"
+    "classes"
+    "pair"
+    "msds"
+    "error";
+  gap: var(--space-12);
+  min-width: 0;
+  padding-top: var(--space-12);
+}
+
+.name {
+  grid-area: name;
+}
+
+.classes {
+  grid-area: classes;
+}
+
+.pair {
+  grid-area: pair;
+  display: flex;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+.msds {
+  grid-area: msds;
+}
+
+.unit,
+.stock {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+/* field-label 13/600 기본색 */
+.label {
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+/* 추천 칩 바로 뒤에 suggest-badge */
+.chipSlot {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.msdsRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.msdsCaption {
+  flex: 0 1 auto;
+  min-width: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.msdsInput {
+  flex: 1 1 0;
+  min-width: calc(var(--space-48) * 3);
+}
+
+.direct {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-8);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+}
+
+.direct:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.direct:disabled {
+  cursor: not-allowed;
+  opacity: var(--pressed-opacity);
+}
+
+/* 안내 문구는 기본색 (핑크 금지) */
+.error {
+  grid-area: error;
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+@media (min-width: 1024px) {
+  .root {
+    grid-template-columns: minmax(0, 1fr) calc(var(--space-32) * 10 + var(--space-12));
+    grid-template-areas:
+      "name pair"
+      "classes classes"
+      "msds msds"
+      "error error";
+    column-gap: var(--space-12);
+  }
+}

@@ -6,7 +6,9 @@ import {
   type RecordIntakeInput,
   type RegisterReagentInput,
 } from "@/lib/intake-rules";
+import { checkDocIntakeInput } from "@/lib/doc-intake-rules";
 import type { Role } from "@/lib/types";
+import type { Json } from "@/lib/types/database";
 
 const SEOUL_DATE = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Asia/Seoul",
@@ -139,4 +141,52 @@ export async function registerReagent(input: RegisterReagentInput): Promise<Regi
   const row = Array.isArray(data) ? data[0] : data;
   if (!row?.id) return { ok: false, error: SAVE_FAILED };
   return { ok: true, reagentId: row.id };
+}
+
+/* ───────── 서류로 입고 (d7 §21) ───────── */
+
+export type RecordDocumentIntakeResult =
+  | { ok: true; intakeCount: number; newReagentIds: string[] }
+  | { ok: false; error: string };
+
+/** 오늘 (Asia/Seoul, YYYY-MM-DD) */
+export function seoulToday(): string {
+  return SEOUL_DATE.format(new Date());
+}
+
+/**
+ * 서류로 입고 저장 — DB 함수 public.record_document_intake 하나만 호출한다 (한 트랜잭션: 연결 행 입고 + 새 시약 등록).
+ * 입력은 lib/doc-intake-rules checkDocIntakeInput 으로 다시 맞춘다. 역할·학교·데모 검사는 DB 함수가 한다.
+ */
+export async function recordDocumentIntake(input: unknown): Promise<RecordDocumentIntakeResult> {
+  const checked = checkDocIntakeInput(input, seoulToday());
+  if (!checked.ok) return checked;
+  const { intakeDate, items } = checked.value;
+
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  if (!claims?.claims?.sub) return { ok: false, error: SIGNED_OUT };
+
+  const { data, error } = await supabase.rpc("record_document_intake", {
+    p_intake_date: intakeDate,
+    p_items: items as unknown as Json,
+  });
+  if (error) {
+    switch (error.code) {
+      case "23505":
+        return { ok: false, error: "같은 이름의 시약이 이미 있어요. 그 품목은 우리 학교 시약으로 바꿔 주세요" };
+      case "22023":
+        return { ok: false, error: "입고일과 품목 값을 확인해 주세요" };
+      case "P0002":
+        return { ok: false, error: "연결한 시약을 찾을 수 없어요. 화면을 새로 고친 뒤 다시 시도해 주세요" };
+      case "42501":
+        return { ok: false, error: STAFF_ONLY };
+      default:
+        return { ok: false, error: SAVE_FAILED };
+    }
+  }
+  const body = (data ?? {}) as { intake_count?: unknown; new_reagent_ids?: unknown };
+  const count = typeof body.intake_count === "number" ? body.intake_count : items.length;
+  const ids = Array.isArray(body.new_reagent_ids) ? body.new_reagent_ids.filter((x): x is string => typeof x === "string") : [];
+  return { ok: true, intakeCount: count, newReagentIds: ids };
 }

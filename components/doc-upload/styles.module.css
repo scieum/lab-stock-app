@@ -1,0 +1,216 @@
+/* 시안 1.17 7 · 7-doc-upload · 7-doc-fail doc-upload:
+ * 흰 카드, 테두리 hairline-strong, radius 24, 안쪽 24, 사이 16
+ * upload-text(제목 18/700 + caption 12/400 회색, 사이 4) → doc-preview(연회색 radius 16, 높이 160)
+ * → upload-actions(button-pill-soft 2개 반반, 사이 8) / 처리 중: progress-track(높이 8, 연하늘) + reading-text + 취소(폭 120)
+ * → button-primary "AI로 읽기" 전폭
+ */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+  padding: var(--space-24);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-sizing: border-box;
+}
+
+.root[data-dragging] {
+  border-color: var(--color-highlight);
+}
+
+/* 실제 파일 입력: 버튼(촬영하기·파일 선택)이 대신 연다 */
+.fileInput {
+  position: absolute;
+  width: var(--border-width);
+  height: var(--border-width);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.text,
+.reading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.heading {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.body {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.caption {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+/* doc-preview: 연회색, radius 16, 높이 160, 가운데 흰 종이 + 아래 파일 이름 띠 */
+.preview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: calc(var(--space-32) * 5);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  overflow: hidden;
+}
+
+/* doc-page: 흰 종이 112 × 136 + doc-line */
+.docPage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  width: calc(var(--space-16) * 7);
+  height: calc(var(--space-8) * 17);
+  padding: var(--space-16) var(--space-12);
+  background: var(--color-surface);
+  box-sizing: border-box;
+}
+
+.docLine {
+  display: block;
+  height: var(--space-4);
+  background: var(--color-border-strong);
+}
+
+.l1 {
+  width: 50%;
+}
+
+.l2,
+.l4,
+.l5 {
+  width: 100%;
+}
+
+.l3,
+.l6 {
+  width: 75%;
+}
+
+.thumb {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* badge-overlay(파일 이름): 미리보기 아래 가운데 */
+.fileName {
+  position: absolute;
+  bottom: var(--space-8);
+  left: 50%;
+  max-width: calc(100% - var(--space-16));
+  transform: translateX(-50%);
+}
+
+/* progress-track: 높이 8, 연하늘 트랙 + 하늘색 채움(오가며 움직임) */
+.track {
+  position: relative;
+  height: var(--space-8);
+  border-radius: var(--radius-pill);
+  background: var(--color-highlight-soft);
+  overflow: hidden;
+}
+
+.fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 60%;
+  border-radius: var(--radius-pill);
+  background: var(--color-highlight);
+  animation: doc-reading 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes doc-reading {
+  from {
+    transform: translateX(-40%);
+  }
+  to {
+    transform: translateX(110%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fill {
+    animation: none;
+  }
+}
+
+.cancel {
+  display: flex;
+}
+
+.cancel > * {
+  width: calc(var(--space-24) * 5);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.pick {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.pickLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.pickIcon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  flex-shrink: 0;
+  color: var(--color-highlight);
+}
+
+/* 안내 문구는 기본색 (핑크 금지) */
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.errorIcon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  flex-shrink: 0;
+  margin-top: calc((var(--font-size-13) * var(--line-height-normal) - var(--icon-sm)) / 2);
+  color: var(--color-text-muted);
+}

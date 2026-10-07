@@ -1,0 +1,335 @@
+/* 시안 1.17 7-doc-review doc-intake-table: 사이 12
+ * table-head(제목 20/700 + caption 12, 사이 4) → doc-date(라벨 13/600 + 입력, 한 줄 사이 12)
+ * 모바일: doc-item-row = 회색 카드(radius 16, 안쪽 16, 사이 12), 카드 안 입력은 흰색
+ *   item-line: item-name(품명 17/600 + "규격 500 mL" 15/400) | item-qty("수량" 12 + 입력, 폭 93), 사이 12
+ * 데스크톱: table-header(품명 408 · 규격 160 · 수량 120, 12/600 회색, 아래 선) + 행(아래 가는 선, 위아래 16)
+ * unit-convert 12/400 회색 · not-reagent-group 13/400 회색
+ */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+  color: var(--color-text);
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-12);
+}
+
+.headText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}
+
+.caption {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.restart {
+  flex-shrink: 0;
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-8);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+}
+
+.restart:focus-visible,
+.othersToggle:focus-visible,
+.otherAction:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.date {
+  display: flex;
+  min-width: 0;
+}
+
+/* 라벨 "서류 날짜" 와 입력을 한 줄에 (사이 12), 오류 문구는 아래 줄 */
+.dateInput {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--space-12);
+  row-gap: var(--space-4);
+  min-width: 0;
+}
+
+.dateInput > p {
+  grid-column: 1 / -1;
+}
+
+.header {
+  display: none;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+.row {
+  /* 카드 안 입력 상자는 흰색 (시안 7-doc-review-mobile) */
+  --color-surface-input: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+  padding: var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  box-sizing: border-box;
+}
+
+.itemLine {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+.itemName {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.itemTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.itemSpec {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.itemQty {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.qtyLabel {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.qtyInput {
+  width: calc(var(--space-32) * 3);
+}
+
+.amountLine {
+  display: flex;
+  min-width: 0;
+}
+
+.amountInput {
+  width: calc(var(--space-48) * 4);
+  max-width: 100%;
+}
+
+.note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+/* 안내 문구는 기본색 (핑크 금지) */
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.errorIcon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  flex-shrink: 0;
+  margin-top: calc((var(--font-size-13) * var(--line-height-normal) - var(--icon-sm)) / 2);
+  color: var(--color-text-muted);
+}
+
+.empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+/* not-reagent-group: 접힌 묶음 "시약 아님 N개" 13/400 회색, 높이 44 */
+.others {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.othersToggle {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--button-min-height);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+}
+
+.othersIcon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  color: var(--color-text-muted);
+}
+
+.otherList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.otherItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-12) var(--space-8) var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.otherName {
+  min-width: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.otherSpec {
+  color: var(--color-text-muted);
+}
+
+.otherAction {
+  flex-shrink: 0;
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-12);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+}
+
+.otherAction:disabled,
+.restart:disabled {
+  cursor: not-allowed;
+  opacity: var(--pressed-opacity);
+}
+
+@media (min-width: 1024px) {
+  .date {
+    max-width: calc(var(--space-48) * 6 + var(--space-16));
+  }
+
+  .header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) calc(var(--space-32) * 5) calc(var(--space-24) * 5);
+    gap: var(--space-16);
+    padding: var(--space-8) 0;
+    border-bottom: var(--border-width) solid var(--color-border-strong);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-12);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-normal);
+  }
+
+  .rows {
+    gap: var(--space-0);
+  }
+
+  .row {
+    --color-surface-input: var(--color-gray-100);
+    padding: var(--space-16) 0;
+    border-bottom: var(--border-width) solid var(--color-border);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .itemLine {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) calc(var(--space-32) * 5) calc(var(--space-24) * 5);
+    align-items: center;
+    gap: var(--space-16);
+  }
+
+  .itemName {
+    display: contents;
+  }
+
+  .specLabel,
+  .qtyLabel {
+    display: none;
+  }
+
+  .qtyInput {
+    width: 100%;
+  }
+}

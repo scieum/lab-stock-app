@@ -561,6 +561,10 @@ export type Database = {
           user_name: string
         }[]
       }
+      record_document_intake: {
+        Args: { p_intake_date: string; p_items: Json }
+        Returns: Json
+      }
       record_intake: {
         Args: { p_amount: number; p_intake_date: string; p_reagent_id: string }
         Returns: {
