@@ -28,6 +28,10 @@ const KOSHA_NAME = (/"(염화수소)"/.exec(BOOST) ?? [])[1] ?? "";
 const HCL_CAS = (/"염화수소"\((\d+-\d+-\d)\)/.exec(BOOST) ?? [])[1] ?? "";
 const REPORT_QUERY = (/"(묽은 염산)"/.exec(BOOST) ?? [])[1] ?? "";
 const OTHER_CAS = "64-17-5";
+/** CAS 차례로 찾았을 때 응답 searchedAs (첫 후보 KOSHA 물질명 + "(CAS 번호)") */
+const FOUND_CAS = `${KOSHA_NAME}(CAS ${HCL_CAS})`;
+/** 사용자 보고 안내 줄 "묽은 염산 → 염화수소(CAS 7647-01-0)로 찾았어요" */
+const casNote = (orig: string) => noteText(orig, FOUND_CAS, KOSHA_NAME);
 
 /** 받침(ㄹ 제외) → 으로, 아니면 로 (테스트 쪽 독립 계산) */
 function ro(word: string): string {
@@ -36,7 +40,9 @@ function ro(word: string): string {
   const jong = code % 28;
   return jong === 0 || jong === 8 ? "로" : "으로";
 }
-const noteText = (orig: string, found: string) => NOTE_TEMPLATE.replace("{원래 이름}", orig).replace("{찾은 이름}(으)로", `${found}${ro(found)}`);
+/** particleOf = 조사를 정하는 글자 (CAS 차례 "물질명(CAS 번호)" 은 괄호 앞 물질명) */
+const noteText = (orig: string, found: string, particleOf = found) =>
+  NOTE_TEMPLATE.replace("{원래 이름}", orig).replace("{찾은 이름}(으)로", `${found}${ro(particleOf)}`);
 const nameOf = (tail: string) => `임시${randomBytes(3).toString("hex")}${tail}`;
 
 type Call = { q: string; cas: string | null };
@@ -112,20 +118,21 @@ test("[C1][S*] 전제: d7 §20 검색 보강 문구 틀 · 사용자 보고 값"
   expect(NOTE_TAIL.length).toBeGreaterThan(0);
   expect([KOSHA_NAME, HCL_CAS, REPORT_QUERY].every((x) => x.length > 0)).toBe(true);
   expect(noteText(REPORT_QUERY, KOSHA_NAME)).toBe(`${REPORT_QUERY} → ${KOSHA_NAME}로 ${NOTE_TAIL}`);
+  expect(casNote(REPORT_QUERY)).toBe(`${REPORT_QUERY} → ${KOSHA_NAME}(CAS ${HCL_CAS})로 ${NOTE_TAIL}`);
 });
 
 test.describe("일회용 학교", () => {
   test.skip(!HAS_SERVICE, "SUPABASE_SERVICE_ROLE_KEY 가 없어 일회용 계정·학교를 만들 수 없음 (.env.local 에 키를 넣으면 실행된다)");
 
-  test(`[C1][S3] 일회용 교사 CAS 있는 시약 "MSDS 찾기": 요청 cas = 시약 cas_no · 응답 searchedAs "${KOSHA_NAME}" → 시트에 "{시약 이름} → ${KOSHA_NAME}${ro(KOSHA_NAME)} ${NOTE_TAIL}" 1줄 / 검색 상자에서 이름을 바꿔 찾으면 cas 없음 · searchedAs = 검색어 → 안내 줄 없음 / 다른 이름으로 찾았으면 그 이름 안내 / 쓰기 0`, async ({ browser }, info) => {
+  test(`[C1][S3] 일회용 교사 CAS 있는 시약 "MSDS 찾기": 요청 cas = 시약 cas_no · 응답 searchedAs "${FOUND_CAS}" → 시트에 "{시약 이름} → ${FOUND_CAS}${ro(KOSHA_NAME)} ${NOTE_TAIL}" 1줄 / 검색 상자에서 이름을 바꿔 찾으면 cas 없음 · 물질명 = 검색어 → 안내 줄 없음 / 다른 이름으로 찾았으면 그 이름 안내 / 쓰기 0`, async ({ browser }, info) => {
     const f = await fresh(info);
     const a = await prep(f, "묽은 염산", HCL_CAS);
     const { context, page, viewport } = await openTemp(browser, info, f.teacher, detailPath(a.id));
     const actions = watchActions(page);
     try {
       const calls = await intercept(page, (c) => {
-        if (c.q === a.name) return { body: { candidates: candidatesFor(c.q), searchedAs: KOSHA_NAME } };
-        if (c.q === KOSHA_NAME) return { body: { candidates: candidatesFor(c.q), searchedAs: KOSHA_NAME } };
+        if (c.q === a.name) return { body: { candidates: candidatesFor(c.q), searchedAs: FOUND_CAS } };
+        if (c.q === KOSHA_NAME) return { body: { candidates: candidatesFor(c.q), searchedAs: FOUND_CAS } };
         if (c.q === `${REPORT_QUERY} 0.1M`) return { body: { candidates: candidatesFor(c.q), searchedAs: "염산" } };
         return { body: { candidates: candidatesFor(c.q), searchedAs: c.q } };
       });
@@ -136,7 +143,7 @@ test.describe("일회용 학교", () => {
       const s = sheet(page);
       await expectCandidates(s, candidatesFor(a.name), "처음 찾기");
       expect(calls, "처음 찾기: q = 시약 이름 · cas = 시약 cas_no").toEqual([{ q: a.name, cas: HCL_CAS }]);
-      await expect(s.getByText(noteText(a.name, KOSHA_NAME), { exact: true }), "안내 줄 문구 (d7 틀)").toBeVisible();
+      await expect(s.getByText(casNote(a.name), { exact: true }), `안내 줄 "${casNote(a.name)}" (d7 틀 · 조사는 괄호 앞 물질명)`).toBeVisible();
       await expect(notes(s), "안내 줄 1").toHaveCount(1);
       await expectNoN2Terms(page, "안내 줄");
       await page.screenshot({ path: join(process.cwd(), "test-results", `v1-3-msds-searched-as-${viewport}.png`) });
@@ -148,7 +155,7 @@ test.describe("일회용 학교", () => {
       await box.press("Enter");
       await expectCandidates(s, candidatesFor(KOSHA_NAME), "이름 바꿔 찾기");
       expect(calls[1], "이름을 바꾸면 cas 없음").toEqual({ q: KOSHA_NAME, cas: null });
-      await expect(notes(s), "searchedAs = 검색어 → 안내 줄 없음").toHaveCount(0);
+      await expect(notes(s), `searchedAs "${FOUND_CAS}" 의 물질명 = 검색어 → 안내 줄 없음`).toHaveCount(0);
 
       // 다른 이름 → 정리한 이름으로 찾았다는 응답 → "{검색어} → 염산으로 …"
       const q2 = `${REPORT_QUERY} 0.1M`;
@@ -164,7 +171,7 @@ test.describe("일회용 학교", () => {
     }
   });
 
-  test(`[C1][S3] 일회용 교사 안내 줄 조건: searchedAs "CAS {시약 CAS}" → CAS 를 담은 "… ${NOTE_TAIL}" / searchedAs 없음 · 후보 0개 → 안내 줄 없음 / CAS 없는 시약 → 요청에 cas 없음 · CAS 꼴 검색어를 그대로 찾았으면 없음`, async ({ browser }, info) => {
+  test(`[C1][S3] 일회용 교사 안내 줄 조건: 예전 꼴 searchedAs "CAS {시약 CAS}" → "{시약 이름} → CAS …로 ${NOTE_TAIL}" · searchedAs "물질명(CAS 검색어)" 는 검색어가 그 CAS 면 없음 / searchedAs 없음 · 후보 0개 → 안내 줄 없음 / CAS 없는 시약 → 요청에 cas 없음 · CAS 꼴 검색어를 그대로 찾았으면 없음`, async ({ browser }, info) => {
     const f = await fresh(info);
     const withCas = await prep(f, "에탄올 특급", OTHER_CAS);
     const noCas = await prep(f, "질산은 용액", null);
@@ -173,7 +180,7 @@ test.describe("일회용 학교", () => {
     try {
       let mode: "cas" | "none" | "empty" = "cas";
       const calls = await intercept(page, (c) => {
-        if (/^\d+-\d+-\d$/.test(c.q)) return { body: { candidates: candidatesFor(c.q), searchedAs: `CAS ${c.q}` } };
+        if (/^\d+-\d+-\d$/.test(c.q)) return { body: { candidates: candidatesFor(c.q), searchedAs: `에탄올(CAS ${c.q})` } };
         if (mode === "cas") return { body: { candidates: candidatesFor(c.q), searchedAs: `CAS ${OTHER_CAS}` } };
         if (mode === "none") return { body: { candidates: candidatesFor(c.q) } };
         return { body: { candidates: [], searchedAs: "다른이름" } };
@@ -185,16 +192,15 @@ test.describe("일회용 학교", () => {
       let s = sheet(page);
       await expectCandidates(s, candidatesFor(withCas.name), "CAS 로 찾음");
       expect(calls[0]).toEqual({ q: withCas.name, cas: OTHER_CAS });
-      const casNote = notes(s);
-      await expect(casNote, "CAS 안내 줄 1").toHaveCount(1);
-      await expect(casNote).toContainText(`CAS ${OTHER_CAS}`);
-      await expect(casNote, "64-17-5 (오) → 로").toHaveText(new RegExp(`CAS ${OTHER_CAS}\\s?로 ${NOTE_TAIL}$`));
+      const oldNote = notes(s);
+      await expect(oldNote, "CAS 안내 줄 1").toHaveCount(1);
+      await expect(oldNote, "예전 꼴: 64-17-5 (오) → 로 · 조사 앞 공백 없음").toHaveText(noteText(withCas.name, `CAS ${OTHER_CAS}`, "오"));
 
       // CAS 꼴 검색어를 그대로 찾음 → 없음
       await searchBox(s).fill(OTHER_CAS);
       await searchBox(s).press("Enter");
       await expectCandidates(s, candidatesFor(OTHER_CAS), "CAS 검색어");
-      await expect(notes(s), "검색어 CAS = 찾은 CAS → 없음").toHaveCount(0);
+      await expect(notes(s), "검색어 = searchedAs 에탄올(CAS 검색어) 의 CAS → 없음").toHaveCount(0);
       await s.getByRole("button", { name: exact("닫기") }).click();
       await expect(s).toHaveCount(0);
 
@@ -223,7 +229,7 @@ test.describe("일회용 학교", () => {
     }
   });
 
-  test(`[C1][S2] 일회용 교사 ?nomsds=1 일괄 찾기: 시약마다 요청 cas = 그 시약 cas_no (없으면 cas 없음) · searchedAs "${KOSHA_NAME}" → "{시약 이름} → ${KOSHA_NAME}${ro(KOSHA_NAME)} ${NOTE_TAIL}" / searchedAs = 시약 이름 → 안내 줄 없음 · 쓰기 0`, async ({ browser }, info) => {
+  test(`[C1][S2] 일회용 교사 ?nomsds=1 일괄 찾기: 시약마다 요청 cas = 그 시약 cas_no (없으면 cas 없음) · searchedAs "${FOUND_CAS}" → "{시약 이름} → ${FOUND_CAS}${ro(KOSHA_NAME)} ${NOTE_TAIL}" / searchedAs = 시약 이름 → 안내 줄 없음 · 쓰기 0`, async ({ browser }, info) => {
     const f = await fresh(info);
     const hcl = await prep(f, "묽은 염산", HCL_CAS);
     const plain = await prep(f, "아세톤", null);
@@ -235,7 +241,7 @@ test.describe("일회용 학교", () => {
     const actions = watchActions(page);
     try {
       const calls = await intercept(page, (c) => ({
-        body: { candidates: candidatesFor(c.q), searchedAs: c.q === hcl.name ? KOSHA_NAME : c.q },
+        body: { candidates: candidatesFor(c.q), searchedAs: c.q === hcl.name ? FOUND_CAS : c.q },
       }));
       await expect(page.locator(sel("segmented-control")).first()).toBeVisible({ timeout: 30_000 });
       const banner = page.locator(sel(MSDS_BULK_BANNER));
@@ -252,7 +258,7 @@ test.describe("일회용 학교", () => {
         expect(c.cas, `${c.q}: cas = 시약 cas_no`).toBe(casOf.get(c.q));
         await expectCandidates(s, candidatesFor(c.q), `${i + 1}번째`);
         if (c.q === hcl.name) {
-          await expect(s.getByText(noteText(hcl.name, KOSHA_NAME), { exact: true }), "안내 줄").toBeVisible();
+          await expect(s.getByText(casNote(hcl.name), { exact: true }), `안내 줄 "${casNote(hcl.name)}"`).toBeVisible();
           await expect(notes(s)).toHaveCount(1);
           await page.screenshot({ path: join(process.cwd(), "test-results", `v1-2-msds-searched-as-${viewport}.png`) });
         } else {
@@ -273,14 +279,14 @@ test.describe("일회용 학교", () => {
 // =====================================================================
 // 화면 7 (공용 학교 A 교사 — 저장 안 함)
 // =====================================================================
-test(`[C1][S${S7}] 교사 새 시약 등록 "MSDS 찾기": 이름만 보낸다(cas 없음) · searchedAs "${KOSHA_NAME}" → "${noteText(REPORT_QUERY || "묽은 염산", KOSHA_NAME || "염화수소")}" / searchedAs = 검색어 → 안내 줄 없음 · 쓰기 0`, async ({ browser }, info) => {
+test(`[C1][S${S7}] 교사 새 시약 등록 "MSDS 찾기": 이름만 보낸다(cas 없음) · searchedAs "${FOUND_CAS}" → 사용자 보고 "${casNote(REPORT_QUERY)}" / searchedAs = 검색어 → 안내 줄 없음 · 쓰기 0`, async ({ browser }, info) => {
   test.setTimeout(120_000);
   const { context, page, viewport } = await openAs(browser, info, "teacher", S7, intakePath({ tab: "register" }));
   const actions = watchActions(page);
   try {
     await waitIntake(page, "register");
     let same = false;
-    const calls = await intercept(page, (c) => ({ body: { candidates: candidatesFor(c.q), searchedAs: same ? c.q : KOSHA_NAME } }));
+    const calls = await intercept(page, (c) => ({ body: { candidates: candidatesFor(c.q), searchedAs: same ? c.q : FOUND_CAS } }));
     const form = registerForm(page);
     const name = form.getByRole("textbox", { name: /시약명/ }).first();
     const find = form.locator(sel(MSDS_SEARCH));
@@ -290,7 +296,7 @@ test(`[C1][S${S7}] 교사 새 시약 등록 "MSDS 찾기": 이름만 보낸다(c
     const s = sheet(page);
     await expectCandidates(s, candidatesFor(REPORT_QUERY), "화면 7");
     expect(calls, "화면 7: q = 시약명 · cas 없음").toEqual([{ q: REPORT_QUERY, cas: null }]);
-    await expect(s.getByText(noteText(REPORT_QUERY, KOSHA_NAME), { exact: true }), "안내 줄 문구 (d7 틀)").toBeVisible();
+    await expect(s.getByText(casNote(REPORT_QUERY), { exact: true }), `안내 줄 "${casNote(REPORT_QUERY)}" (d7 틀)`).toBeVisible();
     await expect(notes(s)).toHaveCount(1);
     await expectNoN2Terms(page, "화면 7 안내 줄");
     await page.screenshot({ path: join(process.cwd(), "test-results", `v1-7-msds-searched-as-${viewport}.png`) });

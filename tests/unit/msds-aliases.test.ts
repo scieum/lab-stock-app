@@ -23,7 +23,7 @@ vi.mock("@/lib/server/msds-search", async () => await import("../../lib/server/m
 const access = vi.hoisted(() => ({ kind: "ok" as string, userId: "u-1" }));
 vi.mock("@/lib/supabase/msds", () => ({ getMsdsAccess: async () => ({ ...access }) }));
 
-import { MSDS_ALIASES, cleanReagentName, lookupAliasCas, planMsdsSearch, searchedAsNote } from "../../lib/msds-aliases";
+import { MSDS_ALIASES, cleanReagentName, lookupAliasCas, planMsdsSearch, searchedAsLabel, searchedAsNote } from "../../lib/msds-aliases";
 import { isCasQuery, readSearchedAs } from "../../lib/msds-rules";
 
 // ---- d7 §20 ----
@@ -57,8 +57,9 @@ function ro(word: string): string {
   return jong === 0 || jong === 8 ? "로" : "으로";
 }
 /** d7 문구 틀에 넣은 기대 문구 */
-const expectedNote = (orig: string, found: string) =>
-  NOTE_TEMPLATE.replace("{원래 이름}", orig).replace("{찾은 이름}(으)로", `${found}${ro(found)}`);
+/** particleOf = 조사를 정하는 글자 (CAS 꼴 "물질명(CAS …)" 은 괄호 앞 물질명) */
+const expectedNote = (orig: string, found: string, particleOf = found) =>
+  NOTE_TEMPLATE.replace("{원래 이름}", orig).replace("{찾은 이름}(으)로", `${found}${ro(particleOf)}`);
 
 /** CAS 체크 디지트: 마지막 자리 = (앞 숫자들을 오른쪽부터 1·2·3… 곱해 더한 값) mod 10 */
 function casCheckOk(cas: string): { ok: boolean; expected: number } {
@@ -306,14 +307,36 @@ describe("[K1][S*] searchedAsNote (d7 문구) · readSearchedAs", () => {
     expect(searchedAsNote("x", "아세톤")).toContain("아세톤으로 찾았어요");
     expect(searchedAsNote("x", "과산화수소")).toContain("과산화수소로 찾았어요");
   });
-  it("CAS: 찾은 CAS 와 읽는 소리 조사 (…-0 영 → 으로 · …-9 구 → 로) · 원래 검색어가 그 CAS 면 없음", () => {
-    const n0 = searchedAsNote(REPORT.query, `CAS ${REPORT.cas}`);
-    expect(n0).toContain(`CAS ${REPORT.cas}`);
-    expect(n0).toMatch(/0\s?으로 찾았어요$/);
-    const n9 = searchedAsNote("황산", "CAS 7664-93-9");
-    expect(n9).toMatch(/9\s?로 찾았어요$/);
+  it(`CAS 새 꼴 "물질명(CAS 번호)": 사용자 보고 "${REPORT.query} → ${REPORT.kosha}(CAS ${REPORT.cas})로 찾았어요" = d7 틀 · 조사는 괄호 앞 물질명 (받침 → 으로 · 없음/ㄹ → 로) · 조사 앞 공백 없음`, () => {
+    const found = `${REPORT.kosha}(CAS ${REPORT.cas})`;
+    expect(searchedAsNote(REPORT.query, found)).toBe(`${REPORT.query} → ${REPORT.kosha}(CAS ${REPORT.cas})로 찾았어요`);
+    expect(searchedAsNote(REPORT.query, found)).toBe(expectedNote(REPORT.query, found, REPORT.kosha));
+    expect(searchedAsNote("묽은 염산", `염산(CAS ${REPORT.cas})`), "받침 → 으로").toBe(`묽은 염산 → 염산(CAS ${REPORT.cas})으로 찾았어요`);
+    expect(searchedAsNote("주정", "에탄올(CAS 64-17-5)"), "ㄹ 받침 → 로").toBe("주정 → 에탄올(CAS 64-17-5)로 찾았어요");
+    expect(searchedAsNote("가성소다", "수산화 나트륨(CAS 1310-73-2)"), "물질명 공백 그대로 · 받침 → 으로").toBe("가성소다 → 수산화 나트륨(CAS 1310-73-2)으로 찾았어요");
+  });
+  it("CAS 새 꼴 없음: 원래 검색어가 그 CAS · 물질명이 원래 검색어와 같음(공백·대소문자 무시)", () => {
+    const found = `${REPORT.kosha}(CAS ${REPORT.cas})`;
+    expect(searchedAsNote(REPORT.cas, found), "검색어 = 그 CAS").toBeNull();
+    expect(searchedAsNote(` ${REPORT.cas} `, found)).toBeNull();
+    expect(searchedAsNote(REPORT.kosha, found), "물질명 = 검색어").toBeNull();
+    expect(searchedAsNote(`${REPORT.kosha} `, `${REPORT.kosha} (CAS ${REPORT.cas})`)).toBeNull();
+    expect(searchedAsNote("btb", "BTB(CAS 76-59-5)")).toBeNull();
+  });
+  it("예전 꼴 \"CAS 번호\" 도 받음: \"{원래} → CAS …{조사} 찾았어요\" (숫자 읽는 소리 0 영 → 으로 · 9 구 → 로, 공백 없음) · 검색어가 그 CAS 면 없음", () => {
+    expect(searchedAsNote(REPORT.query, `CAS ${REPORT.cas}`)).toBe(`${REPORT.query} → CAS ${REPORT.cas}으로 찾았어요`);
+    expect(searchedAsNote("황산", "CAS 7664-93-9")).toBe("황산 → CAS 7664-93-9로 찾았어요");
     expect(searchedAsNote(REPORT.cas, `CAS ${REPORT.cas}`), "같은 CAS → 없음").toBeNull();
     expect(searchedAsNote(` ${REPORT.cas} `, `CAS ${REPORT.cas}`)).toBeNull();
+  });
+  it("searchedAsLabel: 이름 차례 = 그 이름 · CAS 차례 = 첫 후보 물질명(CAS 후보 CAS, 없으면 검색 CAS) · 후보 없음 → \"CAS 번호\"", () => {
+    const c = (name: string, cas: string | null) => ({ chemId: "000001", name, cas, msdsUrl: "https://x.test/1" });
+    expect(searchedAsLabel({ kind: "name", value: "염산" }, c("염화수소", REPORT.cas))).toBe("염산");
+    expect(searchedAsLabel({ kind: "cas", value: REPORT.cas }, c(REPORT.kosha, REPORT.cas))).toBe(`${REPORT.kosha}(CAS ${REPORT.cas})`);
+    expect(searchedAsLabel({ kind: "cas", value: REPORT.cas }, c(REPORT.kosha, null)), "후보 CAS 없음 → 검색 CAS").toBe(`${REPORT.kosha}(CAS ${REPORT.cas})`);
+    expect(searchedAsLabel({ kind: "cas", value: REPORT.cas }, c(REPORT.kosha, "1-11-1")), "후보 CAS 우선").toBe(`${REPORT.kosha}(CAS 1-11-1)`);
+    expect(searchedAsLabel({ kind: "cas", value: REPORT.cas }, null)).toBe(`CAS ${REPORT.cas}`);
+    expect(searchedAsLabel({ kind: "cas", value: REPORT.cas })).toBe(`CAS ${REPORT.cas}`);
   });
   it("없음: searchedAs 없음·빈 값 · 원래 이름과 같음(공백·대소문자 차이만)", () => {
     for (const s of [null, undefined, "", "  "]) expect(searchedAsNote(REPORT.query, s), String(s)).toBeNull();
@@ -322,12 +345,15 @@ describe("[K1][S*] searchedAsNote (d7 문구) · readSearchedAs", () => {
     expect(searchedAsNote("BTB", "btb")).toBeNull();
   });
   it("문구에 N2 금지어 0", () => {
-    const s = [searchedAsNote(REPORT.query, REPORT.kosha), searchedAsNote(REPORT.query, `CAS ${REPORT.cas}`)].join("\n").toLowerCase();
+    const s = [searchedAsNote(REPORT.query, REPORT.kosha), searchedAsNote(REPORT.query, `CAS ${REPORT.cas}`), searchedAsNote(REPORT.query, `${REPORT.kosha}(CAS ${REPORT.cas})`)].join("\n").toLowerCase();
     expect(BANNED.filter((t) => s.includes(t.toLowerCase()))).toEqual([]);
   });
   it("readSearchedAs: 문자열만 · 앞뒤 공백 정리 · 빈 값·문자열 아님·너무 긺 → null", () => {
     expect(readSearchedAs({ candidates: [], searchedAs: " 염화수소 " })).toBe("염화수소");
     expect(readSearchedAs({ searchedAs: "CAS 7647-01-0" })).toBe("CAS 7647-01-0");
+    expect(readSearchedAs({ searchedAs: "염화수소(CAS 7647-01-0)" })).toBe("염화수소(CAS 7647-01-0)");
+    expect(readSearchedAs({ searchedAs: "가".repeat(160) }), "160자까지").toBe("가".repeat(160));
+    expect(readSearchedAs({ searchedAs: "가".repeat(161) }), "161자 → null").toBeNull();
     for (const b of [null, undefined, "x", {}, { searchedAs: 1 }, { searchedAs: "" }, { searchedAs: "  " }, { searchedAs: "가".repeat(500) }]) expect(readSearchedAs(b), JSON.stringify(b)).toBeNull();
   });
 });
@@ -389,14 +415,16 @@ const ids = (c: { chemId: string }[]) => c.map((x) => x.chemId);
 describe("[K1][N2][S*] combinedMsdsSearch · cachedCombinedMsdsSearch (가짜 fetch — 실제 KOSHA 호출 없음)", () => {
   const st = useFakeKosha();
 
-  it(`사용자 보고 "${REPORT.query}": 표 CAS(searchCnd 1) 로 "${REPORT.kosha}" 를 찾는다 → searchedAs "CAS ${REPORT.cas}" · 원래 이름도 함께 찾음 · (4) 안 부름`, async () => {
+  it(`사용자 보고 "${REPORT.query}": 표 CAS(searchCnd 1) 로 "${REPORT.kosha}" 를 찾는다 → searchedAs "${REPORT.kosha}(CAS ${REPORT.cas})" → 안내 줄 "${REPORT.query} → ${REPORT.kosha}(CAS ${REPORT.cas})로 …" · 원래 이름도 함께 찾음 · (4) 안 부름`, async () => {
     st.answers.set(`cas:${REPORT.cas}`, [{ id: "000111", name: REPORT.kosha, cas: REPORT.cas }]);
     const { combinedMsdsSearch } = await loadSearch();
     const r = await combinedMsdsSearch(REPORT.query);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.candidates.map((c) => [c.chemId, c.name, c.cas])).toEqual([["000111", REPORT.kosha, REPORT.cas]]);
-    expect(r.searchedAs).toBe(`CAS ${REPORT.cas}`);
+    expect(r.searchedAs).toBe(`${REPORT.kosha}(CAS ${REPORT.cas})`);
+    expect(searchedAsNote(REPORT.query, r.searchedAs)).toBe(expectedNote(REPORT.query, `${REPORT.kosha}(CAS ${REPORT.cas})`, REPORT.kosha));
+    expect(searchedAsNote(REPORT.query, r.searchedAs)).toBe(`${REPORT.query} → ${REPORT.kosha}(CAS ${REPORT.cas})로 찾았어요`);
     expect(st.calls).toEqual([
       { cnd: "1", wrd: REPORT.cas },
       { cnd: "0", wrd: REPORT.query },
@@ -414,7 +442,7 @@ describe("[K1][N2][S*] combinedMsdsSearch · cachedCombinedMsdsSearch (가짜 fe
     if (!r.ok) return;
     expect(ids(r.candidates)).toEqual(["000010", "000011", "000012"]);
     expect(r.candidates[1].name, "중복은 앞 차례 것").toBe("염화수소 B");
-    expect(r.searchedAs).toBe(`CAS ${REPORT.cas}`);
+    expect(r.searchedAs, "CAS 차례 첫 후보 물질명 + (CAS 검색 CAS — 후보 CAS 없음)").toBe(`염화수소 A(CAS ${REPORT.cas})`);
     expect(st.calls.map((c) => `${c.cnd}:${c.wrd}`)).toEqual([`1:${etoh}`, `1:${REPORT.cas}`, "0:염산"]);
   });
 
@@ -561,7 +589,7 @@ describe("[N2][S*] GET /api/msds/search?q=&cas= (route — 가짜 fetch · 가�
     const r = await call({ q: "라우트물질A 특급", cas: "111-11-1" });
     expect(r.status).toBe(200);
     expect(Object.keys(r.body).sort()).toEqual(["candidates", "searchedAs"]);
-    expect(r.body.searchedAs).toBe("CAS 111-11-1");
+    expect(r.body.searchedAs).toBe("라우트물질A(CAS 111-11-1)");
     expect(st.calls[0]).toEqual({ cnd: "1", wrd: "111-11-1" });
     safe(r.text);
   });
