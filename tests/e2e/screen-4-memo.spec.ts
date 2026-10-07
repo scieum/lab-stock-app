@@ -1,5 +1,6 @@
 // 화면 4 (사용 기록 입력) "메모" 입력 C1 — 시안 4 프레임의 메모 칸 + 화면 10 상세까지의 흐름
-// 기준: 디자인 s2-spec "## 화면 4" (text-input 순서 "사용 날짜"(필수)·"사용량"(필수)·"사용자"(필수)·"메모", 필수 라벨 옆 caption "필수"),
+// 기준: 디자인 s2-spec "## 화면 4" (필수 라벨 옆 caption "필수"),
+//       디자인 1.17 · d7 §15 (2026-10-07): 입력 순서 = 사용량(필수) · usage-date "사용일"(필수) · 사용자(필수) · 메모 (design/frames/4-*.json usage-form 순서),
 //       design/frames/4-{mobile|desktop}.json (메모 칸 안내 글자), harness/d7-data.md §1·§7
 //       (usage_logs.memo 200자 이하 · 빈 값은 null · 200자 초과는 거부 · 화면 10 상세의 메모, 없으면 "-").
 // 운영 DB: 저장 성공 경로는 UI 전용 고정 시약(학교 A, `R-db-UI10-fixture-{project}`)에만, 실행마다 2건(각 1 mL).
@@ -32,9 +33,12 @@ test.describe.configure({ mode: "default" });
 const INPUT = "text-input";
 const MEMO_LABEL = "메모";
 const REQUIRED_MARK = "필수";
-/** s2-spec 화면 4: 입력 순서 */
-const FIELD_ORDER = ["사용 날짜", "사용량", "사용자", MEMO_LABEL];
-const REQUIRED_FIELDS = ["사용 날짜", "사용량", "사용자"];
+/** 시안 4 usage-form 입력 순서 (디자인 1.17 — "사용 날짜" 읽기 전용 칸 → 수량 아래 usage-date "사용일") */
+const USED_ON_LABEL = "사용일";
+const FIELD_ORDER = ["사용량", USED_ON_LABEL, "사용자", MEMO_LABEL];
+const REQUIRED_FIELDS = ["사용량", USED_ON_LABEL, "사용자"];
+/** 입력 칸 = text-input · usage-date (usage-date 는 text-input 모양, data-component 만 다름) */
+const FIELD_SEL = `:is(${sel(INPUT)}, ${sel("usage-date")})`;
 /** d7 §1·§7: 메모 200자 이하 */
 const MEMO_MAX = 200;
 const AMOUNT = 1;
@@ -42,7 +46,7 @@ const AMOUNT = 1;
 const memoInput = (page: Page) => page.locator("main form").getByLabel(MEMO_LABEL, { exact: true });
 /** 라벨이 이 글자인 text-input */
 const fieldOf = (page: Page, label: string) =>
-  page.locator(`main form ${sel(INPUT)}`).filter({ has: page.locator("label").getByText(label, { exact: true }) });
+  page.locator(`main form ${FIELD_SEL}`).filter({ has: page.locator("label").getByText(label, { exact: true }) });
 
 /** 시안 4 프레임: field-label "메모" 다음 글자 = 메모 칸 안내 글자 */
 function memoPlaceholder(viewport: ViewportName): string {
@@ -99,12 +103,13 @@ for (const role of [...SCHOOL_A_ROLES, "schoolB"] as Role[]) {
       await waitUsage(page, true);
       expect((await browserSession(page)).role, "테스트 계정 역할").toBe(PROFILE_ROLE[role]);
 
-      // 라벨 순서: 사용 날짜 · 사용량 · 사용자 · 메모
-      const labels = (await page.locator(`main form ${sel(INPUT)} label`).allInnerTexts()).map((t) => t.trim());
-      expect(labels.filter((l) => FIELD_ORDER.includes(l)), "입력 순서 (s2-spec 화면 4)").toEqual(FIELD_ORDER);
+      // 라벨 순서: 사용량 · 사용일 · 사용자 · 메모 ("필수" 표시 글자는 라벨 안에 있을 수 있어 뗀다)
+      const labels = (await page.locator(`main form ${FIELD_SEL} label`).allInnerTexts()).map((t) => t.replace(REQUIRED_MARK, "").trim());
+      expect(labels.filter((l) => FIELD_ORDER.includes(l)), "입력 순서 (시안 4 · d7 §15)").toEqual(FIELD_ORDER);
+      await expect(fieldOf(page, USED_ON_LABEL).and(page.locator(sel("usage-date"))), `"${USED_ON_LABEL}" 은 usage-date`).toHaveCount(1);
       expect(labels[labels.length - 1], `"${MEMO_LABEL}" 은 마지막 입력`).toBe(MEMO_LABEL);
 
-      // 필수 표시: 사용 날짜·사용량·사용자에만
+      // 필수 표시: 사용량·사용일·사용자에만
       for (const l of REQUIRED_FIELDS) {
         await expect(fieldOf(page, l), `${INPUT} "${l}"`).toHaveCount(1);
         await expect(fieldOf(page, l).getByText(REQUIRED_MARK, { exact: true }), `"${l}" 옆 "${REQUIRED_MARK}"`).toHaveCount(1);

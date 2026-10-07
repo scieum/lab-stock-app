@@ -22,10 +22,14 @@ import styles from "./usage-history.module.css";
 
 export type UsageHistoryItem = {
   id: string;
-  /** "10.02" */
+  /** 사용일 "10.02" */
   date: string;
-  /** "2026.10.02 14:20" */
-  dateTime: string;
+  /** 사용일 "2026-10-02" (d7 §15) */
+  usedOn: string;
+  /** 기록한 시각 "2026-10-02 14:20" (한국 시간) */
+  recordedAt: string;
+  /** 기록한 날이 사용일과 다를 때만 "10월 6일에 기록" */
+  recordedCaption: string | null;
   reagentName: string;
   userName: string;
   /** "5" */
@@ -50,7 +54,7 @@ type Filter = { onlyMine: boolean; period: UsagePeriod; query: string };
 type Props = {
   /** 서버가 실제로 적용한 필터 */
   filter: Filter;
-  /** 최신순, 월 그룹 */
+  /** 사용일 최신순(같은 날은 기록 시각 최신순), 사용일의 월 그룹 */
   groups: UsageHistoryGroup[];
   /** 상한(200건)에 닿아 더 있을 수 있음 */
   truncated: boolean;
@@ -255,6 +259,7 @@ export function UsageHistoryScreen({ filter, groups, truncated }: Props) {
                       date={r.date}
                       title={r.reagentName}
                       subtitle={r.userName}
+                      caption={r.recordedCaption ?? undefined}
                       amount={r.amountLabel}
                       selected={r.id === openId}
                       onClick={() => {
@@ -284,7 +289,8 @@ export function UsageHistoryScreen({ filter, groups, truncated }: Props) {
               unit={selected.unit}
               fields={[
                 { label: "사용자", value: selected.userName },
-                { label: "일시", value: selected.dateTime },
+                { label: "사용일", value: selected.usedOn },
+                { label: "기록한 날", value: selected.recordedAt },
                 { label: "메모", value: selected.memo ?? "-" },
               ]}
               onClose={closeDetail}

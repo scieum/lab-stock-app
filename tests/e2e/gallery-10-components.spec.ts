@@ -21,57 +21,72 @@ type Dev = { components: Record<string, number[]> };
 const root = process.cwd();
 const rules = JSON.parse(readFileSync(join(root, "design/rules.json"), "utf8")) as Rules;
 const dev = JSON.parse(readFileSync(join(root, "harness/dev-rules.json"), "utf8")) as Dev;
+// 디자인 1.17(fadfee7): 10-mobile 시안에는 상세(ex-modal-card)가 없고 10-desktop 에만 있다(라벨 사용자·사용일·기록한 날·메모, d7 §15).
+// 기록 행은 날짜 열 대신 날짜 묶음 헤더 + "기록한 날" 캡션(record-caption) 시안이 됐다. 목록 묶음은 이번 run 에서 d7 §7·§15(월 묶음,
+// 행 = 날짜 · 시약명/사용자 · 사용량)를 따르므로 행의 글자는 시안에서 읽지 않고, 선택 행 색·캡션 모양만 시안에서 읽는다.
 const frame = JSON.parse(readFileSync(join(root, `design/frames/${SCREEN}-mobile.json`), "utf8")) as Frame;
 const nodes = frame.frames[0].nodes;
+const desktopNodes = (JSON.parse(readFileSync(join(root, `design/frames/${SCREEN}-desktop.json`), "utf8")) as Frame).frames[0].nodes;
 
 // ---------- 기대값: 프레임 ----------
-const under = (ancestor: string) => nodes.filter((n) => n.path.slice(0, -1).includes(ancestor));
+const underIn = (list: FrameNode[], ancestor: string) => list.filter((n) => n.path.slice(0, -1).includes(ancestor));
 const textOf = (list: FrameNode[], name: string) => list.filter((n) => n.name === name && n.text).map((n) => n.text!.characters);
 
-const modalNodes = under("ex-modal-card");
+const modalNodes = underIn(desktopNodes, "ex-modal-card");
+const amountParts = (textOf(modalNodes, "record-amount")[0] ?? "").split(" ");
 const MODAL = {
-  title: textOf(modalNodes, "modal-title")[0],
-  amount: textOf(modalNodes, "amount-value")[0],
-  unit: textOf(modalNodes, "amount-unit")[0],
+  title: textOf(modalNodes, "reagent-name")[0],
+  amount: amountParts[0],
+  unit: amountParts.slice(1).join(" "),
   labels: textOf(modalNodes, "field-label"),
   values: textOf(modalNodes, "field-value"),
   msds: modalNodes.filter((n) => n.path.includes("msds-entry") && n.name === "label")[0]?.text?.characters,
   close: modalNodes.filter((n) => n.path.includes("button-outline") && n.name === "label")[0]?.text?.characters,
   msdsCount: modalNodes.filter((n) => n.name === "msds-entry").length,
   outlineCount: modalNodes.filter((n) => n.name === "button-outline").length,
+  /** 1.17 시안: msds-entry 자체가 pill (안에 button-pill-soft 없음) */
+  msdsPillSoft: modalNodes.some((n) => n.name === "button-pill-soft" && n.path.includes("msds-entry")),
 };
 
 // 필터 줄 = 프레임의 segmented-control·text-input 전부 (모바일 시안은 검색 바가 filter-row 아래 줄에 따로 있다)
 const filterNodes = nodes.filter((n) => !n.path.includes("ex-modal-card") && !n.path.includes("record-list"));
 const countIn = (list: FrameNode[], name: string) => list.filter((n) => n.name === name).length;
+/** text-input 안 글자: 기간 = filter-row 안, 검색 = filter-row 밖(placeholder 회색 글자) */
+const inputValues = (inRow: boolean) =>
+  filterNodes.filter((n) => n.text && n.path.includes("text-input") && n.path.includes("filter-row") === inRow && (n.name === "value" || n.name === "placeholder")).map((n) => n.text!.characters);
 const FILTER = {
   segmented: countIn(filterNodes, "segmented-control"),
   active: countIn(filterNodes, "segmented-control-active"),
   textInput: countIn(filterNodes, "text-input"),
   activeLabel: filterNodes.filter((n) => n.path.includes("segmented-control-active") && n.name === "label")[0]?.text?.characters,
   otherLabel: filterNodes.filter((n) => n.path.includes("segmented-control-option") && n.name === "label")[0]?.text?.characters,
-  period: textOf(filterNodes, "value")[0],
-  searchPlaceholder: textOf(filterNodes, "placeholder")[0],
+  period: inputValues(true)[0],
+  searchPlaceholder: inputValues(false)[0],
 };
 
-type FrameRow = { selectedFill: string | null; date: string; name: string; user: string; amount: string };
+type FrameRow = { selectedFill: string | null; name: string; amount: string; caption: string | null };
+/** 데스크톱 시안의 기록 행 (선택 행 채움이 데스크톱에만 있다) */
 const FRAME_ROWS: FrameRow[] = [];
 {
-  let cur: Partial<FrameRow> | null = null;
-  for (const n of nodes) {
-    if (n.name === "ex-data-table-cell") {
-      cur = { selectedFill: n.fills[0] ?? null };
-      FRAME_ROWS.push(cur as FrameRow);
+  let cur: FrameRow | null = null;
+  for (const n of desktopNodes) {
+    if (n.name === "ex-data-table-cell" && !n.path.includes("ex-modal-card")) {
+      cur = { selectedFill: n.fills[0] ?? null, name: "", amount: "", caption: null };
+      FRAME_ROWS.push(cur);
     } else if (cur && n.path.includes("ex-data-table-cell") && n.text) {
-      if (n.name === "record-date") cur.date = n.text.characters;
       if (n.name === "reagent-name") cur.name = n.text.characters;
-      if (n.name === "record-user") cur.user = n.text.characters;
       if (n.name === "record-amount") cur.amount = n.text.characters;
+      if (n.name === "record-caption") cur.caption = n.text.characters;
     } else if (!n.path.includes("ex-data-table-cell")) {
       cur = null;
     }
   }
 }
+/** 시안 캡션 "10월 7일에 기록" 의 틀 (d7 §15) */
+const CAPTION_RE = /^\d{1,2}월 \d{1,2}일에 기록$/;
+const FRAME_CAPTION_FILL = desktopNodes.find((n) => n.name === "record-caption")?.fills[0] ?? "";
+/** d7 §7 행 날짜 "10.02" */
+const ROW_DATE_RE = /^\d{2}\.\d{2}$/;
 
 // ---------- 기대값: rules.json 하늘색 ----------
 const HIGHLIGHTS = rules.colors.highlight.values.map((v) => v.toLowerCase());
@@ -121,11 +136,14 @@ async function box(loc: Locator, what: string): Promise<{ x: number; y: number; 
 }
 
 // ---------- 기대값 자체 점검 ----------
-test(`[K1][S${SCREEN}] 기대값 원본: 프레임 ${SCREEN}-mobile 에 ex-modal-card·filter-row·기록 행, rules.json 하늘색 2종`, () => {
-  expect(MODAL.title, "프레임 modal-title").toBeTruthy();
-  expect(MODAL.amount, "프레임 amount-value").toBeTruthy();
-  expect(MODAL.unit, "프레임 amount-unit").toBeTruthy();
-  expect(MODAL.labels, "프레임 field-label (s2-spec: 사용자 · 일시 · 메모)").toEqual(["사용자", "일시", "메모"]);
+test(`[K1][S${SCREEN}] 기대값 원본: 프레임 ${SCREEN}-desktop ex-modal-card · ${SCREEN}-mobile filter-row · 기록 행, rules.json 하늘색 2종`, () => {
+  expect(MODAL.title, "프레임 reagent-name").toBeTruthy();
+  expect(MODAL.amount, "프레임 record-amount 수").toBeTruthy();
+  expect(MODAL.unit, "프레임 record-amount 단위").toBeTruthy();
+  expect(MODAL.labels, "프레임 field-label (d7 §15: 사용자 · 사용일 · 기록한 날 · 메모)").toEqual(["사용자", "사용일", "기록한 날", "메모"]);
+  expect(FILTER.searchPlaceholder, "프레임 검색 글자").toBe("시약명 검색");
+  expect(FRAME_ROWS.filter((r) => r.caption !== null).every((r) => CAPTION_RE.test(r.caption!)), "프레임 record-caption 틀").toBe(true);
+  expect(FRAME_ROWS.some((r) => r.caption !== null), "프레임 record-caption 있음").toBe(true);
   expect(MODAL.values.length, "프레임 field-value 수").toBe(MODAL.labels.length);
   expect(MODAL.msds, "프레임 msds-entry 라벨").toBeTruthy();
   expect(MODAL.close, "프레임 button-outline 라벨").toBeTruthy();
@@ -168,10 +186,11 @@ test.describe("ex-modal-card", () => {
     const msds = modal.locator(sel("msds-entry"));
     await expect(msds, "카드 안 msds-entry").toHaveCount(MODAL.msdsCount);
     await expect(msds, "msds-entry 문구").toContainText(MODAL.msds!);
-    await expect(
-      modal.locator(sel("button-pill-soft")).filter({ hasText: MODAL.msds! }),
-      `button-pill-soft "${MODAL.msds}"`,
-    ).toHaveCount(1);
+    // 1.17 시안은 msds-entry 자체가 pill — 안의 button-pill-soft 는 시안에 있을 때만 요구
+    if (MODAL.msdsPillSoft) {
+      await expect(modal.locator(sel("button-pill-soft")).filter({ hasText: MODAL.msds! }), `button-pill-soft "${MODAL.msds}"`).toHaveCount(1);
+    }
+    await expect(msds.getByRole("link", { name: MODAL.msds! }).or(msds.getByRole("button", { name: MODAL.msds! })), `"${MODAL.msds}" 누를 수 있음`).toHaveCount(1);
     const outline = modal.locator(sel("button-outline"));
     await expect(outline, "카드 안 button-outline").toHaveCount(MODAL.outlineCount);
     await expect(outline, "button-outline 문구").toHaveText(exact(MODAL.close!));
@@ -299,11 +318,28 @@ test.describe("ex-modal-card", () => {
 
 // ---------- ex-data-table-cell (기록 행) ----------
 test.describe("ex-data-table-cell 기록 행", () => {
-  const selectedFrameRow = FRAME_ROWS.find((r) => r.selectedFill !== null)!;
-  const plainFrameRow = FRAME_ROWS.find((r) => r.selectedFill === null)!;
+  const SELECTED_COUNT = FRAME_ROWS.filter((r) => r.selectedFill !== null).length;
 
-  function rowOf(section: Locator, r: FrameRow): Locator {
-    return recordRows(section).filter({ hasText: r.name }).filter({ hasText: r.date });
+  /** 갤러리 기록 행 글자 → 날짜(좌) · 시약명 · 사용자 · (캡션) · 사용량 (d7 §7 3열 — 행 글자는 시안이 아니라 갤러리 예시에서) */
+  async function partsOf(row: Locator): Promise<string[]> {
+    return row.evaluate((el) => {
+      const out: string[] = [];
+      const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      for (let n = w.nextNode(); n; n = w.nextNode()) {
+        const t = (n.textContent ?? "").replace(/\s+/g, " ").trim();
+        if (t) out.push(t);
+      }
+      return out;
+    });
+  }
+  async function rowWithSelection(section: Locator, selected: boolean): Promise<Locator> {
+    const rows = recordRows(section);
+    const n = await rows.count();
+    for (let i = 0; i < n; i++) {
+      const bg = await rows.nth(i).evaluate((el) => getComputedStyle(el).backgroundColor);
+      if (HIGHLIGHT_RGB.includes(bg) === selected) return rows.nth(i);
+    }
+    throw new Error(`${selected ? "선택" : "일반"} 행 없음`);
   }
 
   test(`[K1][S${SCREEN}] 기록 행은 누를 수 있는 요소(button)이고 2개 이상 놓여 있다`, async ({ page }) => {
@@ -320,14 +356,17 @@ test.describe("ex-data-table-cell 기록 행", () => {
     }
   });
 
-  for (const [label, r] of [
-    ["선택 행", selectedFrameRow],
-    ["일반 행", plainFrameRow],
+  for (const [label, selected] of [
+    ["선택 행", true],
+    ["일반 행", false],
   ] as const) {
-    test(`[K1][S${SCREEN}] 기록 행(${label}) 3열: 날짜 "${r.date}"(좌) · 시약명 "${r.name}" / 사용자 "${r.user}"(중) · 사용량 "${r.amount}"(우)`, async ({ page }) => {
+    test(`[K1][S${SCREEN}] 기록 행(${label}) 3열 (d7 §7): 날짜 "MM.DD"(좌) · 시약명 / 사용자(중) · 사용량(우)`, async ({ page }) => {
       await open(page);
-      const row = rowOf(historySection(page), r);
-      await expect(row, `시안의 ${label}`).toHaveCount(1);
+      const row = await rowWithSelection(historySection(page), selected);
+      const parts = await partsOf(row);
+      expect(parts.length, `행 글자 ${JSON.stringify(parts)}`).toBeGreaterThanOrEqual(4);
+      expect(parts[0], "날짜 형식").toMatch(ROW_DATE_RE);
+      const r = { date: parts[0], name: parts[1], user: parts[2], amount: parts[parts.length - 1] };
       const date = await box(row.getByText(r.date, { exact: true }), "날짜");
       const name = await box(row.getByText(r.name, { exact: true }), "시약명");
       const user = await box(row.getByText(r.user, { exact: true }), "사용자");
@@ -350,15 +389,32 @@ test.describe("ex-data-table-cell 기록 행", () => {
     const section = historySection(page);
     const bg = (row: Locator) => row.evaluate((el) => getComputedStyle(el).backgroundColor);
 
-    const selected = rowOf(section, selectedFrameRow);
-    await expect(selected, "시안의 선택 행").toHaveCount(1);
-    expect(await bg(selected), "선택 행 배경").toBe(hexToRgb(SELECTED_FILL));
-
     const rows = await recordRows(section).all();
     let highlighted = 0;
     for (const row of rows) if (HIGHLIGHT_RGB.includes(await bg(row))) highlighted++;
-    expect(highlighted, "하늘색 배경인 기록 행 수 (시안: 선택 행만)").toBe(FRAME_ROWS.filter((r) => r.selectedFill !== null).length);
-    expect(await bg(rowOf(section, plainFrameRow)), "일반 행 배경").not.toBe(hexToRgb(SELECTED_FILL));
+    expect(highlighted, "하늘색 배경인 기록 행 수 (시안: 선택 행만)").toBe(SELECTED_COUNT);
+    expect(await bg(await rowWithSelection(section, true)), "선택 행 배경").toBe(hexToRgb(SELECTED_FILL));
+    expect(await bg(await rowWithSelection(section, false)), "일반 행 배경").not.toBe(hexToRgb(SELECTED_FILL));
+  });
+
+  test(`[K1][S${SCREEN}] 기록 행 캡션(d7 §15 · 시안 record-caption): "N월 N일에 기록" 회색(${FRAME_CAPTION_FILL}) 한 줄, 시약명·사용자 아래, 사용량 열보다 왼쪽`, async ({ page }) => {
+    await open(page);
+    const section = historySection(page);
+    const withCaption = recordRows(section).filter({ hasText: /\d{1,2}월 \d{1,2}일에 기록/ });
+    expect(await withCaption.count(), "캡션 있는 기록 행 예시").toBeGreaterThanOrEqual(1);
+    const row = withCaption.first();
+    const parts = await partsOf(row);
+    const cap = parts.find((p) => CAPTION_RE.test(p))!;
+    expect(cap, `캡션 글자 ${JSON.stringify(parts)}`).toMatch(CAPTION_RE);
+    const capLoc = row.getByText(cap, { exact: true });
+    expect(await capLoc.evaluate((el) => getComputedStyle(el).color), "캡션 글자색 = 시안").toBe(hexToRgb(FRAME_CAPTION_FILL));
+    const c = await box(capLoc, "캡션");
+    const name = await box(row.getByText(parts[1], { exact: true }), "시약명");
+    const amount = await box(row.getByText(parts[parts.length - 1], { exact: true }), "사용량");
+    expect(name.y + name.height, "캡션은 시약명 아래").toBeLessThanOrEqual(c.y + 1);
+    expect(c.x + c.width, "캡션은 사용량 열보다 왼쪽").toBeLessThanOrEqual(amount.x + 1);
+    // 캡션 없는 행도 있다 (기록한 날 = 사용일)
+    expect(await recordRows(section).count(), "캡션 없는 행도 함께").toBeGreaterThan(await withCaption.count());
   });
 });
 

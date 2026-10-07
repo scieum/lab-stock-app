@@ -65,3 +65,49 @@ export function checkUsageMemo(v: unknown): CheckedMemo {
   }
   return { ok: true, value: memo };
 }
+
+/* ───────── 사용일 (d7 §15) ───────── */
+
+const SEOUL_YMD = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" });
+
+/** 한국 날짜 "YYYY-MM-DD" (기본 = 지금) */
+export function seoulDate(d: Date = new Date()): string {
+  return SEOUL_YMD.format(d);
+}
+
+export type CheckedUsedOn = { ok: true; value: string } | { ok: false; error: string };
+
+/**
+ * 사용일 검사: "YYYY-MM-DD" 형식의 실제 날짜, 오늘(한국 날짜) 이후 거부. 과거 하한 없음.
+ * 비었으면 오늘. DB(record_usage)가 같은 검사를 다시 한다.
+ */
+export function checkUsedOn(v: unknown, today: string = seoulDate()): CheckedUsedOn {
+  if (v === undefined || v === null || v === "") return { ok: true, value: today };
+  if (typeof v !== "string") return { ok: false, error: "사용일을 확인해 주세요" };
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v.trim());
+  if (!m) return { ok: false, error: "사용일을 확인해 주세요" };
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const date = new Date(Date.UTC(y, mo - 1, d));
+  if (date.getUTCFullYear() !== y || date.getUTCMonth() !== mo - 1 || date.getUTCDate() !== d || y < 1900) {
+    return { ok: false, error: "사용일을 확인해 주세요" };
+  }
+  const value = `${m[1]}-${m[2]}-${m[3]}`;
+  if (value > today) return { ok: false, error: "오늘 이후 날짜는 고를 수 없어요" };
+  return { ok: true, value };
+}
+
+/** "2026-10-03" → "10월 3일" */
+export function monthDayLabel(ymd: string): string {
+  const m = /^\d{4}-(\d{2})-(\d{2})/.exec(ymd);
+  return m ? `${Number(m[1])}월 ${Number(m[2])}일` : ymd;
+}
+
+/** 화면 4 past-date-note: "10월 3일 사용으로 기록해요" */
+export function pastDateNoteText(usedOn: string): string {
+  return `${monthDayLabel(usedOn)} 사용으로 기록해요`;
+}
+
+/** 화면 10 기록일 캡션: "10월 6일에 기록" */
+export function recordedOnCaption(recordedOn: string): string {
+  return `${monthDayLabel(recordedOn)}에 기록`;
+}

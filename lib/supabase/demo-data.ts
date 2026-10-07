@@ -4,7 +4,16 @@ import { formatAmount, formatDateDots, formatStock, formatUsedAt } from "@/lib/f
 import { isStorageClass } from "@/lib/cabinet-rules";
 import { isLowStock } from "@/lib/types";
 import type { HomeData } from "./home-data";
-import type { ReagentListItem } from "./reagents-data";
+import type { FilterCabinet } from "@/lib/reagent-list-filter";
+import {
+  CABINET_LIST_COLUMNS,
+  REAGENT_LIST_COLUMNS,
+  toFilterCabinets,
+  toReagentListItem,
+  type CabinetListRow,
+  type ReagentListItem,
+  type ReagentListRow,
+} from "./reagents-data";
 import { toPlacement, toThreshold, type ReagentDetail } from "./reagent-detail";
 
 /**
@@ -74,22 +83,23 @@ export async function getDemoHomeData(): Promise<DemoHomeData> {
   };
 }
 
-/** 2 둘러보기 시약 목록 */
-export async function getDemoReagentList(): Promise<ReagentListItem[]> {
+/** 2 둘러보기 시약 목록 — 필터(d7 §16)용 보관 분류·칸·MSDS 유무와 데모 학교 시약장도 함께 (로그인 화면과 같은 동작) */
+export async function getDemoReagentList(): Promise<{ items: ReagentListItem[]; cabinets: FilterCabinet[] }> {
   const supabase = createAnonClient();
-  const { data } = await supabase
-    .from("reagents")
-    .select("id, name, cas_no, unit, stock, min_stock, intake_date")
-    .eq("school_id", DEMO_SCHOOL_ID)
-    .order("name");
-  return (data ?? []).map((r) => ({
-    id: r.id,
-    name: r.name,
-    casNo: r.cas_no,
-    stock: formatStock(Number(r.stock), r.unit),
-    intake: `입고 ${formatDateDots(r.intake_date)}`,
-    lowStock: isLowStock(r),
-  }));
+  const [reagents, cabinets] = await Promise.all([
+    supabase.from("reagents").select(REAGENT_LIST_COLUMNS).eq("school_id", DEMO_SCHOOL_ID).order("name"),
+    supabase
+      .from("cabinets")
+      .select(CABINET_LIST_COLUMNS)
+      .eq("school_id", DEMO_SCHOOL_ID)
+      .order("number")
+      .order("created_at")
+      .order("id"),
+  ]);
+  return {
+    items: ((reagents.data ?? []) as ReagentListRow[]).map(toReagentListItem),
+    cabinets: toFilterCabinets((cabinets.data ?? []) as CabinetListRow[]),
+  };
 }
 
 function safeUrl(v: string | null): string | null {

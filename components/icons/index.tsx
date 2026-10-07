@@ -31,7 +31,8 @@ export type IconName =
   | "upload"
   | "print"
   | "caret-down"
-  | "star";
+  | "star"
+  | "filter";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: (
@@ -184,6 +185,8 @@ const PATHS: Record<IconName, React.ReactNode> = {
   "caret-down": <path d="m7 10 5 5 5-5" />,
   // 판매처 즐겨찾기 별표 (d7 §12-1, 시안 예외) — 채운 별은 부모가 fill="currentColor" 를 넘긴다
   star: <path d="M12 3.5 14.6 8.8l5.9.86-4.27 4.15 1 5.87L12 16.9l-5.23 2.78 1-5.87L3.5 9.66l5.9-.86Z" />,
+  // 시안 2 list-filter-button icon-filter: 짧아지는 가로줄 3개 (디자인 1.17)
+  filter: <path d="M3.6 7h16.8M7.2 12h9.6M10.2 17h3.6" />,
   bell: (
     <>
       <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15Z" />

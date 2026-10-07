@@ -44,6 +44,14 @@
   opacity: var(--pressed-opacity);
 }
 
+/* 화면 2 필터 시트 칩 (시안 2-filter storage-class-chip: 높이 44, 좌우 16, 13/600) */
+.filter {
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-16);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
 /* 범례 칩 (시안 legend-chip: 위아래 4 · 좌우 12, 12/600) */
 .legend {
   padding: var(--space-4) var(--space-12);

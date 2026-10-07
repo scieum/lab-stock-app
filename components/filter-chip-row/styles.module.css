@@ -1,0 +1,103 @@
+/* 시안 2-filter filter-chip-row: 칩 묶음(사이 8, 넘치면 다음 줄) · 오른쪽 결과 수.
+ * applied-chip = 회색 pill 높이 44, 왼쪽 안쪽 16, 라벨 13/600 + chip-remove 44(× 16 회색). 시약장 칩은 번호 원 + 사이 4.
+ * clear-all = 채움 없는 글자 버튼(좌우 8, 13/600). result-count = 12/400 회색 */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--button-min-height);
+  padding-left: var(--space-16);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+.chip .number {
+  flex-shrink: 0;
+  min-width: var(--icon-md);
+  height: var(--icon-md);
+}
+
+.label {
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
+.remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.remove:focus-visible,
+.clear:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.remove:active,
+.clear:active {
+  opacity: var(--pressed-opacity);
+}
+
+.removeIcon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+}
+
+.clearItem {
+  display: inline-flex;
+}
+
+.clear {
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-8);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.count {
+  flex-shrink: 0;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-tight);
+}

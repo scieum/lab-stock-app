@@ -485,6 +485,7 @@ test(`[K1][S${SCREEN}] 기대값 원본: 프레임 11·11-empty·11-delete 와 r
 test(`[K1][S${SCREEN}] /gallery DOM 에 화면 ${SCREEN} 전용 컴포넌트(화면 11 에만 · 화면 3·11 에만)가 각각 1개 이상 (K1 갤러리 기준 페이지)`, async ({ page }) => {
   const only = componentNames.filter((n) => dev.components[n].length === 1 && dev.components[n][0] === SCREEN);
   // 1.15: cabinet-slot · cabinet-switcher · mix-warning 은 화면 3(위치 피커)에도 쓰여 [3, 11], 새 qr-label · qr-print · qr-print-sheet · slot-assign · slot-sheet 는 11 에만
+  // 1.17: storage-class-chip 은 화면 2 필터 시트에도 쓰여 [2, 11] (아래 with2)
   expect(only.sort(), "dev-rules 에서 화면 11 에만 있는 컴포넌트").toEqual(
     [
       "cabinet-add",
@@ -496,13 +497,15 @@ test(`[K1][S${SCREEN}] /gallery DOM 에 화면 ${SCREEN} 전용 컴포넌트(화
       "qr-print-sheet",
       "slot-assign",
       "slot-sheet",
-      "storage-class-chip",
     ].sort(),
   );
   const shared = componentNames.filter((n) => dev.components[n].includes(SCREEN) && dev.components[n].every((s) => s === SCREEN || s === 3) && !only.includes(n));
   expect(shared.sort(), "dev-rules 에서 화면 3·11 에만 있는 컴포넌트").toEqual(["cabinet-number", "cabinet-slot", "cabinet-switcher", "mix-warning", "slot-count"].sort());
+  // dev-rules 1.4 (디자인 1.17): storage-class-chip 은 화면 2 필터 시트(list-filter-sheet)에도 쓰여 [2, 11]
+  const with2 = componentNames.filter((n) => dev.components[n].includes(SCREEN) && dev.components[n].every((s) => s === SCREEN || s === 2) && !only.includes(n));
+  expect(with2.sort(), "dev-rules 에서 화면 2·11 에만 있는 컴포넌트").toEqual(["storage-class-chip"]);
   await open(page, GALLERY);
-  for (const n of [...only, ...shared]) expect(await page.locator(sel(n)).count(), `/gallery ${n}`).toBeGreaterThanOrEqual(1);
+  for (const n of [...only, ...shared, ...with2]) expect(await page.locator(sel(n)).count(), `/gallery ${n}`).toBeGreaterThanOrEqual(1);
 });
 
 test(`[K1][S${SCREEN}] /gallery/cabinets DOM 에 화면 ${SCREEN} 컴포넌트(dev-rules, tab-bar 제외)가 각각 1개 이상, 새 data-component 이름 없음`, async ({ page }) => {

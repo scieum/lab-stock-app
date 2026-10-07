@@ -9,8 +9,8 @@
 // 절대 규칙 (운영 DB):
 // - 성공하는 쓰기는 일회용 학교 A'(admin·교사·학생)·B'(admin·교사)의 일회용 계정·임시 시약으로만 한다.
 //   일회용 학교·계정은 service role 로 만든다 (screen-8-helpers: createUser + register_profile, 세션은 generateLink → verifyOtp).
-// - 판정 대상 호출은 항상 로그인 세션(publishable 키)으로 한다. service role 은 준비·정리·대조 조회와,
-//   함수로는 만들 수 없는 "28일 창 밖(과거 시각)의 사용 기록" 준비에만 쓴다 (그 뒤 판정은 세션의 record_usage·record_intake 로).
+// - 판정 대상 호출은 항상 로그인 세션(publishable 키)으로 한다. service role 은 준비·정리·대조 조회에만 쓴다.
+//   (2026-10-07 d7 §15: "28일 창 밖" 사용 기록은 이제 세션의 record_usage(사용일 = 과거)로 만든다 — 창은 사용일 기준.)
 // - 공용 계정(학교 A 학생·교사·admin, 학교 B 교사)은 읽기와 "거부되어야 하는 호출"만 한다. 공용 학교 A 시약의 출처를 바꾸지 않는다.
 //   거부 호출이 구현 결함으로 통과했을 때만 그 시약을 service role 로 원래 값으로 되돌린다(정상이라면 호출 없음).
 // - 데모 학교에는 쓰지 않는다. 데모 학교 시약은 이 스펙 앞뒤로 전체 열이 같아야 한다 (자동 다시 계산에서 빠짐).
@@ -288,17 +288,20 @@ async function fresh(info: TestInfo): Promise<Fixture> {
   return f;
 }
 
+/** 한국 날짜 "YYYY-MM-DD" (오늘 − daysAgo일) */
+const seoulDaysAgo = (daysAgo: number) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(Date.now() - daysAgo * 24 * 3600 * 1000));
+
 /**
- * 준비 (service role): 과거 시각의 사용 기록 1행 — record_usage 는 지금 시각으로만 남기므로 28일 창 밖 기록은 이렇게만 만든다.
- * 재고는 바꾸지 않는다 (판정과 무관). 판정은 이 뒤의 세션 호출(record_usage·record_intake)로 한다.
+ * 과거 사용일의 사용 기록 1행. 2026-10-07 부터 28일 창은 사용일(used_on, d7 §15·§11-1) 기준이고, record_usage 가 사용일을 받으므로
+ * 교사 세션의 record_usage(used_on = 한국 오늘 − daysAgo)로 만든다 (재고도 차감된다 — 시약은 넉넉한 재고로 등록).
+ * 이 호출도 자동 다시 계산을 일으키지만, 판정은 이 뒤의 세션 호출(record_usage·record_intake) 결과로 한다.
  */
 async function pastUsage(f: Fixture, reagentId: string, amount: number, daysAgo: number): Promise<void> {
-  const usedAt = new Date(Date.now() - daysAgo * 24 * 3600 * 1000).toISOString();
-  const r = await service()
-    .from("usage_logs")
-    .insert({ school_id: f.school.id, reagent_id: reagentId, user_id: f.teacherUser.id, amount, used_at: usedAt })
-    .select("id");
-  expect(r.error, `준비: 과거 사용 기록(${daysAgo}일 전) ${r.error?.message}`).toBeNull();
+  const usedOn = seoulDaysAgo(daysAgo);
+  const r = await f.teacher.rpc("record_usage", { reagent_id: reagentId, amount, used_on: usedOn });
+  expect(r.error, `준비: 과거 사용 기록(사용일 ${usedOn} = ${daysAgo}일 전) ${r.error?.code} ${r.error?.message}`).toBeNull();
+  expect((r.data as Row | null)?.used_on, "저장된 사용일").toBe(usedOn);
 }
 
 // ---------- 공용·데모 학교 스냅숏 (읽기만) ----------

@@ -35,6 +35,8 @@ type RecordRowProps = {
   title: string;
   /** 가운데 아랫줄 (사용자, body-sm) */
   subtitle?: string;
+  /** 가운데 맨 아래 회색 캡션 (화면 10: 기록한 날이 사용일과 다를 때 "10월 6일에 기록", 12 회색) */
+  caption?: string;
   /** 오른쪽 사용량·단위 (body, 예: 5 g) */
   amount: string;
   /** 누른 행 (상세가 열려 있음) = 연하늘 바탕 */
@@ -42,7 +44,7 @@ type RecordRowProps = {
 } & Omit<React.ComponentProps<"button">, "title" | "children">;
 
 /** 기록 행 (화면 10): 3열 = 날짜 · 시약명/사용자 · 사용량. 누르면 상세(ex-modal-card)가 열린다 */
-export function DataRecordRow({ date, title, subtitle, amount, selected, className, type = "button", ...rest }: RecordRowProps) {
+export function DataRecordRow({ date, title, subtitle, caption, amount, selected, className, type = "button", ...rest }: RecordRowProps) {
   return (
     <button
       data-component="ex-data-table-cell"
@@ -56,6 +58,7 @@ export function DataRecordRow({ date, title, subtitle, amount, selected, classNa
       <span className={styles.recordMain}>
         <span className={styles.recordTitle}>{title}</span>
         {subtitle ? <span className={styles.recordSubtitle}>{subtitle}</span> : null}
+        {caption ? <span className={styles.recordCaption}>{caption}</span> : null}
       </span>
       <span className={styles.recordAmount}>{amount}</span>
     </button>

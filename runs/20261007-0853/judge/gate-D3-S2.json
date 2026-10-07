@@ -1,0 +1,22 @@
+{
+  "gate": "gate-D3-S2",
+  "pass": true,
+  "exit": 0,
+  "violations": [],
+  "logs": {},
+  "report": {
+    "V1": {
+      "screenshots": [
+        "test-results/v1-2-desktop.png",
+        "test-results/v1-2-filter-desktop.png",
+        "test-results/v1-2-filter-empty-desktop.png",
+        "test-results/v1-2-filter-empty-mobile.png",
+        "test-results/v1-2-filter-mobile.png",
+        "test-results/v1-2-mobile.png",
+        "test-results/v1-2g-desktop.png",
+        "test-results/v1-2g-mobile.png"
+      ],
+      "figma_page": "https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2"
+    }
+  }
+}

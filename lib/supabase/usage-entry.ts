@@ -1,14 +1,8 @@
 import "server-only";
 import { getServerClient, getServerSession, type ServerSession } from "./server";
-import { formatDateDots } from "@/lib/format";
+import { seoulDate } from "@/lib/usage-history-rules";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const SEOUL_DATE = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Asia/Seoul",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-});
 
 export function isUuid(v: string): boolean {
   return UUID_RE.test(v);
@@ -19,7 +13,7 @@ export type UsageReagent = { id: string; name: string; unit: string; stock: numb
 export type UsageEntry = {
   /** 사용자 = 로그인한 본인 (profiles.display_name) */
   userName: string;
-  /** 사용 날짜 = 오늘 (usage_logs.used_at 은 DB 가 기록 시각으로 채운다) */
+  /** 오늘 (한국 날짜 "YYYY-MM-DD") = 사용일 기본값이자 고를 수 있는 마지막 날 (d7 §15) */
   today: string;
   /** ?reagent= 로 고른 시약. 없으면 options 에서 고른다 */
   reagent: UsageReagent | null;
@@ -38,7 +32,7 @@ export type UsageEntryResult =
 export async function getUsageEntry(reagentId: string | undefined): Promise<UsageEntryResult> {
   const base = (me: Extract<ServerSession, { kind: "member" }>) => ({
     userName: me.displayName || "-",
-    today: formatDateDots(SEOUL_DATE.format(new Date())),
+    today: seoulDate(),
   });
 
   if (reagentId !== undefined && !isUuid(reagentId)) {

@@ -107,7 +107,8 @@ test(`[R-ui][S${SCREEN}] rules.json R5 = 학생 ${INTAKE}·${REGISTER} max 0 이
   // 화면 7 컴포넌트가 dev-rules 에 있어야 교사·admin 존재 검사가 의미 있다.
   // rules 1.15 R5 에 더해진 threshold-edit(재주문 기준 직접 입력)는 화면 3 소속 — R5 중 stock-intake·reagent-register 가 화면 7 이다
   for (const c of [INTAKE, REGISTER]) expect(devRules.components[c] ?? [], `dev-rules components ${c}`).toContain(SCREEN);
-  for (const c of R5_COMPONENTS.filter((x) => ![INTAKE, REGISTER].includes(x))) {
+  // 1.17 R5 에 더해진 doc-upload·msds-search·msds-bulk-banner 는 dev-rules components 밖(서류로 입고·MSDS 찾기 = 다음 run) — 그때 화면 소속을 본다
+  for (const c of R5_COMPONENTS.filter((x) => ![INTAKE, REGISTER].includes(x) && x in devRules.components)) {
     expect(devRules.components[c] ?? [], `R5 ${c} 은 화면 ${SCREEN} 이 아니면 화면 3 (threshold-edit)`).toContain(3);
   }
 });
@@ -173,8 +174,10 @@ for (const role of STAFF) {
       expect((await browserSession(page)).role, "테스트 계정 역할").toBe(PROFILE_ROLE[role]);
 
       const frame = frameCounts(viewport);
-      expect(frame[INTAKE], `시안 7-${viewport} ${INTAKE} 개수`).toBeGreaterThan(0);
-      await expect(page.locator(sel(INTAKE)), `기본 갈래 ${INTAKE}`).toHaveCount(frame[INTAKE]);
+      // 1.17 시안 7-{폭} 은 "서류로 입고"(intake-mode·doc-upload, 다음 run) 상태라 stock-intake 가 없다 —
+      // 직접 입력 갈래는 1.15 시안(stock-intake 1개) 기준: 한 번에 한 갈래 = 1 (dev-rules components_note 화면 7)
+      const wantIntake = frame[INTAKE] ?? 1;
+      await expect(page.locator(sel(INTAKE)), `기본 갈래 ${INTAKE}`).toHaveCount(wantIntake);
       await expect(page.locator(sel(REGISTER)), `기본 갈래에서 ${REGISTER}`).toHaveCount(0);
       await runRoleChecks(page, ROLE_NAME[role as keyof typeof ROLE_NAME], "기존 시약 입고 갈래");
 
@@ -288,7 +291,8 @@ for (const role of STAFF) {
       const frame = frameCounts(viewport);
       const { own } = seedOwnReagents(role);
       // 시안의 결과 행 수 이상이 나오는 검색어를 자기 학교 seed 시약명에서 고른다 (시안: "황산" → 행 여러 개, 그중 1개 선택)
-      const wantRows = frame["reagent-row"];
+      // 1.17 시안 7 은 "서류로 입고" 상태(다음 run) — 직접 입력 검색 결과 행 수는 1.15 시안(reagent-row 2: 여러 행 중 하나 선택) 기준
+      const wantRows = frame["reagent-row"] ?? 2;
       expect(wantRows, `시안 7-${viewport} reagent-row 개수`).toBeGreaterThan(0);
       const chars = [...new Set(own.flatMap((r) => [...r.name]))].filter((c) => /[가-힣]/.test(c));
       const query = chars

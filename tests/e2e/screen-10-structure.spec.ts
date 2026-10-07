@@ -338,7 +338,9 @@ test(`[C1][S${SCREEN}] 진입점 (d7 §7): 탭바 "${ACTIVE_TAB_LABEL}"(390) · 
   }
 });
 
-test(`[C1][S${SCREEN}] 학교A 학생 첫 행 상세 열림(시안과 같은 상태): 시안 10 프레임에 있는 화면 ${SCREEN} 컴포넌트가 프레임 개수 이상 · ${MODAL}·${SEGMENT}·${SEGMENT_ACTIVE}·${MSDS} 는 정확히 프레임 개수`, async ({ browser }, info) => {
+// 디자인 1.17: 10-mobile 시안은 목록 상태(상세 없음), 10-desktop 시안은 첫 행 상세가 열린 상태 — 폭마다 그 상태로 맞춰 견준다.
+const DETAIL_PARTS = [MODAL, MSDS, "button-outline", "button-pill-soft"];
+test(`[C1][S${SCREEN}] 학교A 학생 시안과 같은 상태(390 = 목록, 1440 = 첫 행 상세 열림): 시안 10 프레임에 있는 화면 ${SCREEN} 컴포넌트가 프레임 개수 이상 · ${MODAL}·${SEGMENT}·${SEGMENT_ACTIVE}·${MSDS} 는 정확히 프레임 개수`, async ({ browser }, info) => {
   test.setTimeout(150_000);
   const { context, page, viewport } = await openAs(browser, info, "student", SCREEN);
   try {
@@ -346,8 +348,12 @@ test(`[C1][S${SCREEN}] 학교A 학생 첫 행 상세 열림(시안과 같은 상
     const snap = await gotoAndMatch(page, {});
     const frame = frameCounts(viewport);
     expect(snap.flat.length, `시안 행 수(${frame[ROW]}) 이상의 기록이 있어야 함`).toBeGreaterThanOrEqual(frame[ROW]);
-    await openRow(page, 0);
-    await expectDetail(page, snap.shown[0]);
+    const detailOpen = (frame[MODAL] ?? 0) > 0;
+    expect(detailOpen, "시안 상태: 1440 은 상세 열림, 390 은 목록").toBe(viewport === "desktop");
+    if (detailOpen) {
+      await openRow(page, 0);
+      await expectDetail(page, snap.shown[0]);
+    }
     const tb = rules.tab_bar;
     let checked = 0;
     for (const name of screenComponents()) {
@@ -360,6 +366,17 @@ test(`[C1][S${SCREEN}] 학교A 학생 첫 행 상세 열림(시안과 같은 상
         continue;
       }
       if (want === 0) {
+        if (!detailOpen && DETAIL_PARTS.includes(name)) {
+          // 390 시안은 상세가 닫힌 목록 상태 — 상세 부품은 0
+          expect(await countComponent(page, name), `${name} (상세 닫힘)`).toBe(0);
+          continue;
+        }
+        if (detailOpen && name === "button-pill-soft") {
+          // 1.17 시안의 msds-entry 는 그 자체가 pill(안에 button-pill-soft 없음). dev-rules components 에 button-pill-soft 화면 10 이 남아 있어
+          // 구현이 msds-entry 안에 button-pill-soft 를 쓰는 것은 허용 — 상세 밖에는 없어야 한다
+          expect(await page.locator(`${sel(name)}:not(${sel(MODAL)} *)`).count(), `${name} 은 상세 안에만`).toBe(0);
+          continue;
+        }
         // 프레임에 없는 상태 컴포넌트 (0건 카드) — 기록이 있을 때는 없어야 한다
         expect(name, "프레임에 없는 화면 10 컴포넌트는 0건 카드뿐").toBe(EMPTY);
         expect(await countComponent(page, name), `${name} (기록 있음)`).toBe(0);
@@ -371,11 +388,17 @@ test(`[C1][S${SCREEN}] 학교A 학생 첫 행 상세 열림(시안과 같은 상
       if ([MODAL, SEGMENT, SEGMENT_ACTIVE, MSDS, "nav-pill", INPUT].includes(name)) expect(n, `${name} = 시안 ${want}`).toBe(want);
       checked++;
     }
-    expect(checked, "프레임과 비교한 컴포넌트 수").toBeGreaterThanOrEqual(8);
-    // 상세 안: 닫기 button-outline · MSDS 보기 button-pill-soft (시안 개수)
-    await expect(closeButton(page)).toHaveCount(1);
-    await expect(modal(page).locator(sel("button-pill-soft")), "상세 안 button-pill-soft").toHaveCount(frame["button-pill-soft"]);
-    await expect(modal(page).locator(sel("button-outline")), "상세 안 button-outline").toHaveCount(frame["button-outline"]);
+    // 프레임에 있는 화면 10 컴포넌트(탭바·셸 예외 제외)는 모두 비교했다
+    const appEx = (rules as unknown as { app_exceptions: Record<string, string> }).app_exceptions;
+    const wantChecked = screenComponents().filter((n) => (frame[n] ?? 0) > 0 && n !== tb.component && n !== tb.item && !(n in appEx)).length;
+    expect(wantChecked, "프레임에 있는 화면 10 컴포넌트").toBeGreaterThanOrEqual(5);
+    expect(checked, "프레임과 비교한 컴포넌트 수").toBe(wantChecked);
+    if (detailOpen) {
+      // 상세 안: 닫기 button-outline (시안 개수), MSDS 보기는 msds-entry 1개 안의 누를 수 있는 것 1개
+      await expect(closeButton(page)).toHaveCount(1);
+      await expect(modal(page).locator(sel("button-outline")), "상세 안 button-outline").toHaveCount(frame["button-outline"]);
+      await expect(modal(page).locator(sel(MSDS)).locator("a, button"), "msds-entry 안 누를 것 1개").toHaveCount(1);
+    }
   } finally {
     await context.close();
   }

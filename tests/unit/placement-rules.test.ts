@@ -49,7 +49,12 @@ const F11P = nodesOf("11-print-mobile.json");
 /** 화면 3 보관 위치 값 "1번 시약장 · 우 1단" (reagent-location > field-value > value) */
 const FRAME_LOCATION = textsIn(F3, "value", "reagent-location")[0];
 const FRAME_LOCATION_NUMBER = textsIn(F3, "label", "cabinet-number").filter((_, i, a) => a.length > 0)[0];
-/** 3-location mix-warning: 강한 문구 + 보조 줄 */
+/**
+ * 3-location mix-warning: 강한 문구 + 보조 줄.
+ * 디자인 1.17(fadfee7)에서 3-location 시안이 위치 추천(suggest-badge) 시안으로 바뀌며 피커의 mix-warning 이 빠졌다
+ * (rules cabinet.class_mismatch 는 그대로). 강한 문구는 rules incompatible + 아래 dangerText 틀로만 확인하고,
+ * 피커 보조 줄("저장" 쪽) 문구의 시안 대조는 위치 추천 run(다음 run)에서 새 시안 기준으로 다시 정한다.
+ */
 const FRAME_DANGER = textsIn(F3L, "warning-line", "mix-warning");
 /** 11-slot 칸 시트 제목 "좌 2단" · 약한 문구 */
 const FRAME_SHEET_TITLE = textsIn(F11S, "sheet-title-text", "slot-sheet")[0];
@@ -110,18 +115,22 @@ describe("칸 제목 · 보관 위치 문구 (시안 3 · 11-slot)", () => {
 });
 
 describe("칸 배치 경고 placementWarnings (d7 §14 분류 불일치 · rules cabinet.class_mismatch)", () => {
-  it("[K1][S11] 기대값 원본: rules class_mismatch = 경고만·저장 허용, 프레임 약한 문구 · 강한 문구 + 보조 줄", () => {
+  it("[K1][S11] 기대값 원본: rules class_mismatch = 경고만·저장 허용, 프레임 약한 문구 (1.17 3-location 시안에는 mix-warning 없음 — 위치 추천 run 에서 다시)", () => {
     expect(cab.class_mismatch).toMatch(/경고만/);
     expect(cab.class_mismatch).toMatch(/막지 않음/);
     expect(D7_14).toMatch(/시약 분류가 없으면 경고 없음/);
     expect(FRAME_MISMATCH, "11-slot 약한 문구").toBe("이 칸은 유기 칸이에요 — 그래도 넣을 수 있어요");
-    expect(FRAME_DANGER, "3-location 강한 문구 + 보조 줄").toEqual(["산화제와 유기는 섞으면 위험해요", "그래도 저장할 수 있어요"]);
-    expect(cab.incompatible.some(([a, b]) => pairKey(a, b) === pairKey("산화제", "유기")), "시안 예시 조합은 rules incompatible").toBe(true);
+    // 1.17: 3-location 시안이 추천 시안으로 바뀌어 피커 mix-warning 이 빠졌다 (다음 run 에서 새 시안 기준으로 다시 대조)
+    expect(FRAME_DANGER, "1.17 3-location 시안의 mix-warning").toEqual([]);
+    expect(cab.incompatible.some(([a, b]) => pairKey(a, b) === pairKey("산화제", "유기")), "옛 시안 예시 조합(산화제·유기)은 rules incompatible").toBe(true);
   });
 
-  it(`[K1][S11] 보조 줄 상수: 넣기 "${PLACEMENT_NOTE_PUT}" (11-slot), 저장 "${PLACEMENT_NOTE_SAVE}" (3-location)`, () => {
+  it(`[K1][S11] 보조 줄 상수: 넣기 "${PLACEMENT_NOTE_PUT}" (11-slot). 저장 쪽 "${PLACEMENT_NOTE_SAVE}" 은 1.17 시안 원본이 없어 비어 있지 않음만 (다음 run 에서 대조)`, () => {
     expect(FRAME_MISMATCH.endsWith(`— ${PLACEMENT_NOTE_PUT}`)).toBe(true);
-    expect(PLACEMENT_NOTE_SAVE).toBe(FRAME_DANGER[1]);
+    // 다음 run(위치 추천)에서 3-location 새 시안 문구와 대조한다
+    expect(typeof PLACEMENT_NOTE_SAVE).toBe("string");
+    expect(PLACEMENT_NOTE_SAVE.trim()).not.toBe("");
+    expect(PLACEMENT_NOTE_SAVE).not.toBe(PLACEMENT_NOTE_PUT);
   });
 
   it("[K1][S11] 시약 분류가 없으면(null · undefined · 빈 값 · 8종 밖) 어떤 칸이든 경고 없음", () => {
@@ -192,10 +201,10 @@ describe("칸 배치 경고 placementWarnings (d7 §14 분류 불일치 · rules
     }
   });
 
-  it(`[K1][S3] 시안 3-location: 산화제 시약 → 유기 칸 = 강한 문구 "${FRAME_DANGER[0]}" 만 (불일치 문구는 겹쳐 쓰지 않는다)`, () => {
+  it(`[K1][S3] 산화제 시약 → 유기 칸 = 강한 문구 "${dangerText("산화제", "유기")}" 만 (불일치 문구는 겹쳐 쓰지 않는다; 문구 틀은 1.15 3-location 시안)`, () => {
     const w = placementWarnings("산화제", ["유기"]);
     expect(w.kind).toBe("incompatible");
-    if (w.kind === "incompatible") expect(w.lines).toEqual([FRAME_DANGER[0]]);
+    if (w.kind === "incompatible") expect(w.lines).toEqual([dangerText("산화제", "유기")]);
   });
 
   it("[K1][S11] 위험 조합이 여럿이면 조합마다 한 줄, 위험 조합이 아닌 분류는 줄을 만들지 않는다", () => {

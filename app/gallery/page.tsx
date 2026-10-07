@@ -19,6 +19,10 @@ import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { ModalCard } from "@/components/ex-modal-card";
 import { Toast } from "@/components/ex-toast";
 import { ExtractionTable } from "@/components/extraction-table";
+import { FilterChipRow } from "@/components/filter-chip-row";
+import { ListFilterButton } from "@/components/list-filter-button";
+import { ListFilterSheet } from "@/components/list-filter-sheet";
+import { PastDateNote } from "@/components/past-date-note";
 import { FeatureCard } from "@/components/feature-card";
 import { GuestBanner } from "@/components/guest-banner";
 import { LocationEdit } from "@/components/location-edit";
@@ -59,6 +63,7 @@ import { TabBar } from "@/components/tab-bar";
 import { TabItem } from "@/components/tab-item";
 import { TextInput, TextInputSelect } from "@/components/text-input";
 import { ThresholdEdit } from "@/components/threshold-edit";
+import { UsageDate } from "@/components/usage-date";
 import { UserManage } from "@/components/user-manage";
 import { VendorLink } from "@/components/vendor-link";
 import { VendorRegisterEntry } from "@/components/vendor-register";
@@ -73,6 +78,7 @@ import {
 } from "./cabinets/sample";
 import { SAMPLE_GROUPS, samplePdf, sampleReagents, sampleRowsFrame } from "./manual/sample";
 import { sampleInvites, sampleMemberCounts, sampleMembers } from "./users/sample";
+import { sampleFilterCabinets } from "./filter/sample";
 import styles from "./gallery.module.css";
 
 export const metadata: Metadata = { title: "컴포넌트 갤러리 · Lab_Stock" };
@@ -85,19 +91,19 @@ const usageRows = [
   { date: "2026.09.18", user: "박서연", amount: "10 g" },
 ];
 
-const historyGroups = [
+/** 시안 10 (디자인 1.17) 기록 — 행 날짜 = 사용일, 기록한 날이 다르면 캡션 (d7 §15). 묶음은 d7 §7 월 그룹 */
+const historyGroups: {
+  label: string;
+  rows: { id: string; date: string; name: string; user: string; amount: string; caption?: string; selected?: boolean }[];
+}[] = [
   {
     label: "2026년 10월",
     rows: [
-      { id: "h-1", date: "10.02", name: "황산구리(II) 오수화물", user: "김민지", amount: "5 g", selected: true },
-      { id: "h-2", date: "10.01", name: "염산 0.1M", user: "이준호", amount: "20 mL" },
-    ],
-  },
-  {
-    label: "2026년 9월",
-    rows: [
-      { id: "h-3", date: "09.30", name: "수산화나트륨", user: "박서연", amount: "12 g" },
-      { id: "h-4", date: "09.25", name: "질산은", user: "정하은", amount: "2 g" },
+      { id: "h-1", date: "10.07", name: "염산", user: "학생 이OO", amount: "20 mL" },
+      { id: "h-2", date: "10.07", name: "질산은", user: "교사 김OO", amount: "2 g" },
+      { id: "h-3", date: "10.06", name: "수산화나트륨", user: "학생 박OO", amount: "10 g" },
+      { id: "h-4", date: "10.03", name: "에탄올", user: "교사 김OO", amount: "50 mL", caption: "10월 7일에 기록", selected: true },
+      { id: "h-5", date: "10.03", name: "염산", user: "학생 최OO", amount: "30 mL", caption: "10월 6일에 기록" },
     ],
   },
 ];
@@ -288,6 +294,7 @@ export default function GalleryPage() {
                     date={r.date}
                     title={r.name}
                     subtitle={r.user}
+                    caption={r.caption}
                     amount={r.amount}
                     selected={r.selected}
                   />
@@ -301,13 +308,14 @@ export default function GalleryPage() {
         <Item name="ex-modal-card">
           <ModalCard
             sheet={false}
-            title="황산구리(II) 오수화물"
-            amount="5"
-            unit="g"
+            title="에탄올"
+            amount="50"
+            unit="mL"
             fields={[
-              { label: "사용자", value: "김민지" },
-              { label: "일시", value: "2026.10.02 14:20" },
-              { label: "메모", value: "1반 3조 구리 이온 실험" },
+              { label: "사용자", value: "교사 김OO" },
+              { label: "사용일", value: "2026-10-03" },
+              { label: "기록한 날", value: "2026-10-07 09:12" },
+              { label: "메모", value: "1학년 2반 알코올 램프 실험" },
             ]}
           >
             <MsdsEntry variant="button" href="https://example.com/msds" />
@@ -567,6 +575,45 @@ export default function GalleryPage() {
             defaultCabinetId="c-2"
             defaultSlot={{ side: "L", shelf: 2 }}
           />
+        </Item>
+
+        <Item name="list-filter-button (화면 2 검색 오른쪽 — 적용 개수 배지)">
+          <div className={styles.row}>
+            <ListFilterButton />
+            <ListFilterButton count={1} />
+          </div>
+        </Item>
+
+        <Item name="list-filter-sheet (화면 2 필터 — 정렬 · 보관 분류 · 보관 위치 · MSDS)">
+          <ListFilterSheet
+            sheet={false}
+            value={{ sort: "stock", classes: ["산", "산화제"], cabinetId: null, slot: null, noSlot: false, noMsds: false }}
+            cabinets={sampleFilterCabinets}
+            resultCount={18}
+          />
+          <Link href="/gallery/filter" className={styles.more}>
+            필터 상태 보기 — 칩 줄 · 0종 빈 상태 · 동작 예시 · 사용일 (/gallery/filter)
+          </Link>
+        </Item>
+
+        <Item name="filter-chip-row (적용 칩 · 모두 지우기 · N종)">
+          <FilterChipRow chips={[{ key: "class:산", label: "산" }]} count={12} />
+          <FilterChipRow
+            chips={[
+              { key: "class:독성", label: "독성" },
+              { key: "location", label: "2번 시약장", cabinetNumber: 2 },
+            ]}
+            count={0}
+          />
+        </Item>
+
+        <Item name="usage-date · past-date-note (화면 4 사용일 — 오늘이 아니면 안내 한 줄)">
+          <UsageDate value="2026-10-03" max="2026-10-07" />
+          <PastDateNote>10월 3일 사용으로 기록해요</PastDateNote>
+        </Item>
+
+        <Item name="past-date-note">
+          <PastDateNote>10월 3일 사용으로 기록해요</PastDateNote>
         </Item>
 
         <Item name="nav-account-menu (학교명 옆 ▾ — 누르면 로그아웃 메뉴)">

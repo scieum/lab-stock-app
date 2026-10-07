@@ -1,6 +1,7 @@
 // 화면 2 (시약 목록, dev-rules.json routes["2"]) 구조 규칙: C1 · C2 · R-ui · V1
 // 기대값: design/rules.json (screens_required, tab_bar, roles) · harness/dev-rules.json (viewports, components)
 // 로그인은 auth-state.ts 의 역할별 storageState 를 재사용한다 (Supabase Auth 요청 최소화).
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test, expect, type Page } from "@playwright/test";
 import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
@@ -14,6 +15,7 @@ import {
   devRules,
   guestOnlyComponents,
   roleChecks,
+  routeOf,
   rules,
   sel,
 } from "./screen-helpers";
@@ -21,6 +23,16 @@ import {
 const SCREEN = 2;
 const ROLES: Role[] = [...SCHOOL_A_ROLES, "schoolB"];
 const BADGE = "badge-low-stock";
+
+/** design/frames/{name}.json 의 노드 이름 (dev-rules components 에 있는 이름만) */
+function frameNames(name: string): Set<string> {
+  const j = JSON.parse(readFileSync(join(process.cwd(), "design", "frames", `${name}.json`), "utf8")) as { frames: { nodes: { name: string }[] }[] };
+  return new Set(j.frames[0].nodes.map((n) => n.name).filter((n) => devRules.components[n]));
+}
+/** rules.json variants[2] (디자인 1.17: filter · filter-empty · msds-bulk) */
+const VARIANTS2 = (rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants[String(SCREEN)] ?? {};
+/** 어떤 시약 이름에도 없을 검색어 (빈 결과 상태용) */
+const NO_MATCH_QUERY = "없는시약zzq";
 
 /** 시약 목록 화면이 그려질 때까지 (필터 세그먼트는 시약이 0개여도 항상 있다) */
 async function waitList(page: Page): Promise<void> {
@@ -50,6 +62,12 @@ for (const role of ROLES) {
       .map(([n]) => n)
       .filter((n) => !guestOnly.has(n));
     expect(fromDev.length, `dev-rules components 에 화면 ${SCREEN} 컴포넌트가 있어야 함`).toBeGreaterThan(0);
+    // 디자인 1.17: 기본 프레임 2-{폭} 에 없고 rules.json variants[2] 상태 프레임에만 있는 컴포넌트
+    // (list-filter-sheet · storage-class-chip · filter-chip-row · ex-empty-state-card)는 기본 상태 0, 그 상태를 만들어 ≥ 1.
+    // msds-bulk(msds-bulk-banner · msds-candidates)는 dev-rules components 밖 — MSDS 찾기 run(다음 run)에서.
+    const baseFrame = frameNames(`${SCREEN}-${info.project.name}`);
+    const variantOnly = [...new Set(Object.values(VARIANTS2).flat())].filter((n) => fromDev.includes(n) && !baseFrame.has(n));
+    expect(variantOnly.sort(), "variants[2] 에만 있는 화면 2 컴포넌트").toEqual(["ex-empty-state-card", "filter-chip-row", "list-filter-sheet", "storage-class-chip"]);
 
     const { context, page } = await openAs(browser, info, role, SCREEN);
     try {
@@ -70,9 +88,33 @@ for (const role of ROLES) {
           else expect(await countComponent(page, name), `${name} (부족 0종)`).toBe(0);
           continue;
         }
+        if (variantOnly.includes(name)) {
+          expect(await countComponent(page, name), `${name} 기본 상태(필터 없음·시트 닫힘) 0`).toBe(0);
+          continue;
+        }
         expect(await countComponent(page, name), `${name}`).toBeGreaterThanOrEqual(1);
         await expect(page.locator(sel(name)).first(), `${name} 보임`).toBeVisible();
       }
+
+      const inScope = (names: string[]) => names.filter((n) => n in devRules.components);
+      // variants[2].filter: 필터 1개(정렬 = 재고 적은 순)를 적용한 목록에서 시트를 연 상태 (시안 2-filter: 칩 줄 + 시트)
+      await page.goto(`${routeOf(SCREEN)}?sort=stock`);
+      await waitList(page);
+      await expect(page.locator(sel("filter-chip-row")), "적용 필터가 있으면 filter-chip-row").toHaveCount(1);
+      await expect(async () => {
+        await page.locator(`main ${sel("list-filter-button")}`).click();
+        await expect(page.locator(sel("list-filter-sheet"))).toBeVisible({ timeout: 2_000 });
+      }).toPass({ timeout: 30_000 });
+      for (const name of inScope(VARIANTS2.filter ?? [])) {
+        await expect(page.locator(sel(name)).first(), `variants[2].filter ${name} 보임`).toBeVisible();
+      }
+      // variants[2]["filter-empty"]: 적용 필터가 있고 결과 0 (검색어와 함께 AND)
+      await page.goto(`${routeOf(SCREEN)}?sort=stock&q=${encodeURIComponent(NO_MATCH_QUERY)}`);
+      await waitList(page);
+      for (const name of inScope(VARIANTS2["filter-empty"] ?? [])) {
+        await expect(page.locator(sel(name)).first(), `variants[2].filter-empty ${name} 보임`).toBeVisible();
+      }
+      await expect(page.locator(sel("list-filter-sheet")), "빈 결과 상태에서 시트는 닫힘").toHaveCount(0);
     } finally {
       await context.close();
     }
