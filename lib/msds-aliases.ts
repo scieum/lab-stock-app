@@ -4,7 +4,7 @@
 //   CAS 는 확실한 것만 넣는다 — 잘못된 CAS 는 엉뚱한 MSDS 를 연결한다. 뜻이 갈리는 이름(예: 그냥 "염화철")은 넣지 않는다.
 // - 이름 정리(cleanReagentName): 수식어·농도·괄호·끝의 용액·등급을 떼어 KOSHA 국문명 검색에 다시 쓴다.
 // 상대 import 만 쓴다 (vitest 는 @/ 별칭이 없다).
-import { isCasQuery } from "./msds-rules";
+import { isCasQuery, type MsdsCandidate } from "./msds-rules";
 
 /** [CAS, 이름·별칭…] — 첫 이름이 대표 이름 */
 const ALIAS_ROWS: readonly (readonly [string, ...string[]])[] = [
@@ -235,9 +235,15 @@ export function planMsdsSearch(q: string, cas?: string | null): { steps: MsdsSea
   return { steps: steps.slice(0, MSDS_SEARCH_STEPS_MAX - (fallback ? 1 : 0)), fallback };
 }
 
-/** 응답 searchedAs 글자: CAS 면 "CAS 7647-01-0", 이름이면 그 이름 */
-export function searchedAsLabel(step: MsdsSearchStep): string {
-  return step.kind === "cas" ? `CAS ${step.value}` : step.value;
+/**
+ * 응답 searchedAs 글자: 이름 차례 = 그 이름. CAS 차례 = 그 차례 첫 후보의 KOSHA 물질명 + "(CAS 번호)"
+ * (예: "염화수소(CAS 7647-01-0)") — 어떤 물질로 찾았는지 보이게. 첫 후보가 없으면 "CAS 7647-01-0".
+ */
+export function searchedAsLabel(step: MsdsSearchStep, first?: MsdsCandidate | null): string {
+  if (step.kind === "name") return step.value;
+  const name = first?.name.trim();
+  if (!name) return `CAS ${step.value}`;
+  return `${name}(CAS ${first?.cas?.trim() || step.value})`;
 }
 
 /** 끝 글자에 받침이 있으면(ㄹ 제외) "으로", 아니면 "로". 한글·숫자가 아니면 "(으)로" */
@@ -255,17 +261,27 @@ function roParticle(word: string): string {
 
 /**
  * 후보 시트의 무채색 한 줄 (d7 §20): 찾은 검색어가 원래 검색어와 다를 때만.
- * 이름 → "{원래 이름} → {찾은 이름}으로 찾았어요", CAS → "CAS 7647-01-0 으로 찾았어요". 같으면 null.
+ * 이름 → "{원래 이름} → {찾은 이름}으로 찾았어요",
+ * CAS → "{원래 이름} → 염화수소(CAS 7647-01-0)로 찾았어요" (물질명 없으면 "{원래 이름} → CAS 7647-01-0으로 찾았어요"). 같으면 null.
  */
 export function searchedAsNote(query: string, searchedAs: string | null | undefined): string | null {
   if (!searchedAs) return null;
   const q = query.trim().replace(/\s+/g, " ");
   const s = searchedAs.trim();
   if (!s || aliasKey(s) === aliasKey(q)) return null;
+  // CAS 차례: "물질명(CAS 번호)" — 원래 검색어가 그 CAS 거나 물질명이 원래 검색어와 같으면 없음.
+  // 조사는 괄호 앞 물질명에 맞춘다 ("염화수소(CAS …)로", "염산(CAS …)으로")
+  const named = /^(.+)\(CAS\s+(\S+)\)$/.exec(s);
+  if (named) {
+    const name = named[1].trim();
+    if (named[2] === q || aliasKey(name) === aliasKey(q)) return null;
+    return `${q} → ${name}(CAS ${named[2]})${roParticle(name)} 찾았어요`;
+  }
+  // 물질명 없는 CAS (예전 응답 꼴 "CAS 번호")
   const cas = /^CAS\s+(\S+)$/.exec(s);
   if (cas) {
     if (cas[1] === q) return null;
-    return `${s} ${roParticle(cas[1])} 찾았어요`;
+    return `${q} → CAS ${cas[1]}${roParticle(cas[1])} 찾았어요`;
   }
   return `${q} → ${s}${roParticle(s)} 찾았어요`;
 }

@@ -22,8 +22,8 @@ export type MsdsCandidate = {
 };
 
 /**
- * GET /api/msds/search 응답. searchedAs = 실제로 결과가 나온 검색어(이름 또는 "CAS 7647-01-0", d7 §20 검색 보강) —
- * 0개면 원래 검색어.
+ * GET /api/msds/search 응답. searchedAs = 실제로 결과가 나온 검색어(d7 §20 검색 보강): 이름 차례 = 그 이름,
+ * CAS 차례 = 첫 후보 물질명 + "(CAS 번호)"(예: "염화수소(CAS 7647-01-0)"). 0개면 원래 검색어.
  */
 export type MsdsSearchResponse = { candidates: MsdsCandidate[]; searchedAs: string };
 
@@ -31,7 +31,7 @@ export type MsdsSearchResponse = { candidates: MsdsCandidate[]; searchedAs: stri
 export function readSearchedAs(body: unknown): string | null {
   if (typeof body !== "object" || body === null) return null;
   const v = (body as { searchedAs?: unknown }).searchedAs;
-  return typeof v === "string" && v.trim() !== "" && v.length <= 80 ? v.trim() : null;
+  return typeof v === "string" && v.trim() !== "" && v.length <= 160 ? v.trim() : null;
 }
 
 export type MsdsSearchErrorCode =

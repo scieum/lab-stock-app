@@ -23,7 +23,7 @@ function merge(
   const out: MsdsCandidate[] = [];
   let searchedAs: string | null = null;
   for (const r of results) {
-    if (r.candidates.length > 0 && searchedAs === null) searchedAs = searchedAsLabel(r.step);
+    if (r.candidates.length > 0 && searchedAs === null) searchedAs = searchedAsLabel(r.step, r.candidates[0]);
     for (const c of r.candidates) {
       if (seen.has(c.chemId)) continue;
       seen.add(c.chemId);
