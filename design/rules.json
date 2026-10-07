@@ -1,5 +1,5 @@
 {
-  "version": "1.17",
+  "version": "1.18",
   "sources": [
     "docs/design.md",
     "docs/story-service.md",
@@ -17,7 +17,8 @@
     "2026-10-04 학교당 시약장 여러 개",
     "2026-10-06 시약 칸 배치·시약장 번호·QR 인쇄·재주문 기준 직접 입력 (개발 세션 요청)",
     "2026-10-07 서류로 입고·MSDS 자동 찾기·위치 자동 추천·자동 재주문 기준 표시 (개발 세션 요청 2)",
-    "2026-10-07 시약 목록 필터·정렬, 사용일 고르기 (개발 세션 요청 3)"
+    "2026-10-07 시약 목록 필터·정렬, 사용일 고르기 (개발 세션 요청 3)",
+    "2026-10-07 초·중·고 학교급 (개발 세션 요청 4)"
   ],
   "colors": {
     "allowed": [
@@ -179,8 +180,8 @@
       15
     ],
     "guest_name_pattern": "^([1-9]|1[0-5])-guest-(mobile|desktop)$",
-    "variant_name_pattern": "^([1-9]|1[0-5])-(empty|delete|slot|print|unsaved|location|result|doc-upload|doc-review|doc-fail|suggest|msds|msds-bulk|filter|filter-empty|past-date)-(mobile|desktop)$",
-    "variant_note": "같은 화면의 다른 상태 프레임. input.json variants {\"11\": [\"empty\",\"delete\"]} 로 요청 (2026-10-04) · 2026-10-06 상태 추가: 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 상태 추가: 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk · 2026-10-07 상태 추가: 2-filter·2-filter-empty, 4-past-date"
+    "variant_name_pattern": "^([1-9]|1[0-5])-(empty|delete|slot|print|unsaved|location|result|doc-upload|doc-review|doc-fail|suggest|msds|msds-bulk|filter|filter-empty|past-date|no-school)-(mobile|desktop)$",
+    "variant_note": "같은 화면의 다른 상태 프레임. input.json variants {\"11\": [\"empty\",\"delete\"]} 로 요청 (2026-10-04) · 2026-10-06 상태 추가: 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 상태 추가: 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk · 2026-10-07 상태 추가: 2-filter·2-filter-empty, 4-past-date · 2026-10-07 상태 추가: 14-no-school"
   },
   "s1": {
     "refs_per_screen": [
@@ -267,7 +268,7 @@
         12,
         13
       ],
-      "school_name_pattern": "[가-힣A-Za-z0-9]+고등학교",
+      "school_name_pattern": "[가-힣A-Za-z0-9]+(?:초등학교|중학교|고등학교)",
       "distinct_school_names": 1,
       "school_select_only_on": [
         14
@@ -291,9 +292,10 @@
       "school_select_levels": [
         "school-select-sido",
         "school-select-region",
+        "school-select-kind",
         "school-select-school"
       ],
-      "school_select_levels_source": "docs/story-service.md 결정 사항 \"학교 선택\"",
+      "school_select_levels_source": "docs/story-service.md 결정 사항 \"학교 선택\" · 2026-10-07 학교급(school-select-kind) 추가",
       "school_select_screen": 14,
       "school_select_source": "2026-10-02 사용자 결정: 학교는 회원가입(14)에서만 선택, 로그인(1)은 개인 이메일·비밀번호"
     },
@@ -369,7 +371,13 @@
     "endpoint": "https://open.neis.go.kr/hub/schoolInfo",
     "key_env": "NEIS_API_KEY",
     "key_file": ".env",
-    "school_kind": "고등학교",
+    "school_kinds": [
+      "초등학교",
+      "중학교",
+      "고등학교"
+    ],
+    "default_kind": "고등학교",
+    "school_kinds_source": "2026-10-07 사용자 결정 (요청 4): 초·중·고 3종, 특수학교·각종학교 제외. default_kind는 시안 예시 데이터용(화면 기본값은 없음)",
     "sido_field": "LCTN_SC_NM",
     "region_from": "ORG_RDNMA 두 번째 토큰 (시/군/구로 끝날 때만, 아니면 시/도 이름)",
     "default_sido": "충청북도",
@@ -419,7 +427,10 @@
     "4": [
       "usage-date"
     ],
-    "source": "2026-10-02 story-service 결정 (화면별 필수 컴포넌트, 규칙 C1) · 15 랜딩 2026-10-03 · 2026-10-06 화면 3 보관 위치·재주문 기준, 화면 11 시약장 번호·QR 인쇄 · 2026-10-07 화면 7 intake-mode · 2026-10-07 화면 2 list-filter-button, 화면 4 usage-date"
+    "14": [
+      "school-select-kind"
+    ],
+    "source": "2026-10-02 story-service 결정 (화면별 필수 컴포넌트, 규칙 C1) · 15 랜딩 2026-10-03 · 2026-10-06 화면 3 보관 위치·재주문 기준, 화면 11 시약장 번호·QR 인쇄 · 2026-10-07 화면 7 intake-mode · 2026-10-07 화면 2 list-filter-button, 화면 4 usage-date · 2026-10-07 화면 14 school-select-kind"
   },
   "cabinet": {
     "door_types": [
@@ -664,7 +675,13 @@
         "past-date-note"
       ]
     },
-    "source": "2026-10-04 여러 시약장: 빈 상태(교사 기준)·삭제 확인 상태 필수 컴포넌트 (C1) · 2026-10-06 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk, 3-location + suggest-badge · 2026-10-07 2-filter·2-filter-empty, 4-past-date"
+    "14": {
+      "no-school": [
+        "school-select-kind",
+        "school-select-school"
+      ]
+    },
+    "source": "2026-10-04 여러 시약장: 빈 상태(교사 기준)·삭제 확인 상태 필수 컴포넌트 (C1) · 2026-10-06 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk, 3-location + suggest-badge · 2026-10-07 2-filter·2-filter-empty, 4-past-date · 2026-10-07 14-no-school"
   },
   "reorder": {
     "threshold_edit": "화면 3 시약 상세에서 교사·admin이 재주문 기준(필요량)을 숫자로 직접 입력 (reorder-threshold 안 threshold-edit). 화면 5 AI 추출 값과 같은 칸을 덮어씀",
@@ -732,5 +749,12 @@
     "history": "화면 10은 사용일로 묶고 정렬. 기록한 날이 사용일과 다를 때만 회색 캡션 '10월 6일에 기록'",
     "auto_threshold": "자동 재주문 기준(최근 28일)도 사용일 기준 (개발 쪽)",
     "source": "2026-10-07 사용자 결정 (개발 세션 요청 3-2)"
+  },
+  "school_kind_select": {
+    "component": "school-select-kind",
+    "shape": "segmented-control 3칸 초등학교·중학교·고등학교, 지역 다음·학교 앞",
+    "default": "없음 — 고르기 전 school-select-school 비활성 + '학교급을 먼저 골라 주세요'",
+    "no_school": "학교 0개 = school-select-school 자리에 무채색 '이 지역에 {학교급}이 없어요 — 지역을 다시 골라 주세요'",
+    "source": "2026-10-07 사용자 결정 (요청 4)"
   }
 }

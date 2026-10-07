@@ -1,8 +1,8 @@
 {
     "repo":  "https://github.com/scieum/harness",
-    "commit":  "f5bc668",
+    "commit":  "15df45f",
     "path":  "harness/rules.json",
-    "sha256":  "357f2a9a9cbd1cb443f5ebe1bdb48e17b70271a0f138a1607b70a73dd835a2b4",
+    "sha256":  "683cf3f7f79bfd04813e228fff45fa2af6dbe0e0395dbb635913bec94058cf74",
     "figma_file":  "https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2",
     "figma_page":  "00 최신 시안",
     "frames_from_runs":  {
@@ -10,8 +10,6 @@
                              "1-desktop":  "runs/20261002-2019",
                              "13-mobile":  "runs/20261006-1223",
                              "13-desktop":  "runs/20261006-1223",
-                             "14-mobile":  "runs/20261002-2019",
-                             "14-desktop":  "runs/20261002-2019",
                              "15-mobile":  "runs/20261003-1212",
                              "15-desktop":  "runs/20261003-1212",
                              "13-guest-mobile":  "runs/20261003-1212",
@@ -75,7 +73,11 @@
                              "8-desktop":  "runs/20261007-0848",
                              "8-mobile":  "runs/20261007-0848",
                              "9-desktop":  "runs/20261007-0848",
-                             "9-mobile":  "runs/20261007-0848"
+                             "9-mobile":  "runs/20261007-0848",
+                             "14-desktop":  "runs/20261007-1305",
+                             "14-mobile":  "runs/20261007-1305",
+                             "14-no-school-desktop":  "runs/20261007-1305",
+                             "14-no-school-mobile":  "runs/20261007-1305"
                          },
-    "copied":  "2026-10-07 (11차: rules.json 1.17 그대로, 화면 5·6·8·9 프레임 — 개발 세션 예외 1~6 시안 반영, 디자인 run 20261007-0848, Figma S4-screens-v13 node 325:2)"
+    "copied":  "2026-10-07 (12차: rules.json 1.18 — 초·중·고 학교급(neis.school_kinds), 화면 14 학교급 고르기 school-select-kind·상태 14-no-school, N1 school_name_pattern 확대. Figma S4-screens-v14 node 350:2)"
 }

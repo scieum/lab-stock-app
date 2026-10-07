@@ -63,7 +63,7 @@
 |---|---|
 | N1-db | 학교 A 사용자로 학교 B의 reagents·usage_logs·cabinets 조회 = 0행, 수정 = 0행 (SQL 테스트) |
 | N1-ui | 로그인 후 화면 텍스트의 학교명 종류 = 1 (자기 학교만) |
-| N1-d | 화면 14(회원가입): school-select-sido → region → school 순서, 목록은 `/api/neis` 응답에서만. 화면 1(로그인)에는 school-select* 0 |
+| N1-d | 화면 14(회원가입): school-select-sido → region → kind → school 순서(2026-10-07 rules.json 1.18 — 학교급 school-select-kind 추가), 목록은 `/api/neis` 응답에서만. 화면 1(로그인)에는 school-select* 0 |
 | N2-env | 키 환경변수 이름에 `NEXT_PUBLIC_` 접두사 = 0, 키 사용 파일은 `app/api/**`·`lib/server/**`만 |
 | N2-bundle | `.next/static/**` 안에 32자리 16진수·`AIza`로 시작하는 문자열·키 변수 이름 = 0 |
 
