@@ -10,7 +10,8 @@ import { refreshAfterMsdsAction, setReagentMsdsAction } from "../msds-actions";
 
 const TOAST_MS = 2500;
 
-export type MsdsBulkTarget = { id: string; name: string };
+/** cas = 시약에 저장된 CAS — 검색 보강 (1) 로 함께 보낸다 (d7 §20) */
+export type MsdsBulkTarget = { id: string; name: string; cas?: string | null };
 
 type Props = {
   /** 지금 목록에서 MSDS 없는 시약 (목록 순서) */
@@ -61,11 +62,11 @@ export function MsdsBulk({ targets }: Props) {
     }
     setIndex(i);
     setError(null);
-    void search(list[i].name);
+    void search(list[i].name, list[i].cas ?? null);
   };
 
   const start = () => {
-    const list = targets.slice(0, MSDS_BULK_MAX).map((t) => ({ id: t.id, name: t.name }));
+    const list = targets.slice(0, MSDS_BULK_MAX).map((t) => ({ id: t.id, name: t.name, cas: t.cas ?? null }));
     if (list.length === 0) return;
     saved.current = 0;
     setToast(null);
@@ -98,8 +99,10 @@ export function MsdsBulk({ targets }: Props) {
           caption={MSDS_TEXT.pick}
           status={state.status}
           candidates={state.status === "ready" ? state.candidates : undefined}
+          searchedAs={state.status === "ready" ? state.searchedAs : null}
+          searchedQuery={state.status === "idle" ? current.name : state.query}
           message={state.status === "error" ? state.message : undefined}
-          onRetry={() => void search(current.name)}
+          onRetry={() => void search(current.name, current.cas ?? null)}
           onConfirm={(c) => save(c.msdsUrl, c.cas)}
           onSubmitUrl={(url) => save(url, null)}
           onSkip={() => goTo(queue, index + 1)}

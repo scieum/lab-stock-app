@@ -88,7 +88,7 @@ export function ReagentBrowser({
   const chips = listFilterChips(applied, cabinets);
   // d7 §20: 교사·admin 이 "MSDS 없는 시약만"을 켰을 때 — 지금 목록(다른 조건과 함께 거른 것)이 일괄 찾기 대상
   const msdsTargets = useMemo(
-    () => (canFindMsds && applied.noMsds ? visible.filter((r) => !r.hasMsds).map((r) => ({ id: r.id, name: r.name })) : []),
+    () => (canFindMsds && applied.noMsds ? visible.filter((r) => !r.hasMsds).map((r) => ({ id: r.id, name: r.name, cas: r.casNo })) : []),
     [canFindMsds, applied.noMsds, visible],
   );
 

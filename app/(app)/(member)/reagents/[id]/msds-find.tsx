@@ -13,14 +13,15 @@ const TOAST_MS = 2000;
 /** 저장 뒤 화면을 다시 받으면 이 버튼(MSDS 없는 자리)은 사라진다 — 토스트는 늘 있는 MsdsSavedToast 가 띄운다 */
 const SAVED_EVENT = "lab-stock:msds-saved";
 
-type Props = { reagentId: string; reagentName: string };
+/** casNo = 시약에 저장된 CAS — 검색 보강 (1) 로 함께 보낸다 (d7 §20) */
+type Props = { reagentId: string; reagentName: string; casNo?: string | null };
 
 /**
  * 화면 3 MSDS 없는 시약의 "MSDS 찾기" (디자인 1.17 3-msds, d7 §20) — 교사·admin 에게만 둔다.
  * 누르면 시약 이름으로 찾아 후보 시트(msds-candidates) → "이 MSDS로"(또는 직접 주소) → set_reagent_msds 저장
  * (CAS 는 시약 CAS 가 비어 있을 때만 DB 가 채운다) → 토스트 "MSDS를 넣었어요" → 화면을 다시 받는다.
  */
-export function MsdsFind({ reagentId, reagentName }: Props) {
+export function MsdsFind({ reagentId, reagentName, casNo = null }: Props) {
   const router = useRouter();
   const { state, search, reset } = useMsdsSearch();
   const [open, setOpen] = useState(false);
@@ -32,8 +33,11 @@ export function MsdsFind({ reagentId, reagentName }: Props) {
     setError(null);
     setQuery(reagentName);
     setOpen(true);
-    void search(reagentName);
+    void search(reagentName, casNo);
   };
+
+  /** 검색 상자에서 시약 이름을 그대로 두면 시약 CAS 도 함께, 바꿨으면 입력한 검색어만 */
+  const searchQuery = () => void search(query, query.trim() === reagentName.trim() ? casNo : null);
 
   const close = () => {
     if (pending) return;
@@ -69,11 +73,13 @@ export function MsdsFind({ reagentId, reagentName }: Props) {
           caption={reagentName}
           query={query}
           onQueryChange={setQuery}
-          onSearch={() => void search(query)}
+          onSearch={searchQuery}
           status={state.status}
           candidates={state.status === "ready" ? state.candidates : undefined}
+          searchedAs={state.status === "ready" ? state.searchedAs : null}
+          searchedQuery={state.status === "idle" ? undefined : state.query}
           message={state.status === "error" ? state.message : undefined}
-          onRetry={() => void search(query)}
+          onRetry={searchQuery}
           onConfirm={(c: MsdsCandidate) => save(c.msdsUrl, c.cas)}
           onSubmitUrl={(url) => save(url, null)}
           onClose={close}

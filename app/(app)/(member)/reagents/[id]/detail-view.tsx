@@ -63,7 +63,7 @@ export async function ReagentDetailView({ data, role, openPicker = false, selfPa
       caption={reagent.msdsUrl ? "QR로 MSDS 열기" : "QR로 이 시약 정보 열기"}
       notice={MSDS_TEXT.missing}
       // d7 §20: MSDS 없는 시약 — 교사·admin 은 "MSDS 찾기", 학생·둘러보기는 "MSDS가 아직 없어요"만 (R5 · guest 숨김)
-      missingAction={staff ? <MsdsFind reagentId={reagent.id} reagentName={reagent.name} /> : null}
+      missingAction={staff ? <MsdsFind reagentId={reagent.id} reagentName={reagent.name} casNo={reagent.casNo} /> : null}
       qr={
         <QrCodeSvg size={qr.size} d={qr.d} label={reagent.msdsUrl ? `${reagent.name} MSDS QR 코드` : `${reagent.name} 상세 QR 코드`} />
       }

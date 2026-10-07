@@ -5,6 +5,7 @@ import { ButtonPrimary } from "@/components/button-primary";
 import { Icon } from "@/components/icons";
 import { SheetNote, SheetPanel, SheetTextAction } from "@/components/sheet-panel";
 import { TextInput } from "@/components/text-input";
+import { searchedAsNote } from "@/lib/msds-aliases";
 import { MSDS_TEXT, checkMsdsUrl, type MsdsCandidate } from "@/lib/msds-rules";
 import styles from "./styles.module.css";
 
@@ -26,6 +27,12 @@ type Props = {
   onSearch?: () => void;
   status: MsdsCandidatesStatus;
   candidates?: readonly MsdsCandidate[];
+  /**
+   * 실제로 결과가 나온 검색어(응답 searchedAs)와 그때 보낸 검색어 — 다르면 후보 위에 무채색 한 줄
+   * "{원래 이름} → {찾은 이름}으로 찾았어요" / "CAS 7647-01-0 으로 찾았어요" (d7 §20 검색 보강)
+   */
+  searchedAs?: string | null;
+  searchedQuery?: string;
   /** status = error 일 때 문구 */
   message?: string;
   /** "이 MSDS로" — 고른 후보 */
@@ -66,6 +73,8 @@ export function MsdsCandidates({
   onSearch,
   status,
   candidates = NO_CANDIDATES,
+  searchedAs,
+  searchedQuery,
   message,
   onConfirm,
   onDirect,
@@ -94,6 +103,7 @@ export function MsdsCandidates({
   const selected = candidates.find((c) => c.chemId === selectedId) ?? null;
   const ready = status === "ready";
   const empty = ready && candidates.length === 0;
+  const note = ready && candidates.length > 0 ? searchedAsNote(searchedQuery ?? query ?? "", searchedAs) : null;
   const checkedUrl = checkMsdsUrl(url);
   const urlError = touched && url.trim() !== "" && !checkedUrl.ok ? MSDS_TEXT.urlError : undefined;
 
@@ -231,6 +241,12 @@ export function MsdsCandidates({
           <p className={styles.errorText}>{message ?? MSDS_TEXT.upstream}</p>
           {onRetry ? <SheetTextAction onClick={onRetry}>다시 찾기</SheetTextAction> : null}
         </div>
+      ) : null}
+
+      {note ? (
+        <p data-name="msds-searched-as" className={styles.searchedAs}>
+          {note}
+        </p>
       ) : null}
 
       {ready && candidates.length > 0 ? (

@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MSDS_TEXT, checkMsdsQuery, readCandidates, type MsdsCandidate } from "@/lib/msds-rules";
+import { MSDS_TEXT, checkMsdsQuery, isCasQuery, readCandidates, readSearchedAs, type MsdsCandidate } from "@/lib/msds-rules";
 
 export type MsdsSearchState =
   | { status: "idle" }
   | { status: "loading"; query: string }
-  | { status: "ready"; query: string; candidates: MsdsCandidate[] }
+  | { status: "ready"; query: string; candidates: MsdsCandidate[]; searchedAs: string | null }
   | { status: "error"; query: string; message: string };
 
 /** 서버 오류 본문의 문구 (없으면 기본 문구). 키·주소는 서버가 이미 넣지 않는다 */
@@ -19,6 +19,7 @@ function errorMessage(body: unknown, status: number): string {
 
 /**
  * GET /api/msds/search 를 부르는 화면 쪽 상태 (d7 §20). 새 검색을 시작하면 앞 요청은 취소한다.
+ * cas = 시약에 저장된 CAS (화면 3·2 일괄 — 검색 보강 (1)). 화면 7 은 이름만.
  * 화면이 사라지면 진행 중 요청도 취소한다.
  */
 export function useMsdsSearch() {
@@ -27,7 +28,7 @@ export function useMsdsSearch() {
 
   useEffect(() => () => ctrl.current?.abort(), []);
 
-  const search = useCallback(async (raw: string) => {
+  const search = useCallback(async (raw: string, cas?: string | null) => {
     const q = checkMsdsQuery(raw);
     ctrl.current?.abort();
     if (!q.ok) {
@@ -38,7 +39,10 @@ export function useMsdsSearch() {
     ctrl.current = c;
     setState({ status: "loading", query: q.value });
     try {
-      const res = await fetch(`/api/msds/search?q=${encodeURIComponent(q.value)}`, {
+      const params = new URLSearchParams({ q: q.value });
+      const c2 = typeof cas === "string" ? cas.trim() : "";
+      if (c2 && isCasQuery(c2)) params.set("cas", c2);
+      const res = await fetch(`/api/msds/search?${params}`, {
         signal: c.signal,
         headers: { Accept: "application/json" },
         cache: "no-store",
@@ -54,7 +58,7 @@ export function useMsdsSearch() {
         setState({ status: "error", query: q.value, message: MSDS_TEXT.upstream });
         return;
       }
-      setState({ status: "ready", query: q.value, candidates });
+      setState({ status: "ready", query: q.value, candidates, searchedAs: readSearchedAs(body) });
     } catch {
       if (c.signal.aborted) return;
       setState({ status: "error", query: q.value, message: MSDS_TEXT.upstream });
