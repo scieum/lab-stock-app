@@ -34,15 +34,16 @@ const textOf = (list: FrameNode[], name: string) => list.filter((n) => n.name ==
 const bodyNodes = under("user-manage");
 const modalNodes = under("ex-modal-card");
 
+// 시안 1.17 8 (d7 §18): 본문(um-header · 검색 · 멤버 5 · 초대 대기 2 · notice) + 박OO 삭제 확인 시트.
+// d7 §8 의 헤더 역할별 인원 줄("학생 a · 교사 b · admin c")은 1.17 프레임에 없지만 d7 대로 기대한다 (아래 HEADER.counts = 멤버 역할에서 센다).
 const HEADER = {
-  heading: textOf(bodyNodes.filter((n) => n.path.includes("header-text")), "heading")[0],
-  counts: textOf(bodyNodes.filter((n) => n.path.includes("header-text")), "caption")[0],
-  invite: bodyNodes.filter((n) => n.path.includes("user-header-row") && n.path.includes("button-primary") && n.name === "label")[0]?.text
-    ?.characters,
+  heading: textOf(bodyNodes.filter((n) => n.path.includes("um-header")), "heading")[0],
+  counts: "",
+  invite: bodyNodes.filter((n) => n.path.includes("um-header") && n.path.includes("button-primary") && n.name === "label")[0]?.text?.characters,
   placeholder: textOf(bodyNodes.filter((n) => n.path.includes("text-input")), "placeholder")[0],
   memberTitle: textOf(bodyNodes.filter((n) => n.path.includes("member-section")), "section-title")[0],
   inviteTitle: textOf(bodyNodes.filter((n) => n.path.includes("invite-section")), "section-title")[0],
-  note: textOf(bodyNodes, "user-note")[0],
+  note: textOf(bodyNodes, "notice")[0],
 };
 
 type FrameMember = { fill: string | null; name: string; role: string; badge: string | null };
@@ -72,35 +73,47 @@ const FRAME_INVITES: FrameInvite[] = [];
     }
     if (!n.text) continue;
     if (member) {
-      if (n.name === "name") member.name = n.text.characters;
-      if (n.name === "role") member.role = n.text.characters;
-      if (n.name === "label" && n.path.includes("badge-me")) member.badge = n.text.characters;
+      if (n.name === "member-name") member.name = n.text.characters;
+      if (n.name === "member-role") member.role = n.text.characters;
+      if (n.name === "label" && n.path.includes("me-pill")) member.badge = n.text.characters;
     }
     if (invite) {
-      if (n.name === "email") invite.email = n.text.characters;
-      if (n.name === "caption") invite.caption = n.text.characters;
-      if (n.name === "status") invite.status = n.text.characters;
+      if (n.name === "invite-email") invite.email = n.text.characters;
+      if (n.name === "invite-date") invite.caption = n.text.characters;
+      if (n.name === "invite-status") invite.status = n.text.characters;
     }
   }
 }
 const SELF = FRAME_MEMBERS.find((m) => m.badge !== null);
 const OTHERS = FRAME_MEMBERS.filter((m) => m.badge === null);
+{
+  const count = (r: string) => FRAME_MEMBERS.filter((m) => m.role === r).length;
+  HEADER.counts = `학생 ${count("학생")} · 교사 ${count("교사")} · admin ${count("admin")}`;
+}
 
-const optionLabels = (kind: string) =>
-  modalNodes.filter((n) => parents(n).includes(kind) && n.name === "label" && n.text).map((n) => n.text!.characters);
-const SHEET = {
-  title: textOf(modalNodes.filter((n) => n.path.includes("modal-heading")), "title")[0],
-  // role-options 안 라벨을 프레임 순서대로
-  roles: modalNodes
-    .filter((n) => n.path.includes("role-options") && n.name === "label" && n.text)
-    .map((n) => n.text!.characters),
-  selected: optionLabels("role-option-selected")[0],
-  selectedFill: modalNodes.find((n) => leaf(n) === "role-option-selected")?.fills[0] ?? "",
-  radioDotFill: modalNodes.find((n) => leaf(n) === "radio-dot")?.fills[0] ?? "",
+/** 시안 1.17 8 의 삭제 확인 시트 */
+const DELETE_SHEET = {
+  title: textOf(modalNodes, "sheet-title")[0],
+  body: textOf(modalNodes, "sheet-body")[0],
   primary: modalNodes.filter((n) => parents(n).includes("button-primary") && n.name === "label")[0]?.text?.characters,
   outline: modalNodes.filter((n) => parents(n).includes("button-outline") && n.name === "label")[0]?.text?.characters,
+  hasClose: modalNodes.some((n) => n.name === "sheet-close"),
 };
-
+/** 삭제 확인 대상 = 시안 sheet-body 의 이름 ("박OO · 사용·입고 기록은 남아요") */
+const TARGET = FRAME_MEMBERS.find((m) => DELETE_SHEET.body?.startsWith(`${m.name} · `));
+/**
+ * 역할 변경 시트(②): 1.17 프레임은 삭제 확인 상태만 그렸다 — 1.16 시안 시트의 문구·색을 그대로 기대하고,
+ * 대상은 1.17 시안의 삭제 대상 멤버(이름·지금 역할)로 둔다.
+ */
+const SHEET = {
+  title: `${TARGET?.name ?? ""}의 역할`,
+  roles: ["학생", "교사", "admin"],
+  selected: TARGET?.role,
+  selectedFill: "#e6f4fc",
+  radioDotFill: "#2b9fe0",
+  primary: "변경",
+  outline: "사용자 삭제",
+};
 // 프레임의 컴포넌트 개수 (dev-rules components 이름만 센다)
 const componentNames = Object.keys(dev.components);
 const countByName = (list: FrameNode[]) => {
@@ -230,7 +243,7 @@ async function optionPaint(radio: Locator): Promise<{ backgrounds: string[]; bor
 }
 
 // ---------- 기대값 자체 점검 ----------
-test(`[K1][S${SCREEN}] 기대값 원본: 프레임 ${SCREEN}-mobile 에 user-manage(헤더·멤버·초대 대기·유의사항)·역할 변경 시트, rules.json 하늘색 2종`, () => {
+test(`[K1][S${SCREEN}] 기대값 원본: 프레임 ${SCREEN}-mobile(1.17) 에 user-manage(헤더·멤버·초대 대기·유의사항)·삭제 확인 시트, d7 §8 역할별 인원 줄, rules.json 하늘색 2종`, () => {
   expect(HEADER.heading, "프레임 heading").toMatch(new RegExp(`^${esc(SCHOOL)} 사용자 \\d+명$`));
   expect(HEADER.counts, "프레임 역할별 인원 줄").toMatch(/^학생 \d+ · 교사 \d+ · admin \d+$/);
   expect(HEADER.invite, "프레임 헤더 button-primary").toBe("초대");
@@ -246,8 +259,14 @@ test(`[K1][S${SCREEN}] 기대값 원본: 프레임 ${SCREEN}-mobile 에 user-man
   for (const m of OTHERS) expect(HIGHLIGHTS, `프레임 ${m.name} 행 채움은 하늘색 아님`).not.toContain((m.fill ?? "").toLowerCase());
   expect(FRAME_INVITES.length, "프레임 초대 대기 행").toBeGreaterThan(0);
   expect(FRAME_INVITES.every((v) => v.email && v.caption && v.status === "대기"), "초대 행마다 이메일·초대일·대기").toBe(true);
-  expect(SHEET.title, "프레임 시트 제목 = {이름}의 역할").toMatch(/의 역할$/);
-  expect(OTHERS.map((m) => `${m.name}의 역할`), "시트 대상은 프레임의 다른 멤버").toContain(SHEET.title);
+  expect(FRAME_MEMBERS.length, "시안 1.17 멤버 5명").toBe(5);
+  expect(DELETE_SHEET.title, "시안 1.17 삭제 확인 제목").toBe(DELETE_TITLE);
+  expect(DELETE_SHEET.hasClose, "시안 1.17 × 닫기").toBe(true);
+  expect(TARGET, "삭제 확인 대상은 프레임의 다른 멤버").toBeTruthy();
+  expect(OTHERS).toContain(TARGET);
+  expect(DELETE_SHEET.body, "본문 = {이름} · 사용·입고 기록은 남아요").toBe(`${TARGET!.name} · 사용·입고 기록은 남아요`);
+  expect([DELETE_SHEET.outline, DELETE_SHEET.primary], "취소 · {이름} 삭제").toEqual([DELETE_CANCEL, `${TARGET!.name} ${DELETE_CONFIRM}`]);
+  expect(SHEET.title, "역할 변경 시트 대상 = 삭제 확인 대상").toBe(`${TARGET!.name}의 역할`);
   expect(SHEET.roles, "프레임 라디오 3행").toEqual(ROLE_LABELS);
   expect(SHEET.roles, "프레임 선택 행").toContain(SHEET.selected);
   expect(HIGHLIGHTS, "프레임 선택 행 채움 = rules.json 하늘색").toContain(SHEET.selectedFill.toLowerCase());
@@ -416,12 +435,18 @@ test.describe("user-manage", () => {
       ["첫 초대 행", main.locator(sel("ex-data-table-cell")).filter({ hasText: FRAME_INVITES[0].email })],
       ["유의사항", main.getByText(HEADER.note!, { exact: true })],
     ];
+    // 문서 안 위치(offsetTop 누적) — 갤러리 구역 안 스크롤과 무관하게 위→아래 순서를 본다
     let prev = -Infinity;
     let prevName = "";
     for (const [name, loc] of parts) {
-      const b = await box(loc, name);
-      expect(b.y, `${name} 은 ${prevName} 아래`).toBeGreaterThan(prev);
-      prev = b.y;
+      await expect(loc.first(), name).toBeVisible();
+      const y = await loc.first().evaluate((el) => {
+        let sum = 0;
+        for (let e: HTMLElement | null = el as HTMLElement; e; e = e.offsetParent as HTMLElement | null) sum += e.offsetTop;
+        return sum;
+      });
+      expect(y, `${name} 은 ${prevName} 아래`).toBeGreaterThan(prev);
+      prev = y;
       prevName = name;
     }
     // 이름 검색은 멤버 목록보다 위
@@ -434,8 +459,8 @@ test.describe("user-manage", () => {
     await open(page);
     const main = await mainOf(page);
     const target = OTHERS[0];
-    // 이름의 뒤쪽 일부 (앞부분 일치가 아니라 부분 일치인지 본다)
-    const part = target.name.slice(1);
+    // 이름의 일부 (전체 이름이 아닌 부분 일치). 시안 1.17 이름("이OO")은 뒤쪽이 모두 같아 앞쪽 일부를 쓴다
+    const part = [target.name.slice(1), target.name.slice(0, -1)].find((p) => FRAME_MEMBERS.filter((m) => m.name.includes(p)).length < FRAME_MEMBERS.length) ?? "";
     expect(part.length, "검색어 길이").toBeGreaterThan(0);
     const expected = FRAME_MEMBERS.filter((m) => m.name.includes(part)).map((m) => m.name);
     expect(expected.length, "검색어가 일부 행만 고른다").toBeLessThan(FRAME_MEMBERS.length);
@@ -751,7 +776,8 @@ test.describe("ex-modal-card 초대 시트", () => {
 // ---------- ex-modal-card ③ 삭제 확인 ----------
 test(`[K1][S${SCREEN}] 삭제 확인 카드: "${DELETE_TITLE}" · button-outline "${DELETE_CANCEL}" · button-primary "${DELETE_CONFIRM}"`, async ({ page }) => {
   await open(page);
-  const card = await modalWithHeading(page, DELETE_TITLE);
+  // 갤러리에는 1.17 이름 있는 삭제 확인(g-delete-named)도 있다 — 이 테스트는 기본 예시(g-delete)
+  const card = await modalWithHeading(page, DELETE_TITLE, (m) => page.locator('section[aria-labelledby="g-delete"]').locator(m));
   const cancel = card.locator(sel("button-outline"));
   await expect(cancel, "button-outline").toHaveCount(1);
   await expect(cancel).toHaveText(exact(DELETE_CANCEL));
@@ -772,7 +798,8 @@ test(`[K1][S${SCREEN}] ex-modal-card 3종(역할 변경·초대·삭제 확인):
   const cards: [string, Locator][] = [
     ["역할 변경", await roleSheet(page)],
     ["초대", await inviteSheet(page)],
-    ["삭제 확인", await modalWithHeading(page, DELETE_TITLE)],
+    ["삭제 확인", await modalWithHeading(page, DELETE_TITLE, (m) => page.locator('section[aria-labelledby="g-delete"]').locator(m))],
+    ["삭제 확인(1.17 이름)", await modalWithHeading(page, DELETE_TITLE, (m) => page.locator('section[aria-labelledby="g-delete-named"]').locator(m))],
   ];
   for (const [name, card] of cards) {
     const style = await card.evaluate((el) => {

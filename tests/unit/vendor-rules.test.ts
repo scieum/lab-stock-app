@@ -1,7 +1,7 @@
 // 화면 9 판매처 설정 · 화면 6 판매처 연결 순수 규칙 (lib/vendor-rules).
 // 기대값: harness/d7-data.md §12(vendors 열 길이 · website = null 또는 http(s):// · 이름 중복 = 대소문자·공백 무시 ·
 //         부가 정보 = "연락처 · note" · 판매처명 검색 · 공통 목록 seed), §11(판매처 연결 순서 = 우리 학교 먼저, 그다음 공통),
-//         design/frames/9-mobile.json(시안 예시 판매처 4곳).
+//         §18(화면 9 목록 행의 부가 정보 = 연락처만), design/frames/9-mobile.json(시안 1.17 예시 판매처 3곳의 이름).
 //         구현에서 읽지 않는다 — 구현 상수는 d7 문장에서 읽은 숫자와 같은지 비교만 한다.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -16,6 +16,7 @@ import {
   isOpenableWebsite,
   normalizeWebsite,
   orderVendorsForLink,
+  vendorContactInfo,
   vendorInfo,
   vendorNameKey,
 } from "../../lib/vendor-rules";
@@ -36,12 +37,16 @@ const NOTE_MAX = num(/note\(부가 정보, null 허용 (\d+)자\)/, "note 길이
 const seedLine = D7.split("\n").find((l) => l.startsWith("| 공통 목록")) ?? "";
 const SEED = [...seedLine.matchAll(/([^\s,():]+)\((https?:\/\/[^)\s]+)\)/g)].map((m) => ({ name: m[1], website: m[2] }));
 
-// ---------- 시안 프레임 9-mobile 의 예시 판매처 ----------
+// ---------- 시안 프레임 9-mobile(1.17) 의 예시 판매처 ----------
+// 시안 1.17 행 = vendor-name + vendor-site(웹사이트). 부가 정보 줄(vendor-info)은 시안에 없고, d7 §18 이 행의 부가 정보를
+// "연락처만"으로 정했다 — 부가 정보 문구 틀("연락처 · note")의 예시는 아래 D7_INFOS(d7 §12 틀).
 type FrameNode = { name: string; path: string[]; text: { characters: string } | null };
 const frame = JSON.parse(readFileSync(join(ROOT, "design/frames/9-mobile.json"), "utf8")) as { frames: { nodes: FrameNode[] }[] };
 const frameText = (name: string) => frame.frames[0].nodes.filter((n) => n.name === name && n.text).map((n) => n.text!.characters);
 const FRAME_NAMES = frameText("vendor-name");
-const FRAME_INFOS = frameText("vendor-info");
+const FRAME_SITES = frameText("vendor-site");
+/** d7 §12 "부가 정보 = 연락처 · note" 틀의 예시 (화면 6 판매처 연결 행이 쓰는 vendorInfo) */
+const D7_INFOS = ["043-221-4560 · 시약·실험 기구", "02-555-0192 · 시약", "043-270-1188 · 실험 기구"];
 
 const HTTP = /^https?:\/\//;
 const of = (n: number, ch = "가") => ch.repeat(n);
@@ -62,13 +67,14 @@ const urlOfLength = (n: number) => {
 };
 
 describe("vendor rules: 기대값 원본 · 상수", () => {
-  it("[K1][S9] 기대값 원본: d7 §12 에서 길이 4개·공통 seed 4곳, 프레임 9-mobile 에서 판매처 4곳을 읽었다", () => {
+  it("[K1][S9] 기대값 원본: d7 §12 에서 길이 4개·공통 seed 4곳, 프레임 9-mobile(1.17) 에서 판매처 3곳을 읽었다", () => {
     expect([NAME_MAX, CONTACT_MAX, WEBSITE_MAX, NOTE_MAX].every((n) => Number.isInteger(n) && n > 0)).toBe(true);
     expect(SEED.length).toBe(4);
     for (const s of SEED) expect(s.website).toMatch(HTTP);
-    expect(FRAME_NAMES.length).toBe(4);
-    expect(FRAME_INFOS.length).toBe(FRAME_NAMES.length);
-    for (const info of FRAME_INFOS) expect(info).toMatch(/^\S+ · .+$/);
+    expect(FRAME_NAMES.length).toBe(3);
+    expect(FRAME_SITES.length, "시안 행마다 웹사이트 줄").toBe(FRAME_NAMES.length);
+    expect(frameText("vendor-info"), "시안 1.17 행에는 부가 정보(연락처 · note) 줄이 없다").toEqual([]);
+    for (const info of D7_INFOS) expect(info).toMatch(/^\S+ · .+$/);
   });
 
   it("[K1][S9] 길이 상수 = d7 §12 (판매처명·연락처·웹사이트·부가 정보)", () => {
@@ -259,8 +265,8 @@ describe("vendor rules: isOpenableWebsite (새 창으로 열 수 있는 값 = ht
 });
 
 describe('vendor rules: 부가 정보 한 줄 = "연락처 · note"', () => {
-  it("[K1][S9] 시안 9-mobile 의 4곳: 연락처 + note → 프레임 vendor-info 문구 그대로", () => {
-    for (const info of FRAME_INFOS) {
+  it("[K1][S6] d7 §12 틀 예시: 연락처 + note → \"연락처 · note\" 그대로", () => {
+    for (const info of D7_INFOS) {
       const at = info.indexOf(" · ");
       const contact = info.slice(0, at);
       const note = info.slice(at + 3);
@@ -283,6 +289,25 @@ describe('vendor rules: 부가 정보 한 줄 = "연락처 · note"', () => {
   });
 });
 
+describe("vendor rules: 화면 9 목록 행 부가 정보 = 연락처만 (d7 §18)", () => {
+  it("[K1][S9] 연락처가 있으면 연락처만 — note·웹사이트는 보이지 않는다", () => {
+    for (const info of D7_INFOS) {
+      const contact = info.slice(0, info.indexOf(" · "));
+      const note = info.slice(info.indexOf(" · ") + 3);
+      const out = vendorContactInfo({ contact, note, website: "https://example.com" } as { contact: string });
+      expect(out).toBe(contact);
+      expect(out).not.toContain(note);
+      expect(out).not.toContain("example.com");
+    }
+  });
+
+  it("[K1][S9] 연락처가 없거나 공백뿐이면 빈 문자열 (note·웹사이트로 대신하지 않는다)", () => {
+    expect(vendorContactInfo({ contact: null, note: "시약", website: "https://example.com" } as { contact: null })).toBe("");
+    expect(vendorContactInfo({ contact: "  " })).toBe("");
+    expect(vendorContactInfo({ contact: " 043-221-4560 " })).toBe("043-221-4560");
+  });
+});
+
 describe("vendor rules: 같은 이름 판정 (대소문자·공백 무시)", () => {
   it.each([
     ["ABC 과학", "abc과학"],
@@ -295,7 +320,7 @@ describe("vendor rules: 같은 이름 판정 (대소문자·공백 무시)", () 
     expect(vendorNameKey(a)).toBe(vendorNameKey(b));
   });
 
-  it("[K1][S9] 다른 이름은 다르다 (시안 4곳 + 공통 seed 4곳이 서로 다른 값)", () => {
+  it("[K1][S9] 다른 이름은 다르다 (시안 판매처 + 공통 seed 4곳이 서로 다른 값)", () => {
     const names = [...FRAME_NAMES, ...SEED.map((s) => s.name)];
     expect(new Set(names.map(vendorNameKey)).size).toBe(names.length);
     expect(vendorNameKey("한빛 과학상사")).not.toBe(vendorNameKey("한빛 과학상회"));
@@ -346,7 +371,10 @@ describe("vendor rules: 판매처 연결 순서 (우리 학교 판매처 먼저,
 
   it.each([
     ["공통이 앞에 온 입력", [...common, ...school]],
-    ["번갈아 섞인 입력", school.flatMap((s, i) => [common[i], s])],
+    [
+      "번갈아 섞인 입력",
+      Array.from({ length: Math.max(school.length, common.length) }, (_, i) => [common[i], school[i]]).flat().filter((v) => v !== undefined),
+    ],
     ["이미 맞는 입력", [...school, ...common]],
   ])("[K1][S6] %s → 학교 판매처가 모두 공통 목록보다 앞", (_label, input) => {
     const out = orderVendorsForLink(input);

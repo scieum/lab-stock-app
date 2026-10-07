@@ -11,6 +11,8 @@ type Props = {
   icon?: Extract<IconName, "chevron-right" | "external">;
   /** muted = 회색 바탕(기본), white = 흰 바탕(회색 카드 위) */
   tone?: "muted" | "white";
+  /** true = 가는 테두리(hairline-strong) — 시안 1.17 6 의 흰 pill (실험 매뉴얼 올리기 · 직접 열기) */
+  bordered?: boolean;
   fullWidth?: boolean;
   external?: boolean;
   /** 선택형 칩 (화면 7 프리셋·단위). true = 연하늘 바탕 + 하늘색 테두리 */
@@ -23,6 +25,7 @@ export function ButtonPillSoft({
   href,
   icon,
   tone = "muted",
+  bordered = false,
   fullWidth,
   external,
   selected,
@@ -33,6 +36,7 @@ export function ButtonPillSoft({
   const cls = [
     styles.button,
     styles[tone],
+    bordered ? styles.bordered : "",
     fullWidth ? styles.full : "",
     selected !== undefined ? styles.selectable : "",
     selected ? styles.selected : "",

@@ -6,7 +6,7 @@
 import { test, expect, type TestInfo } from "@playwright/test";
 import { openAs } from "./auth-state";
 import { browserClient, browserSession, countComponent, rules, sel } from "./screen-helpers";
-import { HAS_SERVICE, openTemp } from "./screen-8-helpers";
+import { HAS_SERVICE, openTemp, service } from "./screen-8-helpers";
 import { locationPath } from "./shell-helpers";
 import {
   BADGE,
@@ -48,6 +48,7 @@ import {
   expectTabBar,
   fakeSite,
   frameCounts,
+  hex,
   hrefOf,
   infoOf,
   linkButton,
@@ -88,6 +89,8 @@ test.skip(!HAS_SERVICE, "SUPABASE_SERVICE_ROLE_KEY 가 없어 일회용 계정·
 const SCREEN = REORDER;
 const GROUP = "s6st";
 const TIMEOUT = 420_000;
+const AUTO_BADGE = "auto-threshold-badge";
+const STORAGE_CLASS = (rules as unknown as { cabinet: { storage_classes: string[] } }).cabinet.storage_classes[0];
 
 let before: string[] | null = null;
 let fixtureCache: Promise<Fx> | null = null;
@@ -172,29 +175,51 @@ test(`[C1][S${SCREEN}] 일회용 학교 교사: 알림 = stock < min_stock 인 �
   }
 });
 
-test(`[C1][S${SCREEN}] 일회용 학교 admin: 시안 6 상태(알림 = 프레임의 ${CARD} 수 + 판매처 연결 모달 열림)에서 프레임 6 의 컴포넌트 개수 이상`, async ({ browser }, info) => {
+test(`[C1][S${SCREEN}] 일회용 학교 admin: 시안 1.17 6 상태(알림 = 프레임의 ${CARD} 수 · 그중 1장은 자동 기준 · 첫 카드는 판매처 "확인" 뒤 새 창 안내 줄)에서 프레임 6 의 컴포넌트 개수 이상`, async ({ browser }, info) => {
   const f = await fresh(info);
   const frame = frameCounts(`${SCREEN}-${info.project.name}`);
-  expect(frame[CARD], "프레임의 알림 카드 수").toBeGreaterThan(0);
-  expect(frame[MODAL], "프레임은 모달이 열린 상태").toBe(1);
-  expect(frame[REGISTER], `프레임에 ${REGISTER} (admin 화면)`).toBe(1);
+  // 시안 1.17 (d7 §18): 카드 3 · auto-threshold-badge 1 · 새 창 안내 줄의 "직접 열기" pill + 안내 박스 pill = button-pill-soft 2 · 모달 없음
+  expect(frame[CARD], "프레임의 알림 카드 수").toBeGreaterThan(1);
+  expect(frame[AUTO_BADGE], "프레임: 자동 기준 카드 1장").toBe(1);
+  expect(frame[MODAL] ?? 0, "1.17 프레임은 모달이 닫힌 상태").toBe(0);
+  expect(frame["button-pill-soft"], "프레임: 안내 박스 + 직접 열기").toBe(2);
   const made: DbReagent[] = [];
-  for (let i = 0; i < frame[CARD]; i++) made.push(await prepReagent(f, { tag: `시안${i}`, stock: 30 - i, min: 60, unit: "g", perGroup: 10, groups: 6 }));
-  await prepVendor(f, { note: "평균 2일 배송", website: fakeSite("a") });
-  await prepVendor(f, { note: "평균 4일 배송", website: fakeSite("b") });
+  for (let i = 0; i < frame[CARD] - frame[AUTO_BADGE]; i++) made.push(await prepReagent(f, { tag: `시안${i}`, stock: 30 - i, min: 60, unit: "g", perGroup: 10, groups: 6 }));
+  // 자동(입고) 기준 시약: 등록(자동 = 첫 입고량 × 비율) 뒤 재고만 낮춘다 (service role — 사용 기록 없이 부족 상태를 만들 길이 함수에 없다)
+  const autoName = `임시시약-자동-${hex()}`;
+  const reg = await f.prep.rpc("register_reagent", { p_name: autoName, p_storage_class: STORAGE_CLASS, p_stock: 100, p_unit: "mL", p_intake_date: "2026-09-15", p_msds_url: null });
+  expect(reg.error, `준비: register_reagent (${reg.error?.message})`).toBeNull();
+  const autoId = ((Array.isArray(reg.data) ? reg.data[0] : reg.data) as { id: string }).id;
+  const low = await service().from("reagents").update({ stock: 1 }).eq("id", autoId).select("min_stock_source, min_stock, stock");
+  expect(low.error, `준비: 재고 낮추기 (${low.error?.message})`).toBeNull();
+  const autoRow = (low.data ?? [])[0] as { min_stock_source: string; min_stock: number; stock: number };
+  expect(autoRow.min_stock_source, "대조: 자동 기준").toBe("auto");
+  expect(autoRow.stock < autoRow.min_stock, "대조: 자동 기준 시약이 부족").toBe(true);
+  const vendor = await prepVendor(f, { note: "평균 2일 배송", website: fakeSite("a") });
 
   const { context, page, viewport } = await openTemp(browser, info, f.admin, REORDER_HREF);
+  await stubExternal(context, info);
   try {
     await waitReorder(page);
-    await expect(cards(page), CARD).toHaveCount(made.length);
-    await openLinkModal(page, cards(page).first());
+    await expect(cards(page), CARD).toHaveCount(made.length + 1);
+    await expect(cardOf(page, autoName).locator(sel(AUTO_BADGE)), "자동 기준 카드에 배지").toHaveCount(1);
+    // 첫 (자동 아닌) 카드: 판매처 "확인" → 새 창 → 그 카드 안에 안내 줄
+    const first = cardOf(page, made[0].name);
+    await openLinkModal(page, first);
+    await pickVendor(page, vendor.name);
+    const [popup] = await Promise.all([context.waitForEvent("page", { timeout: 20_000 }), confirmButton(page).click()]);
+    await popup.close();
+    await expect(linkDialog(page), "확인 뒤 모달 닫힘").toHaveCount(0);
+    await expect(first.getByRole("status").filter({ has: directLink(page) }), "첫 카드 안 새 창 안내 줄").toHaveCount(1);
     const got = await countsOf(page, Object.keys(frame));
     for (const [name, n] of Object.entries(frame)) expect(got[name], `${viewport} ${name} ≥ 프레임 ${n}`).toBeGreaterThanOrEqual(n);
-    expect(got[CARD], `${CARD} = 알림 수`).toBe(made.length);
-    expect(got[LINK], `${LINK} = 알림 수`).toBe(made.length);
+    expect(got[CARD], `${CARD} = 알림 수`).toBe(made.length + 1);
+    expect(got[LINK], `${LINK} = 알림 수`).toBe(made.length + 1);
+    expect(got[AUTO_BADGE], `${AUTO_BADGE} = 자동 기준 카드 수`).toBe(1);
     expect(got[MANUAL], MANUAL).toBe(1);
-    expect(got[MODAL], MODAL).toBe(1);
-    expect(got[REGISTER], `admin ${REGISTER}`).toBe(1);
+    expect(await countComponent(page, MODAL), `${MODAL} 닫힘`).toBe(0);
+    // 6-mobile 프레임은 목록 아래 vendor-register 를 그리지 않았다(화면 밖) — admin 화면에는 1 (R3)
+    expect(await countComponent(page, REGISTER), `admin ${REGISTER}`).toBe(1);
   } finally {
     await context.close();
   }

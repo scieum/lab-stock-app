@@ -155,6 +155,11 @@ export function vendorInfo(v: Pick<VendorLike, "contact" | "note" | "website">):
   return websiteHost(v.website);
 }
 
+/** 화면 9 우리 학교 행의 부가 정보 (d7 §18): 연락처만. 없으면 "" (note·웹사이트는 보여 주지 않는다) */
+export function vendorContactInfo(v: Pick<VendorLike, "contact">): string {
+  return text(v.contact);
+}
+
 /** 판매처명 검색 (부분 일치, 대소문자·앞뒤 공백 무시). 빈 검색어 = 전체 */
 export function filterVendors<T extends { name: string }>(vendors: readonly T[], query: string): T[] {
   const q = query.trim().toLowerCase();

@@ -94,7 +94,7 @@ export default function GalleryManualPage() {
           </div>
         </Item>
 
-        <Item id="result" name="extraction-table — 추출 결과 4행 + 하단 버튼 (시안 5: 염산 사용량을 고친 칸 = 연하늘)">
+        <Item id="result" name="extraction-table — 추출 결과 4행 + 하단 버튼 (시안 1.17 5: 조 수 4, 기존 기준 안내, 증류수 2개 행 합침)">
           <ManualResultExample rows={sampleRowsFrame} groups={SAMPLE_GROUPS} reagents={sampleReagents} />
         </Item>
 
@@ -114,7 +114,7 @@ export default function GalleryManualPage() {
           <ManualResultExample rows={sampleRowsMismatch} groups={SAMPLE_GROUPS} reagents={sampleReagents} />
         </Item>
 
-        <Item id="basis" name="extraction-table — 기존 기준 표시 (더 큰 값 유지: 염산은 바뀜, 에탄올은 그대로)">
+        <Item id="basis" name="extraction-table — 기존 기준 표시 (더 큰 값 유지: 증류수는 바뀜, 수산화나트륨은 그대로)">
           <ManualResultExample rows={sampleRows} groups={SAMPLE_GROUPS} reagents={sampleReagentsWithBasis} />
         </Item>
 

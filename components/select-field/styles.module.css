@@ -132,3 +132,20 @@
 .empty {
   color: var(--color-text-muted);
 }
+
+/* 라벨이 상자 안 (시안 1.17 5 link-row: "우리 학교 시약" 12 회색 + 값 15, 사이 8) */
+.inlineLabel {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.inlineValue {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

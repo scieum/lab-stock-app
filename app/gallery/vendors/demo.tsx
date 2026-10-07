@@ -59,7 +59,7 @@ export function VendorsDemo({
   const [deleting, setDeleting] = useState<VendorRegisterVendor | null>(null);
   const [seq, setSeq] = useState(1);
 
-  const save = (value: VendorValue, editingId: string | null) => {
+  const save = (value: Omit<VendorValue, "note">, editingId: string | null) => {
     const taken = vendors.some((v) => v.id !== editingId && vendorNameKey(v.name) === vendorNameKey(value.name));
     if (taken) {
       setError("같은 이름의 판매처가 있어요");

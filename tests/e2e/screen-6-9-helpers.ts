@@ -52,7 +52,15 @@ export const PILL_SOFT = "button-pill-soft";
 // ---------- 문구 (s2-spec 화면 6·9, d7 §11·§12) ----------
 export const REORDER_NAV = "재주문 알림";
 export const VENDORS_NAV = "판매처 설정";
-export const GUIDE_TEXT = "필요량 = 1반 1회 실험량 × 조 수";
+/** 재주문 기준 안내 박스 본문 = 시안 1.17 6-mobile manual-upload info-body (d7 §18 화면 6) */
+export const GUIDE_TEXT = (() => {
+  const j = JSON.parse(readFileSync(join(process.cwd(), "design", "frames", "6-mobile.json"), "utf8")) as {
+    frames: { nodes: { name: string; path: string[]; text: { characters: string } | null }[] }[];
+  };
+  const t = j.frames[0].nodes.find((n) => n.name === "info-body" && n.path.includes("manual-upload"))?.text?.characters;
+  if (!t) throw new Error("design/frames/6-mobile.json 에서 manual-upload info-body 를 읽지 못했습니다");
+  return t;
+})();
 export const BASIS_WORD = "재주문 기준";
 export const MANUAL_BUTTON = "실험 매뉴얼 올리기";
 /** d7 §11 "매뉴얼 진입": 화면 5 (dev-rules routes["5"] — 실제 화면, 도착 확인은 screen-5-structure) */

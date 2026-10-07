@@ -5,8 +5,8 @@ import { ButtonOutline } from "@/components/button-outline";
 import { ButtonPrimary } from "@/components/button-primary";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { VendorFavoriteToggle } from "@/components/vendor-link/favorite-toggle";
-import { vendorInfo, type VendorField, type VendorValue } from "@/lib/vendor-rules";
-import { VendorForm } from "./form";
+import { vendorContactInfo, type VendorField, type VendorValue } from "@/lib/vendor-rules";
+import { VendorForm, type VendorFormValues } from "./form";
 import { VendorRowMenu } from "./row-menu";
 import styles from "./styles.module.css";
 
@@ -47,7 +47,9 @@ export type VendorRegisterVendor = {
 };
 
 /** 열려 있는 폼: 등록 또는 어떤 판매처의 수정 */
-export type VendorFormState = { mode: "create" } | { mode: "edit"; vendor: VendorRegisterVendor };
+export type VendorFormState =
+  | { mode: "create"; /** 처음 입력값 (갤러리 — 시안 1.17 9 "과학나라" 입력 중) */ draft?: VendorFormValues }
+  | { mode: "edit"; vendor: VendorRegisterVendor };
 
 type Props = {
   /** 보여 줄 우리 학교 판매처 (검색은 화면 쪽이 lib/vendor-rules filterVendors 로 거른 뒤 넘긴다) */
@@ -64,8 +66,8 @@ type Props = {
   defaultForm?: VendorFormState | null;
   /** "판매처 등록" · 더보기 "수정" · 폼 닫기(×) 로 폼 상태가 바뀔 때 */
   onFormChange?: (next: VendorFormState | null) => void;
-  /** 폼 "저장" — editingId 가 null 이면 새 판매처 */
-  onSubmit?: (value: VendorValue, editingId: string | null) => void;
+  /** 폼 "저장" — editingId 가 null 이면 새 판매처. note 는 없다(부가 정보 칸 없음, d7 §18) */
+  onSubmit?: (value: Omit<VendorValue, "note">, editingId: string | null) => void;
   /** 더보기 "삭제" — 화면 쪽이 VendorDeleteConfirm 을 띄운다 */
   onDelete?: (vendor: VendorRegisterVendor) => void;
   /** 있으면 행마다 즐겨찾기 별표(vendor-favorite-toggle) — 화면 쪽이 바로 저장한다 (d7 §12-1) */
@@ -86,8 +88,8 @@ type Props = {
 
 /**
  * "우리 학교 판매처" 블록 (화면 9, admin 전용 — R3).
- * 목록(행 = 판매처명 + 부가 정보 + 더보기 "수정"·"삭제") + "판매처 등록" + 등록·수정 폼.
- * 폼은 열렸을 때만 그린다. 모바일: 목록 자리에 폼이 온다 (저장·닫기로 목록 복귀). 데스크탑: 목록 옆 칸(시안 9-desktop vendor-form).
+ * 목록(행 = 판매처명 + 연락처 + 더보기 "수정"·"삭제") + "판매처 등록" + 등록·수정 폼.
+ * 폼은 열렸을 때만 그린다 (시안 1.17 9): 모바일은 tab-bar 위 하단 시트, 데스크탑은 목록 위 가운데 카드(폭 480). 목록은 뒤에 그대로.
  * 삭제 확인(VendorDeleteConfirm)·토스트·검색·탭은 화면 쪽이 이 블록 밖에 둔다.
  */
 export function VendorRegister({
@@ -147,7 +149,8 @@ export function VendorRegister({
         ) : (
           <ul className={styles.list} aria-labelledby={headingId}>
             {vendors.map((v) => {
-              const info = vendorInfo(v);
+              // 우리 학교 행의 부가 정보 = 연락처만 (d7 §18 — note 는 보여 주지 않는다)
+              const info = vendorContactInfo(v);
               const fresh = v.id === highlightId;
               return (
                 <li
@@ -185,11 +188,12 @@ export function VendorRegister({
         </div>
       </div>
       {current ? (
-        <div className={styles.formColumn}>
+        // 시안 1.17 9: 등록·수정 시트는 ex-modal-card (모바일 하단 시트 · 데스크톱 가운데 카드)
+        <div data-component="ex-modal-card" className={styles.formColumn}>
           <VendorForm
             key={formKey}
             mode={editing ? "edit" : "create"}
-            defaultValues={editing ?? undefined}
+            defaultValues={editing ?? (current.mode === "create" ? current.draft : undefined)}
             pending={pending}
             error={error}
             errorField={errorField}

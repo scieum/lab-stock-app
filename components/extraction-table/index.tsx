@@ -39,6 +39,8 @@ export type ExtractionTableProps = {
   /** 저장 중 등: 입력·선택·삭제 잠금 */
   disabled?: boolean;
   title?: string;
+  /** 제목 아래 안내 (시안 1.17 5 helper) */
+  helper?: string;
   /** 0행 문구 */
   emptyText?: string;
 };
@@ -48,9 +50,12 @@ const UNLINKED = "";
 const UNLINKED_LABEL = "등록되지 않은 시약";
 
 /**
- * 추출 결과 확인 표 (화면 5 의 2단계, 제어형).
- * 시안의 4열(ex-data-table-cell: 머리 4 + 행마다 4)은 그대로 두고, 시안에 없는 요소(d7 §13 사용자 결정)는
- * 행마다 4열 아래의 보조 줄에 둔다: "우리 학교 시약" 선택 · 행 삭제 · 기존 기준 · 저장 제외/단위 불일치 안내.
+ * 추출 결과 확인 표 (화면 5 의 2단계, 제어형). 시안 1.17 5 (d7 §18):
+ * 제목 + 안내 "확인한 뒤 저장해야 반영돼요" → 행마다 회색 카드(extraction-row):
+ *   윗줄(ex-data-table-cell 4칸: 시약명 · 1조 사용량 · 단위 선택 상자(병·mL·g) · 1반 1회 필요량)
+ *   아랫줄(link-row: "우리 학교 시약" 선택 · 삭제 · 기존 기준 안내) + "N개 행을 합쳤어요" 무채색 줄.
+ * 모바일은 머리행을 숨기고 카드 안에서 시약명·필요량 / 사용량·단위로 두 줄, 데스크톱은 흰 틀 안 머리행 + 4칸 한 줄.
+ * 표 구조(thead·tbody[data-row-id]·td)는 그대로 — 읽기 도구는 표로 읽는다.
  * 행 상태·필요량·저장 가능 여부는 lib/manual-rules planSave 가 정한다.
  */
 export function ExtractionTable({
@@ -62,6 +67,7 @@ export function ExtractionTable({
   onClose,
   disabled = false,
   title = "추출 결과 확인",
+  helper = "확인한 뒤 저장해야 반영돼요",
   emptyText = "시약을 찾지 못했어요. 파일을 확인하고 다시 추출해 주세요",
 }: ExtractionTableProps) {
   const titleId = useId();
@@ -75,9 +81,12 @@ export function ExtractionTable({
   return (
     <section data-component="extraction-table" className={styles.root} aria-labelledby={titleId}>
       <div className={styles.header}>
-        <h2 id={titleId} className={styles.title}>
-          {title}
-        </h2>
+        <div className={styles.heading}>
+          <h2 id={titleId} className={styles.title}>
+            {title}
+          </h2>
+          {helper ? <p className={styles.helper}>{helper}</p> : null}
+        </div>
         {onClose ? (
           <button type="button" className={styles.close} onClick={onClose}>
             닫기
@@ -112,7 +121,12 @@ export function ExtractionTable({
                   </DataTableCell>
                   <DataTableCell>
                     <TextInput
-                      density="cell"
+                      className={styles.amountField}
+                      leading={
+                        <span className={styles.amountLabel} aria-hidden="true">
+                          1조 사용량
+                        </span>
+                      }
                       edited={view.edited}
                       type="text"
                       inputMode="decimal"
@@ -157,6 +171,7 @@ export function ExtractionTable({
                       <div className={styles.linkSelect}>
                         <SelectField
                           tone="form"
+                          inlineLabel
                           label="우리 학교 시약"
                           options={reagentOptions}
                           value={view.reagent ? view.reagent.id : UNLINKED}
@@ -205,11 +220,6 @@ function RowNotes({ view, extractedMerged }: { view: RowView; extractedMerged: s
   if (!extractedMerged && !basis && !merged && !view.message) return null;
   return (
     <div className={styles.notes}>
-      {extractedMerged ? (
-        <p className={styles.note} data-note="extracted-merged" data-testid="extract-merged-note">
-          {extractedMerged}
-        </p>
-      ) : null}
       {basis ? (
         <p className={styles.note} data-note="basis">
           {outcome ? `${basis} · ${outcome}` : basis}
@@ -224,6 +234,12 @@ function RowNotes({ view, extractedMerged }: { view: RowView; extractedMerged: s
         <p className={isError ? styles.warn : styles.note} data-note={isError ? "error" : "skipped"}>
           <Icon name={isError ? "warning" : "info"} className={styles.noteIcon} />
           <span>{view.message}</span>
+        </p>
+      ) : null}
+      {extractedMerged ? (
+        <p className={[styles.note, styles.mergeNote].join(" ")} data-note="extracted-merged" data-testid="extract-merged-note">
+          <Icon name="merge" className={styles.noteIcon} />
+          <span>{extractedMerged}</span>
         </p>
       ) : null}
     </div>

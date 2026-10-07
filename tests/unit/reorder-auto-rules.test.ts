@@ -6,6 +6,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  AUTO_CAPTION_INTAKE_TEXT,
+  AUTO_CAPTION_USAGE_TEXT,
+  autoCaptionText,
   AUTO_BASIS_INTAKE_TEXT,
   AUTO_BASIS_USAGE_TEXT,
   AUTO_LABEL,
@@ -35,6 +38,10 @@ const [D7_AUTO, D7_USAGE, D7_INTAKE, D7_NONE] = SHOW;
 const INTAKE_PCT = Number(/마지막 입고량 × (\d+)%/.exec(line("자동 값"))?.[1] ?? Number.NaN);
 
 const SOURCES = ["auto", "basis", "manual"] as const;
+
+/** d7 §18 "자동 기준 표시" 줄의 굵은 따옴표 문구: 사용 기록 캡션 · 입고량 캡션 (값 0 은 §11-1 "아직 없어요" 그대로) */
+const S18_LINE = D7.split(/\r?\n/).find((l) => l.startsWith("| 자동 기준 표시")) ?? "";
+const [S18_USAGE, S18_INTAKE] = [...S18_LINE.matchAll(/\*\*"([^"]+)"\*\*/g)].map((m) => m[1]);
 
 describe("재주문 기준 자동 표시: 기대값 원본 (d7 §11-1)", () => {
   it("[K1][S3] d7 §11-1 '표시' 에서 자동 표시·근거 세 형태를 읽고, '자동 값' 의 입고 비율이 근거 문구와 같다", () => {
@@ -135,5 +142,39 @@ describe("DB 값 → 출처·근거 (toThresholdSource · toAutoBasis)", () => {
     expect(toAutoBasis("usage")).toBe("usage");
     expect(toAutoBasis("intake")).toBe("intake");
     for (const v of [null, undefined, "", "auto", 1]) expect(toAutoBasis(v), String(v)).toBeNull();
+  });
+});
+
+describe("autoCaptionText (d7 §18: auto-threshold-badge 아래 캡션 한 줄, 화면 3·6)", () => {
+  it("[K1][S3] 기대값 원본: d7 §18 에서 캡션 두 문구를 읽었고 구현 상수와 같다", () => {
+    expect(S18_USAGE).toMatch(/사용량/);
+    expect(S18_INTAKE).toMatch(/입고량/);
+    expect(S18_INTAKE, "입고 캡션의 % = §11-1 자동 값의 %").toContain(`${INTAKE_PCT}%`);
+    expect(S18_LINE, "값 0 은 지금처럼 '아직 없어요'").toContain(`"${D7_NONE}"`);
+    expect(AUTO_CAPTION_USAGE_TEXT).toBe(S18_USAGE);
+    expect(AUTO_CAPTION_INTAKE_TEXT).toBe(S18_INTAKE);
+  });
+
+  it("[K1][S3] 값 > 0: 'usage' → 사용 기록 캡션, 'intake' → 입고량 캡션", () => {
+    expect(autoCaptionText({ minStock: 4.5, autoBasis: "usage" })).toBe(S18_USAGE);
+    expect(autoCaptionText({ minStock: 0.001, autoBasis: "usage" })).toBe(S18_USAGE);
+    expect(autoCaptionText({ minStock: 20, autoBasis: "intake" })).toBe(S18_INTAKE);
+  });
+
+  it("[K1][S3] 값이 0·없음·음수·숫자 아님이면 근거와 상관없이 '아직 없어요'", () => {
+    for (const minStock of [0, null, undefined, -1, Number.NaN]) {
+      for (const autoBasis of ["usage", "intake", undefined] as const) {
+        expect(autoCaptionText({ minStock, autoBasis }), `minStock ${minStock} · ${autoBasis}`).toBe(D7_NONE);
+      }
+    }
+  });
+
+  it("[K1][S3] 값 > 0 인데 근거를 모르면 캡션 없음(null) — §11-1 옛 근거 문구로 돌아가지 않는다", () => {
+    const out = autoCaptionText({ minStock: 3, autoBasis: undefined });
+    expect(out).toBeNull();
+    for (const old of [D7_USAGE, D7_INTAKE]) {
+      expect(autoCaptionText({ minStock: 3, autoBasis: "usage" })).not.toBe(old);
+      expect(autoCaptionText({ minStock: 3, autoBasis: "intake" })).not.toBe(old);
+    }
   });
 });

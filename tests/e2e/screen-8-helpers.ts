@@ -59,6 +59,11 @@ export const LAST_ADMIN_HINT = "admin이 최소 1명 있어야 해요";
 export const CONFIRM_TITLE = "이 사용자를 삭제할까요?";
 export const CANCEL_BUTTON = "취소";
 export const DELETE_BUTTON = "삭제";
+/** 시안 1.17 8 삭제 확인 버튼 "{이름} 삭제" (d7 §18) */
+export const deleteButtonLabel = (name: string) => `${name} ${DELETE_BUTTON}`;
+/** 시안 1.17 8 삭제 확인 본문 "{이름} · 사용·입고 기록은 남아요" (d7 §18) */
+export const DELETE_NOTE = "사용·입고 기록은 남아요";
+export const deleteBodyText = (name: string) => `${name} · ${DELETE_NOTE}`;
 export const INVITE_TITLE = "사용자 초대";
 export const COPY_LINK = "초대 링크 복사";
 export const COPIED_NOTICE = "링크를 복사했어요";

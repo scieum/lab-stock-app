@@ -1,0 +1,23 @@
+/* 시안 auto-threshold-badge (디자인 1.17 reorder.auto)
+ * 3: 회색(canvas-soft) pill, 위아래 4 · 좌우 8, 글자 12/600 ink, 테두리 없음 (흰 카드 위)
+ * 6: 같은 pill 이 회색 카드 위 — 가는 테두리(hairline-strong), 위아래 0 · 좌우 8
+ * 핑크·하늘색 없음 */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: var(--space-4) var(--space-8);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.onMuted {
+  padding: var(--space-0) var(--space-8);
+  border: var(--border-width) solid var(--color-border-strong);
+}

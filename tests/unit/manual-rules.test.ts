@@ -51,14 +51,27 @@ const UNITS = (/추출 단위는 (\S+) 중 하나로 정리/.exec(line("단위")
 // ---------- 시안 5 (design/frames/5-mobile.json) 의 표 ----------
 type FrameNode = { name: string; path: string[]; text: { characters: string } | null };
 const frame = (JSON.parse(readFileSync(join(ROOT, "design/frames/5-mobile.json"), "utf8")) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes;
-const FRAME_GROUPS = Number(frame.find((n) => n.name === "input-value" && !n.path.includes("extraction-table"))?.text?.characters);
-/** 표 본문 행: [시약명, 1조 사용량, 단위, 1반 1회 필요량] */
+// 시안 1.17: 조 수 = manual-upload/group-count/text-input/value, 행 = extraction-row 카드
+// (row-head: reagent-name·needed-amount "1반 1회 {필요량}", usage-line: text-input value 2개 = 사용량·단위,
+//  link-row: "우리 학교 시약" 선택 값).
+const FRAME_GROUPS = Number(frame.find((n) => n.name === "value" && n.path.includes("group-count"))?.text?.characters);
+const FRAME_NEED_PREFIX = "1반 1회 ";
+/** 추출 행: [시약명, 1조 사용량, 단위, 1반 1회 필요량] */
 const FRAME_ROWS: string[][] = (() => {
-  const cells = frame.filter((n) => n.path.includes("extraction-table") && (n.name === "cell-value" || n.name === "input-value")).map((n) => n.text!.characters);
   const out: string[][] = [];
-  for (let i = 0; i < cells.length; i += 4) out.push(cells.slice(i, i + 4));
+  let cur: string[] | null = null;
+  for (const n of frame) {
+    if (!n.path.includes("extraction-row")) continue;
+    if (n.name === "extraction-row") { cur = []; out.push(cur); continue; }
+    if (!cur || !n.text) continue;
+    if (n.name === "reagent-name") cur[0] = n.text.characters;
+    else if (n.name === "needed-amount") cur[3] = n.text.characters.replace(FRAME_NEED_PREFIX, "");
+    else if (n.name === "value" && n.path.includes("usage-line")) cur[cur[1] === undefined ? 1 : 2] = n.text.characters;
+  }
   return out;
 })();
+/** 각 행의 "우리 학교 시약" 연결 값 */
+const FRAME_LINKED: string[] = frame.filter((n) => n.name === "value" && n.path.includes("link-row")).map((n) => n.text!.characters);
 
 const MB = 1024 * 1024;
 const file = (name: string, type: string, size = 1000) => ({ name, type, size });
@@ -85,14 +98,15 @@ describe("기대값 원본 (d7 §13 · 시안 5)", () => {
     expect(section).toContain("기존 min_stock 보다 클 때만");
   });
 
-  it("[K1][S5] 시안 5 표는 4행이고 조 수는 6, 필요량 글자 = 사용량 × 조 수 + 단위", () => {
-    expect(FRAME_GROUPS).toBe(6);
+  it("[K1][S5] 시안 5 추출 행은 4개이고 조 수는 4, 필요량 글자 = 사용량 × 조 수 + 단위", () => {
+    expect(FRAME_GROUPS).toBe(4);
     expect(FRAME_ROWS).toEqual([
-      ["염산 0.1M", "50", "mL", "300 mL"],
-      ["수산화나트륨", "2", "g", "12 g"],
-      ["페놀프탈레인", "1", "mL", "6 mL"],
-      ["에탄올 95%", "20", "mL", "120 mL"],
+      ["염산", "20", "mL", "80 mL"],
+      ["수산화나트륨", "5", "g", "20 g"],
+      ["페놀프탈레인 용액", "2", "mL", "8 mL"],
+      ["증류수", "150", "mL", "600 mL"],
     ]);
+    expect(FRAME_LINKED, "각 행은 같은 이름의 우리 학교 시약에 연결").toEqual(FRAME_ROWS.map((r) => r[0]));
   });
 });
 
@@ -364,7 +378,8 @@ describe("시약 자동 연결 matchReagent (d7 §13 시약 연결)", () => {
 });
 
 describe("추출 결과 정리 normalizeExtraction (d7 §13 단위 · 시약 연결)", () => {
-  const reagents = [R("m-1", "염산 0.1M"), R("m-2", "수산화나트륨", "g"), R("m-3", "페놀프탈레인"), R("m-4", "에탄올 95%")];
+  // 시안 1.17 의 link-row 값(같은 이름의 우리 학교 시약)과 그 단위
+  const reagents = FRAME_ROWS.map(([, , unit], i) => R(`m-${i + 1}`, FRAME_LINKED[i], unit));
 
   it("[K1][S5] 시안 4행: 사용량·단위가 그대로이고 4행 모두 같은 이름의 시약에 연결, 고친 칸 없음", () => {
     const rows = normalizeExtraction(

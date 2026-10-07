@@ -10,7 +10,7 @@ import { locationText, slotLabel } from "@/lib/cabinet-rules";
 import { linkPrefetch } from "@/lib/link-prefetch";
 import { qrPath } from "@/lib/qr";
 import { absoluteUrl } from "@/lib/request-origin";
-import { AUTO_LABEL, thresholdSourceText, thresholdText } from "@/lib/reorder-rules";
+import { AUTO_LABEL, autoCaptionText, thresholdSourceText, thresholdText } from "@/lib/reorder-rules";
 import type { ReagentDetail } from "@/lib/supabase/reagent-detail";
 import type { Role } from "@/lib/types";
 import { DetailSummary } from "./detail-summary";
@@ -51,7 +51,7 @@ export async function ReagentDetailView({ data, role, openPicker = false, selfPa
     { label: "보관 위치", value: locationText(placement?.cabinet, placement?.slot) },
     { label: "보관 분류", value: placement ? slotLabel(placement.classes) : "-" },
     // 로그인 화면은 카드의 재주문 기준 줄이 같은 값을 보여 준다
-    // 둘러보기: 출처도 같은 문구로 (d7 §11-1 — 자동이면 "자동 · 근거", 그 밖은 근거 / "직접 입력")
+    // 둘러보기: 출처도 같은 문구로 (d7 §11-1·§18 — 자동이면 "자동 · 캡션", 그 밖은 근거 / "직접 입력")
     ...(guest ? [{ label: "재주문 기준", value: guestThresholdText(threshold) }] : []),
   ];
 
@@ -142,10 +142,10 @@ export async function ReagentDetailView({ data, role, openPicker = false, selfPa
   );
 }
 
-/** 둘러보기 정보 표의 재주문 기준 값: "3병 · 직접 입력" / "3병 · 자동 · 최근 4주 사용량 기준" / "아직 없어요 · 자동" */
+/** 둘러보기 정보 표의 재주문 기준 값: "3병 · 직접 입력" / "3병 · 자동 · 최근 사용량으로 계산했어요" / "아직 없어요 · 자동" */
 function guestThresholdText(t: ReagentDetail["threshold"]): string {
   const value = thresholdText(t.minStock, t.unit);
-  const src = thresholdSourceText(t);
-  if (t.source !== "auto") return `${value} · ${src}`;
-  return t.minStock > 0 && src !== AUTO_LABEL ? `${value} · ${AUTO_LABEL} · ${src}` : `${value} · ${AUTO_LABEL}`;
+  if (t.source !== "auto") return `${value} · ${thresholdSourceText(t)}`;
+  const caption = t.minStock > 0 ? autoCaptionText(t) : null;
+  return caption ? `${value} · ${AUTO_LABEL} · ${caption}` : `${value} · ${AUTO_LABEL}`;
 }

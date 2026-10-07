@@ -1,7 +1,14 @@
 import type { VendorLinkOption } from "@/components/vendor-link";
-import { reorderAlertDateText, reorderAmountText, reorderBasisText, sortByShortage } from "@/lib/reorder-rules";
+import {
+  autoCaptionText,
+  reorderAlertDateText,
+  reorderAmountParts,
+  reorderAmountText,
+  reorderBasisText,
+  sortByShortage,
+} from "@/lib/reorder-rules";
 
-// 시안 6-desktop 의 예시 데이터 (갤러리 전용)
+// 시안 1.17 6 의 예시 데이터 (갤러리 전용): 염산 · 에탄올(자동 기준) · 질산은, 알림 2026-10-07
 type SampleReagent = {
   id: string;
   name: string;
@@ -11,38 +18,41 @@ type SampleReagent = {
   perGroup: number | null;
   groups: number | null;
   lowStockSince: string | null;
+  /** 자동 기준이면 근거 */
+  auto?: "usage" | "intake";
 };
 
 const reagents: SampleReagent[] = [
-  {
-    id: "r-1",
-    name: "황산구리(II) 오수화물",
-    unit: "g",
-    stock: 30,
-    minStock: 60,
-    perGroup: 10,
-    groups: 6,
-    lowStockSince: "2026-09-30T02:10:00Z",
-  },
-  { id: "r-2", name: "질산은", unit: "g", stock: 15, minStock: 40, perGroup: 5, groups: 8, lowStockSince: "2026-09-28T05:30:00Z" },
+  { id: "r-1", name: "염산", unit: "mL", stock: 50, minStock: 100, perGroup: null, groups: null, lowStockSince: "2026-10-07T01:00:00Z" },
+  { id: "r-2", name: "에탄올", unit: "mL", stock: 200, minStock: 800, perGroup: null, groups: null, lowStockSince: "2026-10-07T01:00:00Z", auto: "usage" },
+  { id: "r-3", name: "질산은", unit: "g", stock: 5, minStock: 10, perGroup: null, groups: null, lowStockSince: "2026-10-07T01:00:00Z" },
 ];
 
-export type SampleAlert = { id: string; name: string; amount: string; basis: string; date: string | null };
+export type SampleAlert = {
+  id: string;
+  name: string;
+  amount: string;
+  basis: string;
+  date: string | null;
+  /** 자동 기준이면 수량 줄 조각 + 캡션 (d7 §18) */
+  auto?: { need: string; stock: string; caption: string | null };
+};
 
 function toAlert(r: SampleReagent): SampleAlert {
   return {
     id: r.id,
     name: r.name,
     amount: reorderAmountText(r),
-    basis: reorderBasisText(r),
+    basis: r.auto ? "" : reorderBasisText(r),
     date: reorderAlertDateText(r.lowStockSince),
+    auto: r.auto ? { ...reorderAmountParts(r), caption: autoCaptionText({ minStock: r.minStock, autoBasis: r.auto }) } : undefined,
   };
 }
 
-/** 시안 순서 그대로 (황산구리 → 질산은) */
+/** 시안 순서 그대로 (염산 → 에탄올 → 질산은) */
 export const sampleAlerts: SampleAlert[] = reagents.map(toAlert);
 
-/** 부족한 정도가 큰 순 (질산은 62.5% → 황산구리 50%) */
+/** 부족한 정도가 큰 순 (에탄올 75% → 염산 50% · 질산은 50%) */
 export const sampleAlertsSorted: SampleAlert[] = sortByShortage(reagents).map(toAlert);
 
 /** 실험 매뉴얼 값(1조 사용량·조 수)과 알림 날짜가 없는 시약 */
@@ -56,6 +66,32 @@ export const sampleAlertPlain: SampleAlert = toAlert({
   groups: null,
   lowStockSince: null,
 });
+
+/** 자동 기준 시약 (시안 1.17 6 에탄올: 수량 줄 가운데 "자동" + "최근 사용량으로 계산했어요") */
+export const sampleAlertAuto: SampleAlert = (() => {
+  const r = { name: "에탄올", unit: "mL", stock: 200, minStock: 800 };
+  return {
+    id: "r-4",
+    name: r.name,
+    amount: reorderAmountText(r),
+    basis: "",
+    date: reorderAlertDateText("2026-10-07T01:00:00Z"),
+    auto: { ...reorderAmountParts(r), caption: autoCaptionText({ minStock: r.minStock, autoBasis: "usage" }) },
+  };
+})();
+
+/** 자동 기준 — 입고량 근거 (d7 §18 개발 쪽 예외 문구 "마지막 입고량의 20%로 계산했어요") */
+export const sampleAlertAutoIntake: SampleAlert = (() => {
+  const r = { name: "질산칼륨", unit: "g", stock: 10, minStock: 100 };
+  return {
+    id: "r-5",
+    name: r.name,
+    amount: reorderAmountText(r),
+    basis: "",
+    date: reorderAlertDateText("2026-10-06T01:00:00Z"),
+    auto: { ...reorderAmountParts(r), caption: autoCaptionText({ minStock: r.minStock, autoBasis: "intake" }) },
+  };
+})();
 
 // 시안 6 판매처 연결 모달의 판매처 2곳 (부가 정보 = "평균 N일 배송")
 export const sampleLinkVendors: VendorLinkOption[] = [

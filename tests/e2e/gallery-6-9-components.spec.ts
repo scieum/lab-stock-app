@@ -40,6 +40,8 @@ const rules = JSON.parse(readFileSync(join(root, "design/rules.json"), "utf8")) 
 const dev = JSON.parse(readFileSync(join(root, "harness/dev-rules.json"), "utf8")) as Dev;
 const D7 = readFileSync(join(root, "harness/d7-data.md"), "utf8");
 const loadFrame = (name: string) => (JSON.parse(readFileSync(join(root, `design/frames/${name}.json`), "utf8")) as Frame).frames[0].nodes;
+/** 시안 1.17 프레임 (d7 §18 로 바뀐 부분만) */
+const loadFrame117 = (name: string) => (JSON.parse(readFileSync(join(root, `design/frames/${name}.json`), "utf8")) as Frame).frames[0].nodes;
 const d6 = loadFrame(`${S6}-desktop`);
 const m6 = loadFrame(`${S6}-mobile`);
 const d9 = loadFrame(`${S9}-desktop`);
@@ -72,78 +74,132 @@ const textIn = (g: Group, name: string, parent?: string) =>
   g.children.find((c) => c.name === name && c.text && (parent === undefined || parentName(c) === parent))?.text?.characters ?? "";
 const labelOf = (g: Group | undefined) => (g ? textIn(g, "label") : "");
 
-// 화면 6
+// 화면 6 (시안 1.17 6 — d7 §18)
 const guideNodes = under(d6, "manual-upload");
 const GUIDE = {
   fill: lower(d6.find((n) => leaf(n) === "manual-upload")!.fills[0]),
-  title: texts(guideNodes, "guide-title")[0],
-  body: texts(guideNodes, "guide-body")[0],
-  textColors: [...new Set(guideNodes.filter((n) => /^guide-/.test(n.name) && n.text).map((n) => lower(n.fills[0])))],
+  title: texts(guideNodes, "info-title")[0],
+  body: texts(guideNodes, "info-body")[0],
+  textColors: [...new Set(guideNodes.filter((n) => /^info-(title|body)$/.test(n.name) && n.text).map((n) => lower(n.fills[0])))],
   iconColors: [...new Set(guideNodes.filter((n) => n.path.includes("icon-info")).flatMap((n) => [...n.fills, ...n.strokes].map(lower)))],
   action: labelOf(groups(guideNodes, "button-pill-soft")[0]),
 };
-const FRAME_CARDS = groups(d6, "reorder-alert-card").map((g) => ({
-  fill: lower(g.node.fills[0]),
-  badge: textIn(g, "label", "badge-low-stock"),
-  name: textIn(g, "reagent-name"),
-  amount: textIn(g, "amount"),
-  basis: textIn(g, "basis-note"),
-  date: textIn(g, "alert-date"),
-  link: textIn(g, "label", "button-primary"),
-}));
+/**
+ * 시안 1.17 6 카드: 수량 줄은 "재주문 기준 N u / 현재 재고 …"(1병(50 mL 남음) 같은 병 표기 포함), 날짜는 "YYYY-MM-DD 알림".
+ * d7 §11 이 정한 문구 틀("필요량 N u / 현재 재고 M u" · "재주문 기준 N u" · "YYYY.MM.DD 알림")은 d7 대로 기대하고, 시안에서는 값만 읽는다.
+ */
+const FRAME_CARDS = groups(d6, "reorder-alert-card").map((g) => {
+  const line = g.children.filter((c) => c.text && (c.name === "stock-line" || c.name === "threshold" || c.name === "stock")).map((c) => c.text!.characters).join(" ");
+  const need = /재주문 기준 ([\d.,]+) (\S+)/.exec(line);
+  const left = /\(([\d.,]+) (\S+) 남음\)/.exec(line) ?? /현재 재고 ([\d.,]+) (\S+)$/.exec(line);
+  const unit = need?.[2] ?? "";
+  const min = need?.[1] ?? "";
+  const stock = left?.[1] ?? "";
+  const date = /^(\d{4})-(\d{2})-(\d{2}) 알림$/.exec(textIn(g, "alert-date"));
+  const auto = textIn(g, "label", "auto-threshold-badge");
+  return {
+    fill: lower(g.node.fills[0]),
+    badge: textIn(g, "label", "badge-low-stock"),
+    name: textIn(g, "reagent-name"),
+    /** d7 §11 수량 줄 */
+    amount: `필요량 ${min} ${unit} / 현재 재고 ${stock} ${unit}`,
+    /** 자동이면 배지 글자, 아니면 "" */
+    auto,
+    /** 자동이면 시안 캡션, 아니면 d7 §11 "재주문 기준 N u" (1조 사용량·조 수가 없는 시약) */
+    basis: auto ? textIn(g, "auto-caption") : `재주문 기준 ${min} ${unit}`,
+    date: date ? `${date[1]}.${date[2]}.${date[3]} 알림` : "",
+    link: textIn(g, "label", "button-primary"),
+    /** 화면에 보이는 수량 줄 조각 (자동이면 "필요량 N u" · "자동" · "/ 현재 재고 M u" — 배지가 두 조각 사이) */
+    amountLines: auto ? [`필요량 ${min} ${unit}`, auto, `/ 현재 재고 ${stock} ${unit}`] : [`필요량 ${min} ${unit} / 현재 재고 ${stock} ${unit}`],
+    /** 시안의 새 창 안내 줄 (그 카드에서 판매처 "확인" 뒤): [안내 글자, "직접 열기"] — 화면은 안내 앞에 판매처명을 붙인다 */
+    newWindow: g.children.some((c) => c.name === "vendor-new-window") ? [textIn(g, "note"), textIn(g, "label", "button-pill-soft")] : null,
+    minStock: Number(min.replace(/,/g, "")),
+    stock: Number(stock.replace(/,/g, "")),
+    unit,
+  };
+});
 const MOBILE_CARDS = groups(m6, "reorder-alert-card").length;
 const REGISTER_ENTRY = labelOf(groups(under(d6, "vendor-register"), "button-outline")[0]);
-const linkModalNodes = under(d6, "ex-modal-card");
-const linkModalRoot = d6.find((n) => leaf(n) === "ex-modal-card")!;
+/** 시안 1.17 6: 염산 카드의 새 창 안내 줄 (vendor-new-window) */
+const NEW_WINDOW = {
+  note: texts(under(d6, "vendor-new-window"), "note")[0],
+  action: texts(under(d6, "vendor-new-window"), "label")[0],
+};
+/**
+ * 판매처 연결 모달: 시안 1.17 프레임에는 모달 열린 상태가 없다(새 창 안내 상태를 그렸다).
+ * 1.16 시안 6-desktop 의 모달 값을 그대로 기대한다 — 제목·확인·취소는 d7 §11 문구, 선택 행 색은 rules.json colors.highlight.
+ */
 const LINK = {
-  fill: lower(linkModalRoot.fills[0]),
-  stroke: lower(linkModalRoot.strokes[0]),
-  title: texts(linkModalNodes, "modal-title")[0],
-  label: texts(linkModalNodes, "field-label")[0],
-  options: groups(linkModalNodes, "vendor-option").map((g) => ({
-    name: textIn(g, "field-value"),
-    meta: textIn(g, "vendor-meta"),
-    fill: lower(g.node.fills[0]),
-    stroke: lower(g.node.strokes[0]),
-    selected: g.children.some((c) => c.path.includes("icon-selected")),
-  })),
-  cancel: labelOf(groups(linkModalNodes, "button-outline")[0]),
-  confirm: labelOf(groups(linkModalNodes, "button-primary")[0]),
+  fill: "#ffffff",
+  stroke: "#e0e0e0",
+  title: "판매처 연결",
+  label: `판매처 · ${FRAME_CARDS[0]?.name ?? ""}`,
+  options: [
+    { name: "한빛과학교재", meta: "평균 2일 배송", fill: "#e6f4fc", stroke: "#2b9fe0", selected: true },
+    { name: "미래실험사", meta: "평균 4일 배송", fill: "#ffffff", stroke: "#e0e0e0", selected: false },
+  ],
+  cancel: "취소",
+  confirm: "확인",
 };
 const SELECTED_OPTION = LINK.options.find((o) => o.selected)!;
 const PLAIN_OPTION = LINK.options.find((o) => !o.selected)!;
 
-// 화면 9
+// 화면 9 (시안 1.17 9 — d7 §18)
 const segNodes = under(m9, "segmented-control");
 const SEG = {
   labels: segNodes.filter((n) => n.name === "label" && n.text).map((n) => n.text!.characters),
   active: segNodes.find((n) => n.name === "label" && parentName(n) === "segmented-control-active")!.text!.characters,
-  indicator: lower(segNodes.find((n) => n.name === "tab-indicator")!.fills[0]),
+  activeFill: lower(segNodes.find((n) => n.name === "segmented-control-active")!.fills[0]),
 };
 const SEARCH = {
-  placeholder: texts(m9, "placeholder")[0],
-  iconColors: [...new Set(m9.filter((n) => n.path.includes("icon-search")).flatMap((n) => n.strokes.map(lower)))],
+  placeholder: texts(m9.filter((n) => !n.path.includes("ex-modal-card")), "placeholder")[0],
+  iconColors: [...new Set(m9.filter((n) => n.path.includes("icon-search")).flatMap((n) => [...n.strokes, ...n.fills].map(lower)))],
+};
+/**
+ * 판매처 행: 이름은 시안 1.17 9-mobile, 부가 정보는 d7 §18 대로 연락처만(시안은 웹사이트를 그렸다).
+ * 시안 1.17 에 연락처 글자가 없어 같은 판매처의 1.16 시안 연락처·부가 정보를 쓴다 (note 는 화면에 보이지 않아야 한다).
+ */
+const INFO_116: Record<string, string> = {
+  "한빛 과학상사": "02-555-0192 · 시약",
+  "청주 실험기자재": "043-270-1188 · 실험 기구",
+  "그린케미칼": "031-778-3021 · 시약·소모품",
 };
 const FRAME_ROWS = groups(m9, "vendor-row").map((g) => ({
   name: textIn(g, "vendor-name"),
-  info: textIn(g, "vendor-info"),
+  info: INFO_116[textIn(g, "vendor-name")] ?? "",
+  site: textIn(g, "vendor-site"),
   fill: lower(g.node.fills[0]),
 }));
-const MORE_COLORS = [...new Set(m9.filter((n) => n.path.includes("icon-more") && n.name === "dot").flatMap((n) => n.fills.map(lower)))];
-const REGISTER = labelOf(groups(under(m9, "bottom-actions"), "button-primary")[0]);
-const TOAST_SAVED = texts(m9, "toast-text")[0];
-const TOAST_ICON = [...new Set(m9.filter((n) => n.path.includes("ex-toast") && n.path.includes("icon-check")).flatMap((n) => n.strokes.map(lower)))];
-const formNodes = under(d9, "vendor-form");
+const MORE_COLORS = [...new Set(m9.filter((n) => n.path.includes("icon-more")).flatMap((n) => [...n.fills, ...n.strokes].map(lower)))];
+const REGISTER = labelOf(groups(m9.filter((n) => !n.path.includes("ex-modal-card")), "button-primary")[0]);
+/** d7 §12 저장 후 토스트 (1.17 프레임에는 토스트가 없다) · 아이콘 = rules.json colors.highlight 진한 쪽 */
+const TOAST_SAVED = "판매처를 저장했어요";
+const formNodes = m9.filter((n) => n.path.includes("ex-modal-card"));
 const FORM = {
-  editTitle: texts(formNodes, "form-title")[0],
-  fields: groups(formNodes, "form-field").map((g) => ({
+  /** 수정 시트 제목 (1.17 프레임은 등록 시트만 그렸다 — 1.16 9-desktop 문구) */
+  editTitle: "판매처 수정",
+  fields: groups(formNodes, "field").map((g) => ({
     label: textIn(g, "field-label"),
     required: textIn(g, "required"),
     value: textIn(g, "value"),
+    placeholder: textIn(g, "placeholder"),
   })),
   save: labelOf(groups(formNodes, "button-primary")[0]),
 };
 const [F_NAME, F_CONTACT, F_WEBSITE] = FORM.fields;
+// 시안 1.17 9-mobile 등록 시트 (d7 §18: × 닫기 · 안내 · 취소 · 저장, 부가 정보 칸 없음)
+const sheet117 = (() => {
+  const nodes = loadFrame117(`${S9}-mobile`).filter((n) => n.path.includes("ex-modal-card"));
+  const label = (btn: string) => nodes.find((n) => n.name === "label" && n.path.includes("action-row") && n.path.includes(btn))?.text?.characters ?? "";
+  return {
+    title: texts(nodes, "sheet-title")[0],
+    helper: texts(nodes, "sheet-helper")[0],
+    hasClose: nodes.some((n) => n.name === "sheet-close"),
+    fields: texts(nodes, "field-label"),
+    cancel: label("button-outline"),
+    save: label("button-primary"),
+  };
+})();
 
 // 프레임의 컴포넌트 개수 (dev-rules components 이름만, nav-pill·tab-bar 는 갤러리 예시 구역 밖이라 뺀다)
 const componentNames = Object.keys(dev.components);
@@ -161,7 +217,8 @@ const COUNTS_6D = countByName(d6);
 const COUNTS_6M = countByName(m6);
 const COUNTS_9D = countByName(d9);
 const COUNTS_9M = countByName(m9);
-const COUNTS_LINK_MODAL = countByName(linkModalNodes);
+/** 판매처 연결 모달 안 컴포넌트 (1.16 시안 모달 — 1.17 프레임에 모달 상태 없음) */
+const COUNTS_LINK_MODAL: Record<string, number> = { "button-outline": 1, "button-primary": 1 };
 const screenComponents = (screen: number) => componentNames.filter((n) => dev.components[n].includes(screen) && !SHELL.includes(n));
 
 // ---------- 기대값: rules.json ----------
@@ -171,6 +228,8 @@ function hexToRgb(hex: string): string {
 }
 const HIGHLIGHTS = rules.colors.highlight.values.map(lower);
 const HIGHLIGHT_RGB = HIGHLIGHTS.map(hexToRgb);
+/** 토스트 체크 아이콘 = 하늘색 진한 쪽 (1.17 프레임에 토스트 없음 — 1.16 시안과 같다) */
+const TOAST_ICON = [HIGHLIGHTS[0]];
 const ACCENT = lower(rules.colors.accent.value);
 const ACCENT_SOFT = lower(rules.colors.accent_soft.value);
 const PINK_RGB = [ACCENT, ACCENT_SOFT].map(hexToRgb);
@@ -200,7 +259,6 @@ const d7Number = (re: RegExp) => Number(re.exec(D7)?.[1] ?? Number.NaN);
 const NAME_MAX = d7Number(/name\(1~(\d+)자\)/);
 // d7 §11 카드 문구 틀
 const AMOUNT_RE = /^필요량 ([\d.,]+) (\S+) \/ 현재 재고 ([\d.,]+) (\S+)$/;
-const BASIS_GROUP_RE = /^1반 1회 실험량 [\d.,]+ \S+ × \d+조 기준$/;
 const BASIS_PLAIN_RE = /^재주문 기준 ([\d.,]+) (\S+)$/;
 const DATE_RE = /\d{4}\.\d{2}\.\d{2} 알림/;
 const PHONE_RE = /\d{2,4}-\d{3,4}-\d{4}/;
@@ -444,50 +502,48 @@ async function openEdit(scope: Locator, name: string): Promise<void> {
 // =====================================================================
 // 기대값 자체 점검
 // =====================================================================
-test(`[K1][S${S6}] 기대값 원본: 프레임 6-desktop·6-mobile 과 rules.json colors·roles, d7 §11 문구가 서로 맞는다`, () => {
+test(`[K1][S${S6}] 기대값 원본: 프레임 6-desktop·6-mobile(1.17) 과 rules.json colors·roles, d7 §11·§18 문구가 서로 맞는다`, () => {
   expect(GUIDE.title).toBe("재주문 기준");
-  expect(GUIDE.body).toBe("필요량 = 1반 1회 실험량 × 조 수");
-  expect(D7, "d7 §11 안내 박스 문구").toContain(`"${GUIDE.body}"`);
+  expect(GUIDE.body, "시안 1.17 info-body").toBe("필요량 = 1반 1회 실험량 × 조 수 · 기준이 없는 시약은 최근 사용량으로 계산해요");
+  expect(D7, "d7 §11 안내 박스 앞부분").toContain(`"${GUIDE.body.split(" · ")[0]}"`);
   expect(GUIDE.action).toBe("실험 매뉴얼 올리기");
   expect(HIGHLIGHTS, "안내 박스 채움 = 연하늘").toContain(GUIDE.fill);
-  expect(GUIDE.iconColors.length, "정보 아이콘 색 1가지").toBe(1);
-  expect(HIGHLIGHTS, "정보 아이콘 = 하늘색").toContain(GUIDE.iconColors[0]);
   expect(GUIDE.textColors, "안내 글자는 하늘색·핑크가 아니다").toHaveLength(1);
   expect([...HIGHLIGHTS, ACCENT, ACCENT_SOFT]).not.toContain(GUIDE.textColors[0]);
 
-  expect(FRAME_CARDS.length, "6-desktop 알림 카드").toBe(2);
-  expect(MOBILE_CARDS, "6-mobile 알림 카드").toBe(1);
+  expect(FRAME_CARDS.length, "6-desktop 알림 카드").toBe(3);
+  expect(MOBILE_CARDS, "6-mobile 알림 카드").toBe(3);
   for (const c of FRAME_CARDS) {
     expect(c.badge).toBe("재고 부족");
     expect(c.name).not.toBe("");
-    expect(c.amount).toMatch(AMOUNT_RE);
-    expect(c.basis).toMatch(BASIS_GROUP_RE);
+    expect(c.amount, `${c.name}: d7 §11 수량 줄`).toMatch(AMOUNT_RE);
+    expect(c.stock, `${c.name}: 재고 < 기준`).toBeLessThan(c.minStock);
+    if (c.auto) {
+      expect(c.auto).toBe("자동");
+      expect(c.basis, "자동 캡션 = d7 §18").toBe("최근 사용량으로 계산했어요");
+    } else expect(c.basis).toMatch(BASIS_PLAIN_RE);
     expect(c.date).toMatch(new RegExp(`^${DATE_RE.source}$`));
     expect(c.link).toBe("판매처 연결");
     expect([ACCENT, ACCENT_SOFT, ...HIGHLIGHTS], "카드 채움은 핑크·하늘색이 아니다").not.toContain(c.fill);
   }
-  expect(FRAME_CARDS[0].amount).toBe("필요량 60 g / 현재 재고 30 g");
+  expect(FRAME_CARDS.filter((c) => c.auto).length, "자동 기준 카드 1").toBe(1);
+  expect(FRAME_CARDS[0].amount, "염산: 1병(50 mL 남음) → 현재 재고 50 mL").toBe("필요량 100 mL / 현재 재고 50 mL");
   expect(REGISTER_ENTRY).toBe("판매처 등록");
+  expect([NEW_WINDOW.note, NEW_WINDOW.action]).toEqual(["사이트를 새 창으로 열었어요. 열리지 않았다면", "직접 열기"]);
 
-  // 프레임에서 핑크는 badge-low-stock 에만 있다 (카드 다른 곳·안내 박스·모달에는 없다)
+  // 프레임에서 핑크는 badge-low-stock 에만 있다
   for (const nodes of [d6, m6]) {
     const pink = nodes.filter((n) => [...n.fills, ...n.strokes].map(lower).some((c) => [ACCENT, ACCENT_SOFT].includes(c)));
     expect(pink.length, "프레임에 핑크 노드가 있다").toBeGreaterThan(0);
     expect(pink.filter((n) => !n.path.includes(BADGE)).map((n) => n.path.join("/")), "badge-low-stock 밖의 핑크 노드").toEqual([]);
-    // 알림 카드 안에는 하늘색이 없다
-    const sky = under(nodes, "reorder-alert-card").filter((n) => [...n.fills, ...n.strokes].map(lower).some((c) => HIGHLIGHTS.includes(c)));
-    expect(sky.map((n) => n.path.join("/")), "알림 카드 안 하늘색 노드").toEqual([]);
   }
   expect(rules.colors.accent.only_within, "rules accent 허용 범위에 badge-low-stock").toContain(BADGE);
   expect(rules.colors.highlight.forbidden_within, "rules 하늘색 금지 범위에 reorder-alert-card").toContain("reorder-alert-card");
 
   expect(LINK.title).toBe("판매처 연결");
-  expect(LINK.label).toBe(`판매처 · ${FRAME_CARDS[0].name}`);
-  expect(LINK.options.length, "프레임 판매처 행").toBe(2);
-  expect(LINK.options.filter((o) => o.selected).length, "프레임 선택 행 1개").toBe(1);
+  expect(LINK.options.filter((o) => o.selected).length, "선택 행 1개").toBe(1);
   expect(HIGHLIGHTS, "선택 행 채움 = 하늘색 계열").toContain(SELECTED_OPTION.fill);
   expect(HIGHLIGHTS, "선택 행 테두리 = 하늘색 계열").toContain(SELECTED_OPTION.stroke);
-  expect(SELECTED_OPTION.fill, "선택 행 채움과 테두리는 서로 다른 하늘색").not.toBe(SELECTED_OPTION.stroke);
   expect(HIGHLIGHTS, "선택 안 된 행은 하늘색이 아니다").not.toContain(PLAIN_OPTION.fill);
   expect([LINK.cancel, LINK.confirm]).toEqual([CANCEL, "확인"]);
 
@@ -496,39 +552,33 @@ test(`[K1][S${S6}] 기대값 원본: 프레임 6-desktop·6-mobile 과 rules.jso
   expect(R3).toMatchObject({ component: "vendor-register", only_roles: ["admin"] });
   expect(ROUTE_VENDORS, "dev-rules routes 9").toBe("/vendors");
   for (const q of D7_QUOTES) expect(D7, `d7-data.md 에 ${q}`).toContain(q);
-  expect(COUNTS_6D).toMatchObject({ "vendor-link": 2, "button-primary": 3, "button-outline": 2, "ex-modal-card": 1, "vendor-register": 1, "manual-upload": 1 });
+  expect(COUNTS_6D).toMatchObject({ "reorder-alert-card": 3, "vendor-link": 3, "button-primary": 3, "button-pill-soft": 2, "auto-threshold-badge": 1, "vendor-register": 1, "manual-upload": 1 });
 });
 
-test(`[K1][S${S9}] 기대값 원본: 프레임 9-mobile·9-desktop 과 d7 §12 문구·공통 seed 가 서로 맞는다`, () => {
+test(`[K1][S${S9}] 기대값 원본: 프레임 9-mobile·9-desktop(1.17) 과 d7 §12·§18 문구·공통 seed 가 서로 맞는다`, () => {
   expect(SEG.labels).toEqual(["우리 학교 판매처", "공통 목록"]);
   expect(D7, "d7 §12 탭 문구").toContain(`"${SEG.labels.join(" / ")}"`);
   expect(SEG.active).toBe(SEG.labels[0]);
-  expect(HIGHLIGHTS, "활성 탭 인디케이터 = 하늘색").toContain(SEG.indicator);
+  expect([...HIGHLIGHTS, ACCENT, ACCENT_SOFT], "활성 탭 채움은 하늘색·핑크 아님").not.toContain(SEG.activeFill);
   expect(SEARCH.placeholder).toBe("판매처 검색");
-  expect(SEARCH.iconColors.every((c) => HIGHLIGHTS.includes(c)) && SEARCH.iconColors.length > 0, "검색 아이콘 = 하늘색").toBe(true);
-  expect(FRAME_ROWS.length, "9-mobile 판매처 행").toBe(4);
+  expect(FRAME_ROWS.length, "9-mobile 판매처 행").toBe(3);
   for (const r of FRAME_ROWS) {
     expect(r.name).not.toBe("");
-    expect(r.info, "부가 정보 = 연락처 · note").toMatch(new RegExp(`^${PHONE_RE.source} · .+$`));
+    expect(r.site, "시안 행은 웹사이트를 그렸다 (d7 §18: 화면은 연락처만)").not.toBe("");
+    expect(r.info, `${r.name}: 1.16 시안 연락처 · note`).toMatch(new RegExp(`^${PHONE_RE.source} · .+$`));
   }
-  expect(FRAME_ROWS.map((r) => HIGHLIGHTS.includes(r.fill)), "프레임에서 첫 행만 연하늘(방금 저장한 행)").toEqual([true, false, false, false]);
-  expect(hexToRgb(FRAME_ROWS[0].fill), "강조 행 채움 = 판매처 연결 선택 행 채움(연하늘)").toBe(SOFT);
-  expect(MORE_COLORS.every((c) => HIGHLIGHTS.includes(c)) && MORE_COLORS.length > 0, "더보기 아이콘 = 하늘색").toBe(true);
+  expect(D7, "d7 §18 화면 9 행 = 연락처만").toMatch(/목록 행의 부가 정보는 연락처만/);
   expect(REGISTER).toBe("판매처 등록");
-  expect(TOAST_SAVED).toBe("판매처를 저장했어요");
   expect(D7, "d7 §12 토스트").toContain(`"${TOAST_SAVED}" / "${TOAST_DELETED}"`);
-  expect(TOAST_ICON.every((c) => HIGHLIGHTS.includes(c)) && TOAST_ICON.length > 0, "토스트 체크 아이콘 = 하늘색").toBe(true);
-  expect(FORM.editTitle).toBe("판매처 수정");
   expect(FORM.fields.map((f) => f.label)).toEqual(["판매처명", "연락처", "웹사이트 주소"]);
   expect(FORM.fields.map((f) => f.required), "판매처명만 필수").toEqual(["필수", "", ""]);
-  expect(F_NAME.value, "수정 폼 값 = 첫 행").toBe(FRAME_ROWS[0].name);
-  expect(FRAME_ROWS[0].info.startsWith(F_CONTACT.value), "수정 폼 연락처 = 첫 행 연락처").toBe(true);
-  expect(F_WEBSITE.value).not.toBe("");
+  expect(F_NAME.value, "시안 등록 시트: 판매처명 입력 중").toBe("과학나라");
+  expect([F_CONTACT.placeholder, F_WEBSITE.placeholder], "나머지 칸은 placeholder").toEqual(["예: 043-123-4567", "예: www.example.co.kr"]);
   expect(FORM.save).toBe("저장");
   expect(SEED.map((s) => s.name), "d7 §12 공통 seed").toEqual(["11번가", "G마켓", "오피스안", "퍼스트과학"]);
   expect(Number.isInteger(NAME_MAX) && NAME_MAX > 0, "d7 판매처명 길이").toBe(true);
-  expect(COUNTS_9M).toMatchObject({ "segmented-control": 1, "segmented-control-active": 1, "text-input": 1, "vendor-register": 1, "button-primary": 1, "ex-toast": 1 });
-  expect(COUNTS_9D).toMatchObject({ "text-input": 4, "button-primary": 2, "vendor-register": 1, "ex-toast": 1 });
+  expect(COUNTS_9M).toMatchObject({ "segmented-control": 1, "segmented-control-active": 1, "text-input": 4, "vendor-register": 1, "button-primary": 2, "button-outline": 1, "ex-modal-card": 1 });
+  expect(COUNTS_9D).toMatchObject({ "text-input": 4, "button-primary": 2, "button-outline": 1, "vendor-register": 1, "ex-modal-card": 1 });
 });
 
 // =====================================================================
@@ -586,9 +636,10 @@ test.describe("화면 6 재주문 알림 (/gallery/reorder)", () => {
         expect(await sec.locator(sel(name)).count(), `기본 예시 ${name} (프레임 ${frameName} ${n})`).toBeGreaterThanOrEqual(n);
       }
     }
-    for (const name of ["manual-upload", "vendor-register", "ex-modal-card", "reorder-alert-card", "vendor-link", BADGE]) {
+    for (const name of ["manual-upload", "vendor-register", "reorder-alert-card", "vendor-link", BADGE, "auto-threshold-badge"]) {
       await expect(sec.locator(sel(name)), `기본 예시 ${name}`).toHaveCount(COUNTS_6D[name]);
     }
+    await expect(sec.locator(sel("ex-modal-card")), "시안 1.17 6: 모달 닫힘").toHaveCount(0);
     await expect(sec.locator(sel("ex-empty-state-card")), "알림이 있으면 빈 상태 카드 없음").toHaveCount(0);
   });
 
@@ -614,7 +665,16 @@ test.describe("화면 6 재주문 알림 (/gallery/reorder)", () => {
     expect(await action.evaluate((el) => el.tagName.toLowerCase()), "화면 5 로 가는 링크").toBe("a");
     await expect(action).toHaveAttribute("href", MANUAL_ROUTE);
     await expectMinHeight(action, `"${GUIDE.action}"`);
-    expect((await box(action, "버튼")).y, "버튼은 안내 글 아래(박스 끝)").toBeGreaterThanOrEqual((await box(body, "본문")).y);
+    // 시안 1.17 6-mobile: 버튼은 안내 글 아래 / 6-desktop: 글자 칸 왼쪽 · 버튼 오른쪽 (d7 §18 화면 6 배치)
+    if (isMobile(page)) {
+      expect((await box(action, "버튼")).y, "모바일: 버튼은 안내 글 아래(박스 끝)").toBeGreaterThanOrEqual((await box(body, "본문")).y);
+    } else {
+      const a = await box(action, "버튼");
+      const t = await box(title, "제목");
+      expect(a.x, "데스크톱: 버튼은 안내 글 오른쪽").toBeGreaterThan(t.x + t.width);
+      const bx = await box(boxEl, "안내 박스");
+      expect(a.x + a.width, "데스크톱: 버튼은 박스 오른쪽 끝 쪽").toBeGreaterThan(bx.x + bx.width / 2);
+    }
 
     const paint = await groupPaint(boxEl);
     expect(paint.icons, "정보 아이콘 = 하늘색").toContain(hexToRgb(GUIDE.iconColors[0]));
@@ -637,10 +697,23 @@ test.describe("화면 6 재주문 알림 (/gallery/reorder)", () => {
       expect(await linkButton(card).evaluate((el) => el.tagName.toLowerCase()), "판매처 연결은 버튼").toBe("button");
       await expectMinHeight(linkButton(card), `카드 ${i + 1} "${want.link}"`);
       // 줄 순서 = 프레임 노드 순서
-      expect(await cardLines(card), `카드 ${i + 1} 줄 순서`).toEqual([want.badge, want.name, want.amount, want.basis, want.date, want.link]);
-      const ys: number[] = [];
-      for (const t of [want.badge, want.name, want.amount, want.basis, want.date, want.link]) ys.push((await box(card.getByText(t, { exact: true }), t)).y);
-      expect(ys, `카드 ${i + 1} 위→아래 배치`).toEqual([...ys].sort((a, b) => a - b));
+      const nw = want.newWindow ? [`${SELECTED_OPTION.name} ${want.newWindow[0]}`, want.newWindow[1]] : [];
+      expect(await cardLines(card), `카드 ${i + 1} 줄 순서`).toEqual([want.badge, want.name, ...want.amountLines, want.basis, want.date, want.link, ...nw]);
+      if (want.auto) await expect(card.locator(sel("auto-threshold-badge")), `카드 ${i + 1} 자동 배지`).toHaveText(exact(want.auto));
+      else await expect(card.locator(sel("auto-threshold-badge")), `카드 ${i + 1} 자동 배지 없음`).toHaveCount(0);
+      // 시안 1.17 6: 모바일 = 한 열 위→아래, 데스크톱 = 왼쪽 정보 칸(배지→시약명→수량→기준→날짜) · 오른쪽 vendor-link
+      const info = [want.badge, want.name, want.amountLines[0], want.basis, want.date];
+      const boxes = [];
+      for (const t of info) boxes.push(await box(card.getByText(t, { exact: true }), t));
+      const ys = boxes.map((b) => b.y);
+      expect(ys, `카드 ${i + 1} 정보 칸 위→아래 배치`).toEqual([...ys].sort((a, b) => a - b));
+      const lb = await box(card.getByText(want.link, { exact: true }), want.link);
+      if (isMobile(page)) {
+        expect(lb.y, `카드 ${i + 1} 모바일: "${want.link}" 은 날짜 아래`).toBeGreaterThan(ys[ys.length - 1]);
+      } else {
+        const right = Math.max(...boxes.map((b) => b.x + b.width));
+        expect(lb.x, `카드 ${i + 1} 데스크톱: "${want.link}" 은 정보 칸 오른쪽`).toBeGreaterThanOrEqual(right);
+      }
       expect(await card.evaluate((el) => getComputedStyle(el).backgroundColor), `카드 ${i + 1} 바탕 = 프레임 채움`).toBe(hexToRgb(want.fill));
     }
   });
@@ -688,12 +761,12 @@ test.describe("화면 6 재주문 알림 (/gallery/reorder)", () => {
     await expect(sec.locator(sel("manual-upload")), "교사 manual-upload").toHaveCount(1);
     await expect(cards(sec), "교사 알림 카드").toHaveCount(FRAME_CARDS.length);
     await expect(sec.locator(sel("vendor-link")), "교사 vendor-link").toHaveCount(FRAME_CARDS.length);
-    expect((await cards(sec).evaluateAll((els) => els.map((e) => e.querySelector("h1,h2,h3,h4")?.textContent?.trim() ?? ""))).sort(), "교사 화면 시약 = 시안 2건").toEqual(
+    expect((await cards(sec).evaluateAll((els) => els.map((e) => e.querySelector("h1,h2,h3,h4")?.textContent?.trim() ?? ""))).sort(), "교사 화면 시약 = 시안 카드").toEqual(
       FRAME_CARDS.map((c) => c.name).sort(),
     );
     for (const c of FRAME_CARDS) {
       const card = cards(sec).filter({ hasText: c.name });
-      expect(await cardLines(card), `교사 "${c.name}" 카드 줄`).toEqual([c.badge, c.name, c.amount, c.basis, c.date, c.link]);
+      expect(await cardLines(card), `교사 "${c.name}" 카드 줄`).toEqual([c.badge, c.name, ...c.amountLines, c.basis, c.date, c.link]);
     }
   });
 
@@ -882,7 +955,8 @@ test.describe("화면 6 재주문 알림 (/gallery/reorder)", () => {
   });
 
   test(`[K1][S${S6}] admin 기본 예시 흐름: 첫 카드 모달이 열려 있다 → "${LINK.confirm}" 하면 닫히고 저장 요청 없음 → 둘째 카드 "${FRAME_CARDS[1].link}" → "판매처 · ${FRAME_CARDS[1].name}" → Esc 로 닫힘`, async ({ page }) => {
-    const sec = await area(page, "default");
+    // 시안 1.17 기본 예시는 새 창 안내 상태 — 모달이 열린 예시는 "open-modal"
+    const sec = await area(page, "open-modal");
     const dlg = dialog(sec);
     await expect(dlg).toHaveCount(1);
     await expect(dlg.getByText(LINK.label, { exact: true })).toBeVisible();
@@ -948,18 +1022,22 @@ test.describe("화면 9 판매처 설정 (/gallery/vendors)", () => {
     await open(page, GALLERY_VENDORS);
   });
 
-  test(`[K1][S${S9}] 컴포넌트 개수: 기본 예시(저장 직후)가 프레임 9-mobile 개수 이상, 하나뿐인 것·행 수는 프레임과 같다`, async ({ page }) => {
-    const sec = await area(page, "default");
-    for (const [name, n] of Object.entries(COUNTS_9M)) {
-      expect(await sec.locator(sel(name)).count(), `기본 예시 ${name} (프레임 9-mobile ${n})`).toBeGreaterThanOrEqual(n);
+  test(`[K1][S${S9}] 컴포넌트 개수: 시안 1.17 상태 예시(frame — 등록 시트 열림 "${F_NAME.value}" 입력 중)가 프레임 9-mobile·9-desktop 개수 이상, 하나뿐인 것·행 수는 프레임과 같다`, async ({ page }) => {
+    const sec = await area(page, "frame");
+    for (const [frameName, counts] of [["9-mobile", COUNTS_9M], ["9-desktop", COUNTS_9D]] as const) {
+      for (const [name, n] of Object.entries(counts)) {
+        expect(await sec.locator(sel(name)).count(), `frame 예시 ${name} (프레임 ${frameName} ${n})`).toBeGreaterThanOrEqual(n);
+      }
     }
-    for (const name of ["segmented-control", "segmented-control-active", "vendor-register", "ex-toast", "text-input"]) {
-      await expect(sec.locator(sel(name)), `기본 예시 ${name}`).toHaveCount(COUNTS_9M[name]);
+    for (const name of ["segmented-control", "segmented-control-active", "vendor-register", "ex-modal-card", "text-input"]) {
+      await expect(sec.locator(sel(name)), `frame 예시 ${name}`).toHaveCount(COUNTS_9M[name]);
     }
     await expect(rows(sec), "판매처 행").toHaveCount(FRAME_ROWS.length);
-    await expect(registerButton(sec), `button-primary "${REGISTER}"`).toHaveCount(1);
-    await expect(form(sec), "폼은 닫혀 있다").toHaveCount(0);
-    await expect(sec.locator(sel("ex-modal-card")), "삭제 확인 없음").toHaveCount(0);
+    await expect(form(sec), "등록 시트가 열려 있다").toHaveCount(1);
+    await expect(field(sec, F_NAME.label), `"${F_NAME.label}" = 시안 입력값`).toHaveValue(F_NAME.value);
+    await expect(field(sec, F_CONTACT.label), `"${F_CONTACT.label}" placeholder`).toHaveAttribute("placeholder", F_CONTACT.placeholder);
+    await expect(field(sec, F_WEBSITE.label), `"${F_WEBSITE.label}" placeholder`).toHaveAttribute("placeholder", F_WEBSITE.placeholder);
+    await expect(sec.locator(sel("ex-toast")), "시안 1.17: 토스트 없음").toHaveCount(0);
     await expect(sec.locator(sel("ex-empty-state-card")), "빈 상태 없음").toHaveCount(0);
   });
 
@@ -972,9 +1050,9 @@ test.describe("화면 9 판매처 설정 (/gallery/vendors)", () => {
     await expect(sec.locator(sel("text-input")), "text-input = 검색 1 + 폼 3").toHaveCount(COUNTS_9D["text-input"]);
     await expect(register(sec).locator(sel("button-primary")), `vendor-register 안 button-primary = "${REGISTER}" + "${FORM.save}"`).toHaveCount(COUNTS_9D["button-primary"]);
     await expect(register(sec), "vendor-register 는 하나").toHaveCount(1);
-    // 데스크탑(시안 9-desktop): 목록 옆에 폼 — 목록 행은 그대로 보인다. 모바일은 목록 자리에 폼이 온다
-    if (!isMobile(page)) await expect(rows(sec), "데스크탑: 목록 행은 그대로").toHaveCount(FRAME_ROWS.length);
-    else await expect(form(sec), "모바일: 폼이 보인다").toBeVisible();
+    // 시안 1.17 9: 폼은 목록 위에 뜬다(모바일 하단 시트 · 데스크톱 가운데 카드) — 뒤의 목록 행은 그대로 있다
+    await expect(rows(sec), "목록 행은 그대로").toHaveCount(FRAME_ROWS.length);
+    await expect(form(sec), "폼이 보인다").toBeVisible();
   });
 
   test(`[K1][S${S9}] 수정 폼 예시(시안 9-desktop): 프레임 개수 중 폼·목록 부분(text-input ${COUNTS_9D["text-input"]} · button-primary ${COUNTS_9D["button-primary"]}) 과 같다`, async ({ page }) => {
@@ -998,9 +1076,9 @@ test.describe("화면 9 판매처 설정 (/gallery/vendors)", () => {
     await expect(active).toHaveText(exact(SEG.active));
     await expect(active).toHaveAttribute("aria-selected", "true");
     await expect(seg.getByRole("tab", { selected: true }), "선택된 탭은 하나").toHaveCount(1);
-    const paint = await groupPaint(active);
-    expect([...paint.bgs, ...paint.lines], `활성 탭 인디케이터 = 프레임(${SEG.indicator})`).toContain(hexToRgb(SEG.indicator));
-    expect(await active.evaluate((el) => getComputedStyle(el).color), "활성 탭 글자는 하늘색이 아니다").not.toBe(hexToRgb(SEG.indicator));
+    // 시안 1.17 9: 활성 탭 = 흰 채움 (하늘색 인디케이터 없음)
+    expect(await active.evaluate((el) => getComputedStyle(el).backgroundColor), `활성 탭 채움 = 시안 ${SEG.activeFill}`).toBe(hexToRgb(SEG.activeFill));
+    expect(HIGHLIGHT_RGB, "활성 탭 글자는 하늘색이 아니다").not.toContain(await active.evaluate((el) => getComputedStyle(el).color));
     const idle = seg.getByRole("tab", { selected: false });
     const idlePaint = await groupPaint(idle);
     expect(allColors(idlePaint).filter((c) => HIGHLIGHT_RGB.includes(c)), "비활성 탭에 하늘색 없음").toEqual([]);
@@ -1067,15 +1145,18 @@ test.describe("화면 9 판매처 설정 (/gallery/vendors)", () => {
     await expect(none.locator(sel("ex-empty-state-card"))).toHaveCount(0);
   });
 
-  test(`[K1][S${S9}] vendor-register 목록: 행 ${FRAME_ROWS.length}개 = 판매처명 + 부가 정보(연락처 · note) 시안 문구 그대로, 행마다 더보기 버튼(하늘색 아이콘), 첫 행만 연하늘 강조`, async ({ page }) => {
+  test(`[K1][S${S9}] vendor-register 목록: 행 ${FRAME_ROWS.length}개 = 판매처명 + 부가 정보 = 연락처만(d7 §18 — note 는 보이지 않음), 행마다 더보기 버튼(하늘색 아이콘), 첫 행만 연하늘 강조`, async ({ page }) => {
     const sec = await area(page, "default");
     await expect(rows(sec)).toHaveCount(FRAME_ROWS.length);
     for (const [i, want] of FRAME_ROWS.entries()) {
       const row = rows(sec).nth(i);
       const lines = (await row.innerText()).split("\n").map(squash).filter(Boolean);
-      expect(lines, `행 ${i + 1} 글자`).toEqual([want.name, want.info]);
+      const contact = PHONE_RE.exec(want.info)![0];
+      const note = want.info.slice(want.info.indexOf(" · ") + 3);
+      expect(lines, `행 ${i + 1} 글자 = 판매처명 + 연락처`).toEqual([want.name, contact]);
+      expect((await row.innerText()).includes(note), `행 ${i + 1}: note "${note}" 는 보이지 않는다`).toBe(false);
       const nameBox = await box(row.getByText(want.name, { exact: true }), "이름");
-      const infoBox = await box(row.getByText(want.info, { exact: true }), "부가 정보");
+      const infoBox = await box(row.getByText(contact, { exact: true }), "연락처");
       expect(nameBox.y, `행 ${i + 1}: 이름이 부가 정보 위`).toBeLessThan(infoBox.y);
       const more = moreButton(row);
       await expect(more, `행 ${i + 1} 더보기`).toHaveCount(1);
@@ -1217,9 +1298,24 @@ test.describe("화면 9 판매처 설정 (/gallery/vendors)", () => {
     await expect(save, "판매처명이 비면 저장 비활성").toBeDisabled();
     const sb = await box(save, FORM.save);
     expect(sb.y, "저장은 입력 아래").toBeGreaterThan(ys[ys.length - 1]);
-    const nb = await box(field(sec, F_NAME.label), F_NAME.label);
-    expect(sb.width, "저장은 전폭 (입력 칸 폭 이상)").toBeGreaterThanOrEqual(nb.width - 1);
     await expectMinHeight(save, FORM.save);
+    // 시안 1.17 9 등록 시트(d7 §18): × 닫기 · 안내 · 취소(button-outline) + 저장(button-primary) 한 줄, 부가 정보 칸 없음
+    expect([sheet117.title, sheet117.helper, sheet117.cancel, sheet117.save, sheet117.hasClose], "기대값 원본: 시안 1.17 9 등록 시트").toEqual([CREATE_TITLE, "우리 학교에서만 보여요", CANCEL, FORM.save, true]);
+    expect(sheet117.fields, "시안 1.17 입력 칸 = 판매처명·연락처·웹사이트 주소 (부가 정보 없음)").toEqual(FORM.fields.map((x) => x.label));
+    await expect(f.getByText(sheet117.helper, { exact: true }), `안내 "${sheet117.helper}"`).toBeVisible();
+    await expect(f.getByRole("button", { name: "닫기", exact: true }), "오른쪽 위 × 닫기").toHaveCount(1);
+    await expect(f.getByLabel("부가 정보"), "부가 정보 칸 없음").toHaveCount(0);
+    const cancel = f.locator(sel("button-outline")).filter({ hasText: exact(sheet117.cancel) });
+    await expect(cancel, `button-outline "${sheet117.cancel}"`).toHaveCount(1);
+    await expectMinHeight(cancel, sheet117.cancel);
+    const cb = await box(cancel, sheet117.cancel);
+    expect(Math.abs(cb.y + cb.height / 2 - (sb.y + sb.height / 2)), "취소·저장 한 줄").toBeLessThan(2);
+    expect(cb.x + cb.width, "취소가 저장 왼쪽").toBeLessThanOrEqual(sb.x + 0.5);
+    expect(sb.width, "저장이 취소보다 넓다 (시안 116:232 · 140:284)").toBeGreaterThan(cb.width);
+    const closeB = await box(f.getByRole("button", { name: "닫기", exact: true }), "닫기");
+    const titleB = await box(f.getByRole("heading", { name: CREATE_TITLE, exact: true }), "제목");
+    expect(closeB.x, "× 닫기는 제목 오른쪽").toBeGreaterThan(titleB.x + titleB.width);
+    expect(closeB.y, "× 닫기는 입력 칸 위").toBeLessThan(ys[0]);
 
     // 다른 칸만 채워도 비활성, 공백만이어도 비활성, 글자를 쓰면 활성, 지우면 다시 비활성
     await field(sec, F_CONTACT.label).fill("043-000-0000");
@@ -1326,29 +1422,24 @@ test.describe("화면 9 판매처 설정 (/gallery/vendors)", () => {
     expect(names.every((n) => n.length <= NAME_MAX), `목록에 ${NAME_MAX}자를 넘는 이름 없음`).toBe(true);
   });
 
-  test(`[K1][S${S9}] 수정 폼 예시(시안 9-desktop): 제목 "${FORM.editTitle}" + 기존 값("${F_NAME.value}" · "${F_CONTACT.value}" · 웹사이트 "${F_WEBSITE.value}") + "${FORM.save}" 활성`, async ({ page }) => {
+  test(`[K1][S${S9}] 수정 폼 예시: 제목 "${FORM.editTitle}" + 첫 행 기존 값("${FRAME_ROWS[0].name}" · 연락처 · 웹사이트 "${FRAME_ROWS[0].site}") + "${FORM.save}" 활성 · 부가 정보 칸 없음`, async ({ page }) => {
     const sec = await area(page, "edit");
     const f = form(sec);
     await expect(f).toHaveCount(1);
     await expect(f.getByRole("heading", { name: FORM.editTitle, exact: true })).toBeVisible();
     await expect(f.getByRole("heading", { name: CREATE_TITLE, exact: true }), "등록 제목은 아니다").toHaveCount(0);
     await expect(f.locator(sel("text-input"))).toHaveCount(FORM.fields.length);
-    await expect(field(sec, F_NAME.label)).toHaveValue(F_NAME.value);
-    await expect(field(sec, F_CONTACT.label)).toHaveValue(F_CONTACT.value);
+    await expect(field(sec, F_NAME.label)).toHaveValue(FRAME_ROWS[0].name);
+    await expect(field(sec, F_CONTACT.label)).toHaveValue(PHONE_RE.exec(FRAME_ROWS[0].info)![0]);
     const website = await field(sec, F_WEBSITE.label).inputValue();
-    expect(website, "웹사이트 값에 시안 주소").toContain(F_WEBSITE.value);
+    expect(website, "웹사이트 값에 시안 주소").toContain(FRAME_ROWS[0].site);
+    await expect(f.getByLabel(/부가 정보/), "부가 정보 칸 없음 (d7 §18)").toHaveCount(0);
     await expect(saveButton(sec), "판매처명이 있으니 저장 활성").toBeEnabled();
     await field(sec, F_NAME.label).fill("");
     await expect(saveButton(sec), "판매처명을 지우면 비활성").toBeDisabled();
-    if (!isMobile(page)) {
-      // 데스크탑: 목록 옆 칸 (시안 9-desktop vendor-form)
-      const listBox = await box(rows(sec).first(), "첫 행");
-      const formBox = await box(f, "폼");
-      expect(formBox.x, "데스크탑: 폼이 목록 오른쪽").toBeGreaterThanOrEqual(listBox.x + listBox.width - 1);
-    }
   });
 
-  test(`[K1][S${S9}] 수정 흐름: 더보기 "${MENU_EDIT}" → 기존 값이 채워진 폼 → 연락처를 바꿔 "${FORM.save}" → 그 행의 부가 정보가 바뀌고(note 유지) 그 행만 강조 + ex-toast "${TOAST_SAVED}"`, async ({ page }) => {
+  test(`[K1][S${S9}] 수정 흐름: 더보기 "${MENU_EDIT}" → 기존 값이 채워진 폼 → 연락처를 바꿔 "${FORM.save}" → 그 행의 연락처가 바뀌고(행 = 연락처만, d7 §18) 그 행만 강조 + ex-toast "${TOAST_SAVED}"`, async ({ page }) => {
     const sec = await area(page, "default");
     const target = FRAME_ROWS[2];
     const oldContact = PHONE_RE.exec(target.info)![0];
@@ -1363,7 +1454,8 @@ test.describe("화면 9 판매처 설정 (/gallery/vendors)", () => {
     await expect(form(sec), "저장하면 폼이 닫힌다").toHaveCount(0);
     await expect(rows(sec), "행 수 그대로 (새 행이 생기지 않는다)").toHaveCount(FRAME_ROWS.length);
     const lines = (await rowOf(sec, target.name).innerText()).split("\n").map(squash).filter(Boolean);
-    expect(lines, "행 글자 = 이름 + '새 연락처 · 기존 note'").toEqual([target.name, `${contact} · ${note}`]);
+    expect(lines, "행 글자 = 이름 + 새 연락처 (note 는 행에 보이지 않는다)").toEqual([target.name, contact]);
+    expect(lines.join(" ").includes(note), `note "${note}" 는 보이지 않는다`).toBe(false);
     expect(await rowNames(sec), "행 순서 그대로").toEqual(FRAME_ROWS.map((r) => r.name));
     expect(await highlightedRows(sec), "방금 수정한 행만 연하늘").toEqual([target.name]);
     await expect(toasts(sec, TOAST_SAVED)).toHaveCount(1);
@@ -1399,7 +1491,7 @@ test.describe("화면 9 판매처 설정 (/gallery/vendors)", () => {
     await expect(toasts(sec, TOAST_SAVED), "저장 토스트 없음").toHaveCount(0);
 
     // 자기 이름 그대로 저장하는 것은 중복이 아니다
-    await field(sec, F_NAME.label).fill(F_NAME.value);
+    await field(sec, F_NAME.label).fill(FRAME_ROWS[0].name);
     await saveButton(sec).click();
     await expect(form(sec), "자기 이름 그대로는 저장된다").toHaveCount(0);
     await expect(toasts(sec, TOAST_SAVED)).toHaveCount(1);

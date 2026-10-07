@@ -281,6 +281,7 @@ export function UsersScreen({ schoolName, members, counts, invites }: Props) {
             <DeleteConfirm
               key={target.id}
               modal={false}
+              closeIcon
               name={target.name}
               pending={busy}
               error={error}

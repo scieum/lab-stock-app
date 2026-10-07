@@ -156,11 +156,11 @@ test(`[C1][S${SCREEN}] 기대값 원본: 프레임 5 의 문구·4행·조 수�
   expect(MANUAL_HREF, "dev-rules routes 5").toBe("/manual");
   expect(NAV_TITLE).toBe("실험 매뉴얼");
   expect(GUIDE).toBe("실험 매뉴얼을 올리면 시약별 사용량을 찾아드려요");
-  expect([GROUPS_LABEL, GROUPS, GROUPS_UNIT]).toEqual(["조 수", 6, "조"]);
+  expect([GROUPS_LABEL, GROUPS, GROUPS_UNIT]).toEqual(["조 수", 4, "조"]);
   expect(TITLE).toBe("추출 결과 확인");
   expect(CLOSE).toBe("닫기");
   expect(HEAD).toEqual(["시약명", "1조 사용량", "단위", "1반 1회 필요량"]);
-  expect(FRAME_ROWS.map((r) => r[0]), "시안 4행의 시약명").toEqual(["염산 0.1M", "수산화나트륨", "페놀프탈레인", "에탄올 95%"]);
+  expect(FRAME_ROWS.map((r) => r[0]), "시안 1.17 4행의 시약명").toEqual(["염산", "수산화나트륨", "페놀프탈레인 용액", "증류수"]);
   for (const [name, per, unit, required] of FRAME_ROWS) {
     expect(UNITS, `${name} 단위`).toContain(unit);
     expect(required, `${name} 필요량 = 사용량 × 조 수`).toBe(requiredText(per, GROUPS, unit));
@@ -517,15 +517,28 @@ test(`[C1][S${SCREEN}] 학교A 교사 "${EXTRACT}": 요청 = POST ${"/api/manual
     await expect(overlay(page), "2단계에도 파일 이름").toHaveText(exact(fileName));
     await expect(groupsInput(page), "2단계에도 조 수").toHaveValue(String(GROUPS));
 
-    // 프레임(합성 상태) 개수 이상 — 2단계 상태 기준
+    // 프레임(시안 1.17, 2단계 상태) 개수 — 시안 1.17 은 사용량·단위·우리 학교 시약 상자를 모두 text-input 으로 그렸고
+    // 5-desktop 은 행마다 ex-data-table-cell 1개(4칸 한 줄)다. 화면은 d7 §13 의 4열 표(머리 + 행마다 4칸 셀)로 읽히게 두고
+    // 단위·연결은 선택 상자이므로, 개수는 "프레임 이름 → 화면에서 같은 역할"로 맞춰 센다.
     const frame = frameCounts(`${SCREEN}-${viewport}`);
     expect(frame[TABLE], "프레임에 결과 표").toBe(1);
-    expect(frame[CELL], `프레임 ${CELL} = (머리 + 4행) × ${HEAD.length}열`).toBe((FRAME_ROWS.length + 1) * HEAD.length);
     const got = await countsOf(page, Object.keys(frame));
-    for (const [name, n] of Object.entries(frame)) expect(got[name], `${viewport} 2단계 ${name} ≥ 프레임 ${n}`).toBeGreaterThanOrEqual(n);
-    expect(await table(page).locator(sel(CELL)).count(), `${TABLE} 안 ${CELL} ≥ 프레임`).toBeGreaterThanOrEqual(frame[CELL]);
     for (const name of [UPLOAD, OVERLAY, TABLE, OUTLINE]) expect(got[name], `2단계 ${name} = 프레임`).toBe(frame[name]);
     expect(await main(page).locator(sel(PRIMARY)).count(), `2단계 ${PRIMARY} = 프레임`).toBe(frame[PRIMARY]);
+    for (const name of Object.keys(frame).filter((n) => ![INPUT, CELL].includes(n))) {
+      expect(got[name], `${viewport} 2단계 ${name} ≥ 프레임 ${frame[name]}`).toBeGreaterThanOrEqual(frame[name]);
+    }
+    // 프레임 text-input = 조 수 1 + 행마다 (사용량 · 단위 · 우리 학교 시약) 3
+    expect(frame[INPUT], `프레임 ${INPUT} = 1 + ${FRAME_ROWS.length}행 × 3`).toBe(1 + FRAME_ROWS.length * 3);
+    for (const name of FRAME_ROWS.map((r) => r[0])) {
+      const row = rowByName(page, name);
+      await expect(amountInput(row), `${name}: 사용량 ${INPUT} 1`).toHaveCount(1);
+      await expect(row.getByRole("combobox", { name: `${name} 단위` }), `${name}: 단위 선택 상자 1`).toHaveCount(1);
+      await expect(row.locator('button[aria-haspopup="listbox"]'), `${name}: 우리 학교 시약 선택 1`).toHaveCount(1);
+    }
+    await expect(groupsInput(page), "조 수 입력 1").toHaveCount(1);
+    // 표: 머리 + 행마다 4칸 = ex-data-table-cell
+    expect(await table(page).locator(sel(CELL)).count(), `${TABLE} 안 ${CELL} = (머리 + ${FRAME_ROWS.length}행) × ${HEAD.length}칸`).toBe((FRAME_ROWS.length + 1) * HEAD.length);
 
     // 화면 5 에 속하지 않는 컴포넌트 0
     for (const [name, n] of Object.entries(await countsOf(page, foreignComponents(SCREEN)))) expect(n, `2단계: 화면 ${SCREEN} 에 속하지 않는 ${name}`).toBe(0);

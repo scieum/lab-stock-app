@@ -4,7 +4,7 @@ import { Toast } from "@/components/ex-toast";
 import { VendorDeleteConfirm } from "@/components/vendor-register";
 import styles from "../gallery.module.css";
 import { VendorsDemo } from "./demo";
-import { sampleCommonVendors, sampleVendors } from "./sample";
+import { sampleCommonVendors, sampleDraftName, sampleVendors } from "./sample";
 import local from "./vendors.module.css";
 
 export const metadata: Metadata = { title: "판매처 설정 컴포넌트 · Lab_Stock" };
@@ -34,7 +34,15 @@ export default function GalleryVendorsPage() {
       </p>
 
       <div className={local.grid}>
-        <Item id="default" name="목록 — 저장 직후 (시안 9-mobile: 판매처 4곳, 첫 행 강조, 토스트)">
+        <Item id="frame" name="목록 + 등록 시트 열림 (시안 1.17 9: 판매처 3곳, '과학나라' 입력 중, × 닫기 · 취소 · 저장)">
+          <VendorsDemo
+            vendors={sampleVendors}
+            common={sampleCommonVendors}
+            defaultForm={{ mode: "create", draft: { name: sampleDraftName } }}
+          />
+        </Item>
+
+        <Item id="default" name="목록 — 저장 직후 (판매처 3곳, 첫 행 강조, 토스트)">
           <VendorsDemo
             vendors={sampleVendors}
             common={sampleCommonVendors}
@@ -43,7 +51,7 @@ export default function GalleryVendorsPage() {
           />
         </Item>
 
-        <Item id="edit" name="수정 폼 (시안 9-desktop: 목록 옆 '판매처 수정')">
+        <Item id="edit" name="수정 폼 ('판매처 수정' — 부가 정보 칸 없음, 저장해도 note 유지)">
           <VendorsDemo
             vendors={sampleVendors}
             common={sampleCommonVendors}

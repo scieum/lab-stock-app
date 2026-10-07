@@ -1,7 +1,7 @@
 /* 화면 6 재주문 알림
- * 모바일(6-mobile): manual-upload → 알림 목록 → (admin) vendor-register, 사이 16. 제목은 nav-pill 안(nav-title).
+ * 모바일(6-mobile 1.17): manual-upload → 알림 목록 → (admin) vendor-register, 사이 12. 제목은 nav-pill 안(nav-title).
  *                   판매처 연결 카드(ex-modal-card)는 tab-bar 위쪽 선에 붙는 하단 시트 (컴포넌트가 고정 배치)
- * 데스크톱(6-desktop): screen-title → reorder-layout(안내·등록 열 400 + 32 + 알림 열), 사이 24.
+ * 데스크톱(6-desktop 1.17): screen-title → page-column(가운데 880: 안내 → 알림 → 등록, 사이 12).
  *                     판매처 연결 카드는 화면 오른쪽 아래(오른쪽 64 · 아래 32, 폭 480)
  */
 
@@ -32,7 +32,7 @@
 .layout {
   display: flex;
   flex-direction: column;
-  gap: var(--space-16);
+  gap: var(--space-12);
   min-width: 0;
 }
 
@@ -44,73 +44,6 @@
 
 .dock {
   min-width: 0;
-}
-
-/* 새 창 안내 — tab-bar 위에 뜨는 작은 줄 (흑백 + 테두리, 그림자 없음) */
-.notice {
-  position: fixed;
-  right: var(--space-16);
-  bottom: calc(var(--tab-bar-height) + var(--space-16));
-  left: var(--space-16);
-  z-index: 15;
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  padding: var(--space-8) var(--space-8) var(--space-8) var(--space-16);
-  border: var(--border-width) solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text);
-  box-shadow: var(--shadow-none);
-  box-sizing: border-box;
-}
-
-.noticeText {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  font-size: var(--font-size-13);
-  font-weight: var(--font-weight-regular);
-  line-height: var(--line-height-normal);
-  overflow-wrap: anywhere;
-}
-
-.noticeLink {
-  color: var(--color-text);
-  font-weight: var(--font-weight-semibold);
-  text-decoration: underline;
-}
-
-.noticeLink:focus-visible {
-  outline: var(--border-width) solid var(--color-highlight);
-}
-
-.noticeClose {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: var(--button-min-height);
-  height: var(--button-min-height);
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.noticeClose:focus-visible {
-  outline: var(--border-width) solid var(--color-highlight);
-}
-
-.noticeClose:active {
-  opacity: var(--pressed-opacity);
-}
-
-.noticeCloseIcon {
-  width: var(--icon-md);
-  height: var(--icon-md);
 }
 
 @media (min-width: 1024px) {
@@ -126,33 +59,21 @@
     clip-path: none;
   }
 
-  /* 시안 reorder-layout: 안내·등록 열 400 + 32 + 알림 열. 알림 열이 길어도 왼쪽 두 칸은 위에 붙는다 */
+  /* 시안 1.17 page-column: 가운데 한 열 880 (안내 → 알림 → 등록, 사이 12) */
   .layout {
-    display: grid;
-    grid-template-columns: var(--side-column-width) minmax(0, 1fr);
-    grid-template-rows: auto auto 1fr;
-    align-items: start;
-    gap: var(--space-16) var(--space-32);
+    width: 100%;
+    max-width: calc(var(--side-column-width) * 2 + var(--space-64) + var(--space-16));
+    margin: 0 auto;
   }
 
-  .guide {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .register {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  .alerts {
-    grid-column: 2;
-    grid-row: 1 / span 3;
+  .title {
+    width: 100%;
+    max-width: calc(var(--side-column-width) * 2 + var(--space-64) + var(--space-16));
+    margin: 0 auto;
   }
 
   /* 시안 6-desktop ex-modal-card: 화면 오른쪽 아래, 폭 480 */
-  .dock,
-  .notice {
+  .dock {
     position: fixed;
     right: var(--space-64);
     bottom: var(--space-32);

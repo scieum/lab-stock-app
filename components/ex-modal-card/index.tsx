@@ -15,8 +15,11 @@ type Props = {
   title: string;
   /** 제목 아래 안내 한 줄 (화면 8: "역할을 고르고 변경을 누르세요", body-sm 회색) */
   description?: string;
-  /** default = 회색 안내(기본), strong = 기본 글자색 안내 (화면 11 삭제 확인: "배치된 시약 6개는 …") */
-  descriptionTone?: "default" | "strong";
+  /**
+   * default = 회색 안내(기본), strong = 기본 글자색 안내 (화면 11 삭제 확인: "배치된 시약 6개는 …"),
+   * body = 본문 15 기본 글자색 (시안 1.17 8 삭제 확인 sheet-body "{이름} · 사용·입고 기록은 남아요")
+   */
+  descriptionTone?: "default" | "strong" | "body";
   /** 안내 아래 보조 한 줄 (화면 11 삭제 확인: "시약 정보와 재고는 지워지지 않아요", caption 회색) */
   caption?: string;
   /**
@@ -135,7 +138,17 @@ export function ModalCard({
           {title}
         </h2>
         {description ? (
-          <p className={descriptionTone === "strong" ? styles.descriptionStrong : styles.description}>{description}</p>
+          <p
+            className={
+              descriptionTone === "strong"
+                ? styles.descriptionStrong
+                : descriptionTone === "body"
+                  ? styles.descriptionBody
+                  : styles.description
+            }
+          >
+            {description}
+          </p>
         ) : null}
         {caption ? <p className={styles.caption}>{caption}</p> : null}
         {amount !== undefined && amount !== null ? (

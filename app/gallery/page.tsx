@@ -34,6 +34,7 @@ import { CabinetSummaryCard, HomeSummary, StockSummaryCard } from "@/components/
 import { LandingCta } from "@/components/landing-cta";
 import { LandingHero } from "@/components/landing-hero";
 import { ManualUpload } from "@/components/manual-upload";
+import { REORDER_GUIDE_TEXT } from "@/lib/reorder-rules";
 import { MixWarning } from "@/components/mix-warning";
 import { MsdsEntry } from "@/components/msds-entry";
 import { MsdsQrTile } from "@/components/msds-qr-tile";
@@ -50,6 +51,7 @@ import { ReagentRow } from "@/components/reagent-row";
 import { RecordGroup, RecordList } from "@/components/record-group";
 import { ReorderAlertCard } from "@/components/reorder-alert-card";
 import { ReorderThreshold } from "@/components/reorder-threshold";
+import { AutoThresholdBadge } from "@/components/auto-threshold-badge";
 import { SchoolSelectRegion } from "@/components/school-select-region";
 import { SchoolSelectSchool } from "@/components/school-select-school";
 import { SchoolSelectSido } from "@/components/school-select-sido";
@@ -368,7 +370,7 @@ export default function GalleryPage() {
         </Item>
 
         <Item name="manual-upload">
-          <ManualUpload href="/manual" />
+          <ManualUpload href="/manual" description={REORDER_GUIDE_TEXT} />
           <Link href="/gallery/reorder" className={styles.more}>
             재주문 알림 상태 보기 — 알림 카드 · 판매처 연결 모달 · 0건 · 교사/admin (/gallery/reorder)
           </Link>
@@ -500,7 +502,6 @@ export default function GalleryPage() {
             members={sampleMembers}
             invites={sampleInvites}
             counts={sampleMemberCounts}
-            selectedId="m-2"
           />
           <Link href="/gallery/users" className={styles.more}>
             초대 · 역할 변경 · 삭제 확인 시트 보기 (/gallery/users)
@@ -600,6 +601,23 @@ export default function GalleryPage() {
             <ThresholdEdit mode="button" />
           </div>
           <ThresholdEdit mode="form" unit="병" defaultValue="3" />
+        </Item>
+
+        <Item name="auto-threshold-badge (자동 재주문 기준 — 회색 pill, ink 글자, 핑크·하늘색 없음 · 화면 3 흰 카드 위 / 화면 6 회색 카드 위 가는 테두리, d7 §18)">
+          <div className={styles.row}>
+            <AutoThresholdBadge />
+            <AutoThresholdBadge on="muted" />
+          </div>
+          <ReagentDetailCard
+            name="에탄올"
+            stock={200}
+            unit="mL"
+            lowStock
+            intakeDate="2026-09-14"
+            meta={<ReorderThreshold minStock={800} unit="mL" source="auto" autoBasis="usage" canEdit />}
+          />
+          <ReorderThreshold minStock={20} unit="g" source="auto" autoBasis="intake" />
+          <ReorderThreshold minStock={0} unit="mL" source="auto" autoBasis={null} />
         </Item>
 
         <Item name="suggest-badge (위치 추천 — 연하늘 채움 + 하늘색 테두리, 글자 기본색)">

@@ -192,7 +192,8 @@ export async function createVendor(input: VendorInput): Promise<SaveVendorResult
 
 /**
  * 판매처 수정 — 자기 학교 행만 (RLS + school_id 조건). 공통 목록·다른 학교 행은 0행 → "판매처를 찾을 수 없어요".
- * school_id 는 바꾸지 않는다.
+ * school_id 는 바꾸지 않는다. 입력에 note 가 없으면(undefined — 화면 9 폼에는 부가 정보 칸이 없다, d7 §18)
+ * note 열은 건드리지 않는다 (기존 값 유지).
  */
 export async function updateVendor(input: VendorInput & { id: unknown }): Promise<SaveVendorResult> {
   if (typeof input?.id !== "string" || !UUID_RE.test(input.id)) return { ok: false, error: NOT_FOUND };
@@ -203,9 +204,11 @@ export async function updateVendor(input: VendorInput & { id: unknown }): Promis
   if (!who.ok) return who;
 
   const supabase = await getServerClient();
+  const { note, ...withoutNote } = checked.value;
+  const patch = input.note === undefined ? withoutNote : { ...withoutNote, note };
   const { data, error } = await supabase
     .from("vendors")
-    .update(checked.value)
+    .update(patch)
     .eq("id", input.id)
     .eq("school_id", who.schoolId)
     .select(COLUMNS);
