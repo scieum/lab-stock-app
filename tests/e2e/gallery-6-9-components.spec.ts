@@ -259,7 +259,6 @@ const d7Number = (re: RegExp) => Number(re.exec(D7)?.[1] ?? Number.NaN);
 const NAME_MAX = d7Number(/name\(1~(\d+)자\)/);
 // d7 §11 카드 문구 틀
 const AMOUNT_RE = /^필요량 ([\d.,]+) (\S+) \/ 현재 재고 ([\d.,]+) (\S+)$/;
-const BASIS_GROUP_RE = /^1반 1회 실험량 [\d.,]+ \S+ × \d+조 기준$/;
 const BASIS_PLAIN_RE = /^재주문 기준 ([\d.,]+) (\S+)$/;
 const DATE_RE = /\d{4}\.\d{2}\.\d{2} 알림/;
 const PHONE_RE = /\d{2,4}-\d{3,4}-\d{4}/;
