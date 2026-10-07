@@ -12,6 +12,7 @@ import {
   type VendorLinkOption,
 } from "@/components/vendor-link";
 import { VendorRegisterEntry } from "@/components/vendor-register";
+import { REORDER_GUIDE_TEXT } from "@/lib/reorder-rules";
 import { isOpenableUrl, vendorSearchUrl } from "@/lib/vendor-rules";
 import { toggleVendorFavoriteAction } from "./actions";
 import styles from "./reorder.module.css";
@@ -42,8 +43,6 @@ type Props = {
 const MANUAL_PATH = "/manual";
 /** 화면 9 판매처 설정 (admin) */
 const VENDORS_PATH = "/vendors";
-/** 재주문 기준 안내 박스 본문 (시안 1.17 6 info-body) */
-const GUIDE_TEXT = "필요량 = 1반 1회 실험량 × 조 수 · 기준이 없는 시약은 최근 사용량으로 계산해요";
 
 /**
  * 화면 6 재주문 알림 (교사·admin 전용).
@@ -156,7 +155,7 @@ export function ReorderScreen({ isAdmin, alerts, vendors: initialVendors }: Prop
 
       <div className={styles.layout} data-name="reorder-layout">
         <div className={styles.guide}>
-          <ManualUpload href={MANUAL_PATH} description={GUIDE_TEXT} />
+          <ManualUpload href={MANUAL_PATH} description={REORDER_GUIDE_TEXT} />
         </div>
 
         <div className={styles.alerts}>

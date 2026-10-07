@@ -34,6 +34,7 @@ import { CabinetSummaryCard, HomeSummary, StockSummaryCard } from "@/components/
 import { LandingCta } from "@/components/landing-cta";
 import { LandingHero } from "@/components/landing-hero";
 import { ManualUpload } from "@/components/manual-upload";
+import { REORDER_GUIDE_TEXT } from "@/lib/reorder-rules";
 import { MixWarning } from "@/components/mix-warning";
 import { MsdsEntry } from "@/components/msds-entry";
 import { MsdsQrTile } from "@/components/msds-qr-tile";
@@ -369,7 +370,7 @@ export default function GalleryPage() {
         </Item>
 
         <Item name="manual-upload">
-          <ManualUpload href="/manual" />
+          <ManualUpload href="/manual" description={REORDER_GUIDE_TEXT} />
           <Link href="/gallery/reorder" className={styles.more}>
             재주문 알림 상태 보기 — 알림 카드 · 판매처 연결 모달 · 0건 · 교사/admin (/gallery/reorder)
           </Link>

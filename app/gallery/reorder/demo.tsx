@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { ManualUpload } from "@/components/manual-upload";
+import { REORDER_GUIDE_TEXT } from "@/lib/reorder-rules";
 import { ReorderAlertItemCard, ReorderAlertList, ReorderAlertListItem } from "@/components/reorder-alert-card";
 import { VendorLink, VendorLinkModal, VendorNewWindowNote, type VendorLinkOption } from "@/components/vendor-link";
 import { VendorRegisterEntry } from "@/components/vendor-register";
@@ -29,7 +30,7 @@ export function ReorderDemo({ role, alerts, vendors, defaultOpenId = null, defau
   return (
     <div className={local.screen}>
       <div className={local.layout}>
-        <ManualUpload href="/manual" />
+        <ManualUpload href="/manual" description={REORDER_GUIDE_TEXT} />
         <div className={local.alertColumn}>
           {alerts.length === 0 ? (
             <EmptyStateCard title="재고가 부족한 시약이 없어요" />

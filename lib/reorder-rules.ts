@@ -140,6 +140,9 @@ export function thresholdSourceText(r: {
   return MANUAL_SOURCE_TEXT;
 }
 
+/** 화면 6 재주문 기준 안내 박스 본문 (시안 1.17 6 manual-upload info-body) */
+export const REORDER_GUIDE_TEXT = "필요량 = 1반 1회 실험량 × 조 수 · 기준이 없는 시약은 최근 사용량으로 계산해요";
+
 /** 알림 대상: 재고가 필요량(min_stock)보다 적은 시약 (홈의 재고 부족과 같은 기준) */
 export function isReorderNeeded(stock: number, minStock: number): boolean {
   return stock < minStock;
