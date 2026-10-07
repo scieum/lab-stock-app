@@ -36,10 +36,7 @@ const root = process.cwd();
 const rules = JSON.parse(readFileSync(join(root, "design/rules.json"), "utf8")) as Rules;
 const dev = JSON.parse(readFileSync(join(root, "harness/dev-rules.json"), "utf8")) as Dev;
 const D7 = readFileSync(join(root, "harness/d7-data.md"), "utf8");
-// 시안 1.17(디자인 run 20261007-0848) 메모: 갤러리 예시 데이터(app/gallery/*/sample.ts)는 1.16 시안의 예시 그대로다.
-// 그래서 이 파일의 프레임 기대값은 1.16 프레임 사본(tests/e2e/fixtures/frames-1.16/ — design/frames 의 커밋 ae3f3b7^ 사본)에서 읽는다.
-// 1.17 이 바꾼 동작(d7 §18)은 화면 테스트(screen-*)와 tests/e2e/screen-3-5-6-8-9-s18.spec.ts 가 design/frames(1.17)로 검사한다.
-const loadFrame = (name: string) => (JSON.parse(readFileSync(join(root, `tests/e2e/fixtures/frames-1.16/${name}.json`), "utf8")) as Frame).frames[0].nodes;
+const loadFrame = (name: string) => (JSON.parse(readFileSync(join(root, `design/frames/${name}.json`), "utf8")) as Frame).frames[0].nodes;
 const m5 = loadFrame(`${S5}-mobile`);
 const d5 = loadFrame(`${S5}-desktop`);
 
@@ -59,33 +56,61 @@ const TOAST = "ex-toast";
 const PRIMARY = "button-primary";
 const OUTLINE = "button-outline";
 
+// 시안 1.17 5 (d7 §18): 5-mobile 은 2단계 한 장 — manual-upload(file-tile + badge-overlay, group-count) · extraction-table(heading·helper,
+// extraction-row 카드: reagent-name · needed-amount "1반 1회 …" · usage-line(사용량·단위 text-input) · link-row · threshold-note · merge-note) · action-row.
+// 1단계 안내·처리 중 막대·"닫기"·조 수 단위 "조" 는 1.17 프레임에 그려지지 않았다 — 처리 중 문구는 d7 §13, 진행 막대 색은 rules.json colors.highlight,
+// 나머지는 이전 시안(1.16) 문구를 그대로 기대한다.
 const uploadNodes = under(m5, UPLOAD);
 const tableNodes = under(m5, TABLE);
-const GUIDE = { text: textOf(uploadNodes, "upload-guide")[0], color: lower(nodeOf(uploadNodes, "upload-guide")?.fills[0]) };
+const GUIDE = { text: "실험 매뉴얼을 올리면 시약별 사용량을 찾아드려요", color: "#141414" };
 const FRAME_FILE = textOf(under(m5, OVERLAY), "label")[0];
 const OVERLAY_FRAME = { fill: nodeOf(m5, OVERLAY)?.fills[0] ?? "", label: lower(under(m5, OVERLAY).find((n) => n.name === "label")?.fills[0]) };
 const UPLOAD_ICON = [...new Set(uploadNodes.filter((n) => n.path.includes("icon-upload")).flatMap((n) => [...n.fills, ...n.strokes].map(lower)))];
 const PROGRESS = {
-  track: lower(nodeOf(uploadNodes, "progress-track")?.fills[0]),
-  bar: lower(nodeOf(uploadNodes, "progress-bar")?.fills[0]),
-  label: textOf(uploadNodes, "progress-label")[0],
+  track: lower(rules.colors.highlight.values[1]),
+  bar: lower(rules.colors.highlight.values[0]),
+  label: /처리 중\("([^"]+)"\)/.exec(D7)?.[1] ?? "",
 };
-const groupsNodes = m5.filter((n) => n.path.includes(INPUT) && !n.path.includes(TABLE));
-const GROUPS_FIELD = { label: textOf(groupsNodes, "field-label")[0], value: textOf(groupsNodes, "input-value")[0], unit: textOf(groupsNodes, "input-unit")[0] };
+const groupsNodes = under(m5, "group-count");
+const GROUPS_FIELD = { label: textOf(groupsNodes, "field-label")[0], value: textOf(groupsNodes, "value")[0], unit: "조" };
 const GROUPS = Number(GROUPS_FIELD.value);
-const TITLE = textOf(tableNodes, "table-title")[0];
-const CLOSE = textOf(tableNodes, "close")[0];
-const HEAD = textOf(tableNodes, "cell-label");
-/** 본문 행: [시약명, 1조 사용량, 단위, 1반 1회 필요량] */
+const TITLE = textOf(tableNodes, "heading")[0];
+const TABLE_HELPER = textOf(tableNodes, "helper")[0];
+const CLOSE = "닫기";
+const HEAD = textOf(under(d5, TABLE), "col-head");
+const NEED_PREFIX = "1반 1회 ";
+/** 추출 행: [시약명, 1조 사용량, 단위, 1반 1회 필요량] */
 const FRAME_ROWS: string[][] = (() => {
-  const values = tableNodes.filter((n) => (n.name === "cell-value" || n.name === "input-value") && n.text).map((n) => n.text!.characters);
   const out: string[][] = [];
-  for (let i = 0; i < values.length; i += HEAD.length || 1) out.push(values.slice(i, i + HEAD.length));
+  let cur: string[] | null = null;
+  for (const n of tableNodes) {
+    if (leaf(n) === "extraction-row" && !n.text) {
+      cur = [];
+      out.push(cur);
+      continue;
+    }
+    if (!cur || !n.text) continue;
+    if (n.name === "reagent-name") cur[0] = n.text.characters;
+    else if (n.name === "needed-amount") cur[3] = n.text.characters.replace(NEED_PREFIX, "");
+    else if (n.name === "value" && n.path.includes("usage-line")) cur[cur[1] === undefined ? 1 : 2] = n.text.characters;
+  }
   return out;
 })();
-/** 표 안 text-input 채움 (행 순서). 고친 칸 = 연하늘 */
-const INPUT_FILLS = tableNodes.filter((n) => leaf(n) === INPUT).map((n) => lower(n.fills[0]));
-const actionNodes = under(m5, "bottom-actions");
+/** 행마다 사용량 칸(usage-line 의 첫 text-input) 채움. 고친 칸 = 연하늘 (1.17 시안은 고친 칸 없음) */
+const INPUT_FILLS = (() => {
+  const out: string[] = [];
+  let seen = false;
+  for (const n of tableNodes) {
+    if (leaf(n) === "extraction-row") seen = false;
+    if (leaf(n) === INPUT && n.path.includes("usage-line") && !seen) {
+      out.push(lower(n.fills[0]));
+      seen = true;
+    }
+  }
+  return out;
+})();
+const MERGE_NOTE = textOf(under(m5, "merge-note"), "label")[0];
+const actionNodes = under(m5, "action-row");
 const RETRY = actionNodes.find((n) => n.name === "label" && n.path.includes(OUTLINE))?.text?.characters ?? "";
 const SAVE = actionNodes.find((n) => n.name === "label" && n.path.includes(PRIMARY))?.text?.characters ?? "";
 
@@ -104,7 +129,7 @@ const countByName = (nodes: FrameNode[]) => {
 const COUNTS_5M = countByName(m5);
 const COUNTS_5D = countByName(d5);
 /** 2단계(결과 표 + 하단 버튼)만의 개수 */
-const COUNTS_RESULT = countByName(m5.filter((n) => n.path.includes(TABLE) || n.path.includes("bottom-actions")));
+const COUNTS_RESULT = countByName(m5.filter((n) => n.path.includes(TABLE) || n.path.includes("action-row")));
 const screenComponents = (screen: number) => componentNames.filter((n) => dev.components[n].includes(screen) && !SHELL.includes(n));
 
 // ---------- 기대값: rules.json ----------
@@ -392,7 +417,7 @@ async function chooseReagent(row: Locator, pick: (labels: string[]) => number): 
 // =====================================================================
 test(`[K1][S${S5}] 기대값 원본: 프레임 5-mobile·5-desktop 과 rules.json colors, d7 §13 문구가 서로 맞는다`, () => {
   expect(GUIDE.text).toBe("실험 매뉴얼을 올리면 시약별 사용량을 찾아드려요");
-  expect(FRAME_FILE).toBe("산과 염기의 중화 반응.pdf");
+  expect(FRAME_FILE).toBe("산·염기 중화 실험.pdf");
   expect(OVERLAY_FRAME.fill.replace(/\s+/g, ""), "프레임 badge-overlay 채움 = rules allowed_rgba(only_in badge-overlay)").toBe(OVERLAY_RULE.replace(/\s+/g, ""));
   expect(OVERLAY_BG).toBe("rgba(115, 115, 115, 0.56)");
   expect(OVERLAY_FRAME.label, "badge-overlay 글자 = on_primary").toBe(lower(rules.colors.on_primary.value));
@@ -401,8 +426,10 @@ test(`[K1][S${S5}] 기대값 원본: 프레임 5-mobile·5-desktop 과 rules.jso
   expect(HIGHLIGHTS, "진행 트랙 = 연하늘").toContain(PROGRESS.track);
   expect(PROGRESS.bar).not.toBe(PROGRESS.track);
   expect(PROGRESS.label).toBe("사용량을 찾고 있어요");
-  expect(GROUPS_FIELD).toEqual({ label: "조 수", value: "6", unit: "조" });
+  expect(GROUPS_FIELD).toEqual({ label: "조 수", value: "4", unit: "조" });
   expect(TITLE).toBe("추출 결과 확인");
+  expect(TABLE_HELPER).toBe("확인한 뒤 저장해야 반영돼요");
+  expect(MERGE_NOTE, "시안 1.17 합치기 줄").toBe("2개 행을 합쳤어요");
   expect(CLOSE).toBe("닫기");
   expect(HEAD).toEqual(["시약명", "1조 사용량", "단위", "1반 1회 필요량"]);
   expect(d7Line("확인 표"), "d7 §13 확인 표 4열").toContain("4열(시약명 · 1조 사용량 · 단위 · 1반 1회 필요량");
@@ -411,8 +438,9 @@ test(`[K1][S${S5}] 기대값 원본: 프레임 5-mobile·5-desktop 과 rules.jso
     expect(UNITS, `${name} 단위`).toContain(unit);
     expect(required, `${name} 필요량 = 사용량 × 조 수`).toBe(requiredText(per, GROUPS, unit));
   }
-  expect(INPUT_FILLS.length, "표 안 text-input = 행 수").toBe(FRAME_ROWS.length);
-  expect(INPUT_FILLS.map((f) => hexToRgb(f) === SOFT), "프레임에서 첫 행 사용량만 연하늘(고친 칸)").toEqual([true, false, false, false]);
+  expect(FRAME_ROWS.map((r) => r[0]), "시안 1.17 4행").toEqual(["염산", "수산화나트륨", "페놀프탈레인 용액", "증류수"]);
+  expect(INPUT_FILLS.length, "행마다 사용량 칸").toBe(FRAME_ROWS.length);
+  expect(INPUT_FILLS.map((f) => hexToRgb(f) === SOFT), "시안 1.17 은 고친 칸 없음").toEqual(FRAME_ROWS.map(() => false));
   expect([RETRY, SAVE]).toEqual(["다시 추출", "확인 후 저장"]);
   for (const q of D7_QUOTES) expect(d7Section, `d7 §13 에 ${q}`).toContain(q);
   expect(FILE_KINDS).toEqual(["PDF", "JPG", "PNG"]);
@@ -421,10 +449,10 @@ test(`[K1][S${S5}] 기대값 원본: 프레임 5-mobile·5-desktop 과 rules.jso
   expect(UNITS).toEqual(["병", "mL", "g"]);
   expect(rules.roles.R1.component, "R1 대상 컴포넌트").toBe(UPLOAD);
   expect(dev.routes[String(S5)], "dev-rules routes 5").toBe("/manual");
-  for (const counts of [COUNTS_5M, COUNTS_5D]) {
-    expect(counts).toEqual({ [UPLOAD]: 1, [OVERLAY]: 1, [INPUT]: 5, [TABLE]: 1, [CELL]: 20, [OUTLINE]: 1, [PRIMARY]: 1 });
-  }
-  expect(COUNTS_RESULT).toEqual({ [TABLE]: 1, [CELL]: 20, [INPUT]: 4, [OUTLINE]: 1, [PRIMARY]: 1 });
+  // 시안 1.17: text-input = 조 수 1 + 행마다 (사용량 · 단위 · 우리 학교 시약) 3, 데스크톱 ex-data-table-cell = 머리 1 + 행 4
+  expect(COUNTS_5M).toEqual({ [UPLOAD]: 1, [OVERLAY]: 1, [INPUT]: 1 + FRAME_ROWS.length * 3, [TABLE]: 1, [OUTLINE]: 1, [PRIMARY]: 1 });
+  expect(COUNTS_5D).toEqual({ [UPLOAD]: 1, [OVERLAY]: 1, [INPUT]: 1 + FRAME_ROWS.length * 3, [TABLE]: 1, [CELL]: FRAME_ROWS.length + 1, [OUTLINE]: 1, [PRIMARY]: 1 });
+  expect(COUNTS_RESULT).toEqual({ [TABLE]: 1, [INPUT]: FRAME_ROWS.length * 3, [OUTLINE]: 1, [PRIMARY]: 1 });
   // 프레임에 핑크가 없다 (rules: 핑크는 badge-low-stock·reorder-alert-card·mix-warning 안에서만)
   for (const nodes of [m5, d5]) {
     const pink = nodes.filter((n) => [...n.fills, ...n.strokes].map(lower).some((c) => [rules.colors.accent.value, rules.colors.accent_soft.value].map(lower).includes(c)));
@@ -448,7 +476,7 @@ test(`[K1][S${S5}] /gallery DOM 에 새 컴포넌트 badge-overlay · extraction
   // 표는 시안 4열 머리행 + ex-data-table-cell, badge-overlay 는 반투명 회색
   const t = page.locator(sel(TABLE)).first();
   await expect(t.getByRole("columnheader")).toHaveText(HEAD.map(exact));
-  expect(await t.locator(sel(CELL)).count(), "/gallery extraction-table 안 ex-data-table-cell").toBeGreaterThanOrEqual(COUNTS_5M[CELL]);
+  expect(await t.locator(sel(CELL)).count(), "/gallery extraction-table 안 ex-data-table-cell ≥ (머리 + 1행) × 4칸").toBeGreaterThanOrEqual(2 * HEAD.length);
   expect(await page.locator(sel(OVERLAY)).first().evaluate((el) => getComputedStyle(el).backgroundColor), "badge-overlay 바탕").toBe(OVERLAY_BG);
   await expectKnownNames(page);
 });
@@ -686,7 +714,8 @@ test.describe("화면 5 추출 결과 확인 표 (/gallery/manual)", () => {
       for (const b of [nameB, amountB, unitB, needB]) expect(b.x + b.width, "칸이 화면 안").toBeLessThanOrEqual(viewport + 0.5);
     }
 
-    expect(await t.locator(sel(CELL)).count(), `ex-data-table-cell (프레임 ${COUNTS_5M[CELL]})`).toBeGreaterThanOrEqual(COUNTS_5M[CELL]);
+    // d7 §13 4열 표: 머리 + 행마다 4칸 (시안 1.17 5-desktop 은 행마다 ex-data-table-cell 1개로 묶어 그렸다)
+    expect(await t.locator(sel(CELL)).count(), `ex-data-table-cell = (머리 + ${FRAME_ROWS.length}행) × ${HEAD.length}`).toBe((FRAME_ROWS.length + 1) * HEAD.length);
     const rows = await readRows(sec);
     expect(rows.map((r) => r.cells), "본문 행 = 시안 4행").toEqual(FRAME_ROWS);
     expect(rows.map((r) => r.inputs), "사용량 칸에만 text-input 1개").toEqual(FRAME_ROWS.map(() => [0, 1, 0, 0]));
@@ -702,6 +731,7 @@ test.describe("화면 5 추출 결과 확인 표 (/gallery/manual)", () => {
     }
     // 프레임 2단계(표 + 하단 버튼) 개수 이상
     for (const [name, n] of Object.entries(COUNTS_RESULT)) {
+      if (name === INPUT) continue; // 시안 text-input 12 = 행마다 사용량·단위·연결 상자 — 화면은 사용량만 text-input (위 rows.inputs 로 확인)
       expect(await sec.locator(sel(name)).count(), `result 구역 ${name} (프레임 ${n})`).toBeGreaterThanOrEqual(n);
     }
     await expect(sec.locator(sel(TABLE))).toHaveCount(COUNTS_RESULT[TABLE]);
@@ -907,9 +937,9 @@ test.describe("화면 5 추출 결과 확인 표 (/gallery/manual)", () => {
     expect(compare, "새 필요량이 기존 기준보다 큰 행이 있다").toContain(true);
     expect(compare, "새 필요량이 기존 기준 이하인 행이 있다").toContain(false);
     await expect(saveButton(sec), "기존 기준이 더 커도 저장은 막지 않는다").toBeEnabled();
-    // 기준이 없는 학교(추출 직후 예시)에는 "기존 기준" 글자가 없다
-    const plain = await area(page, "edited");
-    expect((await readRows(plain)).filter((r) => r.detail.includes("기존 기준")).map((r) => r.cells[0])).toEqual([]);
+    // 기준이 없는 시약(시안 1.17: 페놀프탈레인 용액 "기존 기준 없음")의 행에는 기존 기준 숫자가 없다
+    const none = rows.filter((r) => !/(기존|자동) 기준 [\d.,]+/.test(r.detail)).map((r) => r.cells[0]);
+    expect(none, "기준 숫자가 없는 행 = 페놀프탈레인 용액").toEqual(["페놀프탈레인 용액"]);
   });
 
   test(`[K1][S${S5}] extraction-table 같은 시약에 두 행: 두 행 모두에 합산 안내(합친 필요량), 연결을 바꾸면 안내가 사라진다`, async ({ page }) => {
@@ -1115,11 +1145,17 @@ test.describe("화면 5 흐름 데모 (/gallery/manual demo 구역)", () => {
       if (/^\d/.test(r.cells[1])) expect(r.cells[3], `${r.cells[0]} 필요량 = 사용량 × ${GROUPS}`).toBe(requiredText(r.cells[1], GROUPS, r.cells[2]));
     }
     // 프레임(합성 상태: 업로드 미리보기 + 조 수 + 결과 표 + 하단 버튼) 개수 이상
+    // (시안 1.17 은 사용량·단위·우리 학교 시약 상자를 모두 text-input 으로 그렸다 — 화면은 사용량만 text-input, 단위·연결은 선택 상자)
     for (const [frameName, counts] of [["5-mobile", COUNTS_5M], ["5-desktop", COUNTS_5D]] as const) {
       for (const [name, n] of Object.entries(counts)) {
+        if (name === INPUT || name === CELL) continue;
         expect(await demo.locator(sel(name)).count(), `데모 2단계 ${name} (프레임 ${frameName} ${n})`).toBeGreaterThanOrEqual(n);
       }
     }
+    const demoRows = await readRows(demo);
+    expect(await demo.locator(sel(INPUT)).count(), `데모 2단계 ${INPUT} = 조 수 1 + 행마다 사용량 1`).toBe(1 + demoRows.length);
+    expect(await demo.getByRole("combobox", { name: /단위/ }).count(), "행마다 단위 선택 상자").toBe(demoRows.length);
+    expect(await demo.locator('tbody[data-row-id] button[aria-haspopup="listbox"]').count(), "행마다 우리 학교 시약 선택").toBe(demoRows.length);
     for (const name of [UPLOAD, OVERLAY, TABLE, OUTLINE, PRIMARY]) await expect(demo.locator(sel(name)), `데모 2단계 ${name}`).toHaveCount(COUNTS_5M[name]);
     await expectKnownNames(page);
     expect(await pinkUses(demo), "결과 단계에 핑크 없음").toEqual([]);
