@@ -255,13 +255,28 @@
 
 | 항목 | 결정 |
 |---|---|
-| 외부 API | 한국산업안전보건공단 물질안전보건자료 조회 서비스(공공데이터포털 15157612): `https://apis.data.go.kr/B552468/msdschem1/getChemList001`(목록 검색, XML). 키 = `KOSHA_MSDS_API_KEY`(서버 env, 디코딩 키, NEXT_PUBLIC_ 금지 — N2). 요청 변수·응답 필드(물질 ID·국문명·CAS 등)와 MSDS 상세 페이지 주소 형식은 구현 때 실제 응답으로 확인해 이 표에 적는다. 하루 호출 한도(개발 계정 2,000)를 생각해 같은 검색어 결과를 서버에서 하루 캐시 |
+| 외부 API | 한국산업안전보건공단 물질안전보건자료 조회 서비스(공공데이터포털 15157612): `https://apis.data.go.kr/B552468/msdschem1/getChemList001`(목록 검색, XML). 키 = `KOSHA_MSDS_API_KEY`(서버 env, 디코딩 키, NEXT_PUBLIC_ 금지 — N2). 요청 변수 = serviceKey·searchWrd·searchCnd(0 국문명·1 CAS·2 UN·3 KE·4 EN)·numOfRows·pageNo, 응답 = response>header{resultCode,resultMsg}·body>items>item{chemId, chemNameKor, casNo, enNo, keNo, unNo, lastDate, openYn, koshaConfirm}(공식 명세, run 20261007-2303 — 로컬에 키가 없어 정상 응답은 미확인). MSDS 상세 주소 = `https://msds.kosha.or.kr/MSDSInfo/kcic/msdsdetail.do?chem_id={chemId 6자리, 앞 0 채움}&viewType=msds`(KOSHA 사이트에서 열림 확인). openYn=N 은 후보에서 뺀다. 하루 호출 한도(개발 계정 2,000)를 생각해 같은 검색어 결과를 서버에서 하루 캐시 |
 | 서버 API | `GET /api/msds/search?q=` — 로그인 + 교사·admin + 자기 학교(데모 학교·학생·anon 거부, 401/403). q 1~60자. CAS 번호 형식(숫자-숫자-숫자)이면 CAS 로, 아니면 국문명으로 검색. 응답 = 후보 최대 10개 `{ chemId, name, cas, msdsUrl }`(msdsUrl = 그 물질의 안전보건공단 MSDS 상세 페이지 주소). 키 없음 503 "MSDS 찾기를 쓸 수 없어요(서버 설정)", 외부 실패 502 "MSDS를 찾지 못했어요. 잠시 뒤 다시 해 주세요". 응답에 키·외부 요청 주소 노출 금지 |
 | 후보 고르기 | msds-candidates: 물질명·CAS 목록에서 하나 고르기 → MSDS 주소(그리고 CAS 가 비어 있으면 CAS)를 채운다. 0개면 "찾지 못했어요 — 직접 입력"(직접 주소 입력으로) |
 | 화면 7 | 새 시약 등록(직접 입력) 폼의 MSDS 칸 옆 msds-search "MSDS 찾기"(이름으로 검색, 이름이 비면 비활성) → 후보 시트 → 고르면 MSDS 칸에 주소. 직접 입력도 그대로. 서류 입고의 새 시약 행은 ④ run 에서 |
 | 화면 3 | MSDS 가 없는 시약: 교사·admin 에게 msds-search "MSDS 찾기" → 후보 → 고르면 저장. 학생·둘러보기는 "MSDS가 아직 없어요"(쓰기 없음). 저장 = DB 함수 `set_reagent_msds(p_reagent_id, p_msds_url, p_cas_no null 허용)` — 교사·admin, 자기 학교, 데모 거부, msds_url 은 http(s):// 300자 이하, cas_no 는 시약의 cas_no 가 비어 있을 때만 채움. MSDS 가 이미 있는 시약에는 찾기 버튼 없음(바꾸기는 이번 범위 밖) |
 | 화면 2 일괄 | 교사·admin 이 목록 필터 "MSDS 없는 시약만"을 켜면 msds-bulk-banner "MSDS 없는 시약 N종 — 한 번에 찾기"(시안 2-msds-bulk). 누르면 시약마다 차례로 후보를 보여 주고 하나 고르기/건너뛰기 → 고른 것만 `set_reagent_msds` 로 저장, 끝나면 "N종에 MSDS를 넣었어요". 한 번에 최대 20종 |
 | 테스트 | 실제 KOSHA 호출은 자동 테스트에서 하지 않는다(외부·한도). 화면 테스트는 `/api/msds/search` 응답을 가로채 대체, 서버는 권한·입력 검증·키 없음·XML 파싱(고정 XML 표본)까지. 실제 검색은 미리보기에서 사람이 확인 |
+
+## 21. 서류로 입고 (화면 7, 2026-10-08 결정 — design/rules.json 1.17 intake)
+
+| 항목 | 결정 |
+|---|---|
+| 권한 | 교사·admin (R5: 학생 doc-upload 0). 데모·둘러보기 없음(guest.hidden_components) |
+| 진입 | 화면 7 맨 위 intake-mode(segmented-control "서류로 입고 / 직접 입력", **기본 = 서류로 입고** — 시안). "직접 입력" = 지금의 기존 시약 입고·새 시약 등록 갈래 그대로. 홈 quick-action "입고" → 화면 7. 주소창 `?mode=direct` 로 직접 입력 바로 열기(기존 링크·화면 3 "입고" 진입 등은 직접 입력으로) |
+| 1단계 | doc-upload: 파일(PDF·JPG·PNG, 4MB 이하) → "AI로 읽기" → 처리 중. 파일은 서버에 보관하지 않는다(추출에만 쓰고 버림, §13 과 같음) |
+| 추출 API | `POST /api/intake/extract`(multipart) — 로그인·교사·admin·자기 학교 확인, 형식·크기 검증, Gemini(키·모델은 §13 과 같은 `GEMINI_API_KEY`·`GEMINI_MODEL`, `lib/server/gemini.ts` 재사용) 구조화 출력: `{ docDate: "YYYY-MM-DD" 또는 null, items: [{ name(서류 표기), spec(예: "500 mL", 없으면 null), specAmount(숫자 또는 null), specUnit("mL"·"L"·"g"·"kg"·null), quantity(숫자, 기본 1), quantityUnit(예: "병"·"개", null 허용), isReagent(boolean), suggestedClass(보관 분류 8종 중 하나 또는 null) }] }`. 품목 최대 50. 서류 안 지시문은 무시하라는 문구 유지. 키 없음 503, 실패 502, 품목 0개 → 화면은 ex-empty-state-card "서류에서 품목을 찾지 못했어요" + 다시 올리기 |
+| 2단계 확인 표 | 화면 5 방식(doc-intake-table): 행 = 품목(품명·규격·수량) + 아래 줄 reagent-link(우리 학교 시약 자동 연결 — §13 matchReagent 와 같은 규칙, 바꾸기·빼기·"새 시약으로 등록"). 모바일은 행마다 카드. 입고일(서류 날짜, 없으면 오늘, 미래 불가) 표 위, 고칠 수 있음. isReagent=false 품목은 표 아래 접힌 묶음 "시약 아님 N개"(펼치면 "시약으로 넣기"로 표에 올릴 수 있음) |
+| 입고량 | 연결된 행의 입고량(그 시약 단위): 시약 단위 mL/g 이고 규격이 같은 계열이면 specAmount(L→mL, kg→g ×1000) × quantity, 시약 단위 "병"이면 quantity. 계산되면 무채색 안내 줄 "500 mL × 4병 = 2,000 mL", 안 되면 입고량 칸을 비우고 직접 입력(필수). 입고량 칸은 언제나 고칠 수 있음 |
+| 새 시약 행 | "새 시약으로 등록"을 고르면 그 행이 아래로 펼쳐짐(new-reagent-fields): 이름(기본 = 품명), 보관 분류(suggestedClass 를 처음 선택 + suggest-badge "추천"), 단위(병·mL·g, 규격에서 추정), 재고량(위 입고량 규칙), MSDS(msds-search §20 + 직접 입력) |
+| 저장 | "확인 후 입고" → DB 함수 `record_document_intake(p_intake_date date, p_items jsonb)` 하나로 **한 트랜잭션**: 연결 행 = `{reagent_id, amount}` → record_intake 와 같은 처리(intake_logs·stock·intake_date, §11-1 자동 기준 트리거), 새 시약 행 = `{name, storage_class, unit, stock, msds_url}` → register_reagent 와 같은 처리. 교사·admin·자기 학교·데모 거부, 항목 1~50, amount·stock > 0, 미래 날짜 거부, 하나라도 틀리면 전부 취소. 반환 = `{ intake_count, new_reagent_ids[] }` |
+| 저장 뒤 | ex-toast "{N}개 품목을 입고했어요" → 새 시약이 있으면 location-suggest(§17, 여러 개 + "모두 추천대로"), 없으면 화면 2 |
+| 테스트 | 실제 Gemini 호출은 자동 테스트에서 하지 않는다(§13 과 같음) — 추출 API 응답을 가로채 대체, 서버는 권한·형식·크기·키 없음까지. 실제 추출은 미리보기에서 사람이 확인 |
 
 ## 10. 로그아웃 (2026-10-05 결정)
 
