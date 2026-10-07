@@ -5,7 +5,7 @@ import { ReagentDetailCard } from "@/components/reagent-detail-card";
 import { ReagentLocation } from "@/components/reagent-location";
 import { ReorderThreshold } from "@/components/reorder-threshold";
 import styles from "../gallery.module.css";
-import { sampleCabinets, samplePickerCabinets as pickerCabinets } from "../cabinets/sample";
+import { sampleCabinets, samplePickerCabinets as pickerCabinets, sampleSuggestion } from "../cabinets/sample";
 import { PlacementDemo } from "./demo";
 
 export const metadata: Metadata = { title: "시약 칸 배치 컴포넌트 · Lab_Stock" };
@@ -27,6 +27,7 @@ function Item({ id, name, children }: { id: string; name: string; children: Reac
  * 화면 3(시약 상세) 칸 배치·재주문 기준 상태 갤러리 (디자인 1.15, d7 §14):
  * reagent-location(배치 · 칸 없음, 교사 · 학생) · location-edit · location-picker(경고 2종 · 칸 고르기 전) ·
  * reorder-threshold(두 기준 문구 · 없음, 교사 · 학생) · threshold-edit(입력 중 · 오류) · 동작 데모.
+ * 디자인 1.17(d7 §17): 위치 추천 — 추천 줄 · 배치도 추천 칸의 suggest-badge · 처음 선택.
  */
 export default function GalleryPlacementPage() {
   return (
@@ -34,7 +35,7 @@ export default function GalleryPlacementPage() {
       <h1 className={styles.title}>시약 칸 배치 · 재주문 기준 (화면 3)</h1>
       <p className={styles.lead}>
         reagent-detail-card · reagent-location · cabinet-number · location-edit · location-picker · cabinet-switcher · cabinet-slot · slot-count ·
-        mix-warning · reorder-threshold · threshold-edit · text-input
+        mix-warning · reorder-threshold · threshold-edit · text-input · suggest-badge
       </p>
 
       <div className={styles.grid}>
@@ -97,7 +98,19 @@ export default function GalleryPlacementPage() {
           <ReorderThreshold minStock={3} unit="병" canEdit defaultEditing defaultValue="-1" error="0 이상 입력하세요" />
         </Item>
 
-        <Item id="picker" name="location-picker — 섞으면 위험한 조합 (시안 3-location: 2번 시약장 좌 2단 유기 ← 과산화수소 산화제)">
+        <Item id="picker" name="location-picker — 위치 추천 (시안 1.17 3-location: 추천 칸 2번 시약장 우 2단 산화제 = 처음 선택, suggest-badge)">
+          {/* 시안 상태 그대로: 추천 칸을 넘겨 피커가 그 시약장으로 열리고 그 칸을 처음 선택으로 둔다 (실제 화면은 lib/location-suggest 가 계산) */}
+          <LocationPicker
+            sheet={false}
+            reagentName="과산화수소"
+            reagentClass="산화제"
+            cabinets={pickerCabinets}
+            current={{ cabinetId: first.id, side: "R", shelf: 1 }}
+            suggestion={{ cabinetId: "c-2", side: "R", shelf: 2 }}
+          />
+        </Item>
+
+        <Item id="picker-danger" name="location-picker — 섞으면 위험한 조합 (2번 시약장 좌 2단 유기 ← 과산화수소 산화제, 추천 없음)">
           <LocationPicker
             sheet={false}
             reagentName="과산화수소"
@@ -106,6 +119,17 @@ export default function GalleryPlacementPage() {
             current={{ cabinetId: first.id, side: "R", shelf: 1 }}
             defaultCabinetId="c-2"
             defaultSlot={{ side: "L", shelf: 2 }}
+          />
+        </Item>
+
+        <Item id="picker-suggest-current" name="location-picker — 이미 추천 칸에 있음 (1번 시약장 우 1단: 배지만, 처음 선택 없음)">
+          <LocationPicker
+            sheet={false}
+            reagentName="과산화수소"
+            reagentClass="산화제"
+            cabinets={pickerCabinets}
+            current={{ cabinetId: first.id, side: "R", shelf: 1 }}
+            suggestion={sampleSuggestion({ id: "p-6", storageClass: "산화제" })}
           />
         </Item>
 

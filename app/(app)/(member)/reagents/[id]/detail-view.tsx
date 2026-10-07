@@ -24,6 +24,8 @@ type Props = {
    * 입고(stock-intake)·위치 바꾸기(location-edit)·기준 입력(threshold-edit)은 두지 않는다. msds-entry 는 그대로(R4).
    */
   role?: Role;
+  /** true = 위치 피커를 연 채로 시작 (화면 7 등록 직후 [다른 칸] → `?pick=location`, 교사·admin 만) */
+  openPicker?: boolean;
   /** 이 상세 화면의 경로 (QR 대체 주소) · 목록 경로 */
   selfPath: string;
   listHref: string;
@@ -36,8 +38,8 @@ type Props = {
  *   모바일 하단 버튼 줄은 tab-bar 바로 위 고정, 데스크톱은 열 안(폭 720, 가운데).
  * 둘러보기(3-guest): 예전 2열 배치 그대로 — 요약 열(카드 + MSDS) · 정보 열(탭 + 표 + 하단 버튼). 보관 위치·기준 줄 없이 표에 보관 위치.
  */
-export async function ReagentDetailView({ data, role, selfPath, listHref }: Props) {
-  const { reagent, placement, threshold, picker, usage } = data;
+export async function ReagentDetailView({ data, role, openPicker = false, selfPath, listHref }: Props) {
+  const { reagent, placement, threshold, picker, suggestion, usage } = data;
   const guest = !role;
   const staff = !guest && role !== "student";
   const qrTarget = reagent.msdsUrl ?? (await absoluteUrl(selfPath));
@@ -115,6 +117,8 @@ export async function ReagentDetailView({ data, role, selfPath, listHref }: Prop
           placement={placement}
           threshold={threshold}
           picker={staff ? picker : null}
+          suggestion={staff ? suggestion : null}
+          initialPicking={staff && picker !== null && openPicker}
         />
         <DetailTabs info={info} usage={usage} />
         {msds}

@@ -311,3 +311,24 @@ export async function dropTempReagents(page: Page, name: string): Promise<number
 }
 
 export { rules };
+
+/**
+ * 새 시약 등록 저장 뒤 (d7 §17 · rules suggest.after_register, run 20261007-1129 부터):
+ * 학교에 시약장이 하나라도 있으면(그 계정 세션 RLS 로 확인) 화면 2 로 바로 가지 않고 location-suggest 가 뜬다 → "나중에" → 화면 2.
+ * 시약장이 없으면 location-suggest 없이 화면 2. 어느 쪽인지는 DB 로 정하고 그대로인지 확인한다.
+ */
+export async function leaveAfterRegister(page: Page): Promise<"suggest" | "direct"> {
+  const { client } = await browserClient(page);
+  const cabs = await client.from("cabinets").select("id").limit(1);
+  expect(cabs.error, `자기 학교 시약장 조회: ${cabs.error?.message}`).toBeNull();
+  const has = (cabs.data ?? []).length > 0;
+  const box = page.locator(`main ${sel("location-suggest")}`);
+  if (has) {
+    await expect(box, "시약장이 있는 학교: 등록 뒤 location-suggest").toHaveCount(1, { timeout: 30_000 });
+    expect(new URL(page.url()).pathname, "location-suggest 동안 화면 7 에 머문다").toBe(routeOf(SCREEN));
+    await box.getByRole("button", { name: exact("나중에") }).click();
+  }
+  await page.waitForURL((u) => u.pathname === routeOf(AFTER_SAVE_SCREEN), { timeout: 30_000 });
+  if (!has) await expect(box, "시약장 0개 학교: location-suggest 없음").toHaveCount(0);
+  return has ? "suggest" : "direct";
+}

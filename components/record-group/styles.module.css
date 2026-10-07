@@ -1,7 +1,8 @@
+/* 시안 1.17 10 record-list: 묶음 사이 24 */
 .list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: var(--space-24);
   min-width: 0;
 }
 

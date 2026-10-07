@@ -2,3 +2,60 @@
 .unassign {
   margin-left: calc(var(--space-12) * -1);
 }
+
+/* 시안 1.17 3-location: 소제목 "전체" (시트 소제목과 같은 18/700) */
+.sectionTitle {
+  margin: 0;
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+/* 추천 줄 (suggest-row): 연하늘 채움, radius 16, 안쪽 12·16, 번호 원 + 위치(15/400) 왼쪽 · suggest-badge 오른쪽 */
+.suggestRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  width: 100%;
+  min-height: var(--button-min-height);
+  padding: var(--space-12) var(--space-16);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-highlight-soft);
+  color: var(--color-text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.suggestRow:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: calc(var(--border-width) * 2);
+}
+
+.suggestRow:disabled {
+  cursor: not-allowed;
+}
+
+.suggestLoc {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.suggestText {
+  overflow: hidden;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 1024px) {
+  .sectionTitle {
+    font-size: var(--font-size-17);
+  }
+}

@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import { Icon } from "@/components/icons";
 import { SlotCount } from "@/components/slot-count";
 import { StorageClassChip } from "@/components/storage-class-chip";
+import { SuggestBadge } from "@/components/suggest-badge";
 import {
   SLOT_UNSET_LABEL,
   hasIncompatible,
@@ -32,6 +33,8 @@ type SlotProps = {
   warning?: boolean;
   /** 이 칸에 배치된 시약 수 (디자인 1.15) — 1 이상이면 오른쪽에 slot-count */
   count?: number;
+  /** 위치 추천 칸 (디자인 1.17 3-location, d7 §17) — 분류 이름 앞에 suggest-badge "추천" */
+  suggested?: boolean;
   /**
    * 있으면 칸이 누름 버튼이 된다. 화면 11 에서는 모든 역할이 칸을 눌러 칸 시트(slot-sheet)를 연다(학생은 목록만) —
    * 교사·admin 은 같은 누름으로 그 칸이 선택 칸(분류 편집 대상)도 된다. 화면 3 위치 피커에서는 칸 고르기.
@@ -47,14 +50,31 @@ type SlotProps = {
  * 시약장 배치도의 칸 1개 (화면 11). 칸 안에 분류 이름("산 · 염기") 또는 "미지정".
  * 선택 = 연하늘 바탕 + 하늘색 테두리(글자는 기본색), 경고 아이콘은 기본색(핑크 아님).
  */
-export function CabinetSlot({ name, classes, selected = false, warning = false, count = 0, onSelect, readOnly = false, disabled }: SlotProps) {
+export function CabinetSlot({
+  name,
+  classes,
+  selected = false,
+  warning = false,
+  count = 0,
+  suggested = false,
+  onSelect,
+  readOnly = false,
+  disabled,
+}: SlotProps) {
   const empty = sortClasses(classes).length === 0;
   const text = slotLabel(classes);
-  const label = `${name}: ${text}${warning ? `, ${WARNING_LABEL}` : ""}${count > 0 ? `, 시약 ${count}개` : ""}`;
+  const label = `${name}: ${text}${suggested ? ", 추천 칸" : ""}${warning ? `, ${WARNING_LABEL}` : ""}${count > 0 ? `, 시약 ${count}개` : ""}`;
   const cls = [styles.slot, selected ? styles.selected : ""].filter(Boolean).join(" ");
   const content = (
     <>
-      <span className={empty ? styles.unset : styles.label}>{text}</span>
+      {suggested ? (
+        <span className={styles.left}>
+          <SuggestBadge />
+          <span className={empty ? styles.unset : styles.label}>{text}</span>
+        </span>
+      ) : (
+        <span className={empty ? styles.unset : styles.label}>{text}</span>
+      )}
       {warning || count > 0 ? (
         <span className={styles.meta}>
           {warning ? <Icon name="warning" className={styles.warning} /> : null}
@@ -95,6 +115,8 @@ type LayoutProps = {
   counts?: Readonly<Record<string, number>>;
   /** 선택된 칸 (교사·admin) */
   selected?: SlotKey | null;
+  /** 위치 추천 칸 (d7 §17) — 그 칸에 suggest-badge */
+  suggested?: SlotKey | null;
   /** 칸을 눌렀을 때 — 없으면 보기 전용 */
   onSelect?: (key: SlotKey) => void;
   /** true = 보기 전용 (학생) */
@@ -114,6 +136,7 @@ export function CabinetLayout({
   slots,
   counts,
   selected,
+  suggested,
   onSelect,
   readOnly = false,
   disabled,
@@ -152,6 +175,7 @@ export function CabinetLayout({
                   selected={!readOnly && sameSlot(selected, key)}
                   warning={hasIncompatible(classes)}
                   count={counts?.[slotId(key)] ?? 0}
+                  suggested={sameSlot(suggested, key)}
                   onSelect={onSelect ? () => onSelect(key) : undefined}
                   readOnly={readOnly}
                   disabled={disabled}

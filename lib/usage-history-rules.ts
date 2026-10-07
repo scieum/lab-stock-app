@@ -111,3 +111,23 @@ export function pastDateNoteText(usedOn: string): string {
 export function recordedOnCaption(recordedOn: string): string {
   return `${monthDayLabel(recordedOn)}에 기록`;
 }
+
+/**
+ * 화면 10 사용일 묶음 헤더 (디자인 1.17 10 group-label, d7 §15): "10월 7일 · 오늘" · "10월 6일".
+ * 올해가 아닌 날은 연도를 앞에 붙인다: "2025년 12월 3일".
+ */
+export function usageDayLabel(usedOn: string, today: string = seoulDate()): string {
+  const m = /^(\d{4})-\d{2}-\d{2}/.exec(usedOn);
+  if (!m) return usedOn;
+  const base = monthDayLabel(usedOn);
+  if (usedOn.slice(0, 10) === today) return `${base} · 오늘`;
+  return m[1] === today.slice(0, 4) ? base : `${m[1]}년 ${base}`;
+}
+
+/**
+ * 화면 10 기록 행의 사용자 줄 (디자인 1.17 10 record-sub): 기록한 날 = 사용일이면 "학생 이OO · 14:05"(기록 시각),
+ * 다르면 사용자만("교사 김OO") — 그때는 아래 캡션 "10월 7일에 기록" 이 붙는다.
+ */
+export function usageRowSubtitle(userName: string, usedOn: string, recordedOn: string, recordedTime: string): string {
+  return usedOn === recordedOn ? `${userName} · ${recordedTime}` : userName;
+}

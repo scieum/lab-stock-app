@@ -5,7 +5,7 @@
 //         문구 틀은 rules·프레임 예시 문장에서 읽는다 (구현에서 읽지 않는다).
 import { describe, expect, it } from "vitest";
 import { join } from "node:path";
-import { checkUsedOn, pastDateNoteText, recordedOnCaption, seoulDate } from "../../lib/usage-history-rules";
+import { checkUsedOn, pastDateNoteText, recordedOnCaption, seoulDate, usageDayLabel, usageRowSubtitle } from "../../lib/usage-history-rules";
 import { ROOT, read, rules } from "./helpers";
 
 const UD = rules.usage_date as Record<string, string>;
@@ -97,5 +97,55 @@ describe("문구 (rules usage_date 예시 문장의 틀)", () => {
   it(`[K1][S10] 기록일 캡션: "${CAPTION}" 틀 (월·일 앞 0 없음)`, () => {
     expect(recordedOnCaption("2026-10-06")).toBe(CAPTION);
     for (const d of ["2026-01-09", "2026-12-31", "2025-07-01"]) expect(recordedOnCaption(d), d).toBe(withDate(CAPTION, d));
+  });
+});
+
+// ---------- 화면 10 사용일 묶음 헤더 · 행 사용자 줄 (d7 §15 정정 2026-10-07 — 시안 10(1.17) 그대로) ----------
+// 기대 틀: design/frames/10-mobile.json group-label "10월 7일 · 오늘" · "10월 6일", record-sub "학생 이OO · 14:05"(같은 날) · "교사 김OO"(+ record-caption, 다른 날).
+// 올해가 아닌 사용일은 연도를 붙인다 ("2025년 12월 3일") — 시안은 올해만 보여 주므로 연도가 없으면 해가 섞일 때 구분이 안 된다.
+describe("usageDayLabel · usageRowSubtitle (화면 10 시안 1.17)", () => {
+  const groupLabels = frameTexts("10-mobile.json", "group-label");
+  const subs = frameTexts("10-mobile.json", "record-sub");
+  const captions = frameTexts("10-mobile.json", "record-caption");
+  const FRAME_TODAY = "2026-10-07"; // 시안의 "오늘"(10월 7일 · 오늘)
+
+  it("[K1][S10] 시안 group-label 글자 = usageDayLabel (오늘 = 2026-10-07)", () => {
+    expect(groupLabels.length, "시안 묶음 헤더").toBeGreaterThanOrEqual(2);
+    const want = groupLabels.map((l) => {
+      const m = /^(\d{1,2})월 (\d{1,2})일/.exec(l)!;
+      return `2026-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}`;
+    });
+    expect(want.map((d) => usageDayLabel(d, FRAME_TODAY))).toEqual(groupLabels);
+    expect(groupLabels[0]).toMatch(/ · 오늘$/);
+  });
+
+  it("[K1][S10] 오늘만 \" · 오늘\", 어제·지난달은 \"M월 D일\"(앞 0 없음), 다른 해는 \"YYYY년 M월 D일\"", () => {
+    expect(usageDayLabel("2026-10-07", "2026-10-07")).toBe("10월 7일 · 오늘");
+    expect(usageDayLabel("2026-10-06", "2026-10-07")).toBe("10월 6일");
+    expect(usageDayLabel("2026-01-09", "2026-10-07")).toBe("1월 9일");
+    expect(usageDayLabel("2025-12-03", "2026-10-07")).toBe("2025년 12월 3일");
+    expect(usageDayLabel("2025-10-07", "2026-10-07"), "작년 같은 날은 오늘이 아님").toBe("2025년 10월 7일");
+    expect(usageDayLabel("2027-01-01", "2027-01-01")).toBe("1월 1일 · 오늘");
+    expect(usageDayLabel("2026-12-31", "2027-01-01"), "해 넘김 어제").toBe("2026년 12월 31일");
+  });
+
+  it("[K1][S10] 기본 오늘 = 한국 날짜 (seoulDate)", () => {
+    const today = seoulDate();
+    const label = usageDayLabel(today);
+    // 자정 경계에서 한 번 더 확인
+    expect([`${md(today)} · 오늘`, usageDayLabel(today, seoulDate())]).toContain(label);
+  });
+
+  it("[K1][S10] 사용자 줄: 기록한 날 = 사용일이면 \"이름 · HH:mm\", 다르면 이름만 — 시안 record-sub 틀", () => {
+    expect(subs.some((s) => / · \d{2}:\d{2}$/.test(s)), "시안: 시각 붙은 사용자 줄").toBe(true);
+    expect(subs.some((s) => !/ · /.test(s)), "시안: 이름만인 사용자 줄").toBe(true);
+    expect(captions.length, "시안: 이름만인 줄 수 = 캡션 수").toBe(subs.filter((s) => !/ · /.test(s)).length);
+    for (const s of subs) {
+      const m = /^(.*) · (\d{2}:\d{2})$/.exec(s);
+      if (m) expect(usageRowSubtitle(m[1], "2026-10-07", "2026-10-07", m[2]), s).toBe(s);
+      else expect(usageRowSubtitle(s, "2026-10-03", "2026-10-07", "09:12"), s).toBe(s);
+    }
+    expect(usageRowSubtitle("학생 이OO", "2026-10-07", "2026-10-07", "09:05")).toBe("학생 이OO · 09:05");
+    expect(usageRowSubtitle("학생 이OO", "2026-10-06", "2026-10-07", "00:10")).toBe("학생 이OO");
   });
 });

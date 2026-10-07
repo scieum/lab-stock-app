@@ -2,7 +2,7 @@
 // 기준(구현이 아니라 여기서 도출): design/rules.json usage_date(field · past_note · history), variants["4"],
 //       harness/d7-data.md §15 (기본 오늘 · 최댓값 오늘 · 오늘 아니면 past-date-note · 화면 10 사용일 묶음·정렬 · 기간도 사용일 ·
 //       기록한 날이 다를 때만 회색 캡션), §7 (화면 10 월 묶음 · 상세), design/frames/4-past-date-*.json · 10-*.json.
-// 화면 10 목록은 시안(날짜별 "10월 7일 · 오늘")이 아니라 d7 §15 의 월 묶음을 따른다 (이번 run 결정 — screen-10-helpers).
+// 화면 10 목록은 시안 10(1.17)대로 사용일별 묶음 "10월 7일 · 오늘" (d7 §15 2026-10-07 정정 — screen-10-helpers).
 //
 // 데이터: 일회용 학교(admin·교사·학생, service role 로 생성)의 임시 시약에만 쓴다. 판정은 화면과 그 계정 세션(RLS) 조회.
 //   service role 은 준비(학교·계정)·정리·대조 조회에만. 정리: usage_logs → 시약 → 시약장 → 프로필 → 계정 → 학교, 잔여물 0.
@@ -21,8 +21,9 @@ import {
   groupLabel,
   openRow,
   readDetail,
+  readList,
   recordedCaption,
-  rowDate,
+  recordedTime,
   rows,
   waitHistory,
 } from "./screen-10-helpers";
@@ -141,7 +142,7 @@ test.describe("일회용 학교", () => {
   });
 
   for (const role of ["student", "teacher", "admin"] as const) {
-    test(`[C1][S4] 일회용 ${role === "student" ? "학생" : role === "teacher" ? "교사" : "admin"} 사용일: "${DATE_LABEL}" 기본 = 한국 오늘 · max = 오늘 · 사용량 아래 · 지난 날짜 → past-date-note "${PAST_NOTE_EXAMPLE}" 틀(저장 버튼 위, 무채색) · 미래 날짜 저장 거부 · 지난 날짜 저장 → DB used_on · 화면 10 그 날짜(월)로 묶이고 "N월 N일에 기록" 캡션 · 상세 사용일·기록한 날`, async ({ browser }, info) => {
+    test(`[C1][S4] 일회용 ${role === "student" ? "학생" : role === "teacher" ? "교사" : "admin"} 사용일: "${DATE_LABEL}" 기본 = 한국 오늘 · max = 오늘 · 사용량 아래 · 지난 날짜 → past-date-note "${PAST_NOTE_EXAMPLE}" 틀(저장 버튼 위, 무채색) · 미래 날짜 저장 거부 · 지난 날짜 저장 → DB used_on · 화면 10 그 사용일 묶음("M월 D일")에 "N월 N일에 기록" 캡션 · 상세 사용일·기록한 날`, async ({ browser }, info) => {
       test.setTimeout(TIMEOUT);
       const { f, reagent, name } = await prepared(info);
       const u = f[role];
@@ -211,8 +212,8 @@ test.describe("일회용 학교", () => {
         const snap = await gotoAndMatch(page, { period: "3m", q: name });
         const idx = snap.shown.findIndex((r) => r.id === added[0].id);
         expect(idx, "방금 기록이 화면 10 (최근 3개월)에").toBeGreaterThanOrEqual(0);
-        expect(snap.flat[idx].group, "월 묶음 = 사용일의 달").toBe(groupLabel(past));
-        expect(snap.flat[idx].date, "행 날짜 = 사용일").toBe(rowDate(past));
+        expect(snap.flat[idx].group, "사용일 묶음 헤더 = 사용일 (\"M월 D일\")").toBe(groupLabel(past, today));
+        expect(snap.flat[idx].time, "다른 날 기록: 사용자 옆 시각 없음").toBeNull();
         expect(snap.flat[idx].caption, "캡션 = 기록한 날").toBe(recordedCaption(today));
         await openRow(page, idx);
         await expectDetail(page, snap.shown[idx]);
@@ -274,9 +275,14 @@ test.describe("일회용 학교", () => {
       expect(await cap.evaluate((el) => getComputedStyle(el).color), "캡션 회색 = 시안 record-caption").toBe(hexToRgb(CAPTION_FILL.toLowerCase()));
       const sameRow = rows(page).nth(snap.shown.findIndex((r) => r.id === made[0]));
       await expect(sameRow.getByText(CAPTION_RE), "같은 날 기록 = 캡션 없음").toHaveCount(0);
-      // 35일 전은 그 달 묶음
+      // 35일 전은 그 날 묶음 · 오늘 기록은 "· 오늘" 묶음에 기록 시각과 함께
       const old = snap.shown.findIndex((r) => r.id === made[2]);
-      expect(snap.flat[old].group, "35일 전 사용일의 달 묶음").toBe(groupLabel(daysAgo(35)));
+      expect(snap.flat[old].group, "35일 전 사용일 묶음").toBe(groupLabel(daysAgo(35), today));
+      for (const id of [made[3], made[0]]) {
+        const i = snap.shown.findIndex((r) => r.id === id);
+        expect(snap.flat[i].group, "오늘 사용일 묶음 = \"M월 D일 · 오늘\"").toBe(`${md(today)} · 오늘`);
+        expect(snap.flat[i].time, "같은 날 기록: 사용자 옆 기록 시각").toBe(recordedTime(snap.shown[i].used_at));
+      }
       // 상세: 지난 사용일 기록
       await openRow(page, snap.shown.findIndex((r) => r.id === made[1]));
       await expectDetail(page, snap.shown.find((r) => r.id === made[1])!);
@@ -288,6 +294,69 @@ test.describe("일회용 학교", () => {
       const one = await gotoAndMatch(page, { q: name });
       expect(one.shown.some((r) => r.id === made[2]), "최근 1개월: 35일 전 사용일 빠짐").toBe(false);
       expect(one.shown.filter((r) => made.includes(r.id)).length, "최근 1개월: 나머지 4건").toBe(4);
+    } finally {
+      await t.context.close();
+    }
+  });
+  test(`[C1][S10] 일회용 교사 화면 10 묶음 헤더 (시안 10 group-label "10월 7일 · 오늘"): 오늘 = "M월 D일 · 오늘" 맨 위 · 올해 다른 날 = "M월 D일" · 다른 해 = "YYYY년 M월 D일" · 헤더 순서 = 사용일 최신순 · 묶음 안 기록 시각 최신순 · 같은 날 "이름 · HH:mm", 다른 날 이름 + 캡션 · 행에 날짜 열(MM.DD) 없음`, async ({ browser }, info) => {
+    test.setTimeout(TIMEOUT);
+    const { f, reagent, name } = await prepared(info);
+    await awayFromMidnight();
+    const today = daysAgo(0);
+    const year = Number(today.slice(0, 4));
+    // 올해의 다른 날 = 어제 (오늘이 1월 1일이면 어제는 작년이라 이 경우만 뺀다)
+    const thisYearOther = daysAgo(1).slice(0, 4) === today.slice(0, 4) ? daysAgo(1) : null;
+    const lastYear = `${year - 1}-12-03`;
+    const twoYears = `${year - 2}-01-09`;
+    const teacher = await clientFor(f.teacher);
+    const plan = [lastYear, today, twoYears, ...(thisYearOther ? [thisYearOther] : []), today];
+    const made: { id: string; usedOn: string }[] = [];
+    for (const usedOn of plan) {
+      const res = await teacher.rpc("record_usage", { reagent_id: reagent, amount: 1, used_on: usedOn });
+      expect(res.error, `준비 record_usage(${usedOn}): ${res.error?.message}`).toBeNull();
+      made.push({ id: ((Array.isArray(res.data) ? res.data[0] : res.data) as { id: string }).id, usedOn });
+      await new Promise((r) => setTimeout(r, 30));
+    }
+    const t = await open(browser, info, f.teacher, routeOf(10));
+    const page = t.page;
+    try {
+      await waitHistory(page);
+      const snap = await gotoAndMatch(page, { period: "all", q: name });
+      // 헤더 글자 (기대값 직접): 시안 틀 "10월 7일 · 오늘" · "10월 6일" + 다른 해 연도
+      const want = new Map<string, string>([
+        [today, `${md(today)} · 오늘`],
+        [lastYear, `${year - 1}년 12월 3일`],
+        [twoYears, `${year - 2}년 1월 9일`],
+        ...(thisYearOther ? ([[thisYearOther, md(thisYearOther)]] as [string, string][]) : []),
+      ]);
+      for (const m of made) {
+        const i = snap.shown.findIndex((r) => r.id === m.id);
+        expect(i, `준비한 기록(${m.usedOn})이 목록에`).toBeGreaterThanOrEqual(0);
+        expect(snap.flat[i].group, `${m.usedOn} 묶음 헤더`).toBe(want.get(m.usedOn));
+        if (m.usedOn === today) {
+          expect(snap.flat[i].time, "오늘 기록 = 사용자 옆 기록 시각").toBe(recordedTime(snap.shown[i].used_at));
+          expect(snap.flat[i].caption, "오늘 기록 = 캡션 없음").toBeNull();
+        } else {
+          expect(snap.flat[i].time, `${m.usedOn}: 시각 없음`).toBeNull();
+          expect(snap.flat[i].caption, `${m.usedOn}: 캡션 = 기록한 날(오늘)`).toBe(recordedCaption(today));
+        }
+      }
+      // 헤더 순서 = 사용일 최신순, 오늘 묶음이 맨 위
+      const labels = (await readList(page)).filter((e) => e.kind === "group").map((e) => (e as { label: string }).label);
+      // (같은 시약에 앞 테스트들이 남긴 기록의 사용일도 함께 나온다 — 목록의 모든 사용일로 순서를 본다)
+      const days = [...new Set(snap.shown.map((r) => r.used_on))];
+      expect(days, "목록의 사용일 = 최신순").toEqual([...days].sort().reverse());
+      for (const d of want.keys()) expect(days, `준비한 사용일 ${d} 묶음`).toContain(d);
+      expect(labels, "묶음 헤더 = 사용일 최신순 (준비한 날은 위 기대 글자)").toEqual(days.map((d) => want.get(d) ?? groupLabel(d, today)));
+      expect(labels[0], "맨 위 = 오늘 묶음").toBe(`${md(today)} · 오늘`);
+      // 오늘 묶음 안: 나중에 기록한 것이 위
+      const todays = made.filter((m) => m.usedOn === today).map((m) => m.id);
+      expect(snap.shown.filter((r) => todays.includes(r.id)).map((r) => r.id), "오늘 묶음 안 = 기록 시각 최신순 (나중에 기록한 것이 위)").toEqual([...todays].reverse());
+      const todayRows = snap.shown.filter((r) => r.used_on === today);
+      for (let i = 1; i < todayRows.length; i++) expect(Date.parse(todayRows[i - 1].used_at), "오늘 묶음 전체: 기록 시각 최신순").toBeGreaterThanOrEqual(Date.parse(todayRows[i].used_at));
+      // 행에 날짜 열(MM.DD) 없음
+      for (const txt of await rows(page).allInnerTexts()) expect(txt, "행에 MM.DD 날짜 없음").not.toMatch(/(^|\s)\d{2}\.\d{2}(\s|$)/);
+      await page.screenshot({ path: join(process.cwd(), "test-results", `v1-10-days-${t.viewport}.png`), fullPage: false });
     } finally {
       await t.context.close();
     }

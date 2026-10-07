@@ -11,10 +11,11 @@ import { test, expect, type Locator, type Page, type TestInfo } from "@playwrigh
 import { openAs } from "./auth-state";
 import { ROLE_LABEL, SCHOOL_A_ROLES } from "./db-helpers";
 import { demoReagents, guestDetailPath, openGuest } from "./guest-helpers";
-import { browserClient, browserSession, countComponent, devRules, routeOf, rules, sel, seedRows } from "./screen-helpers";
+import { browserClient, browserSession, countComponent, routeOf, rules, sel, seedRows } from "./screen-helpers";
 import { detailPath, waitDetail } from "./screen-3-helpers";
 import { MANUAL_SOURCE_TEXT } from "./reorder-auto-helpers";
 import { HAS_SERVICE, clientFor, openTemp, service } from "./screen-8-helpers";
+import { expectedSuggestion, suggestRowsOf } from "./suggest-helpers";
 import {
   CAB,
   DOUBLE,
@@ -53,8 +54,8 @@ const CABINETS_HREF = routeOf(11);
 const REORDER_HREF = routeOf(6);
 const R5 = rules.roles.R5;
 const R7 = rules.roles.R7;
-// 1.17: variants["3"].location 의 suggest-badge(위치 추천)는 dev-rules components 밖 — 다음 run(위치 추천)에서. 이번 범위 = dev-rules 에 있는 것
-const VARIANT = (rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants[String(SCREEN)].location.filter((n) => n in devRules.components);
+// 1.17 variants["3"].location (suggest-badge 포함 — dev-rules 1.5 부터 components 안)
+const VARIANT = (rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants[String(SCREEN)].location;
 const REQUIRED = rules.screens_required[String(SCREEN)] as string[];
 const HIDDEN = (rules as unknown as { guest: { hidden_components: string[] } }).guest.hidden_components;
 
@@ -356,7 +357,13 @@ test.describe("일회용 학교", () => {
       await hydrated(locEditButton(page));
       await locEditButton(page).click();
       await expect(p).toBeVisible();
-      await expect(p.locator(`${sel(SWITCHER)} [aria-current="true"]`).getByText(exact(st.c2.label)), "처음 = 지금 시약장(2번)").toHaveCount(1);
+      // d7 §17: 지금 칸(2번 좌2단 유기)은 산화제의 추천 칸이 아니다 — 추천 칸(DB 로 계산: 1번 우1단, 이제 비었음)이 다른 시약장이면 그 시약장으로 열고 처음 선택으로 둔다
+      const sug = expectedSuggestion(await suggestRowsOf(await clientFor(f.teacher)), { id: st.x.id, storage_class: st.x.cls });
+      expect([sug?.cabinetId, sug?.key], "대조: 추천 칸 = 1번 시약장 우1단").toEqual([st.c1.id, "R1"]);
+      await expect(p.locator(`${sel(SWITCHER)} [aria-current="true"]`).getByText(exact(st.c1.label)), "처음 = 추천 칸의 시약장(1번, 지금 위치 2번이 아니라)").toHaveCount(1);
+      await expect(p.locator(`${sel(SLOT)}[aria-pressed="true"]`), "처음 선택 = 추천 칸 하나").toHaveCount(1);
+      await expect(pickerSlot(page, DOUBLE, "R1"), "처음 선택 = 우1단").toHaveAttribute("aria-pressed", "true");
+      await expect(pickerSlot(page, DOUBLE, "R1").locator(sel("suggest-badge")), "추천 칸 suggest-badge").toHaveCount(1);
       const unassign = p.getByRole("button", { name: exact(UNASSIGN_ACTION) });
       await expect(unassign, `"${UNASSIGN_ACTION}"`).toHaveCount(1);
       await burst(unassign);

@@ -24,6 +24,7 @@ import {
   type ThresholdSource,
 } from "@/lib/reorder-rules";
 import { isLowStock, type Role } from "@/lib/types";
+import { suggestLocation, toSuggestCabinets } from "@/lib/location-suggest";
 import { placeReagent, placeReagentAt, type PlaceReagentResult } from "./cabinets";
 
 export { placeReagent, placeReagentAt, type PlaceReagentResult };
@@ -80,6 +81,9 @@ export type PickerCabinet = {
   reagentClasses: Record<string, StorageClass[]>;
 };
 
+/** 위치 피커의 추천 칸 (lib/location-suggest suggestLocation 결과 중 피커가 쓰는 값) */
+export type PickerSuggestion = { cabinetId: string; side: SlotSide; shelf: number };
+
 export type ReagentDetail = {
   role: Role;
   reagent: {
@@ -100,6 +104,8 @@ export type ReagentDetail = {
   threshold: ReagentThreshold;
   /** 위치 피커 데이터 — 교사·admin 일 때만, 학생·둘러보기는 null (내려보내지 않는다) */
   picker: PickerCabinet[] | null;
+  /** 위치 추천 칸 (d7 §17) — 교사·admin 이고 추천이 있을 때만, 그 밖은 null */
+  suggestion: PickerSuggestion | null;
   usage: ReagentUsageRow[];
 };
 
@@ -198,6 +204,13 @@ export async function getReagentDetail(id: string): Promise<ReagentDetailResult>
 
   const placement = toPlacement(r.slot as SlotJoin);
   const staff = role === "teacher" || role === "admin";
+  // 위치 추천 (d7 §17): 학교의 모든 칸 · 칸 안 시약(자기 자신 제외는 함수가 한다)
+  const suggested = staff
+    ? suggestLocation(
+        { id: r.id, storageClass: r.storage_class },
+        toSuggestCabinets(cabinetsRes.data ?? [], slotsRes.data ?? [], placedRes.data ?? []),
+      )
+    : null;
 
   return {
     kind: "ok",
@@ -220,6 +233,7 @@ export async function getReagentDetail(id: string): Promise<ReagentDetailResult>
       picker: staff
         ? buildPicker(r.id, cabinetsRes.data ?? [], slotsRes.data ?? [], placedRes.data ?? [])
         : null,
+      suggestion: suggested ? { cabinetId: suggested.cabinetId, side: suggested.side, shelf: suggested.shelf } : null,
       usage: (usageRes.data ?? []).map((u) => ({
         id: u.id,
         date: formatDateDots(SEOUL_DATE.format(new Date(u.used_at))),

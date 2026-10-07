@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { placeReagent } from "@/lib/supabase/cabinets";
+import { getLocationSuggestions, type LocationSuggestions } from "@/lib/supabase/location-suggest";
 import {
   recordIntake,
   registerReagent,
@@ -33,7 +35,9 @@ export async function recordIntakeAction(input: unknown): Promise<RecordIntakeRe
  * 새 시약 등록. lib/intake-rules(checkRegisterReagent)로 다시 검증하고,
  * school_id 는 DB 함수 register_reagent 가 호출자 프로필에서 정한다.
  */
-export async function registerReagentAction(input: unknown): Promise<RegisterReagentResult> {
+export async function registerReagentAction(
+  input: unknown,
+): Promise<RegisterReagentResult & { suggest?: LocationSuggestions | null }> {
   const msdsUrl = field(input, "msdsUrl");
   const result = await registerReagent({
     name: str(field(input, "name")),
@@ -43,6 +47,41 @@ export async function registerReagentAction(input: unknown): Promise<RegisterRea
     intakeDate: str(field(input, "intakeDate")),
     msdsUrl: typeof msdsUrl === "string" ? msdsUrl : null,
   });
-  if (result.ok) revalidatePath("/", "layout");
-  return result;
+  if (!result.ok) return result;
+  revalidatePath("/", "layout");
+  // 등록 직후 위치 추천 (d7 §17) — 읽기에 실패해도 등록은 성공(화면은 지금처럼 화면 2 로)
+  const suggest = await getLocationSuggestions([result.reagentId]).catch(() => null);
+  return { ...result, suggest };
+}
+
+export type PlaceSuggestedResult = {
+  /** 넣은 시약 id */
+  placed: string[];
+  /** 실패한 시약과 사람이 읽을 문구 (첫 실패) */
+  error: string | null;
+};
+
+/**
+ * 등록 직후 location-suggest 의 [여기에 두기] · "모두 추천대로" (d7 §17).
+ * 항목마다 기존 place_reagent(lib/supabase/cabinets placeReagent)를 그대로 부른다 —
+ * 교사·admin·자기 학교 시약·자기 학교 칸·데모 거부는 DB 함수가 본다. 학교·역할 값은 받지 않는다.
+ */
+export async function placeSuggestedAction(input: unknown): Promise<PlaceSuggestedResult> {
+  const raw = field(input, "items");
+  const list = Array.isArray(raw) ? raw.slice(0, 50) : [];
+  const placed: string[] = [];
+  let error: string | null = null;
+  for (const item of list) {
+    const slotId = field(item, "slotId");
+    // 빼기(null)는 이 동작이 아니다 — 칸 id 가 없으면 넣지 않는다
+    if (typeof slotId !== "string") {
+      error ??= "칸을 찾을 수 없어요";
+      continue;
+    }
+    const res = await placeReagent({ reagentId: field(item, "reagentId"), slotId });
+    if (res.ok) placed.push(res.reagentId);
+    else if (!error) error = res.error;
+  }
+  if (placed.length > 0) revalidatePath("/", "layout");
+  return { placed, error };
 }

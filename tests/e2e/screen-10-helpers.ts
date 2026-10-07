@@ -3,7 +3,9 @@
 // 2026-10-07 (d7 §15 · 디자인 1.17): 목록의 묶음·정렬·행 날짜 = 사용일(used_on), 같은 날은 기록 시각(used_at) 최신순.
 //   기록한 날(used_at 의 한국 날짜)이 사용일과 다를 때만 행·상세에 회색 캡션 "N월 N일에 기록".
 //   상세 라벨 = 사용자 · 사용일 · 기록한 날 · 메모 (design/frames/10-desktop.json ex-modal-card field-label).
-//   목록 묶음은 시안(날짜별 "10월 7일 · 오늘")이 아니라 d7 §7·§15 의 월 묶음("YYYY년 M월")을 따른다 (이번 run 결정).
+//   목록 모양은 시안 10(1.17)대로 (d7 §15 2026-10-07 정정): 사용일별 묶음 헤더 "10월 7일 · 오늘" · "10월 6일"(앞 0 없음,
+//   올해가 아닌 날은 "2025년 12월 3일"), 행에는 날짜 열이 없고 시약명 / 사용자 줄 · 사용량. 사용자 줄은 기록한 날 = 사용일이면
+//   "학생 이OO · 14:05"(기록 시각, 한국 시간), 다르면 사용자만 + 캡션 "10월 6일에 기록" (design/frames/10-mobile.json group-label·record-sub·record-caption).
 // - 문구(필터·안내·상세 라벨)는 위 명세·시안 문장에서 옮긴 상수다 (구현에서 읽지 않는다).
 // - DB 값은 그 계정의 브라우저 세션(publishable 키 + RLS)으로만 읽고 쓴다. service role 미사용.
 // - 운영 DB: 쓰기는 테스트 학교 A 의 UI 전용 고정 시약(이름 `R-db-UI10-fixture-{project}`)에만.
@@ -143,9 +145,10 @@ export const queryParam = (page: Page, key: string) => new URL(page.url()).searc
 
 // ---------- 목록 읽기 ----------
 export type Entry = { kind: "group"; label: string } | { kind: "row"; texts: string[] };
-export const GROUP_LABEL = /^\d{4}년 \d{1,2}월$/;
+/** 사용일 묶음 헤더 "10월 7일 · 오늘" · "10월 6일" · "2025년 12월 3일" (시안 10 group-label) */
+export const GROUP_LABEL = /^(?:\d{4}년 )?\d{1,2}월 \d{1,2}일(?: · 오늘)?$/;
 
-/** main 안의 월 그룹 헤더("YYYY년 M월")와 기록 행(글자 조각)을 문서 순서대로 읽는다 */
+/** main 안의 사용일 묶음 헤더("10월 7일 · 오늘")와 기록 행(글자 조각)을 문서 순서대로 읽는다 */
 export async function readList(page: Page): Promise<Entry[]> {
   return page.locator("main").evaluate(
     (main, a) => {
@@ -239,7 +242,7 @@ export async function myDisplayName(page: Page): Promise<string> {
   return name;
 }
 
-// ---------- 한국 시간 표기 (d7 §7·§15 · 시안 10-desktop: 행 "10.02", 그룹 "2026년 10월", 상세 사용일 "2026-10-03" · 기록한 날 "2026-10-07 09:12") ----------
+// ---------- 한국 시간 표기 (d7 §15 · 시안 10(1.17): 묶음 "10월 7일 · 오늘", 사용자 줄 "학생 이OO · 14:05", 상세 사용일 "2026-10-03" · 기록한 날 "2026-10-07 09:12") ----------
 function kst(iso: string): Record<"year" | "month" | "day" | "hour" | "minute", string> {
   const out = { year: "", month: "", day: "", hour: "", minute: "" };
   const fmt = new Intl.DateTimeFormat("en-CA", {
@@ -254,10 +257,22 @@ function kst(iso: string): Record<"year" | "month" | "day" | "hour" | "minute", 
   for (const p of fmt.formatToParts(new Date(iso))) if (p.type in out) out[p.type as keyof typeof out] = p.value;
   return out;
 }
-/** 사용일 "YYYY-MM-DD" → 행 날짜 "MM.DD" (시간대 변환 없음 — date 값) */
-export const rowDate = (usedOn: string) => `${usedOn.slice(5, 7)}.${usedOn.slice(8, 10)}`;
-/** 사용일 → 월 그룹 "YYYY년 M월" */
-export const groupLabel = (usedOn: string) => `${usedOn.slice(0, 4)}년 ${Number(usedOn.slice(5, 7))}월`;
+/** 지금 한국 날짜 "YYYY-MM-DD" */
+export const todayKst = (now: Date = new Date()) => recordedOn(now.toISOString());
+/**
+ * 사용일 → 묶음 헤더 (시안 10 group-label): 오늘 "10월 7일 · 오늘", 올해의 다른 날 "10월 6일", 다른 해 "2025년 12월 3일".
+ * (시안은 올해 날짜만 보여 준다 — 해가 섞이면 구분되게 연도를 붙인다.)
+ */
+export const groupLabel = (usedOn: string, today: string = todayKst()) => {
+  const md = `${Number(usedOn.slice(5, 7))}월 ${Number(usedOn.slice(8, 10))}일`;
+  if (usedOn === today) return `${md} · 오늘`;
+  return usedOn.slice(0, 4) === today.slice(0, 4) ? md : `${usedOn.slice(0, 4)}년 ${md}`;
+};
+/** 기록 시각 "HH:mm" (한국 시간, 24시간) */
+export const recordedTime = (iso: string) => {
+  const p = kst(iso);
+  return `${p.hour}:${p.minute}`;
+};
 /** 기록한 날 (used_at 의 한국 날짜) "YYYY-MM-DD" */
 export const recordedOn = (iso: string) => {
   const p = kst(iso);
@@ -274,47 +289,61 @@ export const captionOf = (r: Pick<HistoryRow, "used_on" | "used_at">): string | 
 /** 사용량 + 단위 (공백·쉼표 무시 비교용) */
 export const amountText = (r: Pick<HistoryRow, "amount" | "unit">) => squash(`${String(r.amount)}${r.unit}`);
 
-type Flat = { group: string; date: string; name: string; user: string; caption: string | null; amount: string };
+/** 화면 한 행: 묶음 · 시약명 · 사용자 · (같은 날이면) 기록 시각 · (다른 날이면) 캡션 · 사용량 */
+type Flat = { group: string; name: string; user: string; time: string | null; caption: string | null; amount: string };
 
-/** DB 행 → 화면에 보여야 하는 값 (묶음·날짜 = 사용일, 캡션 = 기록한 날이 다를 때만) */
-function wantOf(r: HistoryRow): Flat {
-  return { group: groupLabel(r.used_on), date: rowDate(r.used_on), name: r.reagent_name, user: r.user_name, caption: captionOf(r), amount: amountText(r) };
+/** DB 행 → 화면에 보여야 하는 값 (묶음 = 사용일, 같은 날이면 사용자 옆 기록 시각, 다른 날이면 캡션) */
+function wantOf(r: HistoryRow, today: string): Flat {
+  const cap = captionOf(r);
+  return {
+    group: groupLabel(r.used_on, today),
+    name: r.reagent_name,
+    user: r.user_name,
+    time: cap ? null : recordedTime(r.used_at),
+    caption: cap,
+    amount: amountText(r),
+  };
 }
 
-/** 화면 항목 → (그룹, 날짜, 시약명, 사용자, 사용량) 행. 구조가 틀리면 여기서 실패한다 */
+/** 사용자 줄 "학생 이OO · 14:05" → 이름 · 시각 */
+const SUB_TIME = /^(.*) · (\d{2}:\d{2})$/;
+
+/**
+ * 화면 항목 → (묶음, 시약명, 사용자, 시각, 캡션, 사용량) 행. 구조가 틀리면 여기서 실패한다.
+ * 행 = 시약명 · 사용자 줄 · (캡션) · 사용량 — 날짜 열 없음 (시안 10 1.17: 날짜는 묶음 헤더에만).
+ */
 export function flatten(entries: Entry[]): Flat[] {
   const out: Flat[] = [];
   let group: string | null = null;
   const groups: string[] = [];
   for (const e of entries) {
     if (e.kind === "group") {
-      expect(e.label, "월 그룹 헤더 형식 YYYY년 M월").toMatch(GROUP_LABEL);
-      expect(groups, `월 그룹 헤더 '${e.label}' 는 한 번만`).not.toContain(e.label);
+      expect(e.label, "사용일 묶음 헤더 형식 \"10월 7일 · 오늘\" · \"10월 6일\"").toMatch(GROUP_LABEL);
+      expect(groups, `묶음 헤더 '${e.label}' 는 한 번만`).not.toContain(e.label);
       groups.push(e.label);
       group = e.label;
       continue;
     }
-    expect(group, "기록 행은 월 그룹 헤더 아래에 있다").not.toBeNull();
-    expect(e.texts.length, `행 3열 = 날짜 · 시약명/사용자(/캡션) · 사용량 (${JSON.stringify(e.texts)})`).toBeGreaterThanOrEqual(4);
-    // 사용자 다음 글자가 "N월 N일에 기록" 이면 캡션 (d7 §15)
-    const hasCaption = e.texts.length >= 5 && CAPTION_RE.test(e.texts[3]);
+    expect(group, "기록 행은 사용일 묶음 헤더 아래에 있다").not.toBeNull();
+    expect(e.texts.length, `행 = 시약명 · 사용자 줄(· 캡션) · 사용량 (${JSON.stringify(e.texts)})`).toBeGreaterThanOrEqual(3);
+    expect(e.texts[0], `행 첫 글자는 시약명 — 날짜 열 없음 (${JSON.stringify(e.texts)})`).not.toMatch(/^\d{2}\.\d{2}$/);
+    const hasCaption = e.texts.length >= 4 && CAPTION_RE.test(e.texts[2]);
+    const sub = SUB_TIME.exec(e.texts[1]);
     out.push({
       group: group!,
-      date: e.texts[0],
-      name: e.texts[1],
-      user: e.texts[2],
-      caption: hasCaption ? e.texts[3] : null,
-      amount: squash(e.texts.slice(hasCaption ? 4 : 3).join("")),
+      name: e.texts[0],
+      user: sub ? sub[1] : e.texts[1],
+      time: sub ? sub[2] : null,
+      caption: hasCaption ? e.texts[2] : null,
+      amount: squash(e.texts.slice(hasCaption ? 3 : 2).join("")),
     });
   }
-  // 그룹 헤더는 최신 달이 위
-  const key = (label: string) => {
-    const m = /^(\d{4})년 (\d{1,2})월$/.exec(label)!;
-    return Number(m[1]) * 12 + Number(m[2]);
-  };
-  for (let i = 1; i < groups.length; i++) expect(key(groups[i - 1]), "월 그룹은 최신순").toBeGreaterThan(key(groups[i]));
-  // 빈 그룹 없음
-  for (const g of groups) expect(out.some((r) => r.group === g), `그룹 '${g}' 에 행이 있음`).toBe(true);
+  // "· 오늘" 묶음은 있으면 맨 위 하나
+  const todays = groups.filter((g) => g.endsWith(" · 오늘"));
+  expect(todays.length, "\"· 오늘\" 묶음은 많아야 1개").toBeLessThanOrEqual(1);
+  if (todays.length) expect(groups[0], "\"· 오늘\" 묶음은 맨 위").toBe(todays[0]);
+  // 빈 묶음 없음
+  for (const g of groups) expect(out.some((r) => r.group === g), `묶음 '${g}' 에 행이 있음`).toBe(true);
   return out;
 }
 
@@ -327,7 +356,8 @@ export type Snapshot = { db: HistoryRow[]; shown: HistoryRow[]; flat: Flat[] };
  * 맞지 않으면 null (호출부가 다시 읽거나 실패 처리).
  */
 function matchWindow(flat: Flat[], db: HistoryRow[], t0: number): { offset: number } | { diff: string } {
-  const want = db.map(wantOf);
+  const today = todayKst();
+  const want = db.map((r) => wantOf(r, today));
   const SKEW_MS = 30_000;
   for (let k = 0; k <= db.length; k++) {
     if (k > 0 && Date.parse(db[k - 1].used_at) < t0 - SKEW_MS) break;

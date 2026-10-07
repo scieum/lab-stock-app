@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { formatStock } from "@/lib/format";
 import { requestOrigin } from "@/lib/request-origin";
-import { getCabinetScreen, type SlotReagent } from "@/lib/supabase/cabinets";
+import { getCabinetScreen, type SlotReagent, type UnassignedReagent } from "@/lib/supabase/cabinets";
 import { CabinetsScreen, type CabinetsScreenReagent } from "./cabinets-screen";
 
 export const dynamic = "force-dynamic";
@@ -59,7 +59,7 @@ export default async function CabinetsPage({ searchParams }: Props) {
             }
           : null
       }
-      unassigned={unassigned.map(toRow)}
+      unassigned={unassigned.map((r: UnassignedReagent) => ({ ...toRow(r), suggestion: canManage ? r.suggestion : null }))}
     />
   );
 }
