@@ -1,0 +1,15 @@
+{
+    "stages":  [
+                   "D1",
+                   "D2",
+                   "D3",
+                   "G",
+                   "D4"
+               ],
+    "screens":  [
+                    2,
+                    4,
+                    10
+                ],
+    "reason":  "디자인 1.17 ①: 사용일(화면 4·10, d7 §15) + 시약 목록 필터·정렬(화면 2, d7 §16). 새 컴포넌트 list-filter-button·list-filter-sheet·filter-chip-row·usage-date·past-date-note"
+}
