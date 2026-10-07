@@ -360,27 +360,29 @@ test.describe("ex-data-table-cell 기록 행", () => {
     ["선택 행", true],
     ["일반 행", false],
   ] as const) {
-    test(`[K1][S${SCREEN}] 기록 행(${label}) 3열 (d7 §7): 날짜 "MM.DD"(좌) · 시약명 / 사용자(중) · 사용량(우)`, async ({ page }) => {
+    test(`[K1][S${SCREEN}] 기록 행(${label}) (시안 10 1.17 · d7 §15 정정): 날짜 열 없음 — 시약명 / 사용자 줄(왼쪽 한 열) · 사용량(오른쪽)`, async ({ page }) => {
       await open(page);
       const row = await rowWithSelection(historySection(page), selected);
       const parts = await partsOf(row);
-      expect(parts.length, `행 글자 ${JSON.stringify(parts)}`).toBeGreaterThanOrEqual(4);
-      expect(parts[0], "날짜 형식").toMatch(ROW_DATE_RE);
-      const r = { date: parts[0], name: parts[1], user: parts[2], amount: parts[parts.length - 1] };
-      const date = await box(row.getByText(r.date, { exact: true }), "날짜");
+      expect(parts.length, `행 글자 ${JSON.stringify(parts)}`).toBeGreaterThanOrEqual(3);
+      for (const p of parts) expect(p, `행에 날짜 열 "MM.DD" 없음 (${JSON.stringify(parts)})`).not.toMatch(ROW_DATE_RE);
+      const r = { name: parts[0], user: parts[1], amount: parts[parts.length - 1] };
+      // 사용자 줄: 시안 record-sub 틀 — "학생 이OO · 14:05"(같은 날) 또는 이름만(다른 날, 아래 캡션)
+      const hasCaption = parts.some((p) => CAPTION_RE.test(p));
+      if (hasCaption) expect(r.user, "캡션 있는 행의 사용자 줄 = 이름만").not.toMatch(/ · \d{2}:\d{2}$/);
+      else expect(r.user, "캡션 없는 행의 사용자 줄 = 이름 · HH:mm").toMatch(/ · \d{2}:\d{2}$/);
       const name = await box(row.getByText(r.name, { exact: true }), "시약명");
       const user = await box(row.getByText(r.user, { exact: true }), "사용자");
       const amount = await box(row.getByText(r.amount, { exact: true }), "사용량");
       const rowBox = await box(row, "행");
 
-      expect(date.x + date.width, "날짜 열이 가운데 열보다 왼쪽").toBeLessThanOrEqual(name.x + 1);
       expect(name.x + name.width, "시약명이 사용량 열보다 왼쪽").toBeLessThanOrEqual(amount.x + 1);
       expect(user.x + user.width, "사용자가 사용량 열보다 왼쪽").toBeLessThanOrEqual(amount.x + 1);
       expect(Math.abs(user.x - name.x), "시약명·사용자는 같은 열(왼쪽 끝 일치)").toBeLessThanOrEqual(1);
       expect(name.y + name.height, "사용자는 시약명 아래 줄").toBeLessThanOrEqual(user.y + 1);
-      // 사용량은 오른쪽 열: 행 오른쪽 절반에서 끝난다
+      // 사용량은 오른쪽 열: 행 오른쪽 절반에서 끝난다 · 시약명이 행 왼쪽 절반에서 시작 (앞에 날짜 열 없음)
       expect(amount.x + amount.width, "사용량이 행 오른쪽에 붙음").toBeGreaterThan(rowBox.x + rowBox.width / 2);
-      expect(date.x, "날짜가 행 왼쪽 절반에서 시작").toBeLessThan(rowBox.x + rowBox.width / 2);
+      expect(name.x - rowBox.x, "시약명이 행 왼쪽 끝 가까이에서 시작 (날짜 열 없음)").toBeLessThanOrEqual(32);
     });
   }
 

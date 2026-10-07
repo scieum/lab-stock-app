@@ -30,6 +30,7 @@ import {
   intakeButton,
   intakeForm,
   intakePath,
+  leaveAfterRegister,
   mySchoolId,
   quantityInput,
   readPreview,
@@ -55,11 +56,13 @@ test.afterAll(async ({}, info) => {
 const START_STOCK = 3;
 
 /** 저장 직후: ex-toast 문구(약 1.5초만 떠 있다) → 화면 2 로 이동 */
-async function expectToastThenList(page: Page, message: string): Promise<void> {
+async function expectToastThenList(page: Page, message: string, register = false): Promise<void> {
   const toast = page.locator(sel(TOAST));
   await expect(toast.filter({ hasText: message }), `${TOAST} "${message}"`).toBeVisible({ timeout: 30_000 });
   expect(await toast.count(), `${TOAST} 1개`).toBe(1);
-  await page.waitForURL((u) => u.pathname === routeOf(AFTER_SAVE_SCREEN), { timeout: 30_000 });
+  // 새 시약 등록: 시약장이 있는 학교는 location-suggest → "나중에" → 화면 2 (d7 §17)
+  if (register) await leaveAfterRegister(page);
+  else await page.waitForURL((u) => u.pathname === routeOf(AFTER_SAVE_SCREEN), { timeout: 30_000 });
 }
 
 function watchWrites(page: Page): string[] {
@@ -177,7 +180,7 @@ STAFF.forEach((role, i) => {
       expect(await countComponent(page, TOAST), `${TOAST} 저장 전`).toBe(0);
       await expect(registerButton(page)).toBeEnabled();
       await registerButton(page).click();
-      await expectToastThenList(page, TOAST_REGISTER);
+      await expectToastThenList(page, TOAST_REGISTER, true);
 
       const made = await dbReagentsByName(page, name);
       expect(made, "reagents 1행").toHaveLength(1);
@@ -228,7 +231,7 @@ test(`[C1][S${SCREEN}] ${ROLE_LABEL.teacher} 등록 중복 제출 방지: "시�
     await registerButton(page).dblclick();
     await registerButton(page).click({ force: true, timeout: 2_000 }).catch(() => undefined);
     await registerForm(page).getByLabel("시약명").press("Enter", { timeout: 2_000 }).catch(() => undefined);
-    await page.waitForURL((u) => u.pathname === routeOf(AFTER_SAVE_SCREEN), { timeout: 45_000 });
+    await leaveAfterRegister(page);
     await page.waitForLoadState("load");
 
     expect(posts.length, `저장 요청 수 (${posts.join(", ")})`).toBe(1);

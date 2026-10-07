@@ -163,7 +163,7 @@ const THR = {
  * 3-location: 위치 피커.
  * 디자인 1.17(fadfee7)에서 3-location 시안이 위치 추천 시안으로 바뀌었다: 노드 이름(heading · caption · cabinet-pill · slot-grid ·
  * slot-left/label · link-action), "추천" 줄(suggest-row · suggest-badge), 고른 칸 = 추천 칸(산화제), 피커 mix-warning 없음.
- * 위치 추천(suggest-badge · suggest-row · 추천 칸 선택)은 다음 run 범위 — 그 부분은 아래 테스트에서 빼고 표시해 둔다.
+ * run 20261007-1129(위치 추천, d7 §17)부터 suggest-badge · 추천 줄 · 추천 칸 선택도 대조한다.
  */
 const pickerNodes = subtree(F3L, "location-picker");
 /** 칸 이름: slot-left 안 label (suggest-badge 의 "추천" 글자는 빼고) */
@@ -180,16 +180,22 @@ const PICKER = {
     label: slotLabelOf(g),
     count: Number(g.children.find((c) => c.name === "label" && c.path.includes("slot-count"))?.text?.characters ?? 0),
     selected: (g.node.fills[0] ?? "").toLowerCase(),
-    /** 추천 칸 (suggest-badge) — 다음 run */
+    /** 추천 칸 (suggest-badge) */
     suggested: g.children.some((c) => leaf(c) === "suggest-badge"),
   })),
   unassign: texts(under(pickerNodes, "link-action"), "label")[0],
   warning: texts(under(pickerNodes, "mix-warning"), "warning-line"),
   save: labelIn(groups(pickerNodes, "button-primary")[0]),
-  /** 추천 줄(suggest-row: 번호 원 · suggest-badge)은 다음 run — 개수 비교에서 뺀다 */
-  counts: countIn(pickerNodes.filter((n) => !n.path.includes("suggest-row"))),
+  /** 추천 줄(suggest-row: 번호 원 · 위치 글자 · suggest-badge) */
+  suggestRow: {
+    number: texts(under(pickerNodes, "suggest-row"), "label").find((t) => /^\d+$/.test(t)) ?? "",
+    value: firstText(under(pickerNodes, "suggest-row"), "value"),
+    badge: texts(under(pickerNodes, "suggest-badge"), "label")[0] ?? "",
+  },
+  sectionTitles: texts(pickerNodes, "section-title"),
+  counts: countIn(pickerNodes),
 };
-/** dev-rules components 에 아직 없는 variants 컴포넌트(suggest-badge 등 — components_note "뒤 run 에서")는 이번 범위 밖 */
+/** dev-rules components 에 있는 이름만 (variants 의 이름은 1.5 부터 모두 dev-rules 안 — 빠지면 아래 기대값 점검이 실패한다) */
 const inScope = (names: string[]) => names.filter((n) => componentNames.includes(n));
 
 // ---------- 기대값: rules ----------
@@ -402,18 +408,22 @@ test("[K1][S11] 기대값 원본: 1.15 프레임(11 · 11-slot · 11-print · 11
   expect(PICKER.caption).toBe("과산화수소 · 산화제");
   expect(PICKER.pills).toEqual(PILLS);
   expect(PICKER.active).toBe(PILLS[1]);
-  // 1.17: 피커 mix-warning 은 시안에서 빠짐, 추천 칸 1개 (위치 추천은 다음 run)
+  // 1.17: 피커 mix-warning 은 시안에서 빠짐, 추천 칸 1개 = 고른 칸, 추천 줄 = 그 칸 (d7 §17)
   expect(PICKER.warning).toEqual([]);
   expect(PICKER.slots.filter((s) => s.suggested).length, "1.17 3-location 추천 칸").toBe(1);
+  expect(PICKER.slots.filter((s) => HIGHLIGHTS_EARLY.includes(s.selected)).map((s) => s.suggested), "고른 칸 = 추천 칸").toEqual([true]);
+  expect(PICKER.suggestRow.value, "추천 줄 = 고른 시약장 · 칸").toBe(`${PICKER.active} · 우 2단`);
+  expect(PICKER.suggestRow.badge, "suggest-badge 글자").toBe("추천");
+  expect(PICKER.sectionTitles, "피커 소제목").toEqual(["추천", "전체"]);
   expect(PICKER.unassign).toBe(`${UNASSIGNED}으로`);
   expect(QR_TEMPLATE, "d7 §14 QR 내용 틀").toBeTruthy();
   // variants 필수 컴포넌트가 상태 프레임에 있다
   for (const n of rules.variants["11"].slot) expect(countIn(F11S)[n] ?? 0, `11-slot ${n}`).toBeGreaterThanOrEqual(1);
   for (const n of rules.variants["11"].print) expect(countIn(F11P)[n] ?? 0, `11-print ${n}`).toBeGreaterThanOrEqual(1);
   for (const n of rules.variants["11"].unsaved) expect(countIn(F11U)[n] ?? 0, `11-unsaved ${n}`).toBeGreaterThanOrEqual(1);
-  for (const n of inScope(rules.variants["3"].location)) expect(countIn(F3L)[n] ?? 0, `3-location ${n}`).toBeGreaterThanOrEqual(1);
-  // suggest-badge 는 rules variants 3.location 에 있지만 dev-rules components 밖(다음 run) — 프레임에 있는지만 확인
-  expect(F3L.some((n) => leaf(n) === "suggest-badge"), "3-location 시안 suggest-badge").toBe(true);
+  expect(inScope(rules.variants["3"].location), "variants 3.location 은 모두 dev-rules components 안 (suggest-badge 포함)").toEqual(rules.variants["3"].location);
+  for (const n of rules.variants["3"].location) expect(countIn(F3L)[n] ?? 0, `3-location ${n}`).toBeGreaterThanOrEqual(1);
+  expect(countIn(F3L)["suggest-badge"], "3-location 시안 suggest-badge = 추천 줄 1 + 추천 칸 1").toBe(2);
   for (const n of rules.screens_required["3"]) expect(countIn(F3)[n] ?? 0, `3 ${n}`).toBeGreaterThanOrEqual(1);
   // 갤러리 예시 데이터(입력)가 시안 상태와 같다
   expect(sampleCabinets.map((c) => c.label)).toEqual(PILLS);
@@ -997,11 +1007,10 @@ test.describe("화면 3 보관 위치 (/gallery/placement)", () => {
     expect(await row.getByText(UNASSIGNED, { exact: true }).evaluate((el) => getComputedStyle(el).color), "칸 없음 = 회색 (s2-spec #707070 = 프레임 라벨 색)").toBe(hexToRgb(LOC.labelFill));
   });
 
-  test(`[K1][S3] variants 3.location 예시(picker): location-picker "${PICKER.title}" · caption "${PICKER.caption}" · 전환 pill(번호, cabinet-add 없음) "${PICKER.active}" 활성 · 칸 ${PICKER.slots.length}개 · slot-count · "${PICKER.unassign}" · 규칙대로 mix-warning · "${PICKER.save}" 활성 — 프레임 개수 이상 (추천 칸·suggest-badge 는 다음 run)`, async ({ page }) => {
+  test(`[K1][S3] variants 3.location 예시(picker): location-picker "${PICKER.title}" · caption "${PICKER.caption}" · 전환 pill(번호, cabinet-add 없음) "${PICKER.active}" 활성 · 칸 ${PICKER.slots.length}개 · slot-count · "${PICKER.unassign}" · 규칙대로 mix-warning · "${PICKER.save}" 활성 · 추천(d7 §17): 소제목 "추천"·"전체", 추천 줄(번호 ${PICKER.suggestRow.number} · "${PICKER.suggestRow.value}" · suggest-badge), 추천 칸에 suggest-badge · 처음 선택 = 추천 칸 — 프레임 개수 이상`, async ({ page }) => {
     await open(page, "/gallery/placement");
     const sec = await area(page, "picker");
-    // suggest-badge(추천)는 다음 run 범위 — dev-rules components 에 있는 것만
-    for (const n of inScope(rules.variants["3"].location)) expect(await sec.locator(sel(n)).count(), `variants.3.location ${n}`).toBeGreaterThanOrEqual(1);
+    for (const n of rules.variants["3"].location) expect(await sec.locator(sel(n)).count(), `variants.3.location ${n}`).toBeGreaterThanOrEqual(1);
     const p = sec.locator(sel("location-picker"));
     await expect(p).toHaveCount(1);
     for (const [n, c] of Object.entries(PICKER.counts)) {
@@ -1019,17 +1028,30 @@ test.describe("화면 3 보관 위치 (/gallery/placement)", () => {
     const s = slots(p);
     await expect(s).toHaveCount(PICKER.slots.length);
     for (let i = 0; i < PICKER.slots.length; i++) {
-      // 1.17 시안의 추천 칸(분류·선택 표시)은 위치 추천 run(다음 run) 에서 — 이름·선택 대조에서 뺀다
-      if (!PICKER.slots[i].suggested) expect(await textWithout(s.nth(i), ["slot-count"]), `${i + 1}번째 칸`).toBe(PICKER.slots[i].label);
+      // 칸 글자 = 분류 (추천 칸의 suggest-badge "추천" 글자는 빼고) · 추천 칸에만 suggest-badge 1개
+      expect(await textWithout(s.nth(i), ["slot-count", "suggest-badge"]), `${i + 1}번째 칸`).toBe(PICKER.slots[i].label);
+      await expect(s.nth(i).locator(sel("suggest-badge")), `${i + 1}번째 칸 suggest-badge (시안 추천 칸만)`).toHaveCount(PICKER.slots[i].suggested ? 1 : 0);
       const c = s.nth(i).locator(sel("slot-count"));
       if (PICKER.slots[i].count === 0) await expect(c).toHaveCount(0);
       else await expect(c).toHaveText(exact(String(PICKER.slots[i].count)));
     }
-    // 고른 칸은 정확히 1개 (시안도 1개 — 어느 칸인지는 추천 run 에서)
+    // 고른 칸 = 시안의 선택 칸 = 추천 칸 (d7 §17 처음 선택)
     await page.mouse.move(0, 0);
-    let active = 0;
-    for (let i = 0; i < PICKER.slots.length; i++) if (await isActivePaint(s.nth(i))) active++;
-    expect(active, "선택 표시 칸 수 = 시안").toBe(PICKER.slots.filter((x) => HIGHLIGHTS.includes(x.selected)).length);
+    const activeAt: number[] = [];
+    for (let i = 0; i < PICKER.slots.length; i++) if (await isActivePaint(s.nth(i))) activeAt.push(i);
+    expect(activeAt, "선택 표시 칸 = 시안의 선택 칸").toEqual(PICKER.slots.flatMap((x, i) => (HIGHLIGHTS.includes(x.selected) ? [i] : [])));
+    expect(activeAt.map((i) => PICKER.slots[i].suggested), "처음 선택 = 추천 칸").toEqual([true]);
+    // 추천 줄: 소제목 "추천" 아래 번호 원 + 위치 글자 + suggest-badge, 그 아래 "전체"
+    for (const t of PICKER.sectionTitles) await expect(p.getByText(t, { exact: true }).first(), `소제목 "${t}"`).toBeVisible();
+    const row = p.getByRole("button", { name: new RegExp(`추천 위치 .*${esc(PICKER.suggestRow.value)}`) });
+    await expect(row, "추천 줄 (누르면 그 칸 선택)").toHaveCount(1);
+    await expect(row.locator(sel("cabinet-number")), "추천 줄 번호 원").toHaveText(exact(PICKER.suggestRow.number));
+    await expect(row.getByText(PICKER.suggestRow.value, { exact: true }), "추천 줄 위치 글자").toBeVisible();
+    await expect(row.locator(sel("suggest-badge")), "추천 줄 suggest-badge").toHaveText(exact(PICKER.suggestRow.badge));
+    const rb = await box(row, "추천 줄");
+    const sw = await box(p.locator(sel("cabinet-switcher")), "전환");
+    expect(rb.y + rb.height, "추천 줄은 시약장 전환 위").toBeLessThanOrEqual(sw.y + 1);
+    expect(await sec.locator(sel("suggest-badge")).count(), "suggest-badge = 시안 수 (추천 줄 + 추천 칸)").toBe(PICKER.counts["suggest-badge"]);
     const unassign = p.getByRole("button", { name: PICKER.unassign, exact: true });
     await expect(unassign, `"${PICKER.unassign}" 조용한 텍스트 동작`).toHaveCount(1);
     expect((await box(unassign, "칸 없음으로")).height).toBeGreaterThanOrEqual(MIN_H);
@@ -1040,7 +1062,7 @@ test.describe("화면 3 보관 위치 (/gallery/placement)", () => {
     {
       const [, cls] = PICKER.caption.split(" · ");
       let chosen = "";
-      for (let i = 0; i < PICKER.slots.length; i++) if (await isActivePaint(s.nth(i))) chosen = await textWithout(s.nth(i), ["slot-count"]);
+      for (let i = 0; i < PICKER.slots.length; i++) if (await isActivePaint(s.nth(i))) chosen = await textWithout(s.nth(i), ["slot-count", "suggest-badge"]);
       const want = expectedWarning(cls, chosen === "미지정" ? [] : chosen.split(" · "), [], "");
       const mix = p.locator(sel("mix-warning"));
       if (want.kind === "none") await expect(mix, `${cls} → ${chosen}: 경고 없음`).toHaveCount(0);

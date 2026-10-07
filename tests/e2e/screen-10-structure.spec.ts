@@ -46,13 +46,17 @@ import {
   expectDetail,
   expectListMatchesDb,
   frameCounts,
+  captionOf,
   gotoAndMatch,
+  groupLabel,
   historyPath,
   modal,
   openRow,
   periodSelect,
   queryParam,
   readList,
+  recordedOn,
+  recordedTime,
   rows,
   screenComponents,
   searchInput,
@@ -276,31 +280,38 @@ for (const role of ALL_ROLES) {
   });
 }
 
-test(`[C1][S${SCREEN}] 학교A 교사 목록: 월 그룹 헤더 "YYYY년 M월" 최신순 · 행 3열(날짜 MM.DD · 시약명/사용자 · 사용량 단위) = 로그인 세션 usage_history, 행 날짜의 달 = 그룹의 달`, async ({ browser }, info) => {
+test(`[C1][S${SCREEN}] 학교A 교사 목록 (시안 10 1.17 · d7 §15 정정): 사용일별 묶음 헤더 "10월 7일 · 오늘"·"10월 6일" 최신순 · 행 = 시약명 / 사용자 줄(같은 날 "이름 · HH:mm", 다른 날 이름 + 캡션 "N월 N일에 기록") · 사용량 단위, 날짜 열 없음 = 로그인 세션 usage_history`, async ({ browser }, info) => {
   test.setTimeout(150_000);
   const { context, page } = await openAs(browser, info, "teacher", SCREEN);
   try {
     await waitHistory(page);
-    // 기간 전체 — 여러 달이 있으면 그룹이 여러 개
+    // 기간 전체 — 여러 날이 있으면 묶음이 여러 개
     for (const f of [{}, { period: "all" as const }]) {
       const snap = await gotoAndMatch(page, f);
       expect(snap.flat.length, "행 수").toBeGreaterThan(0);
       const entries = await readList(page);
-      expect(entries[0].kind, "목록은 월 그룹 헤더로 시작").toBe("group");
+      expect(entries[0].kind, "목록은 사용일 묶음 헤더로 시작").toBe("group");
       const labels = entries.filter((e) => e.kind === "group").map((e) => (e as { label: string }).label);
-      for (const l of labels) expect(l, "그룹 헤더 형식").toMatch(GROUP_LABEL);
-      // DB 의 달 수 = 그룹 수
-      const months = [...new Set(snap.flat.map((r) => r.group))];
-      expect(labels, "그룹 = 기록이 있는 달 (최신순)").toEqual(months);
-      for (const r of snap.flat) {
-        expect(r.date, "행 날짜 MM.DD").toMatch(/^\d{2}\.\d{2}$/);
-        const m = /^(\d{4})년 (\d{1,2})월$/.exec(r.group)!;
-        expect(Number(r.date.slice(0, 2)), `행 ${r.date} 는 그룹 ${r.group} 의 달`).toBe(Number(m[2]));
+      for (const l of labels) expect(l, "묶음 헤더 형식").toMatch(GROUP_LABEL);
+      // DB 의 사용일 수 = 묶음 수 (사용일 최신순)
+      const days = [...new Set(snap.shown.map((r) => r.used_on))];
+      expect(labels, "묶음 = 기록이 있는 사용일 (최신순)").toEqual(days.map((d) => groupLabel(d)));
+      expect(labels.length, "묶음 수 = 사용일 수").toBe(days.length);
+      for (const [i, r] of snap.flat.entries()) {
+        const db = snap.shown[i];
+        expect(r.group, "행의 묶음 = 그 행의 사용일").toBe(groupLabel(db.used_on));
         expect(r.name.length, "시약명").toBeGreaterThan(0);
-        expect(r.user.length, "사용자 이름").toBeGreaterThan(0);
+        expect(r.user, "사용자 이름").toBe(db.user_name);
+        // 같은 날 기록 = 사용자 옆 기록 시각(캡션 없음), 다른 날 기록 = 시각 없음 + 캡션
+        if (recordedOn(db.used_at) === db.used_on) expect([r.time, r.caption], "같은 날: 시각 · 캡션 없음").toEqual([recordedTime(db.used_at), null]);
+        else expect([r.time, r.caption], "다른 날: 시각 없음 · 캡션").toEqual([null, captionOf(db)]);
         expect(r.amount, "사용량 + 단위").toMatch(/^\d+(\.\d+)?\D+$/);
       }
-      // 그룹 헤더는 보인다
+      // 같은 묶음 안 = 기록 시각 최신순
+      for (let i = 1; i < snap.shown.length; i++) {
+        if (snap.shown[i].used_on === snap.shown[i - 1].used_on) expect(Date.parse(snap.shown[i - 1].used_at), "같은 사용일: 기록 시각 최신순").toBeGreaterThanOrEqual(Date.parse(snap.shown[i].used_at));
+      }
+      // 묶음 헤더는 보인다
       await expect(page.locator("main").getByText(exact(labels[0])).locator("visible=true").first()).toBeVisible();
     }
   } finally {

@@ -9,11 +9,10 @@ import { randomUUID } from "node:crypto";
 import { test, expect, type Page } from "@playwright/test";
 import { ROLE_LABEL, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
-import { PROFILE_ROLE, browserSession, routeOf, rules, sel, seedRows } from "./screen-helpers";
+import { PROFILE_ROLE, browserSession, rules, sel, seedRows } from "./screen-helpers";
 import { seedReagents, seedSchoolOf } from "./screen-3-helpers";
 import { demoReagents, demoSchool } from "./guest-helpers";
 import {
-  AFTER_SAVE_SCREEN,
   EMPTY,
   SCREEN,
   STORAGE_CLASSES,
@@ -28,6 +27,7 @@ import {
   expectSelected,
   fillRegister,
   intakePath,
+  leaveAfterRegister,
   registerButton,
   rowNames,
   rows,
@@ -216,7 +216,8 @@ for (const role of ["teacher", "schoolB"] as Role[]) {
       await expect(registerButton(page)).toBeEnabled();
       await registerButton(page).click();
       await expect(page.locator(sel(TOAST)).filter({ hasText: TOAST_REGISTER }), `${TOAST} "${TOAST_REGISTER}"`).toBeVisible({ timeout: 30_000 });
-      await page.waitForURL((u) => u.pathname === routeOf(AFTER_SAVE_SCREEN), { timeout: 30_000 });
+      // 시약장이 있는 학교는 location-suggest → "나중에" → 화면 2 (d7 §17)
+      await leaveAfterRegister(page);
 
       const made = await dbReagentsByName(page, name);
       expect(made, "등록된 시약 1행").toHaveLength(1);

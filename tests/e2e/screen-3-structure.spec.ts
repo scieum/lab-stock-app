@@ -9,6 +9,7 @@ import { openAs } from "./auth-state";
 import {
   PROFILE_ROLE,
   ROLE_NAME,
+  browserClient,
   browserSession,
   countComponent,
   devRules,
@@ -19,6 +20,7 @@ import {
 } from "./screen-helpers";
 import { SCREEN, dbDetail, detailPath, seedReagents, seedSchoolOf, waitDetail } from "./screen-3-helpers";
 import { watchActions } from "./screen-11-helpers";
+import { expectedSuggestion, suggestRowsOf } from "./suggest-helpers";
 
 /** design/frames/{name}.json 의 노드 이름 (dev-rules components 에 있는 이름만) */
 function frameNames(name: string): Set<string> {
@@ -65,8 +67,9 @@ for (const role of ROLES) {
       // 탭바는 폭별 기대값이 다르다 (C2 에서 본다)
       .filter((n) => n !== rules.tab_bar.component && n !== rules.tab_bar.item);
     const stateOnly = fromDevAll.filter((n) => !baseFrame.has(n));
-    // 1.17: variants["3"].location 에 suggest-badge(위치 추천)가 더해졌지만 dev-rules components 밖 — 위치 추천 run(다음 run)에서. 이번 범위 = dev-rules 에 있는 것
-    const variant = (rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants[String(SCREEN)].location.filter((n) => devRules.components[n]);
+    // 1.17 variants["3"].location (suggest-badge 포함 — dev-rules 1.5 부터 components 안)
+    const variant = (rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants[String(SCREEN)].location;
+    expect(variant.filter((n) => !devRules.components[n]), "variants 3.location 은 모두 dev-rules components 안").toEqual([]);
     for (const n of variant) expect(stateOnly, `variants["${SCREEN}"].location ${n} 은 기본 프레임에 없는 상태 컴포넌트`).toContain(n);
     // mix-warning 은 고른 칸이 분류와 안 맞을 때만 나오는 조건부 상태 — 1.17 3-location 시안은 추천 칸을 고른 상태라 없다 (경고 동작은 screen-3-location)
     for (const n of stateOnly.filter((x) => x !== "mix-warning")) expect(frameNames(`${SCREEN}-location-${viewportName}`), `상태 컴포넌트 ${n} 은 3-location 프레임에 있다`).toContain(n);
@@ -116,10 +119,22 @@ for (const role of ROLES) {
           await edit.click();
           await expect(page.locator(sel("location-picker")), "위치 바꾸기 → location-picker").toBeVisible({ timeout: 2_000 });
         }).toPass({ timeout: 30_000 });
+        // suggest-badge 는 데이터 조건부(d7 §17 — 추천 칸이 있을 때만): 공용 학교 데이터는 바꾸지 않고, 그 계정 세션(RLS)으로 읽은 DB 로 기대값을 계산한다
+        // (추천이 있는 상태의 배지·추천 줄·처음 선택은 일회용 학교에서 — screen-3-7-11-suggest.spec.ts)
+        const { client } = await browserClient(page);
+        const own = await client.from("reagents").select("id, storage_class").eq("id", pick.id).single();
+        expect(own.error, "대조: 시약 분류 (RLS)").toBeNull();
+        const sug = expectedSuggestion(await suggestRowsOf(client), { id: pick.id, storage_class: (own.data?.storage_class as string | null) ?? null });
         for (const name of variant) {
+          if (name === "suggest-badge" && !sug) {
+            expect(await countComponent(page, name), `추천 칸 없음(DB 계산) → ${name} 0`).toBe(0);
+            await expect(page.locator('[data-testid="location-picker-suggest"]'), "추천 없음 → 추천 줄 0").toHaveCount(0);
+            continue;
+          }
           expect(await countComponent(page, name), `variants["${SCREEN}"].location ${name}`).toBeGreaterThanOrEqual(1);
           await expect(page.locator(sel(name)).first(), `${name} 보임`).toBeVisible();
         }
+        if (sug) await expect(page.locator('[data-testid="location-picker-suggest"]'), "추천 칸 있음(DB 계산) → 추천 줄 1").toHaveCount(1);
         await page.locator(sel("location-picker")).getByRole("button", { name: /^\s*닫기\s*$/ }).click();
         await expect(page.locator(sel("location-picker")), "× → 닫힘").toHaveCount(0);
       }
