@@ -27,22 +27,17 @@ export default function GalleryUsersPage() {
       <p className={styles.lead}>user-manage · ex-modal-card ① 초대 ② 역할 변경 ③ 삭제 확인 · 빈 상태 · 토스트</p>
 
       <div className={styles.grid}>
-        <Item id="list" name="user-manage (시안: 박서연 역할 변경 시트가 열린 상태)">
-          <UserManage
-            schoolName={SAMPLE_SCHOOL}
-            members={sampleMembers}
-            invites={sampleInvites}
-            counts={sampleMemberCounts}
-            selectedId="m-2"
-          />
+        <Item id="list" name="user-manage + ③ 삭제 확인 (시안 1.17 8: 박OO 삭제 확인 시트가 열린 상태)">
+          <UserManage schoolName={SAMPLE_SCHOOL} members={sampleMembers} invites={sampleInvites} counts={sampleMemberCounts} />
+          <DeleteConfirm sheet={false} closeIcon name="박OO" />
         </Item>
 
         <Item id="role" name="ex-modal-card ② 역할 변경 시트">
-          <RoleChangeSheet sheet={false} name="박서연" currentRole="teacher" />
+          <RoleChangeSheet sheet={false} name="박OO" currentRole="student" />
         </Item>
 
         <Item id="role-last-admin" name="ex-modal-card ② 역할 변경 시트 — 본인 · 마지막 admin">
-          <RoleChangeSheet sheet={false} name="정하은" currentRole="admin" isSelf isLastAdmin />
+          <RoleChangeSheet sheet={false} name="김OO" currentRole="admin" isSelf isLastAdmin />
         </Item>
 
         <Item id="invite" name="ex-modal-card ① 초대 시트">
@@ -50,7 +45,7 @@ export default function GalleryUsersPage() {
         </Item>
 
         <Item id="invite-filled" name="ex-modal-card ① 초대 시트 — 2명 입력">
-          <InviteSheet sheet={false} defaultEmails={["jiwoo.han@example.com", "minseo.oh@example.com"]} defaultRole="teacher" />
+          <InviteSheet sheet={false} defaultEmails={["lee.teacher@example.com", "kim.student@example.com"]} defaultRole="teacher" />
         </Item>
 
         <Item id="delete" name="ex-modal-card ③ 삭제 확인">

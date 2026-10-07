@@ -16,7 +16,7 @@ import {
 
 export const metadata: Metadata = { title: "재주문 알림 컴포넌트 · Lab_Stock" };
 
-const REAGENT = "황산구리(II) 오수화물";
+const REAGENT = "염산";
 
 function Item({ id, name, children }: { id: string; name: string; children: React.ReactNode }) {
   return (
@@ -30,7 +30,7 @@ function Item({ id, name, children }: { id: string; name: string; children: Reac
 }
 
 /**
- * 화면 6(재주문 알림) 상태 갤러리: admin(알림 2건 + 판매처 연결 모달) · 교사 · 0건 · 모달 상태 4종 · 기준 문구.
+ * 화면 6(재주문 알림) 상태 갤러리: admin(시안 1.17 6 — 알림 3건 + 염산 카드 새 창 안내) · 모달 열림 · 교사 · 0건 · 모달 상태 4종 · 기준 문구.
  * 모달은 제자리(sheet=false)로 그린다.
  */
 export default function GalleryReorderPage() {
@@ -43,11 +43,20 @@ export default function GalleryReorderPage() {
       </p>
 
       <div className={styles.grid}>
-        <Item id="default" name="admin — 알림 2건 + 판매처 연결 모달 (시안 6-desktop)">
+        <Item id="default" name="admin — 알림 3건(에탄올 자동 기준) + 염산 카드 새 창 안내 (시안 1.17 6)">
+          <ReorderDemo
+            role="admin"
+            alerts={sampleAlerts}
+            vendors={sampleLinkVendors}
+            defaultOpened={{ alertId: "r-1", name: "한빛과학교재", url: "https://example.com/hanbit" }}
+          />
+        </Item>
+
+        <Item id="open-modal" name="admin — 판매처 연결 모달 열림">
           <ReorderDemo role="admin" alerts={sampleAlerts} vendors={sampleLinkVendors} defaultOpenId="r-1" />
         </Item>
 
-        <Item id="teacher" name="교사 — 알림 2건, 부족한 정도가 큰 순 (판매처 등록 없음)">
+        <Item id="teacher" name="교사 — 알림 3건, 부족한 정도가 큰 순 (판매처 등록 없음)">
           <ReorderDemo role="teacher" alerts={sampleAlertsSorted} vendors={sampleLinkVendorsMixed} />
         </Item>
 

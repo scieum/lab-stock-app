@@ -501,7 +501,6 @@ export default function GalleryPage() {
             members={sampleMembers}
             invites={sampleInvites}
             counts={sampleMemberCounts}
-            selectedId="m-2"
           />
           <Link href="/gallery/users" className={styles.more}>
             초대 · 역할 변경 · 삭제 확인 시트 보기 (/gallery/users)
