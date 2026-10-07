@@ -254,7 +254,10 @@
     left: auto;
     width: var(--side-column-width);
     max-width: calc(100vw - var(--space-64) * 2);
-    max-height: min(calc(var(--space-64) * 8 - var(--space-8)), calc(100vh - var(--space-64) * 2));
+    /* 높이 제한은 화면 높이(위아래 16 여백)뿐 — 1440 × 900 같은 보통 화면에서는 모든 항목과 버튼 줄이 한 번에 보인다.
+     * 열릴 때 아래가 화면 밖이면 컴포넌트가 페이지를 올린다(--list-filter-gap 만큼 띄움) */
+    --list-filter-gap: var(--space-16);
+    max-height: calc(100vh - var(--space-16) * 2);
     border-bottom: var(--border-width) solid var(--color-border-strong);
     border-radius: var(--radius-lg);
   }

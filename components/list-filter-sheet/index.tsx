@@ -103,7 +103,16 @@ export function ListFilterSheet({ id, value, onChange: change, cabinets, resultC
 
   useEffect(() => {
     if (!sheet) return;
-    rootRef.current?.focus({ preventScroll: true });
+    const el = rootRef.current;
+    if (!el) return;
+    el.focus({ preventScroll: true });
+    // 데스크톱 드롭다운(버튼 아래 absolute): 아래가 화면 밖으로 나가면 페이지를 그만큼 올려 버튼 줄까지 한눈에 보이게 한다.
+    // 드롭다운 높이는 화면 높이까지만(CSS) — 화면이 내용보다 낮을 때만 몸통이 따로 스크롤된다. 모바일 하단 시트(fixed)는 그대로.
+    if (getComputedStyle(el).position !== "absolute") return;
+    const r = el.getBoundingClientRect();
+    const gap = parseFloat(getComputedStyle(el).getPropertyValue("--list-filter-gap")) || 0;
+    const over = r.bottom - (window.innerHeight - gap);
+    if (over > 0) window.scrollBy({ top: Math.max(0, Math.min(over, r.top - gap)) });
   }, [sheet]);
 
   useEffect(() => {

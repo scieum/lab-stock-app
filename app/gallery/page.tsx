@@ -91,19 +91,19 @@ const usageRows = [
   { date: "2026.09.18", user: "박서연", amount: "10 g" },
 ];
 
-const historyGroups = [
+/** 시안 10 (디자인 1.17) 기록 — 행 날짜 = 사용일, 기록한 날이 다르면 캡션 (d7 §15). 묶음은 d7 §7 월 그룹 */
+const historyGroups: {
+  label: string;
+  rows: { id: string; date: string; name: string; user: string; amount: string; caption?: string; selected?: boolean }[];
+}[] = [
   {
     label: "2026년 10월",
     rows: [
-      { id: "h-1", date: "10.02", name: "황산구리(II) 오수화물", user: "김민지", amount: "5 g", selected: true },
-      { id: "h-2", date: "10.01", name: "염산 0.1M", user: "이준호", amount: "20 mL" },
-    ],
-  },
-  {
-    label: "2026년 9월",
-    rows: [
-      { id: "h-3", date: "09.30", name: "수산화나트륨", user: "박서연", amount: "12 g" },
-      { id: "h-4", date: "09.25", name: "질산은", user: "정하은", amount: "2 g" },
+      { id: "h-1", date: "10.07", name: "염산", user: "학생 이OO", amount: "20 mL" },
+      { id: "h-2", date: "10.07", name: "질산은", user: "교사 김OO", amount: "2 g" },
+      { id: "h-3", date: "10.06", name: "수산화나트륨", user: "학생 박OO", amount: "10 g" },
+      { id: "h-4", date: "10.03", name: "에탄올", user: "교사 김OO", amount: "50 mL", caption: "10월 7일에 기록", selected: true },
+      { id: "h-5", date: "10.03", name: "염산", user: "학생 최OO", amount: "30 mL", caption: "10월 6일에 기록" },
     ],
   },
 ];
@@ -294,6 +294,7 @@ export default function GalleryPage() {
                     date={r.date}
                     title={r.name}
                     subtitle={r.user}
+                    caption={r.caption}
                     amount={r.amount}
                     selected={r.selected}
                   />
@@ -307,13 +308,14 @@ export default function GalleryPage() {
         <Item name="ex-modal-card">
           <ModalCard
             sheet={false}
-            title="황산구리(II) 오수화물"
-            amount="5"
-            unit="g"
+            title="에탄올"
+            amount="50"
+            unit="mL"
             fields={[
-              { label: "사용자", value: "김민지" },
-              { label: "일시", value: "2026.10.02 14:20" },
-              { label: "메모", value: "1반 3조 구리 이온 실험" },
+              { label: "사용자", value: "교사 김OO" },
+              { label: "사용일", value: "2026-10-03" },
+              { label: "기록한 날", value: "2026-10-07 09:12" },
+              { label: "메모", value: "1학년 2반 알코올 램프 실험" },
             ]}
           >
             <MsdsEntry variant="button" href="https://example.com/msds" />
