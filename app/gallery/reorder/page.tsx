@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
 import { NavAccountMenu } from "@/components/nav-account-menu";
 import { ReorderAlertItemCard } from "@/components/reorder-alert-card";
-import { VendorLink, VendorLinkModal } from "@/components/vendor-link";
+import { VendorLink, VendorLinkModal, VendorNewWindowNote } from "@/components/vendor-link";
 import styles from "../gallery.module.css";
 import { ReorderDemo } from "./demo";
-import { sampleAlertPlain, sampleAlerts, sampleAlertsSorted, sampleLinkVendors, sampleLinkVendorsMixed } from "./sample";
+import {
+  sampleAlertAuto,
+  sampleAlertAutoIntake,
+  sampleAlertPlain,
+  sampleAlerts,
+  sampleAlertsSorted,
+  sampleLinkVendors,
+  sampleLinkVendorsMixed,
+} from "./sample";
 
 export const metadata: Metadata = { title: "재주문 알림 컴포넌트 · Lab_Stock" };
 
@@ -75,6 +83,37 @@ export default function GalleryReorderPage() {
             date={sampleAlertPlain.date}
           >
             <VendorLink />
+          </ReorderAlertItemCard>
+        </Item>
+
+        <Item id="auto" name="reorder-alert-card — 자동 기준: 수량 줄 가운데 auto-threshold-badge + 캡션 (d7 §18, 시안 1.17 6 에탄올)">
+          <ReorderAlertItemCard
+            name={sampleAlertAuto.name}
+            amount={sampleAlertAuto.amount}
+            auto={sampleAlertAuto.auto}
+            date={sampleAlertAuto.date}
+          >
+            <VendorLink />
+          </ReorderAlertItemCard>
+          <ReorderAlertItemCard
+            name={sampleAlertAutoIntake.name}
+            amount={sampleAlertAutoIntake.amount}
+            auto={sampleAlertAutoIntake.auto}
+            date={sampleAlertAutoIntake.date}
+          >
+            <VendorLink />
+          </ReorderAlertItemCard>
+        </Item>
+
+        <Item id="new-window" name="reorder-alert-card — 판매처 확인 뒤 새 창 안내 줄 (vendor-new-window: 아이콘 + 안내 + 흰 테두리 pill 직접 열기, d7 §18)">
+          <ReorderAlertItemCard
+            name={sampleAlertPlain.name}
+            amount={sampleAlertPlain.amount}
+            basis={sampleAlertPlain.basis}
+            date={sampleAlertPlain.date}
+          >
+            <VendorLink />
+            <VendorNewWindowNote vendorName="한빛과학교재" url="https://example.com/hanbit" />
           </ReorderAlertItemCard>
         </Item>
 

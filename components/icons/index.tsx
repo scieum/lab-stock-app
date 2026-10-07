@@ -32,7 +32,8 @@ export type IconName =
   | "print"
   | "caret-down"
   | "star"
-  | "filter";
+  | "filter"
+  | "merge";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: (
@@ -187,6 +188,8 @@ const PATHS: Record<IconName, React.ReactNode> = {
   star: <path d="M12 3.5 14.6 8.8l5.9.86-4.27 4.15 1 5.87L12 16.9l-5.23 2.78 1-5.87L3.5 9.66l5.9-.86Z" />,
   // 시안 2 list-filter-button icon-filter: 짧아지는 가로줄 3개 (디자인 1.17)
   filter: <path d="M3.6 7h16.8M7.2 12h9.6M10.2 17h3.6" />,
+  // 시안 1.17 5 merge-note icon-merge: 두 줄이 한 줄로 모이는 Y 모양 (행 합치기 안내)
+  merge: <path d="M6 4v3.5c0 2.5 6 4 6 7.5V20M18 4v3.5c0 2.5-6 4-6 7.5" />,
   bell: (
     <>
       <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15Z" />

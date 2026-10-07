@@ -63,6 +63,12 @@ export const AUTO_LABEL = "자동";
 export const AUTO_BASIS_USAGE_TEXT = "최근 4주 사용량 기준";
 /** 자동 근거: 마지막 입고량 × 20% */
 export const AUTO_BASIS_INTAKE_TEXT = "마지막 입고량의 20%";
+/**
+ * 자동 기준 캡션 (d7 §18 — auto-threshold-badge 아래 한 줄, 화면 3·6).
+ * 사용 기록 근거 = 시안 문구 그대로. 입고량 근거 = 시안 문구가 사실과 달라 개발 쪽 예외 문구. 값 0 = THRESHOLD_NONE_LABEL.
+ */
+export const AUTO_CAPTION_USAGE_TEXT = "최근 사용량으로 계산했어요";
+export const AUTO_CAPTION_INTAKE_TEXT = "마지막 입고량의 20%로 계산했어요";
 /** 직접 입력한 기준 */
 export const MANUAL_SOURCE_TEXT = "직접 입력";
 /** "자동으로 돌리기" 버튼 문구 */
@@ -103,6 +109,17 @@ export function autoBasisText(r: { minStock: number | null | undefined; autoBasi
 }
 
 /**
+ * 자동 기준 캡션 (d7 §18): 값이 0 이하·없음 → "아직 없어요",
+ * 'usage' → "최근 사용량으로 계산했어요", 'intake' → "마지막 입고량의 20%로 계산했어요". 근거를 모르면 null(캡션 없음).
+ */
+export function autoCaptionText(r: { minStock: number | null | undefined; autoBasis: AutoBasis | undefined }): string | null {
+  if (!positiveNum(r.minStock ?? null)) return THRESHOLD_NONE_LABEL;
+  if (r.autoBasis === "usage") return AUTO_CAPTION_USAGE_TEXT;
+  if (r.autoBasis === "intake") return AUTO_CAPTION_INTAKE_TEXT;
+  return null;
+}
+
+/**
  * 화면 3 reorder-threshold 의 근거 한 줄 (출처별):
  *   auto   → autoBasisText ("최근 4주 사용량 기준" / "마지막 입고량의 20%" / "아직 없어요")
  *   basis  → "1반 1회 실험량 10 g × 6조 기준" (근거 열이 비어 있으면 "직접 입력"과 같은 취급)
@@ -130,7 +147,16 @@ export function isReorderNeeded(stock: number, minStock: number): boolean {
 
 /** "필요량 60 g / 현재 재고 30 g" */
 export function reorderAmountText(r: { minStock: number; stock: number; unit: string }): string {
-  return `필요량 ${formatStock(r.minStock, r.unit)} / 현재 재고 ${formatStock(r.stock, r.unit)}`;
+  const p = reorderAmountParts(r);
+  return `${p.need} / ${p.stock}`;
+}
+
+/**
+ * 알림 카드 수량 줄의 두 조각 — 자동 기준이면 그 사이에 auto-threshold-badge 를 둔다 (시안 6 stock-line, d7 §18).
+ * { need: "필요량 60 g", stock: "현재 재고 30 g" }
+ */
+export function reorderAmountParts(r: { minStock: number; stock: number; unit: string }): { need: string; stock: string } {
+  return { need: `필요량 ${formatStock(r.minStock, r.unit)}`, stock: `현재 재고 ${formatStock(r.stock, r.unit)}` };
 }
 
 function positive(v: number | null | undefined): v is number {

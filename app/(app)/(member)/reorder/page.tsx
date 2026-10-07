@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { AUTO_LABEL, reorderAlertDateText, reorderAmountText, reorderBasisText } from "@/lib/reorder-rules";
+import {
+  autoCaptionText,
+  reorderAlertDateText,
+  reorderAmountParts,
+  reorderAmountText,
+  reorderBasisText,
+} from "@/lib/reorder-rules";
 import { getReorderScreen } from "@/lib/supabase/reorder";
 import { ReorderScreen } from "./reorder-screen";
 
@@ -28,7 +34,9 @@ export default async function ReorderPage() {
         id: a.id,
         name: a.name,
         amount: reorderAmountText(a),
-        basis: alertBasisText(a),
+        basis: reorderBasisText(a),
+        // 자동 기준: 수량 줄 가운데 auto-threshold-badge + 캡션 (d7 §18, 시안 6)
+        auto: a.source === "auto" ? { ...reorderAmountParts(a), caption: autoCaptionText(a) } : null,
         date: reorderAlertDateText(a.lowSince),
       }))}
       // 우리 학교 판매처 먼저, 그다음 공통 목록 (순서는 getReorderScreen 이 정했다)
@@ -43,13 +51,4 @@ export default async function ReorderPage() {
       }))}
     />
   );
-}
-
-/**
- * 카드 기준 문구 (d7 §11-1 표시): 자동이면 앞에 "자동 · " 를 붙여 화면 3 의 "자동" 표시와 맞춘다
- * ("자동 · 최근 4주 사용량 기준" / "자동 · 마지막 입고량의 20%"). 그 밖은 reorderBasisText 그대로.
- */
-function alertBasisText(a: Parameters<typeof reorderBasisText>[0]): string {
-  const text = reorderBasisText(a);
-  return a.source === "auto" && text !== AUTO_LABEL ? `${AUTO_LABEL} · ${text}` : text;
 }

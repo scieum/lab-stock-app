@@ -41,8 +41,9 @@ export function ManualUpload(props: Props) {
 }
 
 /**
- * 재주문 기준 안내 박스 + 실험 매뉴얼 진입 (화면 6).
- * 연하늘 바탕 + 하늘색 정보 아이콘, 글자는 기본 글자색.
+ * 재주문 기준 안내 박스 + 실험 매뉴얼 진입 (화면 6, 시안 1.17 6 manual-upload).
+ * 연하늘 바탕 + 하늘색 정보 아이콘(제목 줄 info-head), 글자는 기본 글자색, 버튼은 흰 테두리 pill.
+ * 데스크톱은 글자 칸 왼쪽 · 버튼 오른쪽 (안쪽 16·24, 사이 24).
  */
 function ManualUploadGuide({
   variant = "guide",
@@ -55,19 +56,19 @@ function ManualUploadGuide({
   const titleId = useId();
   return (
     <section data-component="manual-upload" data-variant={variant} className={styles.box} aria-labelledby={titleId}>
-      <div className={styles.guide}>
-        <Icon name="info" className={styles.icon} />
-        <div className={styles.text}>
+      <div className={styles.text}>
+        <div className={styles.guide}>
+          <Icon name="info" className={styles.icon} />
           <h2 id={titleId} className={styles.title}>
             {title}
           </h2>
-          <p className={styles.body}>{description}</p>
         </div>
+        <p className={styles.body}>{description}</p>
+        {children}
       </div>
-      {children}
       {href ? (
         <div className={styles.action}>
-          <ButtonPillSoft href={href} icon="chevron-right">
+          <ButtonPillSoft href={href} icon="chevron-right" tone="white" bordered>
             {actionLabel}
           </ButtonPillSoft>
         </div>

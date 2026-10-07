@@ -292,8 +292,8 @@ export function InviteSheet({ onClose, closeIcon, sheet, modal, ...body }: Sheet
   );
 }
 
-type DeleteConfirmProps = Omit<SheetProps, "closeIcon"> & {
-  /** 지울 사용자 이름 — 있으면 제목 아래에 누구를 지우는지 한 줄 보여 준다 */
+type DeleteConfirmProps = SheetProps & {
+  /** 지울 사용자 이름 — 있으면 제목 아래 "{이름} · 사용·입고 기록은 남아요" + 버튼 "{이름} 삭제" (시안 1.17 8) */
   name?: string;
   pending?: boolean;
   /** 삭제 실패 안내 (서버 문구) */
@@ -304,13 +304,18 @@ type DeleteConfirmProps = Omit<SheetProps, "closeIcon"> & {
   onConfirm?: () => void;
 };
 
-/** ③ 삭제 확인 카드 (ex-modal-card): "이 사용자를 삭제할까요?" + "취소" + "삭제" */
-export function DeleteConfirm({ name, pending, error, onCancel, onConfirm, onClose, sheet, modal }: DeleteConfirmProps) {
+/**
+ * ③ 삭제 확인 시트 (ex-modal-card, 시안 1.17 8): 제목 "이 사용자를 삭제할까요?" + 오른쪽 위 × 닫기
+ * → "{이름} · 사용·입고 기록은 남아요"(본문 15) → "취소" · "{이름} 삭제"
+ */
+export function DeleteConfirm({ name, pending, error, onCancel, onConfirm, onClose, closeIcon, sheet, modal }: DeleteConfirmProps) {
   return (
     <ModalCard
       title="이 사용자를 삭제할까요?"
       description={name ? `${name} · 사용·입고 기록은 남아요` : undefined}
+      descriptionTone="body"
       hideClose
+      closeIcon={closeIcon}
       onClose={onClose ?? onCancel}
       sheet={sheet}
       modal={modal}
@@ -325,7 +330,7 @@ export function DeleteConfirm({ name, pending, error, onCancel, onConfirm, onClo
           취소
         </ButtonOutline>
         <ButtonPrimary className={styles.confirmButton} disabled={pending} onClick={onConfirm}>
-          삭제
+          {name ? `${name} 삭제` : "삭제"}
         </ButtonPrimary>
       </div>
     </ModalCard>

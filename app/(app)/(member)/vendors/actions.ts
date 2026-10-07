@@ -27,6 +27,7 @@ function revalidate() {
  * (school_id·role 을 입력으로 받지 않는다 — 들어 있어도 쓰지 않는다). id 가 있으면 수정, 없으면 등록.
  */
 export async function saveVendorAction(input: unknown): Promise<SaveVendorResult> {
+  // note: 화면 9 폼에는 부가 정보 칸이 없다(d7 §18) — 화면이 보내지 않으면 undefined 로 두어 수정 때 기존 값을 건드리지 않는다
   const values = {
     name: field(input, "name"),
     contact: field(input, "contact"),

@@ -50,6 +50,7 @@ import { ReagentRow } from "@/components/reagent-row";
 import { RecordGroup, RecordList } from "@/components/record-group";
 import { ReorderAlertCard } from "@/components/reorder-alert-card";
 import { ReorderThreshold } from "@/components/reorder-threshold";
+import { AutoThresholdBadge } from "@/components/auto-threshold-badge";
 import { SchoolSelectRegion } from "@/components/school-select-region";
 import { SchoolSelectSchool } from "@/components/school-select-school";
 import { SchoolSelectSido } from "@/components/school-select-sido";
@@ -600,6 +601,23 @@ export default function GalleryPage() {
             <ThresholdEdit mode="button" />
           </div>
           <ThresholdEdit mode="form" unit="병" defaultValue="3" />
+        </Item>
+
+        <Item name="auto-threshold-badge (자동 재주문 기준 — 회색 pill, ink 글자, 핑크·하늘색 없음 · 화면 3 흰 카드 위 / 화면 6 회색 카드 위 가는 테두리, d7 §18)">
+          <div className={styles.row}>
+            <AutoThresholdBadge />
+            <AutoThresholdBadge on="muted" />
+          </div>
+          <ReagentDetailCard
+            name="에탄올"
+            stock={200}
+            unit="mL"
+            lowStock
+            intakeDate="2026-09-14"
+            meta={<ReorderThreshold minStock={800} unit="mL" source="auto" autoBasis="usage" canEdit />}
+          />
+          <ReorderThreshold minStock={20} unit="g" source="auto" autoBasis="intake" />
+          <ReorderThreshold minStock={0} unit="mL" source="auto" autoBasis={null} />
         </Item>
 
         <Item name="suggest-badge (위치 추천 — 연하늘 채움 + 하늘색 테두리, 글자 기본색)">

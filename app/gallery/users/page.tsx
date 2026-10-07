@@ -57,6 +57,10 @@ export default function GalleryUsersPage() {
           <DeleteConfirm sheet={false} />
         </Item>
 
+        <Item id="delete-named" name='ex-modal-card ③ 삭제 확인 — 시안 1.17 8: × 닫기 · "{이름} · 사용·입고 기록은 남아요" · "{이름} 삭제"'>
+          <DeleteConfirm sheet={false} closeIcon name="박OO" />
+        </Item>
+
         <Item id="search-empty" name="user-manage — 검색 0건">
           <UserManage
             schoolName={SAMPLE_SCHOOL}

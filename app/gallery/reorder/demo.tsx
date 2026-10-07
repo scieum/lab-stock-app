@@ -35,7 +35,7 @@ export function ReorderDemo({ role, alerts, vendors, defaultOpenId = null }: Pro
             <ReorderAlertList>
               {alerts.map((a) => (
                 <ReorderAlertListItem key={a.id}>
-                  <ReorderAlertItemCard name={a.name} amount={a.amount} basis={a.basis} date={a.date}>
+                  <ReorderAlertItemCard name={a.name} amount={a.amount} basis={a.basis} auto={a.auto} date={a.date}>
                     <VendorLink
                       expanded={openId === a.id}
                       onClick={() => {

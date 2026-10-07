@@ -1,4 +1,11 @@
-/* 시안 5 extraction-table: 제목 줄 + 표 틀, 사이 12 */
+/* 시안 1.17 5 extraction-table (d7 §18)
+ * 모바일(5-mobile): 제목 줄 → 행마다 회색 카드(사이 12). 카드 = 안쪽 16, 사이 8:
+ *   row-head(시약명 17/600 · 오른쪽 "1반 1회 80 mL" 15) → usage-line(사용량 칸[안 라벨 "1조 사용량"] + 단위 선택 88)
+ *   → link-row("우리 학교 시약" 선택 + 삭제) → threshold-note 13 회색 → merge-note(아이콘 16 + 12 회색)
+ * 데스크톱(5-desktop): 흰 틀(회색 테두리, radius 16, 안쪽 16, 사이 12) 안 머리행(12 회색) + 행 카드(안쪽 8·16):
+ *   한 줄 4칸(시약명 · 사용량 · 단위 · 필요량) → link-row(선택 360 · 삭제 · 기존 기준 안내 오른쪽)
+ * 표 구조(table·thead·tbody·tr·td)는 그대로 두고 배치만 바꾼다. */
+
 .root {
   display: flex;
   flex-direction: column;
@@ -7,12 +14,19 @@
   color: var(--color-text);
 }
 
-/* table-header: 제목 18/700 + 닫기 15/600 회색 */
+/* table-header: 제목 20/700 + 안내 13 회색 (사이 4) · 오른쪽 닫기 */
 .header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-8);
+  min-width: 0;
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
   min-width: 0;
 }
 
@@ -20,15 +34,23 @@
   margin: 0;
   min-width: 0;
   color: var(--color-text);
-  font-size: var(--font-size-18);
+  font-size: var(--font-size-20);
   font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-tight);
+  line-height: var(--line-height-normal);
+}
+
+.helper {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
 }
 
 .close {
   flex-shrink: 0;
   min-height: var(--button-min-height);
-  margin: calc(var(--space-12) * -1) 0;
+  margin: calc(var(--space-8) * -1) 0;
   padding: 0 var(--space-4);
   border: 0;
   border-radius: var(--radius-pill);
@@ -51,72 +73,124 @@
   opacity: var(--pressed-opacity);
 }
 
-/* table-body: 흰 바탕 + 연회색 테두리, radius 16 */
+/* 모바일: 틀 없음 (행 카드만) */
 .body {
   min-width: 0;
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-none);
 }
 
 .table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
 }
 
-/* 좁은 폭(390)에서 단위 선택이 들어가게 시안(110·84·56·108)보다 단위 칸을 넓힌다 */
-.colName {
-  width: 27%;
+.table colgroup {
+  display: none;
 }
 
-.colAmount {
-  width: 22%;
+/* 모바일: 머리행은 화면에서 숨기고 읽기 도구에는 남긴다 */
+.table thead {
+  position: absolute;
+  width: var(--border-width);
+  height: var(--border-width);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
-.colUnit {
-  width: 21%;
-}
-
-.colRequired {
-  width: 30%;
-}
-
-/* 머리행: 연회색 바탕 + 아래 선 */
-.headRow > * {
-  border-bottom: var(--border-width) solid var(--color-border);
+/* 행 카드 (extraction-row): 회색 바탕, radius 16, 안쪽 16, 사이 8 */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+  padding: var(--space-16);
+  border-radius: var(--radius-md);
   background: var(--color-surface-muted);
+  box-sizing: border-box;
 }
 
-.headRow > :first-child {
-  border-top-left-radius: var(--radius-md);
+.group > tr {
+  display: block;
+  min-width: 0;
 }
 
-.headRow > :last-child {
-  border-top-right-radius: var(--radius-md);
+.group > tr > * {
+  display: block;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
-/* 행 묶음(4열 + 보조 줄) 사이 선 */
-.group + .group > .mainRow > * {
-  border-top: var(--border-width) solid var(--color-border);
+/* 윗줄: 모바일 = 시약명 · 필요량 / 사용량 · 단위 */
+.group > .mainRow {
+  display: grid;
+  grid-template-areas:
+    "name required"
+    "amount unit";
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.group > .mainRow > :nth-child(1) {
+  grid-area: name;
+}
+
+.group > .mainRow > :nth-child(2) {
+  grid-area: amount;
+}
+
+.group > .mainRow > :nth-child(3) {
+  grid-area: unit;
+}
+
+.group > .mainRow > :nth-child(4) {
+  grid-area: required;
+  text-align: right;
 }
 
 .name {
   display: block;
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
   overflow-wrap: anywhere;
 }
 
 .required {
   display: block;
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
   font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 }
 
-/* 단위 선택: 셀 안 작은 선택 상자 (사용량 입력과 같은 높이) */
+/* 모바일 row-head 의 "1반 1회 80 mL" — 머리행이 없어 앞말을 붙여 보여 준다 (글자 내용은 값 그대로) */
+.required::before {
+  content: "1반 1회 ";
+}
+
+/* 사용량 칸: 안 라벨 "1조 사용량"(12 회색) + 값 15 (시안 usage-line text-input) */
+.amountLabel {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+/* 단위 선택 상자 (시안 1.17 5: 회색 상자, 값 15 + 펼침 아이콘 20, 폭 88) */
 .unitBox {
   position: relative;
   display: flex;
+  width: calc(var(--control-height) * 2 - var(--space-8));
   min-width: 0;
 }
 
@@ -124,14 +198,15 @@
   flex: 1;
   min-width: 0;
   width: 100%;
-  padding: var(--space-4) calc(var(--space-4) + var(--icon-sm)) var(--space-4) var(--space-8);
+  min-height: var(--button-min-height);
+  padding: var(--space-12) calc(var(--space-12) + var(--icon-md)) var(--space-12) var(--space-16);
   border: var(--border-width) solid transparent;
   border-radius: var(--radius-md);
   outline: none;
   background: var(--color-surface-input);
-  color: var(--color-text-muted);
+  color: var(--color-text);
   font-family: inherit;
-  font-size: var(--font-size-13);
+  font-size: var(--font-size-15);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-normal);
   appearance: none;
@@ -149,22 +224,24 @@
 .unitIcon {
   position: absolute;
   top: 50%;
-  right: var(--space-4);
-  width: var(--icon-sm);
-  height: var(--icon-sm);
+  right: var(--space-12);
+  width: var(--icon-md);
+  height: var(--icon-md);
   transform: translateY(-50%);
-  color: var(--color-text-muted);
+  color: var(--color-highlight);
   pointer-events: none;
 }
 
-/* 보조 줄 (시안에 없는 요소): 우리 학교 시약 선택 + 삭제, 그 아래 안내 */
-.detail {
-  padding: 0 var(--space-8) var(--space-12);
+/* 아랫줄 (link-row): "우리 학교 시약" 선택 + 삭제, 그 아래 안내 */
+.group > tr > .detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
 }
 
 .link {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: var(--space-8);
   min-width: 0;
 }
@@ -174,6 +251,7 @@
   min-width: 0;
 }
 
+/* delete-link: 글자 버튼 15/600 기본색, 누름 44 */
 .remove {
   flex-shrink: 0;
   min-height: var(--button-min-height);
@@ -181,9 +259,9 @@
   border: 0;
   border-radius: var(--radius-pill);
   background: transparent;
-  color: var(--color-text-muted);
+  color: var(--color-text);
   font-family: inherit;
-  font-size: var(--font-size-13);
+  font-size: var(--font-size-15);
   font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-normal);
   cursor: pointer;
@@ -198,7 +276,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  margin-top: var(--space-8);
   min-width: 0;
 }
 
@@ -208,7 +285,7 @@
   align-items: flex-start;
   gap: var(--space-4);
   margin: 0;
-  font-size: var(--font-size-12);
+  font-size: var(--font-size-13);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-normal);
   overflow-wrap: anywhere;
@@ -216,6 +293,11 @@
 
 .note {
   color: var(--color-text-muted);
+}
+
+/* merge-note: 아이콘 16 + 12 회색 */
+.mergeNote {
+  font-size: var(--font-size-12);
 }
 
 /* 저장을 막는 행 안내 (핑크 아님 — 진한 글자 + 경고 아이콘) */
@@ -228,6 +310,10 @@
   width: var(--icon-sm);
   height: var(--icon-sm);
   flex-shrink: 0;
+  margin-top: calc((var(--font-size-13) * var(--line-height-normal) - var(--icon-sm)) / 2);
+}
+
+.mergeNote .noteIcon {
   margin-top: calc((var(--font-size-12) * var(--line-height-normal) - var(--icon-sm)) / 2);
 }
 
@@ -247,19 +333,109 @@
 }
 
 @media (min-width: 1024px) {
-  .colName {
-    width: 36%;
+  .root {
+    gap: var(--space-8);
   }
 
-  .colAmount {
-    width: 20%;
+  /* table-container: 흰 바탕 + 회색 테두리, radius 16, 안쪽 16, 사이 12 */
+  .body {
+    padding: var(--space-16);
+    border: var(--border-width) solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-none);
+    box-sizing: border-box;
   }
 
-  .colUnit {
-    width: 16%;
+  .table thead {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
   }
 
-  .colRequired {
-    width: 28%;
+  .table thead,
+  .headRow {
+    display: block;
+  }
+
+  /* 머리행 (ex-data-table-cell): 좌우 16, 칸 사이 16, 12 회색 — 행 카드의 칸과 같은 폭 */
+  .headRow {
+    display: grid;
+    grid-template-columns: var(--extraction-columns);
+    gap: var(--space-16);
+    padding: 0 var(--space-16);
+  }
+
+  .headRow > * {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .table {
+    --extraction-columns: minmax(0, 200fr) minmax(0, 200fr) minmax(0, 120fr) minmax(0, 246fr);
+  }
+
+  .group {
+    padding: var(--space-8) var(--space-16);
+  }
+
+  .group > .mainRow {
+    grid-template-areas: "name amount unit required";
+    grid-template-columns: var(--extraction-columns);
+    gap: var(--space-16);
+  }
+
+  .group > .mainRow > :nth-child(4) {
+    text-align: left;
+  }
+
+  .required::before {
+    content: none;
+  }
+
+  /* 데스크톱 사용량 칸: 안 라벨 없이 값만, 높이 39 (안쪽 8·16) */
+  .amountLabel {
+    display: none;
+  }
+
+  .amountField > div {
+    min-height: 0;
+    padding: var(--space-8) var(--space-16);
+  }
+
+  .unitBox {
+    width: 100%;
+  }
+
+  .unitSelect {
+    min-height: 0;
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-8);
+  }
+
+  /* link-row: 선택 360 · 삭제 · 기존 기준 안내(오른쪽), 사이 16 */
+  .group > tr > .detail {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-16);
+  }
+
+  .link {
+    flex: 0 1 auto;
+    gap: var(--space-16);
+  }
+
+  .linkSelect {
+    flex: 0 0 calc(var(--side-column-width) - var(--space-32) - var(--space-8));
+  }
+
+  .notes {
+    flex: 1 1 0;
+    align-items: flex-end;
+    text-align: right;
   }
 }

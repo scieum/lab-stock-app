@@ -36,11 +36,42 @@
   line-height: var(--line-height-normal);
 }
 
-/* ---------- 화면 6: 알림 1건 카드 (시안 6 reorder-alert-card: 안쪽 24, 사이 8) ---------- */
+/* ---------- 화면 6: 알림 1건 카드 (시안 1.17 6 reorder-alert-card: 안쪽 24, 사이 8 / 데스크톱 정보·동작 두 칸 사이 24) ---------- */
 .item {
   min-width: 0;
   height: 100%;
   box-sizing: border-box;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+/* 자동 기준 수량 줄: "필요량 …" [자동] "/ 현재 재고 …" (시안 stock-line 사이 4) */
+.stockLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/* 자동 기준 캡션 (시안 auto-caption 12/400 회색) */
+.caption {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
 }
 
 .badgeRow {
@@ -89,8 +120,24 @@
 }
 
 @media (min-width: 1024px) {
+  /* 시안 1.17 6-desktop: 한 열 목록(사이 12), 카드 = 정보 칸 + 동작 칸(오른쪽, 폭 400) */
   .list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-16);
+    gap: var(--space-12);
+  }
+
+  .item {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-24);
+  }
+
+  .info {
+    flex: 1 1 auto;
+  }
+
+  /* 좁으면 동작 칸이 먼저 줄어든다 (정보 칸 글자가 접히지 않게) */
+  .actions {
+    flex: 0 10 var(--side-column-width);
   }
 }

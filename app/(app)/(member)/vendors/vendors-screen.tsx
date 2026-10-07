@@ -13,7 +13,6 @@ import {
   type VendorFormState,
   type VendorRegisterVendor,
 } from "@/components/vendor-register";
-import { DESKTOP_MIN_WIDTH } from "@/lib/breakpoints";
 import { filterVendors, type VendorField, type VendorValue } from "@/lib/vendor-rules";
 import { deleteVendorAction, saveVendorAction, toggleVendorFavoriteAction } from "./actions";
 import styles from "./vendors.module.css";
@@ -117,21 +116,26 @@ export function VendorsScreen({ vendors: serverVendors, common: serverCommon }: 
     setForm(next);
   };
 
-  const save = (value: VendorValue, editingId: string | null) => {
+  const save = (value: Omit<VendorValue, "note">, editingId: string | null) => {
     if (pending || sending.current) return;
     sending.current = true;
     setFormError(null);
     startTransition(async () => {
       try {
-        const res = await saveVendorAction({ ...value, id: editingId ?? undefined });
+        // note 는 보내지 않는다 — 부가 정보 칸이 없어(d7 §18) 수정해도 기존 note 를 그대로 둔다
+        const res = await saveVendorAction({
+          name: value.name,
+          contact: value.contact,
+          website: value.website,
+          id: editingId ?? undefined,
+        });
         if (!res.ok) {
           setFormError({ text: res.error, field: res.field ?? null });
           return;
         }
         const saved = res.vendor;
-        // 데스크톱(목록 옆 폼): 방금 저장한 판매처의 수정 폼으로 남긴다 / 모바일: 목록으로 돌아간다
-        const sideBySide = window.matchMedia(`(min-width: ${DESKTOP_MIN_WIDTH}px)`).matches;
-        setForm(sideBySide ? { mode: "edit", vendor: saved } : null);
+        // 등록 시트·카드(시안 1.17 9)를 닫고 목록으로 — 방금 저장한 행을 강조하고 토스트
+        setForm(null);
         setResetKey((k) => k + 1);
         setHighlightId(saved.id);
         // 방금 저장한 행이 검색에 걸러져 안 보이면 검색을 푼다

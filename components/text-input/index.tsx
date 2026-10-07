@@ -22,6 +22,8 @@ type Props = {
   error?: string;
   /** 상자 안 뒤쪽 요소 (예: 비밀번호 보기 버튼) */
   trailing?: React.ReactNode;
+  /** 상자 안 앞쪽 요소 (예: 시안 1.17 5 사용량 칸 안의 작은 라벨 "1조 사용량") */
+  leading?: React.ReactNode;
   /** 상자 아래 오른쪽 글자 수 ("6/20", caption 회색 — 화면 11 이름 시트). 세는 것은 부르는 쪽이 한다 */
   counter?: string;
   /**
@@ -41,6 +43,7 @@ export function TextInput({
   density = "default",
   error,
   trailing,
+  leading,
   counter,
   edited,
   id,
@@ -75,6 +78,7 @@ export function TextInput({
           .join(" ")}
       >
         {icon === "search" ? <Icon name="search" className={styles.icon} /> : null}
+        {leading}
         <input
           id={inputId}
           className={styles.input}

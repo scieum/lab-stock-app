@@ -12,9 +12,10 @@
   box-sizing: border-box;
 }
 
+/* info-head: 아이콘 20 + 제목, 사이 8 */
 .guide {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-8);
   min-width: 0;
 }
@@ -30,14 +31,14 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-12);
   min-width: 0;
 }
 
 .title {
   margin: 0;
   color: var(--color-text);
-  font-size: var(--font-size-13);
+  font-size: var(--font-size-15);
   font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-normal);
 }
@@ -53,6 +54,24 @@
 
 .action {
   display: flex;
+}
+
+/* 시안 1.17 6-desktop manual-upload: 글자 칸 + 버튼(오른쪽), 안쪽 16·24, 사이 24 · 글자 사이 8 */
+@media (min-width: 1024px) {
+  .box {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-24);
+    padding: var(--space-16) var(--space-24);
+  }
+
+  .box .text {
+    gap: var(--space-8);
+  }
+
+  .action {
+    flex-shrink: 0;
+  }
 }
 
 /* ───────── 화면 5: 업로드 영역 (시안 5 manual-upload: 묶음 사이 12, 바탕 없음) ───────── */

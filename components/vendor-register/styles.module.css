@@ -14,6 +14,17 @@
   min-width: 0;
 }
 
+/* 시안 1.17 6-desktop vendor-register: 위 12, 내용 폭 button-outline (왼쪽) */
+@media (min-width: 1024px) {
+  .entry {
+    padding-top: var(--space-12);
+  }
+
+  .entry .entryButton {
+    flex: 0 0 auto;
+  }
+}
+
 /* ---------- 화면 9: 블록 ---------- */
 .root {
   display: flex;
@@ -51,10 +62,6 @@
   min-width: 0;
 }
 
-/* 모바일: 폼이 열리면 목록 자리에 폼이 온다 */
-.formOpen .listColumn {
-  display: none;
-}
 
 .list {
   display: flex;
@@ -100,7 +107,7 @@
 
 .rowInfo {
   color: var(--color-text-muted);
-  font-size: var(--font-size-13);
+  font-size: var(--font-size-12);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-normal);
   overflow-wrap: anywhere;
@@ -210,8 +217,7 @@
   min-width: 0;
 }
 
-.sticky .listActions,
-.formSticky .formActions {
+.sticky .listActions {
   position: fixed;
   right: 0;
   bottom: var(--tab-bar-height);
@@ -225,6 +231,33 @@
 /* ---------- 등록·수정 폼 ---------- */
 .formColumn {
   min-width: 0;
+}
+
+/* 시안 1.17 9 등록 시트 (모바일): tab-bar 위쪽 선에 붙는 하단 시트 — 흰 바탕 + 회색 테두리, 위 모서리 24, 안쪽 24·16.
+ * 목록은 뒤에 그대로 보인다. 갤러리(sticky=false)는 제자리 */
+.sticky .formColumn {
+  position: fixed;
+  right: 0;
+  bottom: var(--tab-bar-height);
+  left: 0;
+  z-index: 15;
+  max-height: calc(100% - var(--tab-bar-height));
+  overflow-y: auto;
+  padding: var(--space-24) var(--space-16);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-bottom: 0;
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-none) var(--radius-none);
+  background: var(--color-surface);
+  box-sizing: border-box;
+}
+
+/* 시트 안내 한 줄 (시안 sheet-helper 13 회색) */
+.formHelper {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
 }
 
 .form {
@@ -278,8 +311,20 @@
   height: var(--icon-md);
 }
 
+/* 시안 action-row: "취소"(outline 1) + "저장"(primary 2), 사이 8 */
 .formActions {
   display: flex;
+  gap: var(--space-8);
+}
+
+.formActions .formCancel {
+  flex: 1;
+  min-width: 0;
+}
+
+.formActions .formSave {
+  flex: 2;
+  min-width: 0;
 }
 
 /* 저장·삭제 실패 안내 — 흑백만 (강조색을 쓰지 않는다) */
@@ -328,8 +373,7 @@
     flex: 1;
   }
 
-  .sticky .listActions,
-  .formSticky .formActions {
+  .sticky .listActions {
     position: static;
     padding: var(--space-0);
     border-top: 0;
@@ -339,9 +383,24 @@
     flex: 0 0 calc(var(--control-height) * 5);
   }
 
-  /* 시안 vendor-form: 흰 바탕 + 회색 테두리, radius 24, 안쪽 24, 폭 448 */
+  /* 시안 1.17 9-desktop 등록 카드: 목록 위 가운데, 폭 480 · 흰 바탕 + 회색 테두리, radius 24, 안쪽 24 */
   .formColumn {
-    flex: 0 0 calc(var(--side-column-width) + var(--space-48));
+    flex: 0 0 calc(var(--side-column-width) + var(--space-48) + var(--space-32));
+  }
+
+  .sticky .formColumn {
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    left: 50%;
+    width: calc(var(--side-column-width) + var(--space-48) + var(--space-32));
+    max-width: calc(100% - var(--space-64) * 2);
+    max-height: calc(100% - var(--space-64) * 2);
+    padding: var(--space-0);
+    border: 0;
+    border-radius: var(--radius-lg);
+    background: transparent;
+    transform: translate(-50%, -50%);
   }
 
   .form {

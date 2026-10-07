@@ -20,6 +20,8 @@ export type SelectFieldProps = {
   required?: boolean;
   /** form = 폼 입력 모양 (화면 7 종류): 진한 라벨, 하늘색 펼침 아이콘, 고른 뒤에도 회색 상자 */
   tone?: "default" | "form";
+  /** true = 라벨을 상자 안 왼쪽에 작게(12 회색) 둔다 (시안 1.17 5 link-row "우리 학교 시약") */
+  inlineLabel?: boolean;
 };
 
 /**
@@ -38,6 +40,7 @@ export function SelectField({
   name,
   required,
   tone = "default",
+  inlineLabel = false,
 }: SelectFieldProps) {
   const form = tone === "form";
   const [inner, setInner] = useState(defaultValue ?? "");
@@ -65,12 +68,14 @@ export function SelectField({
 
   return (
     <div ref={rootRef} className={[styles.field, form ? styles.form : ""].join(" ").trim()}>
-      <div className={styles.labelRow}>
-        <span id={labelId} className={styles.label}>
-          {label}
-        </span>
-        {required ? <span className={styles.required}>필수</span> : null}
-      </div>
+      {inlineLabel ? null : (
+        <div className={styles.labelRow}>
+          <span id={labelId} className={styles.label}>
+            {label}
+          </span>
+          {required ? <span className={styles.required}>필수</span> : null}
+        </div>
+      )}
       <button
         type="button"
         className={[styles.box, selected && !form ? styles.selected : "", open ? styles.open : ""].filter(Boolean).join(" ")}
@@ -84,7 +89,14 @@ export function SelectField({
           if (e.key === "Escape") setOpen(false);
         }}
       >
-        <span className={selected ? styles.value : styles.placeholder}>{selected ? selected.label : placeholder}</span>
+        {inlineLabel ? (
+          <span id={labelId} className={styles.inlineLabel}>
+            {label}
+          </span>
+        ) : null}
+        <span className={[selected ? styles.value : styles.placeholder, inlineLabel ? styles.inlineValue : ""].filter(Boolean).join(" ")}>
+          {selected ? selected.label : placeholder}
+        </span>
         <span className={styles.trail}>
           {selected && !form ? <Icon name="check" className={styles.check} /> : null}
           <Icon
