@@ -1,5 +1,9 @@
 // 화면 10 (사용 기록 내역, dev-rules.json routes["10"]) 테스트 공용 도우미.
-// 기준: 디자인 s2-spec "## 화면 10", design/frames/10-{mobile|desktop}.json, harness/d7-data.md §7, dev-rules route_auth 10.
+// 기준: 디자인 s2-spec "## 화면 10", design/frames/10-{mobile|desktop}.json, harness/d7-data.md §7·§15(사용일), dev-rules route_auth 10.
+// 2026-10-07 (d7 §15 · 디자인 1.17): 목록의 묶음·정렬·행 날짜 = 사용일(used_on), 같은 날은 기록 시각(used_at) 최신순.
+//   기록한 날(used_at 의 한국 날짜)이 사용일과 다를 때만 행·상세에 회색 캡션 "N월 N일에 기록".
+//   상세 라벨 = 사용자 · 사용일 · 기록한 날 · 메모 (design/frames/10-desktop.json ex-modal-card field-label).
+//   목록 묶음은 시안(날짜별 "10월 7일 · 오늘")이 아니라 d7 §7·§15 의 월 묶음("YYYY년 M월")을 따른다 (이번 run 결정).
 // - 문구(필터·안내·상세 라벨)는 위 명세·시안 문장에서 옮긴 상수다 (구현에서 읽지 않는다).
 // - DB 값은 그 계정의 브라우저 세션(publishable 키 + RLS)으로만 읽고 쓴다. service role 미사용.
 // - 운영 DB: 쓰기는 테스트 학교 A 의 UI 전용 고정 시약(이름 `R-db-UI10-fixture-{project}`)에만.
@@ -26,7 +30,11 @@ export const SCOPE_ALL = "전체";
 export const SCOPE_MINE = "내 기록";
 export const SEARCH_PLACEHOLDER = "시약명 검색";
 export const EMPTY_TITLE = "아직 사용 기록이 없어요";
-export const DETAIL_LABELS = ["사용자", "일시", "메모"] as const;
+/** 상세 라벨 (10-desktop 시안 ex-modal-card field-label 순서 = d7 §15) */
+export const DETAIL_LABELS = ["사용자", "사용일", "기록한 날", "메모"] as const;
+/** d7 §15 기록일 캡션 "10월 6일에 기록" */
+export const CAPTION_RE = /^(\d{1,2})월 (\d{1,2})일에 기록$/;
+export const recordedCaption = (ymd: string) => `${Number(ymd.slice(5, 7))}월 ${Number(ymd.slice(8, 10))}일에 기록`;
 export const MSDS_LABEL = "MSDS 보기";
 export const CLOSE_LABEL = "닫기";
 export const MEMO_NONE = "-";
@@ -173,6 +181,8 @@ export async function readList(page: Page): Promise<Entry[]> {
 export type HistoryRow = {
   id: string;
   used_at: string;
+  /** 사용일 "YYYY-MM-DD" (d7 §15) */
+  used_on: string;
   amount: number;
   memo: string | null;
   reagent_id: string;
@@ -210,9 +220,12 @@ export async function dbHistory(page: Page, f: Filter = {}): Promise<HistoryRow[
   });
   expect(error, `자기 세션 usage_history 조회: ${error?.message}`).toBeNull();
   const list = ((data ?? []) as Record<string, unknown>[]).map((r) => ({ ...(r as unknown as HistoryRow), amount: Number(r.amount) }));
-  // 최신순 (used_at 내림차순) 인지 직접 확인
+  // 사용일 최신순, 같은 날은 기록 시각 최신순 (d7 §15) 인지 직접 확인
   for (let i = 1; i < list.length; i++) {
-    expect(Date.parse(list[i - 1].used_at) >= Date.parse(list[i].used_at), "usage_history 는 최신순").toBe(true);
+    const [a, b] = [list[i - 1], list[i]];
+    expect(typeof b.used_on === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.used_on), `usage_history used_on 형식 (${String(b.used_on)})`).toBe(true);
+    expect(a.used_on >= b.used_on, `usage_history 는 사용일 최신순 (${a.used_on} ≥ ${b.used_on})`).toBe(true);
+    if (a.used_on === b.used_on) expect(Date.parse(a.used_at) >= Date.parse(b.used_at), "같은 사용일은 기록 시각 최신순").toBe(true);
   }
   return list;
 }
@@ -226,7 +239,7 @@ export async function myDisplayName(page: Page): Promise<string> {
   return name;
 }
 
-// ---------- 한국 시간 표기 (d7 §7 · 시안: 행 "10.02", 그룹 "2026년 10월", 상세 "2026.10.02 14:20") ----------
+// ---------- 한국 시간 표기 (d7 §7·§15 · 시안 10-desktop: 행 "10.02", 그룹 "2026년 10월", 상세 사용일 "2026-10-03" · 기록한 날 "2026-10-07 09:12") ----------
 function kst(iso: string): Record<"year" | "month" | "day" | "hour" | "minute", string> {
   const out = { year: "", month: "", day: "", hour: "", minute: "" };
   const fmt = new Intl.DateTimeFormat("en-CA", {
@@ -241,20 +254,31 @@ function kst(iso: string): Record<"year" | "month" | "day" | "hour" | "minute", 
   for (const p of fmt.formatToParts(new Date(iso))) if (p.type in out) out[p.type as keyof typeof out] = p.value;
   return out;
 }
-export const rowDate = (iso: string) => `${kst(iso).month}.${kst(iso).day}`;
-export const groupLabel = (iso: string) => `${kst(iso).year}년 ${Number(kst(iso).month)}월`;
+/** 사용일 "YYYY-MM-DD" → 행 날짜 "MM.DD" (시간대 변환 없음 — date 값) */
+export const rowDate = (usedOn: string) => `${usedOn.slice(5, 7)}.${usedOn.slice(8, 10)}`;
+/** 사용일 → 월 그룹 "YYYY년 M월" */
+export const groupLabel = (usedOn: string) => `${usedOn.slice(0, 4)}년 ${Number(usedOn.slice(5, 7))}월`;
+/** 기록한 날 (used_at 의 한국 날짜) "YYYY-MM-DD" */
+export const recordedOn = (iso: string) => {
+  const p = kst(iso);
+  return `${p.year}-${p.month}-${p.day}`;
+};
+/** 상세 "기록한 날" = 기록 시각 "YYYY-MM-DD HH:mm" (한국 시간, 시안 10-desktop) */
 export const detailDateTime = (iso: string) => {
   const p = kst(iso);
-  return `${p.year}.${p.month}.${p.day} ${p.hour}:${p.minute}`;
+  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;
 };
+/** 이 기록에 보여야 하는 캡션: 기록한 날 ≠ 사용일 일 때만 */
+export const captionOf = (r: Pick<HistoryRow, "used_on" | "used_at">): string | null =>
+  recordedOn(r.used_at) !== r.used_on ? recordedCaption(recordedOn(r.used_at)) : null;
 /** 사용량 + 단위 (공백·쉼표 무시 비교용) */
 export const amountText = (r: Pick<HistoryRow, "amount" | "unit">) => squash(`${String(r.amount)}${r.unit}`);
 
-type Flat = { group: string; date: string; name: string; user: string; amount: string };
+type Flat = { group: string; date: string; name: string; user: string; caption: string | null; amount: string };
 
-/** DB 행 → 화면에 보여야 하는 값 */
+/** DB 행 → 화면에 보여야 하는 값 (묶음·날짜 = 사용일, 캡션 = 기록한 날이 다를 때만) */
 function wantOf(r: HistoryRow): Flat {
-  return { group: groupLabel(r.used_at), date: rowDate(r.used_at), name: r.reagent_name, user: r.user_name, amount: amountText(r) };
+  return { group: groupLabel(r.used_on), date: rowDate(r.used_on), name: r.reagent_name, user: r.user_name, caption: captionOf(r), amount: amountText(r) };
 }
 
 /** 화면 항목 → (그룹, 날짜, 시약명, 사용자, 사용량) 행. 구조가 틀리면 여기서 실패한다 */
@@ -271,8 +295,17 @@ export function flatten(entries: Entry[]): Flat[] {
       continue;
     }
     expect(group, "기록 행은 월 그룹 헤더 아래에 있다").not.toBeNull();
-    expect(e.texts.length, `행 3열 = 날짜 · 시약명/사용자 · 사용량 (${JSON.stringify(e.texts)})`).toBeGreaterThanOrEqual(4);
-    out.push({ group: group!, date: e.texts[0], name: e.texts[1], user: e.texts[2], amount: squash(e.texts.slice(3).join("")) });
+    expect(e.texts.length, `행 3열 = 날짜 · 시약명/사용자(/캡션) · 사용량 (${JSON.stringify(e.texts)})`).toBeGreaterThanOrEqual(4);
+    // 사용자 다음 글자가 "N월 N일에 기록" 이면 캡션 (d7 §15)
+    const hasCaption = e.texts.length >= 5 && CAPTION_RE.test(e.texts[3]);
+    out.push({
+      group: group!,
+      date: e.texts[0],
+      name: e.texts[1],
+      user: e.texts[2],
+      caption: hasCaption ? e.texts[3] : null,
+      amount: squash(e.texts.slice(hasCaption ? 4 : 3).join("")),
+    });
   }
   // 그룹 헤더는 최신 달이 위
   const key = (label: string) => {
@@ -374,7 +407,7 @@ export async function readDetail(page: Page): Promise<Detail> {
   });
   const idx = DETAIL_LABELS.map((l) => texts.indexOf(l));
   for (const [i, l] of DETAIL_LABELS.entries()) expect(idx[i], `상세 라벨 "${l}" (${JSON.stringify(texts)})`).toBeGreaterThan(0);
-  expect([...idx].sort((a, b) => a - b), "라벨 순서 사용자 · 일시 · 메모").toEqual(idx);
+  expect([...idx].sort((a, b) => a - b), `라벨 순서 ${DETAIL_LABELS.join(" · ")}`).toEqual(idx);
   const fields: Record<string, string> = {};
   for (const [i, l] of DETAIL_LABELS.entries()) {
     const next = i + 1 < idx.length ? idx[i + 1] : idx[i] + 2;
@@ -393,7 +426,10 @@ export function memoText(memo: string | null): string {
   return t === "" ? MEMO_NONE : t;
 }
 
-/** 열린 상세가 이 DB 기록의 것인지: 시약명 · 사용량+단위 · 사용자 · 일시(YYYY.MM.DD HH:mm, 한국 시간) · 메모(없으면 "-") · msds-entry · "닫기" */
+/**
+ * 열린 상세가 이 DB 기록의 것인지: 시약명 · 사용량+단위 · 사용자 · 사용일(YYYY-MM-DD) · 기록한 날(YYYY-MM-DD HH:mm, 한국 시간)
+ * (+ 기록한 날이 사용일과 다르면 회색 캡션 "N월 N일에 기록") · 메모(없으면 "-") · msds-entry · "닫기"
+ */
 export async function expectDetail(page: Page, r: HistoryRow): Promise<void> {
   await expect(modal(page), `${MODAL} 1개`).toHaveCount(1);
   await expect(modal(page)).toBeVisible();
@@ -402,14 +438,24 @@ export async function expectDetail(page: Page, r: HistoryRow): Promise<void> {
     expect(d.title, "상세 시약명").toBe(r.reagent_name);
     expect(d.amount, "상세 사용량 + 단위").toBe(amountText(r));
     expect(d.fields["사용자"], "상세 사용자").toBe(r.user_name);
-    expect(d.fields["일시"], "상세 일시").toBe(detailDateTime(r.used_at));
-    expect(d.fields["일시"], "일시 형식 YYYY.MM.DD HH:mm").toMatch(/^\d{4}\.\d{2}\.\d{2} \d{2}:\d{2}$/);
+    expect(d.fields["사용일"], "상세 사용일 = used_on").toBe(r.used_on);
+    expect(d.fields["사용일"], "사용일 형식 YYYY-MM-DD").toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    // 기록한 날 칸: 기록 시각, 기록한 날이 사용일과 다르면 그 뒤에 캡션이 붙을 수 있다
+    const cap = captionOf(r);
+    const recorded = d.fields["기록한 날"];
+    expect([detailDateTime(r.used_at), ...(cap ? [`${detailDateTime(r.used_at)} ${cap}`] : [])], `상세 기록한 날 (${recorded})`).toContain(recorded);
+    // 상세의 캡션: d7 §15 "행·상세" + "데스크톱 상세는 시안대로"(10-desktop 은 캡션 없이 '기록한 날' 칸) — 다를 때 캡션은 있어도 없어도 되지만
+    // 같은 날이면 없어야 하고, 있다면 기록한 날의 문구여야 한다
+    const caps = d.texts.filter((t) => CAPTION_RE.test(t));
+    if (!cap) expect(caps, "기록한 날 = 사용일이면 캡션 없음").toEqual([]);
+    else for (const c of caps) expect(c, "상세 캡션 = 기록한 날").toBe(cap);
     expect(d.fields["메모"], "상세 메모").toBe(memoText(r.memo));
   }).toPass({ timeout: 10_000 });
   const entry = modal(page).locator(sel(MSDS));
   await expect(entry, `상세 안 ${MSDS} 1개`).toHaveCount(1);
   await expect(entry).toBeVisible();
-  await expect(entry.locator(sel("button-pill-soft")).filter({ hasText: MSDS_LABEL }), `${MSDS} 안 button-pill-soft "${MSDS_LABEL}"`).toHaveCount(1);
+  // 1.17 시안: msds-entry 자체가 pill (예전 시안의 안쪽 button-pill-soft 는 요구하지 않는다) — "MSDS 보기" 누를 것 1개
+  await expect(entry.locator("a, button").filter({ hasText: MSDS_LABEL }), `${MSDS} 안 "${MSDS_LABEL}" (링크·버튼)`).toHaveCount(1);
   await expect(closeButton(page), `button-outline "${CLOSE_LABEL}"`).toHaveCount(1);
   await expect(closeButton(page)).toBeVisible();
 }

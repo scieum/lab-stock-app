@@ -65,9 +65,11 @@ for (const role of ROLES) {
       // 탭바는 폭별 기대값이 다르다 (C2 에서 본다)
       .filter((n) => n !== rules.tab_bar.component && n !== rules.tab_bar.item);
     const stateOnly = fromDevAll.filter((n) => !baseFrame.has(n));
-    const variant = (rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants[String(SCREEN)].location;
+    // 1.17: variants["3"].location 에 suggest-badge(위치 추천)가 더해졌지만 dev-rules components 밖 — 위치 추천 run(다음 run)에서. 이번 범위 = dev-rules 에 있는 것
+    const variant = (rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants[String(SCREEN)].location.filter((n) => devRules.components[n]);
     for (const n of variant) expect(stateOnly, `variants["${SCREEN}"].location ${n} 은 기본 프레임에 없는 상태 컴포넌트`).toContain(n);
-    for (const n of stateOnly) expect(frameNames(`${SCREEN}-location-${viewportName}`), `상태 컴포넌트 ${n} 은 3-location 프레임에 있다`).toContain(n);
+    // mix-warning 은 고른 칸이 분류와 안 맞을 때만 나오는 조건부 상태 — 1.17 3-location 시안은 추천 칸을 고른 상태라 없다 (경고 동작은 screen-3-location)
+    for (const n of stateOnly.filter((x) => x !== "mix-warning")) expect(frameNames(`${SCREEN}-location-${viewportName}`), `상태 컴포넌트 ${n} 은 3-location 프레임에 있다`).toContain(n);
     const fromDev = fromDevAll.filter((n) => baseFrame.has(n));
     expect(fromDev.length, `dev-rules components 에 화면 ${SCREEN} 컴포넌트가 있어야 함`).toBeGreaterThan(0);
 

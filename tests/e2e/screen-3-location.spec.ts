@@ -11,7 +11,7 @@ import { test, expect, type Locator, type Page, type TestInfo } from "@playwrigh
 import { openAs } from "./auth-state";
 import { ROLE_LABEL, SCHOOL_A_ROLES } from "./db-helpers";
 import { demoReagents, guestDetailPath, openGuest } from "./guest-helpers";
-import { browserClient, browserSession, countComponent, routeOf, rules, sel, seedRows } from "./screen-helpers";
+import { browserClient, browserSession, countComponent, devRules, routeOf, rules, sel, seedRows } from "./screen-helpers";
 import { detailPath, waitDetail } from "./screen-3-helpers";
 import { MANUAL_SOURCE_TEXT } from "./reorder-auto-helpers";
 import { HAS_SERVICE, clientFor, openTemp, service } from "./screen-8-helpers";
@@ -53,7 +53,8 @@ const CABINETS_HREF = routeOf(11);
 const REORDER_HREF = routeOf(6);
 const R5 = rules.roles.R5;
 const R7 = rules.roles.R7;
-const VARIANT = (rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants[String(SCREEN)].location;
+// 1.17: variants["3"].location 의 suggest-badge(위치 추천)는 dev-rules components 밖 — 다음 run(위치 추천)에서. 이번 범위 = dev-rules 에 있는 것
+const VARIANT = (rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants[String(SCREEN)].location.filter((n) => n in devRules.components);
 const REQUIRED = rules.screens_required[String(SCREEN)] as string[];
 const HIDDEN = (rules as unknown as { guest: { hidden_components: string[] } }).guest.hidden_components;
 

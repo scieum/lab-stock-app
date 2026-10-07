@@ -2,6 +2,7 @@
 // 기대값: design/rules.json (screens_required, tab_bar, roles) · harness/dev-rules.json (viewports, components)
 // 로그인은 auth-state.ts 의 역할별 storageState 를 재사용한다 (Supabase Auth 요청 최소화).
 // 이 파일은 제출하지 않는다 (재고 불변). ex-toast 의 제출 후 표시는 screen-4-record.spec.ts 에서 본다.
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test, expect } from "@playwright/test";
 import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
@@ -11,6 +12,17 @@ import { CARD, SCREEN, TOAST, seedOwnReagents, usagePath, waitUsage } from "./sc
 
 const ROLES: Role[] = [...SCHOOL_A_ROLES, "schoolB"];
 
+/** design/frames/{name}.json 의 노드 이름 (dev-rules components 에 있는 이름만) */
+function frameNames(name: string): Set<string> {
+  const j = JSON.parse(readFileSync(join(process.cwd(), "design", "frames", `${name}.json`), "utf8")) as { frames: { nodes: { name: string }[] }[] };
+  return new Set(j.frames[0].nodes.map((n) => n.name).filter((n) => devRules.components[n]));
+}
+/** rules.json variants[4] (디자인 1.17: "past-date" = usage-date + past-date-note) */
+const VARIANTS4 = (rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants[String(SCREEN)] ?? {};
+/** 한국 날짜 "YYYY-MM-DD" (오늘 − days) */
+const seoulDaysAgo = (days: number) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(Date.now() - days * 86_400_000));
+
 /** rules.json roles 상 이 역할에 0개여야 하는 컴포넌트 (C1 존재 검사에서 제외) */
 function forbiddenFor(role: Role): Set<string> {
   const name = role === "schoolB" ? "교사" : ROLE_NAME[role as keyof typeof ROLE_NAME];
@@ -19,7 +31,7 @@ function forbiddenFor(role: Role): Set<string> {
 
 // ---------- C1 ----------
 for (const role of ROLES) {
-  test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]}: screens_required[${SCREEN}] · dev-rules components 중 화면 ${SCREEN} 컴포넌트 표시 (${TOAST} 는 제출 전 0개)`, async ({ browser }, info) => {
+  test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]}: screens_required[${SCREEN}] · dev-rules components 중 화면 ${SCREEN} 컴포넌트 표시 (${TOAST} 는 제출 전 0개) · variants 상태 컴포넌트는 그 상태에서(past-date: 지난 날짜를 고르면)`, async ({ browser }, info) => {
     test.setTimeout(120_000);
     const raw = rules.screens_required[String(SCREEN)];
     const required = Array.isArray(raw) ? raw : [];
@@ -29,6 +41,10 @@ for (const role of ROLES) {
       .map(([n]) => n);
     expect(fromDev.length, `dev-rules components 에 화면 ${SCREEN} 컴포넌트가 있어야 함`).toBeGreaterThan(0);
     expect(fromDev, `${TOAST} 는 화면 ${SCREEN} 컴포넌트 (제출 후 검사는 screen-4-record)`).toContain(TOAST);
+    // 디자인 1.17: 기본 프레임 4-{폭} 에 없고 rules.json variants[4] 상태 프레임에만 있는 컴포넌트(past-date-note)는 기본 상태 0, 그 상태에서 ≥ 1
+    const baseFrame = frameNames(`${SCREEN}-${info.project.name}`);
+    const variantOnly = [...new Set(Object.values(VARIANTS4).flat())].filter((n) => fromDev.includes(n) && !baseFrame.has(n));
+    expect(variantOnly, "variants[4] 에만 있는 화면 4 컴포넌트").toContain("past-date-note");
 
     const { school, own } = seedOwnReagents(role);
     const pick = own[0];
@@ -57,12 +73,26 @@ for (const role of ROLES) {
           expect(await countComponent(page, name), `${name} 제출 전`).toBe(0);
           continue;
         }
+        if (variantOnly.includes(name)) {
+          expect(await countComponent(page, name), `${name} 기본 상태(사용일 = 오늘) 0`).toBe(0);
+          continue;
+        }
         expect(await countComponent(page, name), `${name}`).toBeGreaterThanOrEqual(1);
         await expect(page.locator(sel(name)).first(), `${name} 보임`).toBeVisible();
       }
       // 사용량 입력(text-input 안)과 저장 버튼(button-primary)이 폼 안에 있음
       await expect(page.locator(`main ${sel("text-input")} input[name="amount"]`), "사용량 text-input").toHaveCount(1);
       await expect(page.locator(`main form button[type="submit"]${sel("button-primary")}`), "저장 button-primary").toHaveCount(1);
+
+      // variants[4] 상태: 사용일을 어제(한국 날짜)로 고르면 그 상태의 컴포넌트가 모두 보인다 (저장하지 않는다)
+      await page.locator(`main ${sel("usage-date")} input`).fill(seoulDaysAgo(1));
+      for (const [state, names] of Object.entries(VARIANTS4)) {
+        for (const name of names) {
+          await expect(page.locator(sel(name)).first(), `variants[4].${state} ${name} 보임`).toBeVisible();
+          expect(await countComponent(page, name), `variants[4].${state} ${name}`).toBeGreaterThanOrEqual(1);
+        }
+      }
+      expect(await countComponent(page, TOAST), `${TOAST} (저장 안 함)`).toBe(0);
     } finally {
       await context.close();
     }

@@ -1,7 +1,10 @@
 // [R-db][S4] · [R-db][S10] · [N1-db][S10] · [N1-db][S4] · [GM-db][S*]
 // 사용 기록 내역(화면 10) 조회 함수 usage_history + 화면 4 메모(record_usage memo) DB 권한 —
 // 실제 RLS·함수 (anon 키 + 각 계정 로그인). service role 미사용.
-// 기준: harness/d7-data.md §1(usage_logs.memo)·§2·§5·§7, harness/d5-gates.md R-db·N1-db·GM-db.
+// 기준: harness/d7-data.md §1(usage_logs.memo)·§2·§5·§7·§15(사용일), harness/d5-gates.md R-db·N1-db·GM-db.
+// 2026-10-07 (d7 §15): usage_history 의 기간(p_since)·정렬이 사용일(used_on, 한국 날짜) 기준이 됐다.
+//   p_since = "그 시각의 한국 날짜 이후 사용일" 이라 같은 날 앞선 실행의 고정 시약 기록도 함께 나온다
+//   → 이번 실행의 행은 id 로 고른다(scoped). 사용일 자체(과거·미래·기본값)는 db-s4-s10-used-on.spec.ts(일회용 학교)가 본다.
 //
 // 운영 DB 이므로 테스트 학교(A·B)에서만 쓴다:
 // - usage_logs 는 update·delete 정책이 없고 reagents FK 가 cascade 가 아니라, 사용 기록이 달린 시약은 지울 수 없다.
@@ -35,8 +38,8 @@ const FIX_STOCK = 100;
 /** d7 §1·§7: 메모 200자 이하 */
 const MEMO_MAX = 200;
 /** d7 §7 목록·상세에 필요한 값 */
-const HISTORY_KEYS = ["id", "used_at", "amount", "memo", "reagent_id", "reagent_name", "unit", "msds_url", "user_name", "is_mine"];
-const LOG_COLS = "id, school_id, reagent_id, user_id, amount, used_at, memo";
+const HISTORY_KEYS = ["id", "used_at", "used_on", "amount", "memo", "reagent_id", "reagent_name", "unit", "msds_url", "user_name", "is_mine"];
+const LOG_COLS = "id, school_id, reagent_id, user_id, amount, used_at, used_on, memo";
 
 const fixtureName = (info: TestInfo) => `R-db-S10-fixture_100%-${info.project.name}`;
 
@@ -232,9 +235,20 @@ function fixture(info: TestInfo): Promise<Fixture> {
   return fixturePromise;
 }
 
-/** 이번 실행의 고정 시약 기록만: 이름 검색 + since */
+/** 한국 날짜 "YYYY-MM-DD" */
+const seoulYmd = (v: unknown) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(Number(micros(v) / 1000n)));
+
+/** 이번 실행의 행 id — 만들어지지 않은 행은 빠진다 */
+const runIds = (fx: Fixture) => new Set(fx.order.map((k) => fx.calls[k].row?.id as string | undefined).filter((x): x is string => !!x));
+
+/**
+ * 이번 실행의 고정 시약 기록만: 이름 검색 + since(사용일 기준이라 같은 날 앞선 실행 행도 나옴) → 이번 실행 id 로 거른다.
+ * 거르기 전 결과의 순서는 그대로 둔다 (정렬 검사용).
+ */
 async function scoped(s: Session, fx: Fixture, extra: HistoryArgs = {}): Promise<Row[]> {
-  return history(s, { p_query: fx.reagent.name as string, p_since: fx.since, p_limit: 500, ...extra });
+  const ids = runIds(fx);
+  return (await history(s, { p_query: fx.reagent.name as string, p_since: fx.since, p_limit: 500, ...extra })).filter((r) => ids.has(r.id as string));
 }
 
 /** 계획한 행이 모두 만들어졌는지 (usage_history 테스트의 전제) */
@@ -675,6 +689,8 @@ test(`[R-db][S10] usage_history 반환 값이 실제 값과 일치 (memo·amount
       expect(row.memo ?? null, `${what} memo`).toBe(c.row?.memo ?? null);
       expect(Number(row.amount), `${what} amount`).toBe(c.amount);
       expect(micros(row.used_at), `${what} used_at`).toBe(micros(c.row?.used_at));
+      expect(row.used_on, `${what} used_on = 저장된 사용일`).toBe(c.row?.used_on);
+      expect(row.used_on, `${what} used_on = 기록한 날(사용일 인자 없음 → 한국 오늘)`).toBe(seoulYmd(c.row?.used_at));
       expect(row.reagent_id, `${what} reagent_id`).toBe(fx.reagent.id);
       expect(row.reagent_name, `${what} reagent_name`).toBe(fx.reagent.name);
       expect(row.unit, `${what} unit`).toBe(FIX_UNIT);
@@ -699,10 +715,11 @@ test(`[R-db][S10] usage_history 반환 값이 실제 값과 일치 (memo·amount
     expect(Number(row.amount)).toBe(Number(l?.amount));
     expect(row.memo ?? null).toBe(l?.memo ?? null);
     expect(micros(row.used_at)).toBe(micros(l?.used_at));
+    expect(row.used_on, "used_on = usage_logs.used_on").toBe(l?.used_on);
   }
 });
 
-test(`[R-db][S10] usage_history 정렬: used_at 내림차순 (최신순)`, async ({}, info) => {
+test(`[R-db][S10] usage_history 정렬: 사용일(used_on) 내림차순, 같은 날은 used_at 내림차순 (d7 §15)`, async ({}, info) => {
   const fx = await fixture(info);
   const ids = fixtureIds(fx);
   for (const role of ["student", "teacher"] as Role[]) {
@@ -713,36 +730,51 @@ test(`[R-db][S10] usage_history 정렬: used_at 내림차순 (최신순)`, async
       const rows = await history(s, args);
       expect(rows.length).toBeGreaterThan(1);
       for (let i = 1; i < rows.length; i++) {
-        expect(
-          micros(rows[i - 1].used_at) >= micros(rows[i].used_at),
-          `usage_history(${JSON.stringify(args)}) ${i - 1}→${i}: ${String(rows[i - 1].used_at)} ≥ ${String(rows[i].used_at)}`,
-        ).toBe(true);
+        const [a, b] = [rows[i - 1], rows[i]];
+        const what = `usage_history(${JSON.stringify(args)}) ${i - 1}→${i}: (${String(a.used_on)}, ${String(a.used_at)}) ≥ (${String(b.used_on)}, ${String(b.used_at)})`;
+        expect(String(a.used_on) >= String(b.used_on), `${what} 사용일`).toBe(true);
+        if (a.used_on === b.used_on) expect(micros(a.used_at) >= micros(b.used_at), `${what} 같은 날 기록 시각`).toBe(true);
       }
     }
   }
 });
 
-test(`[R-db][S10] usage_history p_since: 그 시각 이후 기록만`, async ({}, info) => {
+test(`[R-db][S10] usage_history p_since: 그 시각의 한국 날짜 이후 사용일 (d7 §15 — 시각이 아니라 날짜)`, async ({}, info) => {
   const fx = await fixture(info);
   const ids = fixtureIds(fx);
   const s = await signIn("student");
-  // 4번째 기록 시각을 기준으로: 5번째부터는 포함, 1~3번째는 제외 (경계인 4번째는 판정하지 않는다)
+  // 이번 실행 행은 모두 사용일 = 기록한 날(한국 오늘). 4번째 기록 시각을 p_since 로 줘도 1~3번째(그보다 앞 시각)까지 모두 포함
   const pivot = fx.calls[fx.order[3]].row?.used_at as string;
+  const pivotDay = seoulYmd(pivot);
+  for (const k of fx.order) expect(fx.calls[k].row?.used_on, `${k} 사용일 = 한국 오늘`).toBe(pivotDay);
   const rows = await history(s, { p_query: fx.reagent.name as string, p_since: pivot, p_limit: 500 });
   const got = idsOf(rows);
-  for (const id of ids.slice(4)) expect(got, "기준 시각 뒤 기록 포함").toContain(id);
-  for (const id of ids.slice(0, 3)) expect(got, "기준 시각 앞 기록 제외").not.toContain(id);
-  for (const row of rows) expect(micros(row.used_at) >= micros(pivot), `${String(row.used_at)} ≥ 기준`).toBe(true);
+  for (const id of ids) expect(got, "같은 사용일 기록은 기준 시각 앞이어도 포함").toContain(id);
+  for (const row of rows) expect(String(row.used_on) >= pivotDay, `${String(row.used_on)} ≥ ${pivotDay}`).toBe(true);
 
-  // 시약 검색 없이도: 모든 행이 기준 시각 이후, 그 전 기록(학교 A 에 이미 많음)은 빠진다
+  // 시약 검색 없이도: 모든 행의 사용일 ≥ 기준 시각의 한국 날짜, 그보다 앞 사용일(학교 A 에 이미 많음)은 빠진다
   const wide = await history(s, { p_since: pivot, p_limit: 500 });
-  for (const row of wide) expect(micros(row.used_at) >= micros(pivot), `${String(row.used_at)} ≥ 기준`).toBe(true);
-  const noSince = await history(s, { p_limit: 500 });
-  expect(noSince.some((r) => micros(r.used_at) < micros(pivot)), "대조군: p_since 없으면 더 오래된 기록도 있음").toBe(true);
+  for (const row of wide) expect(String(row.used_on) >= pivotDay, `${String(row.used_on)} ≥ ${pivotDay}`).toBe(true);
+  // 대조군: 학교 A 에 그보다 앞 사용일 기록이 실제로 있다 (usage_history 는 최신 500건까지라 오늘 기록이 많으면 그 안에 안 들어온다 — 직접 조회, RLS)
+  const older = await s.client.from("usage_logs").select("id, used_on").lt("used_on", pivotDay).limit(5);
+  expect(older.error, `대조군 조회: ${older.error?.message}`).toBeNull();
+  expect((older.data ?? []).length, "대조군: 기준 날짜보다 앞 사용일 기록이 있음").toBeGreaterThan(0);
+  for (const o of older.data ?? []) expect(idsOf(wide), `앞 사용일 기록 ${String(o.used_on)} 은 기간 밖`).not.toContain(o.id);
 
-  // 미래 시각 → 0행
-  const future = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-  expect(await history(s, { p_since: future, p_limit: 500 })).toHaveLength(0);
+  // 경계: 한국 오늘 0시 정각 → 오늘 포함 / 그 1ms 전(= 한국 어제) → 어제 사용일부터
+  const kstMidnight = new Date(`${pivotDay}T00:00:00+09:00`);
+  const atMidnight = await history(s, { p_query: fx.reagent.name as string, p_since: kstMidnight.toISOString(), p_limit: 500 });
+  for (const id of ids) expect(idsOf(atMidnight), "한국 0시 정각 = 오늘 포함").toContain(id);
+  const dayBefore = new Date(kstMidnight.getTime() - 1).toISOString();
+  const yesterday = seoulYmd(dayBefore);
+  expect(yesterday < pivotDay, "0시 1ms 전은 한국 어제").toBe(true);
+  const before = await history(s, { p_since: dayBefore, p_limit: 500 });
+  for (const row of before) expect(String(row.used_on) >= yesterday, `한국 어제 이후: ${String(row.used_on)}`).toBe(true);
+  expect(before.length, "하루 앞 기준이면 같거나 더 많다").toBeGreaterThanOrEqual(wide.length);
+
+  // 한국 내일 0시 → 0행 (미래 사용일은 저장되지 않으므로)
+  const tomorrow = new Date(kstMidnight.getTime() + 24 * 60 * 60 * 1000).toISOString();
+  expect(await history(s, { p_since: tomorrow, p_limit: 500 })).toHaveLength(0);
 });
 
 test(`[R-db][S10] usage_history p_query: 시약명 부분 일치, 대소문자 무시`, async ({}, info) => {
@@ -756,7 +788,8 @@ test(`[R-db][S10] usage_history p_query: 시약명 부분 일치, 대소문자 �
   const pieces = [name, name.slice(0, 8), name.slice(3, 12), name.slice(-6), name.toLowerCase(), name.toUpperCase(), "s10-FIXTURE", `  ${name.slice(3, 12)}  `];
   for (const q of pieces) {
     const rows = await history(s, { p_query: q, p_since: since, p_limit: 500 });
-    const mine = rows.filter((r) => r.reagent_id === fx.reagent.id);
+    // p_since 는 사용일 기준 — 같은 날 앞선 실행의 고정 시약 행도 나올 수 있어 이번 실행 id 로 거른다
+    const mine = rows.filter((r) => r.reagent_id === fx.reagent.id && ids.includes(r.id as string));
     expect(idsOf(mine).sort(), `p_query=${JSON.stringify(q)}`).toEqual(ids);
     for (const row of rows) {
       expect(String(row.reagent_name).toLowerCase(), `p_query=${JSON.stringify(q)} 결과 시약명`).toContain(q.trim().toLowerCase());
@@ -795,7 +828,7 @@ test(`[R-db][S10] usage_history p_query 의 %·_·\\ 는 와일드카드가 아�
   // 글자 그대로 들어 있는 조각 → 이번 실행 행 전부 (다른 프로젝트의 고정 시약도 같은 조각을 가지므로 시약으로 거른다)
   for (const q of ["fixture_100%-", "_100%", "100%-", `_100%-${info.project.name}`]) {
     const rows = await run(q);
-    expect(idsOf(rows.filter((r) => r.reagent_id === fx.reagent.id)).sort(), `p_query=${JSON.stringify(q)} (이름에 그대로 있음)`).toEqual(ids);
+    expect(idsOf(rows.filter((r) => r.reagent_id === fx.reagent.id && ids.includes(r.id as string))).sort(), `p_query=${JSON.stringify(q)} (이름에 그대로 있음)`).toEqual(ids);
     for (const row of rows) expect(String(row.reagent_name), `p_query=${JSON.stringify(q)} 결과 시약명`).toContain(q);
   }
   // 와일드카드로 풀리면 맞지만 글자 그대로는 이름에 없는 조각 → 0행

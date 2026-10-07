@@ -54,6 +54,7 @@ const F3 = loadFrame("3-mobile");
 const F3L = loadFrame("3-location-mobile");
 const cab = rules.cabinet;
 const componentNames = Object.keys(dev.components);
+const HIGHLIGHTS_EARLY = rules.colors.highlight.values.map((v) => v.toLowerCase());
 
 // ---------- 프레임 도우미 ----------
 const leaf = (n: FrameNode) => n.path[n.path.length - 1];
@@ -158,23 +159,38 @@ const THR = {
   label: firstText(under(F3, "reorder-threshold"), "field-label"),
   value: firstText(under(F3, "reorder-threshold"), "value"),
 };
-/** 3-location: 위치 피커 */
+/**
+ * 3-location: 위치 피커.
+ * 디자인 1.17(fadfee7)에서 3-location 시안이 위치 추천 시안으로 바뀌었다: 노드 이름(heading · caption · cabinet-pill · slot-grid ·
+ * slot-left/label · link-action), "추천" 줄(suggest-row · suggest-badge), 고른 칸 = 추천 칸(산화제), 피커 mix-warning 없음.
+ * 위치 추천(suggest-badge · suggest-row · 추천 칸 선택)은 다음 run 범위 — 그 부분은 아래 테스트에서 빼고 표시해 둔다.
+ */
 const pickerNodes = subtree(F3L, "location-picker");
+/** 칸 이름: slot-left 안 label (suggest-badge 의 "추천" 글자는 빼고) */
+const slotLabelOf = (g: { children: FrameNode[] }) =>
+  g.children.find((c) => c.name === "label" && c.text && c.path.includes("slot-left") && !c.path.includes("suggest-badge"))?.text?.characters ?? "";
+const pillGroups = groups(pickerNodes, "cabinet-pill");
+const pillLabelOf = (g: { children: FrameNode[] }) => g.children.find((c) => c.name === "label" && c.text && !c.path.includes("cabinet-number"))?.text?.characters ?? "";
 const PICKER = {
-  title: firstText(pickerNodes, "sheet-title-text"),
-  caption: firstText(pickerNodes, "sheet-caption"),
-  pills: groups(pickerNodes, "cabinet-switcher")[0].children.filter((n) => n.name === "label" && /cabinet-chip/.test(n.path[n.path.length - 2])).map((n) => n.text!.characters),
-  active: under(pickerNodes, "cabinet-switcher").find((n) => n.name === "label" && n.path[n.path.length - 2] === "cabinet-chip-active")!.text!.characters,
+  title: firstText(pickerNodes, "heading"),
+  caption: firstText(pickerNodes, "caption"),
+  pills: pillGroups.map(pillLabelOf),
+  active: pillLabelOf(pillGroups.find((g) => HIGHLIGHTS_EARLY.includes((g.node.fills[0] ?? "").toLowerCase()))!),
   slots: groups(pickerNodes, "cabinet-slot").map((g) => ({
-    label: labelIn(g, "slot-label"),
+    label: slotLabelOf(g),
     count: Number(g.children.find((c) => c.name === "label" && c.path.includes("slot-count"))?.text?.characters ?? 0),
     selected: (g.node.fills[0] ?? "").toLowerCase(),
+    /** 추천 칸 (suggest-badge) — 다음 run */
+    suggested: g.children.some((c) => leaf(c) === "suggest-badge"),
   })),
-  unassign: texts(under(pickerNodes, "slot-unassign"), "label")[0],
+  unassign: texts(under(pickerNodes, "link-action"), "label")[0],
   warning: texts(under(pickerNodes, "mix-warning"), "warning-line"),
   save: labelIn(groups(pickerNodes, "button-primary")[0]),
-  counts: countIn(pickerNodes),
+  /** 추천 줄(suggest-row: 번호 원 · suggest-badge)은 다음 run — 개수 비교에서 뺀다 */
+  counts: countIn(pickerNodes.filter((n) => !n.path.includes("suggest-row"))),
 };
+/** dev-rules components 에 아직 없는 variants 컴포넌트(suggest-badge 등 — components_note "뒤 run 에서")는 이번 범위 밖 */
+const inScope = (names: string[]) => names.filter((n) => componentNames.includes(n));
 
 // ---------- 기대값: rules ----------
 function hexToRgb(hex: string): string {
@@ -204,7 +220,11 @@ const isIncompatible = (a: string, b: string) => cab.incompatible.some(([x, y]) 
 /** 시안 11-slot "이 칸은 유기 칸이에요 — 그래도 넣을 수 있어요" 의 틀 */
 const mismatchText = (slotLabel: string) => SLOT.warning[0].replace(/^이 칸은 .+ 칸이에요/, `이 칸은 ${slotLabel} 칸이에요`);
 const PUT_NOTE = SLOT.warning[0].split(" — ")[1];
-const SAVE_NOTE = PICKER.warning[1];
+/**
+ * 피커 보조 줄("저장" 쪽): 1.15 시안 "그래도 저장할 수 있어요" 는 1.17 시안에서 빠졌다(원본 없음).
+ * 문구 대조는 다음 run(위치 추천)에서 — 여기서는 강한 문구 + 무언가 보조 줄 1개만 본다 (null = 문구 대조 안 함).
+ */
+const SAVE_NOTE: string | null = PICKER.warning[1] ?? null;
 /**
  * d7 §14 분류 불일치 판단(규칙에서 직접): 시약 분류가 없으면 없음 → 칸 분류·같은 칸 다른 시약 분류와 incompatible 이면 강한 문구(조합마다)
  * → 칸 분류가 있고 시약 분류가 그 안에 없으면 약한 문구 → 그 밖에는 없음
@@ -379,14 +399,21 @@ test("[K1][S11] 기대값 원본: 1.15 프레임(11 · 11-slot · 11-print · 11
   expect(LOC.value).toBe("1번 시약장 · 우 1단");
   expect(THR.value).toBe("3병");
   expect(PICKER.title).toBe("보관 위치 바꾸기");
-  expect(PICKER.warning).toEqual(["산화제와 유기는 섞으면 위험해요", "그래도 저장할 수 있어요"]);
+  expect(PICKER.caption).toBe("과산화수소 · 산화제");
+  expect(PICKER.pills).toEqual(PILLS);
+  expect(PICKER.active).toBe(PILLS[1]);
+  // 1.17: 피커 mix-warning 은 시안에서 빠짐, 추천 칸 1개 (위치 추천은 다음 run)
+  expect(PICKER.warning).toEqual([]);
+  expect(PICKER.slots.filter((s) => s.suggested).length, "1.17 3-location 추천 칸").toBe(1);
   expect(PICKER.unassign).toBe(`${UNASSIGNED}으로`);
   expect(QR_TEMPLATE, "d7 §14 QR 내용 틀").toBeTruthy();
   // variants 필수 컴포넌트가 상태 프레임에 있다
   for (const n of rules.variants["11"].slot) expect(countIn(F11S)[n] ?? 0, `11-slot ${n}`).toBeGreaterThanOrEqual(1);
   for (const n of rules.variants["11"].print) expect(countIn(F11P)[n] ?? 0, `11-print ${n}`).toBeGreaterThanOrEqual(1);
   for (const n of rules.variants["11"].unsaved) expect(countIn(F11U)[n] ?? 0, `11-unsaved ${n}`).toBeGreaterThanOrEqual(1);
-  for (const n of rules.variants["3"].location) expect(countIn(F3L)[n] ?? 0, `3-location ${n}`).toBeGreaterThanOrEqual(1);
+  for (const n of inScope(rules.variants["3"].location)) expect(countIn(F3L)[n] ?? 0, `3-location ${n}`).toBeGreaterThanOrEqual(1);
+  // suggest-badge 는 rules variants 3.location 에 있지만 dev-rules components 밖(다음 run) — 프레임에 있는지만 확인
+  expect(F3L.some((n) => leaf(n) === "suggest-badge"), "3-location 시안 suggest-badge").toBe(true);
   for (const n of rules.screens_required["3"]) expect(countIn(F3)[n] ?? 0, `3 ${n}`).toBeGreaterThanOrEqual(1);
   // 갤러리 예시 데이터(입력)가 시안 상태와 같다
   expect(sampleCabinets.map((c) => c.label)).toEqual(PILLS);
@@ -970,10 +997,11 @@ test.describe("화면 3 보관 위치 (/gallery/placement)", () => {
     expect(await row.getByText(UNASSIGNED, { exact: true }).evaluate((el) => getComputedStyle(el).color), "칸 없음 = 회색 (s2-spec #707070 = 프레임 라벨 색)").toBe(hexToRgb(LOC.labelFill));
   });
 
-  test(`[K1][S3] variants 3.location 예시(picker): location-picker "${PICKER.title}" · caption "${PICKER.caption}" · 전환 pill(번호, cabinet-add 없음) "${PICKER.active}" 활성 · 칸 ${PICKER.slots.length}개 · slot-count · "${PICKER.unassign}" · 강한 mix-warning · "${PICKER.save}" 활성 — 프레임 개수 이상`, async ({ page }) => {
+  test(`[K1][S3] variants 3.location 예시(picker): location-picker "${PICKER.title}" · caption "${PICKER.caption}" · 전환 pill(번호, cabinet-add 없음) "${PICKER.active}" 활성 · 칸 ${PICKER.slots.length}개 · slot-count · "${PICKER.unassign}" · 규칙대로 mix-warning · "${PICKER.save}" 활성 — 프레임 개수 이상 (추천 칸·suggest-badge 는 다음 run)`, async ({ page }) => {
     await open(page, "/gallery/placement");
     const sec = await area(page, "picker");
-    for (const n of rules.variants["3"].location) expect(await sec.locator(sel(n)).count(), `variants.3.location ${n}`).toBeGreaterThanOrEqual(1);
+    // suggest-badge(추천)는 다음 run 범위 — dev-rules components 에 있는 것만
+    for (const n of inScope(rules.variants["3"].location)) expect(await sec.locator(sel(n)).count(), `variants.3.location ${n}`).toBeGreaterThanOrEqual(1);
     const p = sec.locator(sel("location-picker"));
     await expect(p).toHaveCount(1);
     for (const [n, c] of Object.entries(PICKER.counts)) {
@@ -991,20 +1019,37 @@ test.describe("화면 3 보관 위치 (/gallery/placement)", () => {
     const s = slots(p);
     await expect(s).toHaveCount(PICKER.slots.length);
     for (let i = 0; i < PICKER.slots.length; i++) {
-      expect(await textWithout(s.nth(i), ["slot-count"]), `${i + 1}번째 칸`).toBe(PICKER.slots[i].label);
+      // 1.17 시안의 추천 칸(분류·선택 표시)은 위치 추천 run(다음 run) 에서 — 이름·선택 대조에서 뺀다
+      if (!PICKER.slots[i].suggested) expect(await textWithout(s.nth(i), ["slot-count"]), `${i + 1}번째 칸`).toBe(PICKER.slots[i].label);
       const c = s.nth(i).locator(sel("slot-count"));
       if (PICKER.slots[i].count === 0) await expect(c).toHaveCount(0);
       else await expect(c).toHaveText(exact(String(PICKER.slots[i].count)));
-      await page.mouse.move(0, 0);
-      expect(await isActivePaint(s.nth(i)), `${i + 1}번째 칸 선택 표시 = 시안`).toBe(HIGHLIGHTS.includes(PICKER.slots[i].selected));
     }
+    // 고른 칸은 정확히 1개 (시안도 1개 — 어느 칸인지는 추천 run 에서)
+    await page.mouse.move(0, 0);
+    let active = 0;
+    for (let i = 0; i < PICKER.slots.length; i++) if (await isActivePaint(s.nth(i))) active++;
+    expect(active, "선택 표시 칸 수 = 시안").toBe(PICKER.slots.filter((x) => HIGHLIGHTS.includes(x.selected)).length);
     const unassign = p.getByRole("button", { name: PICKER.unassign, exact: true });
     await expect(unassign, `"${PICKER.unassign}" 조용한 텍스트 동작`).toHaveCount(1);
     expect((await box(unassign, "칸 없음으로")).height).toBeGreaterThanOrEqual(MIN_H);
     const unassignPaint = await unassign.evaluate((el) => ({ bg: getComputedStyle(el).backgroundColor, bw: getComputedStyle(el).borderTopWidth }));
     expect(["rgba(0, 0, 0, 0)", "transparent"], "칸 없음으로 = 채움 없음").toContain(unassignPaint.bg);
     expect(parseFloat(unassignPaint.bw), "칸 없음으로 = 테두리 없음").toBe(0);
-    expect(await mixLines(p.locator(sel("mix-warning"))), "강한 문구 + 보조 줄 = 시안 3-location").toEqual(PICKER.warning);
+    // 1.17 시안에는 피커 mix-warning 이 없다(추천 칸을 고른 상태). 갤러리 예시는 고른 칸에 대해 d7 §14 규칙대로 경고해야 한다.
+    {
+      const [, cls] = PICKER.caption.split(" · ");
+      let chosen = "";
+      for (let i = 0; i < PICKER.slots.length; i++) if (await isActivePaint(s.nth(i))) chosen = await textWithout(s.nth(i), ["slot-count"]);
+      const want = expectedWarning(cls, chosen === "미지정" ? [] : chosen.split(" · "), [], "");
+      const mix = p.locator(sel("mix-warning"));
+      if (want.kind === "none") await expect(mix, `${cls} → ${chosen}: 경고 없음`).toHaveCount(0);
+      else if (want.kind === "mismatch") expect((await mixLines(mix))[0], `${cls} → ${chosen}: 약한 문구`).toBe(mismatchText(chosen));
+      else {
+        const got = await mixLines(mix);
+        for (const q of want.partners) expect(got.some((l) => l === dangerText(cls, q) || l === dangerText(q, cls)), `${cls}·${q} 강한 문구`).toBe(true);
+      }
+    }
     await expect(p.locator(sel("button-primary")), `"${PICKER.save}"`).toHaveText(exact(PICKER.save));
     await expect(p.locator(sel("button-primary")), "경고가 있어도 저장 가능").toBeEnabled();
   });
@@ -1035,7 +1080,9 @@ test.describe("화면 3 보관 위치 (/gallery/placement)", () => {
       } else {
         const got = await mixLines(mix);
         for (const q of want.partners) expect(got.some((l) => l === dangerText(cls, q) || l === dangerText(q, cls)), `${label}: ${cls}·${q}`).toBe(true);
-        expect(got).toContain(SAVE_NOTE);
+        // 보조 줄 문구 대조는 시안 원본이 생기는 다음 run 에서 (SAVE_NOTE null) — 지금은 강한 문구 뒤 보조 줄 1개
+        if (SAVE_NOTE !== null) expect(got).toContain(SAVE_NOTE);
+        else expect(got.length, `${label}: 강한 문구 ${want.partners.length}줄 + 보조 줄`).toBe(want.partners.length + 1);
       }
       await expect(save, `${label} 고름 → 저장 가능`).toBeEnabled();
     }

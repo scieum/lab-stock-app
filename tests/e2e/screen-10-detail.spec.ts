@@ -1,5 +1,6 @@
 // 화면 10 (사용 기록 내역) 기록 상세 C1 — 행을 누르면 ex-modal-card
-// 기준: harness/d7-data.md §7 (상세 = 시약명 + 사용량, 사용자 · 일시 · 메모(없으면 "-"), msds-entry "MSDS 보기"(msds_url 이 있으면 새 창), "닫기"),
+// 기준: harness/d7-data.md §7 (상세 = 시약명 + 사용량, 사용자 · 메모(없으면 "-"), msds-entry "MSDS 보기"(msds_url 이 있으면 새 창), "닫기"),
+//       §15 (2026-10-07: "일시" → 사용일 · 기록한 날 — design/frames/10-desktop.json ex-modal-card),
 //       디자인 s2-spec "## 화면 10" (누른 행 배경 #e6f4fc, 상세 = ex-modal-card), 시안 10 프레임.
 // 메모가 있는 기록·없는 기록이 모두 필요하므로 UI 전용 고정 시약(학교 A, `R-db-UI10-fixture-{project}`)의 기록을 쓴다.
 // 고정 기록이 최근 목록에 없을 때만 교사 세션으로 record_usage 2건(메모 있음·없음, 각 1 mL)을 만들고 stock 을 되돌린다.
@@ -47,7 +48,7 @@ async function prepare(browser: Browser, info: TestInfo): Promise<FixtureReagent
 }
 
 for (const role of SCHOOL_A_ROLES) {
-  test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]} 행을 누르면 ${MODAL} 1개: 시약명 · 사용량+단위 · 사용자 · 일시(YYYY.MM.DD HH:mm) · 메모 = DB · ${MSDS} "${MSDS_LABEL}"(새 창 링크) · button-outline "${CLOSE_LABEL}" · 누른 행 배경 · 메모 없는 기록은 "${MEMO_NONE}" · 다른 행을 누르면 교체`, async ({ browser }, info) => {
+  test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]} 행을 누르면 ${MODAL} 1개: 시약명 · 사용량+단위 · 사용자 · 사용일(YYYY-MM-DD) · 기록한 날(YYYY-MM-DD HH:mm) · 메모 = DB · ${MSDS} "${MSDS_LABEL}"(새 창 링크) · button-outline "${CLOSE_LABEL}" · 누른 행 배경 · 메모 없는 기록은 "${MEMO_NONE}" · 다른 행을 누르면 교체`, async ({ browser }, info) => {
     test.setTimeout(240_000);
     const fx = await prepare(browser, info);
     const { context, page, viewport } = await openAs(browser, info, role, SCREEN);
