@@ -463,6 +463,16 @@ function checkUrl(raw: string): { ok: true; value: string | null } | { ok: false
 }
 
 /**
+ * 환산 안내 줄: 입력한 입고량(재고량)이 계산값과 같거나 비어 있으면 계산식 그대로("500 mL × 3병 = 1,500 mL"),
+ * 직접 고쳐 계산값과 다르면 "계산값 1,500 mL · 직접 고침". 계산할 수 없으면 null.
+ */
+export function convertNote(calc: DocAmount, entered: number | null, unit: string): string | null {
+  if (calc.amount === null || calc.note === null) return null;
+  if (entered === null || entered === calc.amount) return calc.note;
+  return `계산값 ${formatAmountText(calc.amount, unit)} · 직접 고침`;
+}
+
+/**
  * 확인 표 → 행 상태 + 저장 항목 (d7 §21).
  * - 저장되는 행 = 표에 있는(isReagent) 행 중 빼지 않은 것. 시약 아님·빼기 행은 빠진다(오류 아님).
  * - 연결 행: 입고량 > 0 (소수 3자리, 1,000,000 이하) → {reagent_id, amount}
@@ -501,9 +511,9 @@ export function planDocIntake(
       if (!reagent) view.error = DOC_ROW_ERRORS.reagent;
       else {
         const calc = amountFor(row, reagent.unit);
-        view.note = calc.note;
-        view.manual = calc.amount === null;
         const amount = parseAmount(row.amount);
+        view.note = convertNote(calc, amount, reagent.unit);
+        view.manual = calc.amount === null;
         if (amount === null) view.error = DOC_ROW_ERRORS.amount;
         else items.push({ reagent_id: reagent.id, amount });
       }
@@ -511,10 +521,10 @@ export function planDocIntake(
       const d = row.newReagent;
       view.active = true;
       const calc = amountFor(row, d.unit);
-      view.note = calc.note;
-      view.manual = calc.amount === null;
       const name = d.name.trim();
       const stock = parseAmount(d.stock);
+      view.note = convertNote(calc, stock, d.unit);
+      view.manual = calc.amount === null;
       const url = checkUrl(d.msdsUrl);
       const key = nameKey(name);
       if (name === "") view.error = DOC_ROW_ERRORS.name;
