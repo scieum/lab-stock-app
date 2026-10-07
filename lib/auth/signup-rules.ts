@@ -18,7 +18,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** 첫 번째 문제를 사용자 문구로 돌려준다. 문제가 없으면 null. */
 export function signupProblem(f: SignupFields): string | null {
-  if (!f.neisCode.trim()) return "시/도·지역·학교를 차례로 선택하세요.";
+  if (!f.neisCode.trim()) return "시/도·지역·학교급·학교를 차례로 선택하세요.";
   const name = f.displayName.trim();
   if (!name) return "이름을 입력하세요.";
   if (name.length > DISPLAY_NAME_MAX) return `이름은 ${DISPLAY_NAME_MAX}자 이하로 입력하세요.`;

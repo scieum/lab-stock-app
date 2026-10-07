@@ -52,7 +52,9 @@ import { RecordGroup, RecordList } from "@/components/record-group";
 import { ReorderAlertCard } from "@/components/reorder-alert-card";
 import { ReorderThreshold } from "@/components/reorder-threshold";
 import { AutoThresholdBadge } from "@/components/auto-threshold-badge";
+import { SchoolSelectKind } from "@/components/school-select-kind";
 import { SchoolSelectRegion } from "@/components/school-select-region";
+import { KIND_FIRST_TEXT, noSchoolText } from "@/lib/school-kinds";
 import { SchoolSelectSchool } from "@/components/school-select-school";
 import { SchoolSelectSido } from "@/components/school-select-sido";
 import { SegmentedControl } from "@/components/segmented-control";
@@ -207,17 +209,28 @@ export default function GalleryPage() {
           <TextInput label="사용 날짜" required icon="calendar" defaultValue="2026.10.02" />
         </Item>
 
-        <Item name="school-select-sido · region · school">
+        <Item name="school-select-sido · region · kind · school">
           <SchoolSelectSido options={[{ value: "충청북도", label: "충청북도" }]} defaultValue="충청북도" />
           <SchoolSelectRegion options={[{ value: "청주시", label: "청주시" }]} defaultValue="청주시" />
+          <SchoolSelectKind defaultValue="고등학교" />
           <SchoolSelectSchool
             options={[
-              { value: "A", label: "금천고등학교" },
-              { value: "B", label: "봉명고등학교" },
-              { value: "C", label: "산남고등학교" },
+              { value: "A", label: "금천고등학교", sub: "충청북도 청주시" },
+              { value: "B", label: "봉명고등학교", sub: "충청북도 청주시" },
+              { value: "C", label: "산남고등학교", sub: "충청북도 청주시" },
             ]}
-            defaultOpen
+            context="충청북도 청주시 · 고등학교 3곳"
           />
+        </Item>
+
+        <Item name="school-select-kind · 고르기 전 (기본값 없음)">
+          <SchoolSelectKind />
+          <SchoolSelectSchool options={[]} placeholder={KIND_FIRST_TEXT} disabled />
+        </Item>
+
+        <Item name="school-select-school · 학교 0개 (14-no-school)">
+          <SchoolSelectKind defaultValue="고등학교" />
+          <SchoolSelectSchool options={[]} emptyNote={noSchoolText("고등학교")} />
         </Item>
 
         <Item name="ex-auth-form-card">

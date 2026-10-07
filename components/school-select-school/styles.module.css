@@ -1,0 +1,298 @@
+/*
+ * 시안 1.18 school-select-school
+ * - 닫힘: field-label(12 회색) · 아래 4 · select-box(회색 채움, radius 16, padding 12/16, 값 15)
+ * - 학교 0개(14-no-school): select-box 자리에 no-school-note(surface-muted, radius 16, padding 12/16, 사이 8, info 회색 16, 13 기본색)
+ * - 열림 모바일 school-sheet: 하단 고정, 위쪽 radius 24, border-strong 한 줄, padding 16/16/32/16, 사이 12
+ *   sheet-header(제목 18/700 + 맥락 12 회색, × 44) · sheet-search(회색 채움 radius 16, 돋보기 16) · school-row(padding 12/0, 아래 선, 이름 15 + 시/도 지역 12 회색)
+ * - 열림 데스크톱 school-dropdown: 상자 바로 아래, radius 16, padding 16, 사이 12, 제목·× 없이 맥락 한 줄부터
+ */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.label {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-tight);
+}
+
+.anchor {
+  position: relative;
+}
+
+.box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  width: 100%;
+  min-height: var(--button-min-height);
+  padding: var(--space-12) var(--space-16);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-input);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+  text-align: left;
+  cursor: pointer;
+}
+
+.box:disabled {
+  cursor: not-allowed;
+}
+
+.box:focus-visible {
+  border-color: var(--color-highlight);
+  outline: none;
+}
+
+/* 고른 뒤: 연하늘 바탕 + 하늘 테두리 (시/도·지역 select-box 와 같다) */
+.selected {
+  border-color: var(--color-highlight);
+  background: var(--color-highlight-soft);
+}
+
+.value {
+  color: var(--color-text);
+}
+
+.placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.trail {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.check,
+.chevron,
+.chevronOpen {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+}
+
+.check,
+.chevronOpen {
+  color: var(--color-highlight);
+}
+
+.chevron {
+  color: var(--color-text-muted);
+}
+
+/* 학교 0개 안내 (무채색) */
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-8);
+  margin: 0;
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+  word-break: keep-all;
+}
+
+.noteIcon {
+  flex-shrink: 0;
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  margin-top: var(--border-width);
+  color: var(--color-text-muted);
+}
+
+/* 모바일: 하단 시트 */
+.sheet {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  max-height: calc(100% - var(--space-64) * 4);
+  padding: var(--space-16) var(--space-16) var(--space-32);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-bottom: 0;
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-none) var(--radius-none);
+  background: var(--color-surface);
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}
+
+.context {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+  margin-right: calc(var(--space-12) * -1);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.close:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.closeIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: var(--button-min-height);
+  padding: var(--space-12) var(--space-16);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-input);
+  box-sizing: border-box;
+}
+
+.search:focus-within {
+  border-color: var(--color-highlight);
+}
+
+.searchIcon {
+  flex-shrink: 0;
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  color: var(--color-text-muted);
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.list {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.row {
+  padding: var(--space-12) 0;
+  border-bottom: var(--border-width) solid var(--color-border);
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+}
+
+.row[data-sub]::after {
+  content: attr(data-sub);
+  display: block;
+  margin-top: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.row:hover,
+.row:focus-visible,
+.rowSelected {
+  background: var(--color-highlight-soft);
+  outline: none;
+}
+
+.rowSelected {
+  font-weight: var(--font-weight-semibold);
+}
+
+.empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+/* 데스크톱: 상자 바로 아래 드롭다운 (제목·× 없이 맥락 한 줄부터) */
+@media (min-width: 1024px) {
+  .open {
+    border-color: var(--color-text);
+  }
+
+  .sheet {
+    position: absolute;
+    top: calc(100% + var(--space-4));
+    right: 0;
+    bottom: auto;
+    left: 0;
+    max-height: none;
+    padding: var(--space-16);
+    border-bottom: var(--border-width) solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+  }
+
+  .title,
+  .close {
+    display: none;
+  }
+
+  .list {
+    flex: none;
+    max-height: calc(var(--control-height) * 6);
+  }
+}
