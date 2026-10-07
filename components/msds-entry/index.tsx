@@ -14,10 +14,16 @@ type Props = {
   notice?: string;
   /** tile = QR 타일 + 버튼(기본, 화면 3), button = "MSDS 보기" 버튼만(화면 10 기록 상세) */
   variant?: "tile" | "button";
+  /**
+   * 화면 3 MSDS 없는 시약 (디자인 1.17 3-msds, d7 §20): href 가 없을 때 비활성 "MSDS 보기" 대신
+   * notice(캡션 "MSDS가 아직 없어요") + 이 요소(교사·admin 의 msds-search)를 둔다. 학생·둘러보기는 null → 캡션만.
+   * undefined 면 예전처럼 비활성 버튼 + notice (화면 10).
+   */
+  missingAction?: React.ReactNode;
 };
 
 /** MSDS 진입점 (QR 타일 + MSDS 보기 버튼). 모든 역할에 보인다(R4). */
-export function MsdsEntry({ href, qr, caption, notice, variant = "tile" }: Props) {
+export function MsdsEntry({ href, qr, caption, notice, variant = "tile", missingAction }: Props) {
   const noticeId = useId();
   const buttonOnly = variant === "button";
   return (
@@ -31,6 +37,11 @@ export function MsdsEntry({ href, qr, caption, notice, variant = "tile" }: Props
         <ButtonPillSoft href={href} external icon="external">
           MSDS 보기
         </ButtonPillSoft>
+      ) : missingAction !== undefined ? (
+        <div className={styles.missing}>
+          {notice ? <p className={styles.missingCaption}>{notice}</p> : null}
+          {missingAction}
+        </div>
       ) : (
         <>
           <ButtonPillSoft icon="external" disabled aria-describedby={notice ? noticeId : undefined}>

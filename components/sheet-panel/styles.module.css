@@ -202,6 +202,10 @@
     max-width: calc(var(--space-64) * 10);
   }
 
+  .sm {
+    max-width: calc(var(--space-64) * 7 + var(--space-32));
+  }
+
   .sheet {
     top: 50%;
     right: auto;

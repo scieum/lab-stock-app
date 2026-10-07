@@ -28,6 +28,7 @@ export default async function ReagentsPage({ searchParams }: Props) {
         initialFilter={filter}
         initialQuery={first(params.q) ?? ""}
         initialListFilter={parseListFilter(params, data.cabinets)}
+        canFindMsds={data.role === "teacher" || data.role === "admin"}
       />
     </div>
   );

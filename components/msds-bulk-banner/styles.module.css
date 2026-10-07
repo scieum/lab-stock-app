@@ -1,0 +1,36 @@
+/* 시안 1.17 2-msds-bulk msds-bulk-banner: 연하늘(highlight-soft) 띠, 안쪽 12 16, 사이 12, 모서리 없음.
+ * 모바일 = 화면 폭 전체(content 안쪽 16 을 넘어 가장자리까지), 데스크톱 = 목록 열(720) 폭 */
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  min-width: 0;
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-none);
+  background: var(--color-highlight-soft);
+}
+
+.bleed {
+  margin-inline: calc(var(--space-16) * -1);
+}
+
+.label {
+  margin: 0;
+  min-width: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+/* 띠 안 버튼 글자 13/600 (시안) */
+.banner .action {
+  font-size: var(--font-size-13);
+}
+
+@media (min-width: 1024px) {
+  .bleed {
+    margin-inline: var(--space-0);
+  }
+}

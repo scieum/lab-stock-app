@@ -21,8 +21,8 @@ type Props = {
   closeLabel?: string;
   /** true(기본) = 모바일 tab-bar 위 하단 시트 · 데스크톱 화면 가운데. false = 항상 제자리(갤러리) */
   sheet?: boolean;
-  /** 데스크톱 폭: md = 560 (칸 시트·위치 피커), lg = 640 (QR 인쇄) */
-  size?: "md" | "lg";
+  /** 데스크톱 폭: sm = 480 (MSDS 후보), md = 560 (칸 시트·위치 피커), lg = 640 (QR 인쇄) */
+  size?: "sm" | "md" | "lg";
   /** 시트 아래 영역 (button-primary 줄) — 본문이 길면 본문만 스크롤 */
   footer?: React.ReactNode;
   children?: React.ReactNode;
@@ -79,7 +79,7 @@ export function SheetPanel({
       aria-modal={sheet ? "true" : undefined}
       aria-labelledby={titleId}
       tabIndex={-1}
-      className={[styles.panel, sheet ? styles.sheet : "", size === "lg" ? styles.lg : "", className ?? ""].filter(Boolean).join(" ")}
+      className={[styles.panel, sheet ? styles.sheet : "", size === "lg" ? styles.lg : "", size === "sm" ? styles.sm : "", className ?? ""].filter(Boolean).join(" ")}
     >
       <div className={styles.head}>
         <div className={styles.header}>

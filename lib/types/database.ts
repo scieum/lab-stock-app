@@ -708,6 +708,10 @@ export type Database = {
         Returns: Json
       }
       save_reorder_basis: { Args: { p_items: Json }; Returns: Json }
+      set_reagent_msds: {
+        Args: { p_cas_no?: string; p_msds_url: string; p_reagent_id: string }
+        Returns: Json
+      }
       set_reorder_threshold: {
         Args: { p_min_stock: number; p_reagent_id: string }
         Returns: Json

@@ -189,6 +189,7 @@ export function IntakeScreen({ reagents, today, initialTab, initialReagentId }: 
           onSubmit={submitRegister}
           pending={busy}
           error={error}
+          findMsds
         />
       )}
       {toast ? <Toast floating>{toast}</Toast> : null}

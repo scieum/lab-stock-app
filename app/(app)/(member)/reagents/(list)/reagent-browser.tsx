@@ -19,6 +19,7 @@ import {
   type ListFilter,
 } from "@/lib/reagent-list-filter";
 import type { ReagentListItem } from "@/lib/supabase/reagents-data";
+import { MsdsBulk } from "./msds-bulk";
 import styles from "./reagents.module.css";
 
 export type ReagentFilter = "all" | "low-stock";
@@ -38,6 +39,8 @@ type Props = {
   initialListFilter?: ListFilter;
   /** 행 링크의 상세 경로 앞부분 (기본 /reagents, 둘러보기는 /demo/reagents) */
   detailBase?: string;
+  /** true = 교사·admin — "MSDS 없는 시약만" 필터를 켜면 msds-bulk-banner 일괄 찾기 (d7 §20). 학생·둘러보기는 false */
+  canFindMsds?: boolean;
 };
 
 /** 주소창(?filter·?q + 필터 시트 값)을 화면 상태와 맞춘다 — 새로고침·뒤로가기에도 같은 목록 */
@@ -67,6 +70,7 @@ export function ReagentBrowser({
   initialQuery,
   initialListFilter = EMPTY_LIST_FILTER,
   detailBase = "/reagents",
+  canFindMsds = false,
 }: Props) {
   const [filter, setFilter] = useState<ReagentFilter>(initialFilter);
   const [query, setQuery] = useState(initialQuery);
@@ -82,6 +86,11 @@ export function ReagentBrowser({
   const visible = useMemo(() => applyListFilter(base, applied), [base, applied]);
   const draftCount = useMemo(() => (open ? applyListFilter(base, draft).length : 0), [open, base, draft]);
   const chips = listFilterChips(applied, cabinets);
+  // d7 §20: 교사·admin 이 "MSDS 없는 시약만"을 켰을 때 — 지금 목록(다른 조건과 함께 거른 것)이 일괄 찾기 대상
+  const msdsTargets = useMemo(
+    () => (canFindMsds && applied.noMsds ? visible.filter((r) => !r.hasMsds).map((r) => ({ id: r.id, name: r.name })) : []),
+    [canFindMsds, applied.noMsds, visible],
+  );
 
   const changeFilter = (v: string) => {
     const f: ReagentFilter = v === "low-stock" ? "low-stock" : "all";
@@ -131,6 +140,7 @@ export function ReagentBrowser({
 
   return (
     <>
+      {canFindMsds && applied.noMsds ? <MsdsBulk targets={msdsTargets} /> : null}
       <div className={styles.toolbar}>
         <div className={styles.segment}>
           <SegmentedControl options={FILTERS} value={filter} onChange={changeFilter} label="시약 필터" />

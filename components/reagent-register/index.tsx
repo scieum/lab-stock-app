@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ButtonPillSoft } from "@/components/button-pill-soft";
 import { ButtonPrimary } from "@/components/button-primary";
+import { MsdsCandidates } from "@/components/msds-candidates";
+import { MsdsSearch } from "@/components/msds-search";
 import { SelectField } from "@/components/select-field";
 import { TextInput } from "@/components/text-input";
+import { useMsdsSearch } from "@/lib/use-msds-search";
 import styles from "./styles.module.css";
 
 export type ReagentRegisterValues = {
@@ -35,6 +38,11 @@ type Props = {
   error?: string | null;
   /** 모바일에서 하단 버튼 줄을 tab-bar 바로 위에 고정 (갤러리에서는 false) */
   stickyActions?: boolean;
+  /**
+   * MSDS 칸 옆 msds-search "MSDS 찾기" (디자인 1.17 7-msds, d7 §20 — 교사·admin 화면 7).
+   * 시약명으로 찾아 후보 시트에서 고르면 MSDS 칸에 주소를 넣는다. 시약명이 비면 비활성. 직접 입력도 그대로.
+   */
+  findMsds?: boolean;
 };
 
 const DEFAULT_UNITS = ["병", "mL", "g"];
@@ -62,6 +70,7 @@ export function ReagentRegister({
   pending,
   error,
   stickyActions = true,
+  findMsds = false,
 }: Props) {
   const [name, setName] = useState("");
   const [storageClass, setStorageClass] = useState("");
@@ -69,6 +78,27 @@ export function ReagentRegister({
   const [unit, setUnit] = useState(defaultUnit ?? units[0] ?? "");
   const [intakeDate, setIntakeDate] = useState(defaultIntakeDate);
   const [msdsUrl, setMsdsUrl] = useState("");
+  const [finding, setFinding] = useState(false);
+  const [msdsQuery, setMsdsQuery] = useState("");
+  const msds = useMsdsSearch();
+  const msdsFieldRef = useRef<HTMLDivElement>(null);
+
+  const openFinder = () => {
+    const q = name.trim();
+    if (!q) return;
+    setMsdsQuery(q);
+    setFinding(true);
+    void msds.search(q);
+  };
+  const closeFinder = () => {
+    setFinding(false);
+    msds.reset();
+  };
+  /** "직접 입력": 시트를 닫고 MSDS 주소 칸으로 */
+  const directEntry = () => {
+    closeFinder();
+    msdsFieldRef.current?.querySelector("input")?.focus();
+  };
 
   const amount = parseStock(stock);
   const stockValid = amount !== null && amount >= 1;
@@ -149,19 +179,51 @@ export function ReagentRegister({
           value={intakeDate}
           onChange={(e) => setIntakeDate(e.target.value)}
         />
-        <TextInput
-          label="MSDS 연결 주소"
-          labelTone="strong"
-          type="url"
-          name="msds_url"
-          inputMode="url"
-          autoComplete="off"
-          placeholder="https://"
-          value={msdsUrl}
-          onChange={(e) => setMsdsUrl(e.target.value)}
-          error={urlValid ? undefined : URL_ERROR}
-        />
+        <div ref={msdsFieldRef} className={findMsds ? styles.msdsRow : undefined} data-name="msds-field">
+          <TextInput
+            className={findMsds ? styles.msdsInput : undefined}
+            label="MSDS 연결 주소"
+            labelTone="strong"
+            type="url"
+            name="msds_url"
+            inputMode="url"
+            autoComplete="off"
+            placeholder="https://"
+            value={msdsUrl}
+            onChange={(e) => setMsdsUrl(e.target.value)}
+            error={urlValid ? undefined : URL_ERROR}
+          />
+          {findMsds ? (
+            <MsdsSearch
+              size="sm"
+              className={styles.msdsSearch}
+              onClick={openFinder}
+              disabled={name.trim() === "" || pending}
+              aria-expanded={finding}
+              title={name.trim() === "" ? "시약명을 먼저 입력하세요" : undefined}
+            />
+          ) : null}
+        </div>
       </div>
+
+      {findMsds && finding ? (
+        <MsdsCandidates
+          caption={name.trim()}
+          query={msdsQuery}
+          onQueryChange={setMsdsQuery}
+          onSearch={() => void msds.search(msdsQuery)}
+          status={msds.state.status}
+          candidates={msds.state.status === "ready" ? msds.state.candidates : undefined}
+          message={msds.state.status === "error" ? msds.state.message : undefined}
+          onRetry={() => void msds.search(msdsQuery)}
+          onConfirm={(c) => {
+            setMsdsUrl(c.msdsUrl);
+            closeFinder();
+          }}
+          onDirect={directEntry}
+          onClose={closeFinder}
+        />
+      ) : null}
 
       {error ? (
         <p role="alert" className={styles.error}>

@@ -1,0 +1,193 @@
+/* 시안 1.17 msds-candidates (3-msds · 7-msds · 2-msds-bulk):
+ * 흰 바탕 · border-strong · 위 radius 24 · 안쪽 24 · 묶음 사이 12 (시트 틀 = sheet-panel)
+ * 후보 행: 안쪽 12 16, radius 16, 사이 12 — 고른 행 = 연하늘(highlight-soft) + 하늘색 체크 20, 나머지 = 회색(surface-muted)
+ * 직접 입력 줄: 흰 바탕 + border-strong, radius 16, 안쪽 12 16, 15/400 + 회색 chevron 20
+ * 버튼 줄: button-primary 전폭 (일괄: "건너뛰기" 글자 버튼 + button-primary, 사이 12) */
+
+.panel {
+  gap: var(--space-12);
+}
+
+.progress {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.searchForm,
+.directForm {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+.srOnly {
+  position: absolute;
+  width: var(--border-width);
+  height: var(--border-width);
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  width: 100%;
+  min-height: var(--button-min-height);
+  padding: var(--space-12) var(--space-16);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rowOn {
+  background: var(--color-highlight-soft);
+}
+
+.row:focus-visible,
+.direct:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.row:active,
+.direct:active:not(:disabled) {
+  opacity: var(--pressed-opacity);
+}
+
+.rowBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.name {
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.cas {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.check {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex-shrink: 0;
+  color: var(--color-highlight);
+}
+
+.direct {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  width: 100%;
+  min-height: var(--button-min-height);
+  padding: var(--space-12) var(--space-16);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  text-align: left;
+  cursor: pointer;
+}
+
+.direct:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.chevron {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.state {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: var(--control-height);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.spinner {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  flex-shrink: 0;
+  border: var(--border-width) solid var(--color-border-strong);
+  border-top-color: var(--color-highlight);
+  border-radius: var(--radius-pill);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
+
+.errorBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.errorText {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.actions > :not(.confirm) {
+  align-self: center;
+}
+
+.confirm {
+  flex: 1 1 auto;
+}
