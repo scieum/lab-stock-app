@@ -5,6 +5,7 @@ import { expect, type Browser, type Page, type TestInfo } from "@playwright/test
 import { REAGENT_SLOT, projectIndex, type Role } from "./db-helpers";
 import { openAs, type RolePage } from "./auth-state";
 import { browserClient, routeOf, sel } from "./screen-helpers";
+import { drawer, isDeskPage, waitDrawer } from "./desk-helpers";
 import { seedReagents, seedSchoolOf, squash } from "./screen-3-helpers";
 
 export const SCREEN = 4;
@@ -51,7 +52,11 @@ export function recordReagentFor(info: TestInfo) {
 
 /** 사용 기록 화면이 그려질 때까지 (시약 지정 시 카드, 아니면 시약 선택 상자) + 하이드레이션 완료 */
 export async function waitUsage(page: Page, withReagent: boolean): Promise<void> {
-  if (withReagent) await expect(page.locator(sel(CARD)).first()).toBeVisible({ timeout: 30_000 });
+  if (isDeskPage(page)) {
+    // 폭 1440 (d7 §23 run b 세부): 시약 목록 옆 오른쪽 detail-drawer — 시안 4-desktop 에 reagent-detail-card 없음 (시약명은 drawer-title 캡션)
+    await waitDrawer(page);
+    if (!withReagent) await expect(drawer(page).locator('button[aria-haspopup="listbox"]').first()).toBeVisible({ timeout: 30_000 });
+  } else if (withReagent) await expect(page.locator(sel(CARD)).first()).toBeVisible({ timeout: 30_000 });
   else await expect(page.locator('main button[aria-haspopup="listbox"]').first()).toBeVisible({ timeout: 30_000 });
   await page.waitForLoadState("load");
   // React 가 폼에 이벤트 핸들러를 붙인 뒤에 입력·제출해야 한다 (하이드레이션 전 제출은 기본 GET 제출이 됨)
@@ -118,4 +123,16 @@ export async function restoreStockAs(teacherPage: Page, id: string, stock: numbe
 
 /** main 안 사용량 입력·제출 */
 export const amountInput = (page: Page) => page.locator('main input[name="amount"]');
-export const submitButton = (page: Page) => page.locator(`main form button[type="submit"]${sel("button-primary")}`);
+/** 저장 버튼: 폭 390 = 폼 안 / 폭 1440 = 드로어 아래 drawer-actions (form 속성으로 폼과 이어짐) */
+export const submitButton = (page: Page) =>
+  isDeskPage(page)
+    ? drawer(page).locator(`button[type="submit"]${sel("button-primary")}`)
+    : page.locator(`main form button[type="submit"]${sel("button-primary")}`);
+/** 화면 4 본문 범위: 폭 390 = main / 폭 1440 = 드로어 (뒤 시약 목록은 화면 2 몫) */
+export const usageScope = (page: Page) => (isDeskPage(page) ? drawer(page) : page.locator("main"));
+
+/**
+ * 고른 시약을 보여 주는 곳: 390 = reagent-detail-card / 1440 = 드로어 drawer-title(제목 "사용 기록" + 캡션 "시약명 · 현재 N 단위",
+ * 시안 4-desktop — d7 §23 run b). 시약을 고르지 않았으면 둘 다 없다 (1440 은 drawer-head 만).
+ */
+export const reagentHead = (page: Page) => (isDeskPage(page) ? drawer(page).locator('[data-name="drawer-title"]') : page.locator(sel(CARD)));

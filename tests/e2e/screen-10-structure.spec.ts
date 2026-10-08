@@ -20,7 +20,8 @@ import {
 } from "./screen-helpers";
 import { seedSchoolOf } from "./screen-3-helpers";
 import { expectShell, expectShellHeader, isShellComponent, shellSchoolScope } from "./shell-helpers";
-import { frameActiveLabel } from "../desktop-shell";
+import { deskOnlyComponents, frameActiveLabel } from "../desktop-shell";
+import { PAGE_SIZE } from "./desk-helpers";
 
 /** 셸의 화면 10 메뉴 글자: 폭 1440 = 사이드바 메뉴(rules desktop_shell.menu — 새 프레임 10-desktop 활성 메뉴 "기록") */
 const SIDEBAR_LABEL = frameActiveLabel(10);
@@ -45,7 +46,10 @@ import {
   SEARCH_PLACEHOLDER,
   SEGMENT,
   SEGMENT_ACTIVE,
+  DESK_TITLE,
+  DRAWER,
   activeSegment,
+  titleOf,
   closeButton,
   exact,
   expectDetail,
@@ -140,8 +144,8 @@ for (const role of SCHOOL_A_ROLES) {
       expect(new URL(page.url()).pathname, "모든 역할이 화면 10 에 머문다").toBe(routeOf(SCREEN));
       const me = await browserSession(page);
       expect(me.role, "테스트 계정 역할").toBe(PROFILE_ROLE[role]);
-      // 제목: 390 = nav-pill / 1440 = 본문 (rules 1.22 desktop_shell — nav-pill 0)
-      await expectShellHeader(page, viewport, { title: NAV_LABEL }, `${ROLE_LABEL[role]} 화면 ${SCREEN}`);
+      // 제목: 390 = nav-pill "사용 기록 내역" / 1440 = 본문 page-title (새 프레임 10-desktop "기록" — d7 §23 run b)
+      await expectShellHeader(page, viewport, { title: titleOf(viewport) }, `${ROLE_LABEL[role]} 화면 ${SCREEN}`);
       await expect(rows(page).first(), "기록 행이 있어야 상세를 열 수 있음").toBeVisible();
 
       // 상세를 열기 전: 역할 제한 컴포넌트(max 0)는 0
@@ -157,8 +161,10 @@ for (const role of SCHOOL_A_ROLES) {
       await expect(entry, `상세 안 ${MSDS}`).toHaveCount(1);
       await expect(entry).toContainText(MSDS_LABEL);
       expect(await writeEntries(page), "상세 열림: 쓰기 진입").toEqual([]);
-      // 상세 안 조작은 MSDS 보기 · 닫기 뿐
-      const actions = (await modal(page).locator("a, button").allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim());
+      // 상세 안 조작은 MSDS 보기 · 닫기 뿐 (글자 없는 × 는 접근 이름 "닫기")
+      const actions = await modal(page)
+        .locator("a, button")
+        .evaluateAll((els) => els.map((e) => ((e as HTMLElement).innerText.replace(/\s+/g, " ").trim() || e.getAttribute("aria-label")) ?? ""));
       for (const a of actions) expect([MSDS_LABEL, CLOSE_LABEL].some((l) => a.includes(l)), `상세 안 조작 '${a}'`).toBe(true);
     } finally {
       await context.close();
@@ -235,7 +241,7 @@ for (const role of ALL_ROLES) {
 
       // 셸: 390 = nav-pill(워드마크 + 제목 + 학교명) · tab-bar / 1440 = app-sidebar(워드마크 + 학교명) + 본문 제목 (rules 1.22 desktop_shell)
       await expectShell(page, viewport, SCREEN, `${ROLE_LABEL[role]} 화면 ${SCREEN}`);
-      await expectShellHeader(page, viewport, { wordmark: "Lab_Stock", title: NAV_LABEL, schoolName: me.schoolName }, `${ROLE_LABEL[role]} 화면 ${SCREEN}`);
+      await expectShellHeader(page, viewport, { wordmark: "Lab_Stock", title: titleOf(viewport), schoolName: me.schoolName }, `${ROLE_LABEL[role]} 화면 ${SCREEN}`);
       if (viewport === "mobile") {
         await expect(page.locator(sel("nav-pill")).getByText(NAV_LABEL).locator("visible=true").first(), `nav-pill "${NAV_LABEL}" 보임`).toBeVisible();
       }
@@ -245,8 +251,8 @@ for (const role of ALL_ROLES) {
         await expect(link, "데스크탑 사이드바 메뉴 링크").toHaveCount(1);
         await expect(link).toHaveText(exact(SIDEBAR_LABEL));
         await expect(link, "현재 섹션 표시").toHaveAttribute("aria-current", "page");
-        // 화면 제목 (시안 screen-title)
-        await expect(page.locator("main").getByRole("heading", { name: NAV_LABEL }).locator("visible=true"), "screen-title").toHaveCount(1);
+        // 화면 제목 (새 프레임 10-desktop page-title — d7 §23 run b)
+        await expect(page.locator("main").getByRole("heading", { name: DESK_TITLE, exact: true }).locator("visible=true"), "page-title").toHaveCount(1);
       }
 
       // 필터: 전체 / 내 기록 (하나만 선택, 기본 전체)
@@ -276,6 +282,7 @@ for (const role of ALL_ROLES) {
 
       // 상세는 행을 누르기 전에는 없다 · 0건 카드 없음 · 사용 기록 입력 버튼 없음(시안)
       expect(await countComponent(page, MODAL), `${MODAL} 누르기 전`).toBe(0);
+      expect(await countComponent(page, DRAWER), `${DRAWER} 누르기 전 (1440 상세 = 드로어)`).toBe(0);
       expect(await countComponent(page, EMPTY), `${EMPTY} 기록이 있을 때`).toBe(0);
       await expect(page.locator("main").getByText(ENTRY_LABEL), `main 에 "${ENTRY_LABEL}"`).toHaveCount(0);
       await expect(page.locator(`main a[href^="${routeOf(ENTRY_SCREEN)}"]`), `main 에 ${routeOf(ENTRY_SCREEN)} 링크`).toHaveCount(0);
@@ -365,8 +372,12 @@ test(`[C1][S${SCREEN}] 학교A 학생 시안과 같은 상태(390 = 목록, 1440
     const snap = await gotoAndMatch(page, {});
     const frame = frameCounts(viewport);
     expect(snap.flat.length, `시안 행 수(${frame[ROW]}) 이상의 기록이 있어야 함`).toBeGreaterThanOrEqual(frame[ROW]);
-    const detailOpen = (frame[MODAL] ?? 0) > 0;
-    expect(detailOpen, "시안 상태: 1440 은 상세 열림, 390 은 목록").toBe(viewport === "desktop");
+    // 새 프레임(run b): 10-desktop 은 첫 행 상세가 드로어(detail-drawer)로 열린 상태, 10-mobile 은 목록
+    const detail = viewport === "desktop" ? DRAWER : MODAL;
+    const detailOpen = (frame[detail] ?? 0) > 0;
+    expect(detailOpen, "시안 상태: 1440 은 상세 드로어 열림, 390 은 목록").toBe(viewport === "desktop");
+    // 폭 전용: 1440 은 ex-modal-card 0(시안 10-desktop 에 없음) / 390 은 data-table·detail-drawer 0(데스크톱 전용)
+    const widthZero = viewport === "desktop" ? [MODAL] : deskOnlyComponents();
     if (detailOpen) {
       await openRow(page, 0);
       await expectDetail(page, snap.shown[0]);
@@ -382,6 +393,10 @@ test(`[C1][S${SCREEN}] 학교A 학생 시안과 같은 상태(390 = 목록, 1440
         continue;
       }
       if (want === 0) {
+        if (widthZero.includes(name)) {
+          expect(await countComponent(page, name), `${name} (폭 ${viewport} 0 — 시안 ${SCREEN}-${viewport} 에 없음)`).toBe(0);
+          continue;
+        }
         if (!detailOpen && DETAIL_PARTS.includes(name)) {
           // 390 시안은 상세가 닫힌 목록 상태 — 상세 부품은 0
           expect(await countComponent(page, name), `${name} (상세 닫힘)`).toBe(0);
@@ -390,7 +405,7 @@ test(`[C1][S${SCREEN}] 학교A 학생 시안과 같은 상태(390 = 목록, 1440
         if (detailOpen && name === "button-pill-soft") {
           // 1.17 시안의 msds-entry 는 그 자체가 pill(안에 button-pill-soft 없음). dev-rules components 에 button-pill-soft 화면 10 이 남아 있어
           // 구현이 msds-entry 안에 button-pill-soft 를 쓰는 것은 허용 — 상세 밖에는 없어야 한다
-          expect(await page.locator(`${sel(name)}:not(${sel(MODAL)} *)`).count(), `${name} 은 상세 안에만`).toBe(0);
+          expect(await page.locator(`${sel(name)}:not(${sel(detail)} *)`).count(), `${name} 은 상세 안에만`).toBe(0);
           continue;
         }
         // 프레임에 없는 상태 컴포넌트 (0건 카드) — 기록이 있을 때는 없어야 한다
@@ -401,12 +416,12 @@ test(`[C1][S${SCREEN}] 학교A 학생 시안과 같은 상태(390 = 목록, 1440
       const n = await countComponent(page, name);
       expect(n, `${name} ≥ 시안 ${want}`).toBeGreaterThanOrEqual(want);
       await expect(page.locator(sel(name)).locator("visible=true").first(), `${name} 보임`).toBeVisible();
-      if ([MODAL, SEGMENT, SEGMENT_ACTIVE, MSDS, "nav-pill", INPUT].includes(name)) expect(n, `${name} = 시안 ${want}`).toBe(want);
+      if ([MODAL, DRAWER, "data-table", SEGMENT, SEGMENT_ACTIVE, MSDS, "nav-pill", INPUT].includes(name)) expect(n, `${name} = 시안 ${want}`).toBe(want);
       checked++;
     }
     // 프레임에 있는 화면 10 컴포넌트(탭바·셸 예외 제외)는 모두 비교했다
     const appEx = (rules as unknown as { app_exceptions: Record<string, string> }).app_exceptions;
-    const wantChecked = screenComponents().filter((n) => (frame[n] ?? 0) > 0 && !isShellComponent(n) && !(n in appEx)).length;
+    const wantChecked = screenComponents().filter((n) => (frame[n] ?? 0) > 0 && !isShellComponent(n) && !(n in appEx) && !widthZero.includes(n)).length;
     // 예전엔 nav-pill 을 여기서 셌다(≥ 5) — 셸은 이제 폭별 expectShell(아래)로 본다: 본문 컴포넌트 ≥ 4 + 셸
     expect(wantChecked, "프레임에 있는 화면 10 본문 컴포넌트").toBeGreaterThanOrEqual(4);
     await expectShell(page, viewport, SCREEN, "시안과 같은 상태");
@@ -492,12 +507,14 @@ test(`[C2][S${SCREEN}] 폭 390 학교A 학생: 상세 시트는 tab-bar 위쪽 �
       await expectDetail(page, snap.shown[0]);
       const m = await box(modal(page));
       const r = await box(rows(page).first());
-      expect(m.left, "데스크탑 상세는 목록 오른쪽 옆").toBeGreaterThanOrEqual(r.right - 0.5);
-      // 목록을 끝까지 내려도 마지막 행을 누를 수 있다
+      expect(m.left, "데스크탑 상세(드로어)는 목록 오른쪽 옆").toBeGreaterThanOrEqual(r.right - 0.5);
+      // 목록(1쪽 — 한 쪽 PAGE_SIZE 행)을 끝까지 내려도 그 쪽 마지막 행을 누를 수 있다
+      const lastOnPage = Math.min(n, PAGE_SIZE) - 1;
+      const lastRow = rows(page).nth(lastOnPage);
       await toBottom();
-      expect(await onTop(last), "마지막 행이 덮이지 않음").toBe(true);
-      await last.click();
-      await expectDetail(page, snap.shown[n - 1]);
+      expect(await onTop(lastRow), "마지막 행이 드로어에 덮이지 않음").toBe(true);
+      await lastRow.locator("[data-row-link]").click();
+      await expectDetail(page, snap.shown[lastOnPage]);
       return;
     }
 

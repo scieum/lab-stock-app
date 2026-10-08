@@ -69,3 +69,15 @@ export function loadFrameNodes<N = Record<string, unknown>>(name: string): N[] {
 export function loadShellFrameNodes<N = Record<string, unknown>>(name: string): N[] {
   return (JSON.parse(readFileSync(shellFramePath(name), "utf8")) as { frames: { nodes: N[] }[] }).frames[0].nodes;
 }
+
+/**
+ * 예전 프레임(tests/fixtures/frames-pre-desktop) 경로 — 이전된 화면이라도 "모바일 그대로"(d7 §23: 폭 390 은 변경 없음)인 부분의
+ * 기대값 원본으로만 쓴다. 새 프레임에 더 그려지지 않는 모바일 상태(예: 화면 10 기록 상세 모달 — 데스크톱은 드로어가 됐고
+ * 모바일 상세 프레임은 예전 10-desktop 의 ex-modal-card 뿐)와, 예전 시안 값으로 만든 컴포넌트 갤러리(/gallery/vendors 등) 예시.
+ * 데스크톱 표·드로어는 새 프레임(framePath)으로 본다.
+ */
+export function preDesktopFramePath(name: string): string {
+  const p = join(PRE_DESKTOP_FRAMES_DIR, withJson(name.replace(/^.*[\/]/, "")));
+  if (!existsSync(p)) throw new Error(`예전 프레임 없음: ${p}`);
+  return p;
+}

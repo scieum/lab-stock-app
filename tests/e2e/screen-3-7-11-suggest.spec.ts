@@ -10,7 +10,7 @@
 import { join } from "node:path";
 import { test, expect, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { countComponent, routeOf, rules, sel } from "./screen-helpers";
-import { detailPath, waitDetail } from "./screen-3-helpers";
+import { detailPath, detailScope, waitDetail } from "./screen-3-helpers";
 import { HAS_SERVICE, clientFor, openTemp, service, type TempUser } from "./screen-8-helpers";
 import { REGISTER_BUTTON, TOAST_REGISTER, fillRegister, intakePath, registerForm, waitIntake } from "./screen-7-helpers";
 import {
@@ -380,7 +380,9 @@ test.describe("일회용 학교", () => {
           expect(html, `학생 응답 본문 ${c}`).not.toContain(`data-component="${c}"`);
         }
         await expect(page.locator(PICKER_SUGGEST_ROW), "학생 추천 줄 0").toHaveCount(0);
-        expect(html, "학생 응답 본문에 다른 시약장(피커 데이터) 이름 없음").not.toContain(st.c2.label);
+        // d7 §23 run b: 응답 HTML 에는 데스크톱 시약 목록(폭 전용 사본)이 함께 렌더되어 같은 학교 시약장 이름이 목록·필터 몫으로 들어간다 —
+        // 같은 학교 데이터라 노출 금지 대상이 아니다(N1 은 다른 학교). 피커 데이터가 없는지는 상세 본문(390 main / 1440 드로어)에서 본다
+        expect(await detailScope(page).innerText(), "학생 상세 본문에 다른 시약장(피커 데이터) 이름 없음").not.toContain(st.c2.label);
         expect(actions.count(), "쓰기 0건").toBe(0);
       } finally {
         await context.close();

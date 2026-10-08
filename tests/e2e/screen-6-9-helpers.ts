@@ -21,6 +21,7 @@ import { tempSchoolLike, exact, service, sweep, todayDots, type Residue } from "
 import { makeFixture, type S11Fixture } from "./screen-11-helpers";
 import { framePath } from "../frames";
 import { DESKTOP_SHELL, frameActiveLabel } from "../desktop-shell";
+import { drawer, isDeskPage } from "./desk-helpers";
 
 export { boxOf, frameCounts, highlightSoft, hydrated, onTop, watchActions } from "./screen-11-helpers";
 export { exact };
@@ -512,14 +513,28 @@ export const segmentActive = (page: Page) => segment(page).locator(sel(SEGMENT_A
 export const tabOf = (page: Page, label: string) => segment(page).getByText(exact(label));
 export const searchInput = (page: Page) => main(page).getByPlaceholder(SEARCH_PLACEHOLDER);
 export const registerBlock = (page: Page) => main(page).locator(sel(REGISTER));
-export const vendorRows = (page: Page) => registerBlock(page).getByRole("listitem");
+/**
+ * 데스크톱 재구성 run b (d7 §23 세부, 새 프레임 9-desktop): 1440 = 판매처 data-table(행 = 판매처명 · 연락처 · 더보기) +
+ * 등록·수정 = 오른쪽 detail-drawer(vendor-form · drawer-actions "취소"·"저장"). 390 은 그대로(vendor-register 목록 + 하단 시트).
+ */
+export const vendorTable = (page: Page) => main(page).locator(`${sel("data-table")}`).first();
+/** 우리 학교 판매처 목록이 있는 곳 (행·0건 안내): 390 = vendor-register / 1440 = data-table */
+export const listScope = (page: Page) => (isDeskPage(page) ? vendorTable(page) : registerBlock(page));
+/** 공통 목록 행 중 판매처명이 name 인 칸 (390 = 셀 / 1440 = 표 행) */
+export const commonCell = (page: Page, name: string) =>
+  isDeskPage(page)
+    ? vendorTable(page).locator(sel(CELL)).filter({ has: page.getByText(name, { exact: true }) })
+    : main(page).locator(sel(CELL)).filter({ hasText: exact(name) });
+/** 등록·수정 폼이 있는 곳: 390 = vendor-register / 1440 = 드로어 */
+export const formScope = (page: Page) => (isDeskPage(page) ? drawer(page) : registerBlock(page));
+export const vendorRows = (page: Page) => (isDeskPage(page) ? vendorTable(page).locator(sel(CELL)) : registerBlock(page).getByRole("listitem"));
 export const vendorRow = (page: Page, name: string) => vendorRows(page).filter({ hasText: name });
 export const moreButton = (row: Locator) => row.getByRole("button", { name: /더보기/ });
 export const menuItem = (page: Page, label: string) => page.getByRole("menuitem", { name: exact(label) });
 export const registerButton = (page: Page) => primaryIn(registerBlock(page), REGISTER_BUTTON);
-export const saveButton = (page: Page) => primaryIn(registerBlock(page), SAVE_BUTTON);
-export const fieldInput = (page: Page, label: string) => registerBlock(page).getByLabel(label, { exact: true });
-export const fieldBox = (page: Page, label: string) => registerBlock(page).locator(sel(INPUT)).filter({ has: page.getByLabel(label, { exact: true }) });
+export const saveButton = (page: Page) => primaryIn(formScope(page), SAVE_BUTTON);
+export const fieldInput = (page: Page, label: string) => formScope(page).getByLabel(label, { exact: true });
+export const fieldBox = (page: Page, label: string) => formScope(page).locator(sel(INPUT)).filter({ has: page.getByLabel(label, { exact: true }) });
 export const fieldAlert = (page: Page, label: string) => fieldBox(page, label).getByRole("alert");
 export const deleteDialog = (page: Page) => page.getByRole("dialog", { name: exact(DELETE_TITLE) });
 export const cells = (page: Page) => main(page).locator(sel(CELL));
@@ -564,13 +579,25 @@ export async function chooseRowMenu(page: Page, name: string, item: string): Pro
   await target.click();
 }
 
-/** 우리 학교 판매처 행 (보이는 순서): 글자 줄 */
+/** 우리 학교 판매처 행 (보이는 순서): 글자 줄 — 1440 은 칸(판매처명 · 연락처)마다, 빈 칸 표시 "-" 는 값 없음 */
 export async function readVendorRows(page: Page): Promise<string[][]> {
+  if (isDeskPage(page)) {
+    const rows = await vendorRows(page).evaluateAll((els) =>
+      els.map((tr) => [...tr.querySelectorAll("td")].map((td) => (td as HTMLElement).innerText.replace(/\s+/g, " ").trim())),
+    );
+    return rows.map((cells) => cells.filter((c) => c !== "" && c !== "-"));
+  }
   return (await vendorRows(page).allInnerTexts()).map(linesOf);
 }
 
-/** 공통 목록 탭의 셀 글자 (머리글 제외) */
+/** 공통 목록 탭의 셀 글자 (머리글 제외) — 1440 표는 행마다 [판매처명, 부가 정보] (즐겨찾기 별표 칸 제외) */
 export async function readCommonCells(page: Page): Promise<string[]> {
+  if (isDeskPage(page)) {
+    const rows = await vendorTable(page)
+      .locator(sel(CELL))
+      .evaluateAll((els) => els.map((tr) => [...tr.querySelectorAll("td")].slice(0, 2).map((td) => (td as HTMLElement).innerText.replace(/\s+/g, " ").trim())));
+    return rows.flat();
+  }
   const all = (await cells(page).allInnerTexts()).map(clean);
   return all.filter((t) => !COMMON_HEAD.includes(t));
 }

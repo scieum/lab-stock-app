@@ -5,6 +5,7 @@
 // 메모가 있는 기록·없는 기록이 모두 필요하므로 UI 전용 고정 시약(학교 A, `R-db-UI10-fixture-{project}`)의 기록을 쓴다.
 // 고정 기록이 최근 목록에 없을 때만 교사 세션으로 record_usage 2건(메모 있음·없음, 각 1 mL)을 만들고 stock 을 되돌린다.
 // 같은 고정 시약을 쓰는 테스트끼리 겹치지 않도록 이 파일은 한 워커에서 순서대로 돈다.
+import { PAGE_SIZE, isDeskPage } from "./desk-helpers";
 import { test, expect, type Browser, type TestInfo } from "@playwright/test";
 import { ROLE_LABEL, SCHOOL_A_ROLES } from "./db-helpers";
 import { openAs } from "./auth-state";
@@ -17,6 +18,9 @@ import {
   MSDS,
   MSDS_LABEL,
   PRESSED_ROW_BG,
+  expectRowsShown,
+  rowAt,
+  rowTarget,
   ROW,
   SCREEN,
   closeButton,
@@ -77,7 +81,9 @@ for (const role of SCHOOL_A_ROLES) {
       await expect(modal(page).getByText(a.memo!), "메모 글자 보임").toBeVisible();
       // 누른 행 배경 (s2-spec: #e6f4fc), 다른 행은 아님
       await expect.poll(() => rowA.evaluate((el) => getComputedStyle(el).backgroundColor), { message: "누른 행 배경 #e6f4fc" }).toBe(PRESSED_ROW_BG);
-      const rowB = rows(page).nth(noMemo);
+      // 1440: 다른 쪽에 있으면 그 쪽으로 넘어간다 (한 쪽 PAGE_SIZE 행 — d7 §23 run b)
+      const samePage = !isDeskPage(page) || Math.floor(withMemo / PAGE_SIZE) === Math.floor(noMemo / PAGE_SIZE);
+      const rowB = samePage ? rows(page).nth(isDeskPage(page) ? noMemo % PAGE_SIZE : noMemo) : await rowAt(page, noMemo);
       expect(await rowB.evaluate((el) => getComputedStyle(el).backgroundColor), "누르지 않은 행 배경").not.toBe(PRESSED_ROW_BG);
       // MSDS 보기: 시약에 msds_url 이 있으면 화면 16(MSDS 요약)으로 — 바깥 링크로 바로 가지 않는다, 뒤로 = 화면 10 (d7 §22 · rules 1.21 msds_summary.entry)
       expect(a.msds_url, "고정 시약은 MSDS 주소가 있음").toBe(fx.msds_url);
@@ -93,14 +99,15 @@ for (const role of SCHOOL_A_ROLES) {
       // 상세가 열린 채 다른 행(메모 없음)을 누르면 그 기록으로 바뀐다 (상세는 하나)
       const b = snap.shown[noMemo];
       await rowB.scrollIntoViewIfNeeded();
-      await rowB.click();
+      await rowTarget(page, rowB).click();
       await expectDetail(page, b);
       expect((await readDetail(page)).fields["메모"], `메모 없는 기록은 "${MEMO_NONE}"`).toBe(MEMO_NONE);
       await expect(modal(page), `${MODAL} 는 하나`).toHaveCount(1);
       await expect.poll(() => rowB.evaluate((el) => getComputedStyle(el).backgroundColor), { message: "새로 누른 행 배경" }).toBe(PRESSED_ROW_BG);
-      await expect.poll(() => rowA.evaluate((el) => getComputedStyle(el).backgroundColor), { message: "앞서 누른 행 배경 해제" }).not.toBe(PRESSED_ROW_BG);
+      if (samePage) await expect.poll(() => rowA.evaluate((el) => getComputedStyle(el).backgroundColor), { message: "앞서 누른 행 배경 해제" }).not.toBe(PRESSED_ROW_BG);
+      if (isDeskPage(page)) await expect(page.locator(`main ${sel(ROW)}[data-selected="true"]`), "선택 행은 하나").toHaveCount(1);
       // 목록은 그대로
-      await expect(rows(page), "상세를 열어도 목록 행 수 그대로").toHaveCount(snap.flat.length);
+      await expectRowsShown(page, snap.flat.length, "상세를 열어도 목록 행 수 그대로");
       if (viewport === "desktop") {
         const rb = (await rowB.boundingBox())!;
         const m2 = (await modal(page).boundingBox())!;
@@ -124,9 +131,9 @@ test(`[C1][S${SCREEN}] 학교A 학생 상세 닫기: "${CLOSE_LABEL}" · Esc 로
     const closedState = async (row: ReturnType<typeof rows>, how: string) => {
       await expect(modal(page), `${how}: ${MODAL} 0`).toHaveCount(0);
       await expect(page.locator(sel(MSDS)), `${how}: 상세가 닫히면 ${MSDS} 도 없다`).toHaveCount(0);
-      await expect(row, `${how}: 포커스가 누른 행으로`).toBeFocused();
+      await expect(rowTarget(page, row), `${how}: 포커스가 누른 행으로`).toBeFocused();
       await expect.poll(() => row.evaluate((el) => getComputedStyle(el).backgroundColor), { message: `${how}: 누른 행 배경 해제` }).not.toBe(PRESSED_ROW_BG);
-      await expect(rows(page), `${how}: 목록 그대로`).toHaveCount(snap.flat.length);
+      await expectRowsShown(page, snap.flat.length, `${how}: 목록 그대로`);
     };
 
     // 닫기 버튼
@@ -142,7 +149,7 @@ test(`[C1][S${SCREEN}] 학교A 학생 상세 닫기: "${CLOSE_LABEL}" · Esc 로
     await closedState(row1, "Esc");
 
     // 키보드로 열고(Enter) Esc 로 닫기 — 행은 키보드로 누를 수 있다
-    await row0.focus();
+    await rowTarget(page, row0).focus();
     await page.keyboard.press("Enter");
     await expectDetail(page, snap.shown[0]);
     await page.keyboard.press("Escape");

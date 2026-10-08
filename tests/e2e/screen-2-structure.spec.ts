@@ -20,7 +20,9 @@ import {
   sel,
 } from "./screen-helpers";
 import { framePath } from "../frames";
-import { expectShell, isShellComponent } from "./shell-helpers";
+import { SHELL_COMPONENTS, expectShell, isShellComponent } from "./shell-helpers";
+import { deskOnlyComponents } from "../desktop-shell";
+import { mobileOnlyOf } from "./desk-helpers";
 
 const SCREEN = 2;
 const ROLES: Role[] = [...SCHOOL_A_ROLES, "schoolB"];
@@ -96,11 +98,31 @@ for (const role of ROLES) {
         expect(await countComponent(page, name), `screens_required ${name}`).toBeGreaterThanOrEqual(1);
       }
       const low = await lowStockCount(page);
+      // 데스크톱 재구성 run b (d7 §23, rules desktop_shell.desktop_required · dev-rules 1.12): 폭 전용 본문 컴포넌트
+      // 1440 = data-table(reagent-row 0) / 390 = reagent-row(data-table 0) — 폭마다 다른 쪽은 0
+      const deskOnly = deskOnlyComponents();
+      const mobileOnly = mobileOnlyOf(SCREEN, SHELL_COMPONENTS);
+      expect(mobileOnly, "새 프레임: 화면 2 모바일 전용 = reagent-row").toEqual(["reagent-row"]);
       for (const name of fromDev) {
         // 셸(탭바·nav-pill·사이드바)은 위 expectShell 에서 폭별 기대값으로 봤다
         if (isShellComponent(name)) continue;
+        if ((viewport === "mobile" && deskOnly.includes(name)) || (viewport === "desktop" && mobileOnly.includes(name))) {
+          await expect(page.locator(sel(name)), `${name} — ${viewport === "mobile" ? "데스크톱" : "모바일"} 전용 (폭 ${viewport}: 0)`).toHaveCount(0, { timeout: 30_000 });
+          continue;
+        }
         if (name === BADGE) {
           // 재고 부족 배지는 데이터에 따라: 부족 시약이 있으면 ≥1, 없으면 0
+          // 1440 data-table 은 한 쪽 PAGE_SIZE 행 — 첫 쪽에 부족 시약이 없을 수 있어 "재고 부족" 범위(?filter=low-stock)에서 본다
+          if (low > 0 && viewport === "desktop" && (await countComponent(page, name)) === 0) {
+            await page.goto(`${routeOf(SCREEN)}?filter=low-stock`);
+            await waitList(page);
+            await expect(page.locator(`main ${sel("data-table")} ${sel(name)}`).first(), `${name} (부족 ${low}종, 재고 부족 범위)`).toBeVisible();
+            await page.goto(routeOf(SCREEN));
+            await waitList(page);
+            // 하이드레이션 뒤(폭 전용 사본이 빠진 뒤) 다시 센다
+            await expectShell(page, viewport, SCREEN, `${ROLE_LABEL[role]} 화면 ${SCREEN} (다시 열기)`);
+            continue;
+          }
           if (low > 0) expect(await countComponent(page, name), `${name} (부족 ${low}종)`).toBeGreaterThanOrEqual(1);
           else expect(await countComponent(page, name), `${name} (부족 0종)`).toBe(0);
           continue;
@@ -198,7 +220,7 @@ test(`[V1][S${SCREEN}] 화면 ${SCREEN} 스크린샷 저장 (학생)`, async ({ 
   const { context, page, viewport } = await openAs(browser, info, "student", SCREEN);
   try {
     await waitList(page).catch(() => undefined);
-    await page.locator(sel("reagent-row")).first().waitFor({ state: "visible", timeout: 15_000 }).catch(() => undefined);
+    await page.locator(sel(viewport === "desktop" ? "ex-data-table-cell" : "reagent-row")).first().waitFor({ state: "visible", timeout: 15_000 }).catch(() => undefined);
     await page.screenshot({ path: join(process.cwd(), "test-results", `v1-${SCREEN}-${viewport}.png`), fullPage: true });
   } finally {
     await context.close();

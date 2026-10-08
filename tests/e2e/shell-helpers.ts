@@ -267,9 +267,11 @@ export async function waitHydrated(link: Locator): Promise<void> {
 
 /** 화면 본문이 그려졌는지 (빈 화면·자리 표시에서 개수를 세어 통과하지 않도록) */
 export async function waitContent(page: Page, screen: number): Promise<void> {
+  // 화면 2 표식: 폭 390 = reagent-row / 폭 1440 = data-table 행 (d7 §23 run b — 데스크톱 시약 목록은 data-table)
+  const desk = (page.viewportSize()?.width ?? 0) >= devRules.viewports.desktop[0];
   const marker: Record<number, string> = {
     [HOME]: `main ${sel("home-summary")}`,
-    [LIST]: `main ${sel("reagent-row")}`,
+    [LIST]: desk ? `main ${sel("data-table")} ${sel("ex-data-table-cell")}` : `main ${sel("reagent-row")}`,
     [HISTORY]: `main ${sel("segmented-control")}`,
   };
   const m = marker[screen];

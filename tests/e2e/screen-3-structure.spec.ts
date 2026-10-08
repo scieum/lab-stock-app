@@ -22,7 +22,9 @@ import { SCREEN, dbDetail, detailPath, seedReagents, seedSchoolOf, waitDetail } 
 import { watchActions } from "./screen-11-helpers";
 import { expectedSuggestion, suggestRowsOf } from "./suggest-helpers";
 import { framePath } from "../frames";
-import { expectShell, isShellComponent } from "./shell-helpers";
+import { SHELL_COMPONENTS, expectShell, isShellComponent } from "./shell-helpers";
+import { deskOnlyComponents } from "../desktop-shell";
+import { DRAWER, countScoped, frameNamesIn, mobileOnlyOf, newFrame, screenScope } from "./desk-helpers";
 
 /** design/frames/{name}.json 의 노드 이름 (dev-rules components 에 있는 이름만) */
 function frameNames(name: string): Set<string> {
@@ -65,13 +67,26 @@ for (const role of ROLES) {
     // (dev-rules 화면 3 컴포넌트 중 기본 프레임 3-{폭} 에 없는 것: location-picker·cabinet-switcher·cabinet-slot·slot-count·mix-warning)는
     // 기본 상태가 아니라 그 상태에서 본다 (아래 · screen-3-location.spec.ts)
     const viewportName = info.project.name as "mobile" | "desktop";
-    const baseFrame = frameNames(`${SCREEN}-${viewportName}`);
+    const desk = viewportName === "desktop";
+    // 데스크톱 재구성 run b (d7 §23 세부): 1440 의 화면 3 = 시약 목록 옆 오른쪽 detail-drawer — 화면 3 본문은 드로어 안(뒤 목록은 화면 2).
+    // 그래서 1440 기본 프레임 = 새 프레임 3-desktop 의 detail-drawer 아래, 개수도 드로어 안에서 센다.
+    // 폭 전용: 390 = reagent-detail-card(드로어 0) / 1440 = detail-drawer(카드 0)
+    const deskOnly = deskOnlyComponents();
+    const mobileOnly = mobileOnlyOf(SCREEN, SHELL_COMPONENTS);
+    expect(mobileOnly, "새 프레임: 화면 3 모바일 전용 = reagent-detail-card").toEqual(["reagent-detail-card"]);
+    const widthOff = desk ? mobileOnly : deskOnly;
+    const baseFrame = desk ? new Set([...frameNamesIn(`${SCREEN}-desktop`, DRAWER)].filter((n) => devRules.components[n])) : frameNames(`${SCREEN}-${viewportName}`);
     const fromDevAll = Object.entries(devRules.components)
       .filter(([, screens]) => screens.includes(SCREEN))
       .map(([n]) => n)
       .filter((n) => !guestOnly.has(n))
       // 셸(390 nav-pill·탭바 / 1440 app-sidebar·sidebar-item)은 폭별 기대값이 다르다 (아래 expectShell · C2 · C3)
-      .filter((n) => !isShellComponent(n));
+      .filter((n) => !isShellComponent(n))
+      .filter((n) => !widthOff.includes(n))
+      // 셸 예외(rules app_exceptions nav-account-menu)는 1440 드로어 밖(사이드바) — 아래에서 문서 전체로 센다
+      .filter((n) => !(desk && n in (rules as unknown as { app_exceptions: Record<string, string> }).app_exceptions));
+    // 1440 드로어의 "사용 기록" 탭 표(ex-data-table-cell)는 시안 3-desktop(정보 탭)에 없다 — 기본 상태(정보 탭) 0
+    const otherTab = desk ? fromDevAll.filter((n) => !baseFrame.has(n) && n === "ex-data-table-cell") : [];
     const stateOnly = fromDevAll.filter((n) => !baseFrame.has(n));
     // 1.17 variants["3"].location (suggest-badge 포함 — dev-rules 1.5 부터 components 안)
     const variant = (rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants[String(SCREEN)].location;
@@ -85,7 +100,7 @@ for (const role of ROLES) {
       expect(stateOnly, `variants["${SCREEN}"].msds ${n} 은 기본 프레임에 없는 상태 컴포넌트`).toContain(n);
       expect(frameNames(`${SCREEN}-msds-${viewportName}`), `상태 컴포넌트 ${n} 은 3-msds 프레임에 있다`).toContain(n);
     }
-    for (const n of stateOnly.filter((x) => x !== "mix-warning" && !msdsVariant.includes(x))) expect(frameNames(`${SCREEN}-location-${viewportName}`), `상태 컴포넌트 ${n} 은 3-location 프레임에 있다`).toContain(n);
+    for (const n of stateOnly.filter((x) => x !== "mix-warning" && !msdsVariant.includes(x) && !otherTab.includes(x))) expect(frameNames(`${SCREEN}-location-${viewportName}`), `상태 컴포넌트 ${n} 은 3-location 프레임에 있다`).toContain(n);
     const fromDev = fromDevAll.filter((n) => baseFrame.has(n));
     expect(fromDev.length, `dev-rules components 에 화면 ${SCREEN} 컴포넌트가 있어야 함`).toBeGreaterThan(0);
 
@@ -95,6 +110,16 @@ for (const role of ROLES) {
     try {
       await waitDetail(page);
       await expectShell(page, viewport, SCREEN, `${ROLE_LABEL[role]} 화면 ${SCREEN}`);
+      // 화면 3 본문 범위 (1440 = 드로어) 안 개수
+      const scope = screenScope(page, SCREEN, viewport);
+      const countComponent = (_p: unknown, name: string) => countScoped(scope, name);
+      for (const name of widthOff) {
+        // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 (서버 HTML 에는 두 폭 모두 있다)
+        await expect(page.locator(sel(name)), `${name} — ${desk ? "모바일" : "데스크톱"} 전용 (폭 ${viewport}: 0)`).toHaveCount(0, { timeout: 30_000 });
+      }
+      if (desk) for (const name of Object.keys((rules as unknown as { app_exceptions: Record<string, string> }).app_exceptions).filter((n) => devRules.components[n]?.includes(SCREEN))) {
+        expect(await countScoped(page.locator("body"), name), `셸 ${name} = 1 (사이드바)`).toBe(1);
+      }
       for (const name of guestOnly) {
         expect(await countComponent(page, name), `로그인 화면에 둘러보기 전용 ${name} 0개`).toBe(0);
       }
@@ -133,20 +158,38 @@ for (const role of ROLES) {
           if (auto) await expect(page.locator(`main ${sel("reorder-threshold")} ${sel(name)}`), `${name} 은 reorder-threshold 줄 안`).toHaveCount(1);
           continue;
         }
+        if (desk && missing && name === "msds-qr-tile") {
+          // 1440 MSDS 없는 시약 = 시안 3-msds-desktop: 드로어 msds-entry 는 캡션(+ 교사·admin MSDS 찾기)만, QR 타일 없음
+          expect(frameNamesIn(`${SCREEN}-msds-desktop`, DRAWER).has(name), "시안 3-msds-desktop 드로어에 msds-qr-tile 없음").toBe(false);
+          expect(await countComponent(page, name), `${name} (1440 · MSDS 없음 → 3-msds: 0)`).toBe(0);
+          continue;
+        }
+        if (desk && name === "button-outline" && forbidden.has("stock-intake")) {
+          // 1440 드로어의 button-outline = drawer-actions "입고"(시안 3-desktop) 하나 — 입고(stock-intake)는 학생 0 (rules R5)
+          const outlines = newFrame(`${SCREEN}-desktop`).filter((n) => n.name === "label" && n.path.includes(DRAWER) && n.path.includes(name)).map((n) => n.text?.characters);
+          expect(outlines, "시안 3-desktop 드로어 button-outline = 입고").toEqual(["입고"]);
+          expect(await countComponent(page, name), `${name} (1440 학생 — 입고 없음, R5)`).toBe(0);
+          continue;
+        }
         if (name === PILL_SOFT && missing && forbidden.has("location-edit")) {
           // 시안 3-msds: MSDS 없는 시약의 msds-entry 는 캡션(+ 교사·admin msds-search)만 — 옛 비활성 "MSDS 보기"(button-pill-soft) 없음.
           // 화면 3 의 다른 button-pill-soft 는 location-edit 안(학생 R7 0)뿐이라 학생 + MSDS 없음 = 0
           const pillParents = (JSON.parse(readFileSync(framePath(`${SCREEN}-msds-${viewportName}`), "utf8")) as {
             frames: { nodes: { name: string; path: string[] }[] }[];
           }).frames[0].nodes
-            .filter((n) => n.name === name)
+            // 1440 = 드로어 안만 (뒤 시약 목록의 필터·"한 번에 찾기" pill 은 화면 2 것)
+            .filter((n) => n.name === name && (!desk || n.path.includes(DRAWER)))
             .map((n) => n.path[n.path.length - 2]);
-          expect(pillParents, "시안 3-msds 의 button-pill-soft 는 location-edit 안에만").toEqual(["location-edit"]);
+          // 390 시안 = location-edit 안에만 / 1440 시안(드로어) = location-edit · msds-search 안 — 모두 학생에게 금지된 컴포넌트(R7 · R5)
+          if (desk) expect([...new Set(pillParents)].sort(), "시안 3-msds-desktop 드로어 button-pill-soft 부모").toEqual(["location-edit", "msds-search"]);
+          else expect(pillParents, "시안 3-msds 의 button-pill-soft 는 location-edit 안에만").toEqual(["location-edit"]);
+          for (const parent of pillParents) expect(forbidden.has(parent), `${parent} 는 학생 금지 (roles)`).toBe(true);
           expect(await countComponent(page, name), `${name} (학생 · MSDS 없음 → 3-msds: 0)`).toBe(0);
           continue;
         }
         expect(await countComponent(page, name), `${name}`).toBeGreaterThanOrEqual(1);
-        await expect(page.locator(sel(name)).first(), `${name} 보임`).toBeVisible();
+        if (desk && name === DRAWER) await expect(scope, `${name} 보임`).toBeVisible();
+        else await expect(scope.locator(sel(name)).first(), `${name} 보임`).toBeVisible();
       }
       // 상태 컴포넌트: 기본 상태에는 없다 → 교사·admin 은 "위치 바꾸기"를 열면 variants["3"].location 이 모두 보인다 (저장하지 않고 닫는다)
       // d7 §20 (3-msds 상태): MSDS 없는 시약이면 교사·admin 기본 화면에 msds-search 1 (학생 R5 0). 후보 시트(msds-candidates)는 누르기 전 0
@@ -175,12 +218,13 @@ for (const role of ROLES) {
         expect(own.error, "대조: 시약 분류 (RLS)").toBeNull();
         const sug = expectedSuggestion(await suggestRowsOf(client), { id: pick.id, storage_class: (own.data?.storage_class as string | null) ?? null });
         for (const name of variant) {
+          // 위치 피커는 1440 에서 드로어 왼쪽 팝오버 (시안 3-location-desktop location-picker 는 드로어 밖) — 문서 전체에서 센다
           if (name === "suggest-badge" && !sug) {
-            expect(await countComponent(page, name), `추천 칸 없음(DB 계산) → ${name} 0`).toBe(0);
+            expect(await countScoped(page.locator("body"), name), `추천 칸 없음(DB 계산) → ${name} 0`).toBe(0);
             await expect(page.locator('[data-testid="location-picker-suggest"]'), "추천 없음 → 추천 줄 0").toHaveCount(0);
             continue;
           }
-          expect(await countComponent(page, name), `variants["${SCREEN}"].location ${name}`).toBeGreaterThanOrEqual(1);
+          expect(await countScoped(page.locator("body"), name), `variants["${SCREEN}"].location ${name}`).toBeGreaterThanOrEqual(1);
           await expect(page.locator(sel(name)).first(), `${name} 보임`).toBeVisible();
         }
         if (sug) await expect(page.locator('[data-testid="location-picker-suggest"]'), "추천 칸 있음(DB 계산) → 추천 줄 1").toHaveCount(1);

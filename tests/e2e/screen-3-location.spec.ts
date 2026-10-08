@@ -11,7 +11,7 @@ import { openAs } from "./auth-state";
 import { ROLE_LABEL, SCHOOL_A_ROLES } from "./db-helpers";
 import { demoReagents, guestDetailPath, openGuest } from "./guest-helpers";
 import { browserClient, browserSession, countComponent, routeOf, rules, sel, seedRows } from "./screen-helpers";
-import { detailPath, waitDetail } from "./screen-3-helpers";
+import { detailPath, detailScope, waitDetail } from "./screen-3-helpers";
 import { MANUAL_SOURCE_TEXT } from "./reorder-auto-helpers";
 import { HAS_SERVICE, clientFor, openTemp, service } from "./screen-8-helpers";
 import { expectedSuggestion, suggestRowsOf } from "./suggest-helpers";
@@ -44,6 +44,9 @@ import {
   type S11Fixture,
 } from "./screen-11-helpers";
 import { framePath } from "../frames";
+import { DRAWER_W, drawer, isDeskPage, newFrame } from "./desk-helpers";
+/** 시안 3-location-desktop location-picker 폭 (드로어 왼쪽 팝오버) */
+const PICKER_W = newFrame("3-location-desktop").find((n) => n.name === "location-picker")!.width!;
 import { adjustPreDesktopShell } from "../desktop-shell";
 
 test.describe.configure({ mode: "default" });
@@ -103,7 +106,8 @@ const squash = (s: string) => s.replace(/\s+/g, " ").trim();
 const nospace = (s: string) => s.replace(/[\s,]/g, "");
 
 // ---------- 요소 ----------
-const card = (page: Page) => page.locator(`main ${sel(CARD)}`);
+/** 시약 정보 묶음: 390 = reagent-detail-card / 1440 = 시약 목록 옆 드로어 (시안 3-desktop 정보 줄 — d7 §23 run b) */
+const card = (page: Page) => (isDeskPage(page) ? drawer(page) : page.locator(`main ${sel(CARD)}`));
 const locRow = (page: Page) => page.locator(`main ${sel(LOC)}`);
 const thrRow = (page: Page) => page.locator(`main ${sel(THRESH)}`);
 const picker = (page: Page) => page.locator(sel(PICKER));
@@ -381,18 +385,24 @@ test.describe("일회용 학교", () => {
     }
   });
 
-  test(`[R-ui][S${SCREEN}] 일회용 학생 시약 상세: ${LOC}·${THRESH} 값은 보임 · ${LOC_EDIT}·${THRESH_EDIT}·${PICKER} 0 (R5·R7) · 응답 본문에 그 컴포넌트·피커 데이터(다른 시약장 이름) 없음 — 같은 시약의 교사 응답에는 있음(대조) · 쓰기 0건`, async ({ browser }, info) => {
+  test(`[R-ui][S${SCREEN}] 일회용 학생 시약 상세: ${LOC}·${THRESH} 값은 보임 · ${LOC_EDIT}·${THRESH_EDIT}·${PICKER} 0 (R5·R7) · 응답 본문에 그 컴포넌트 없음 · 학생 상세 본문(390 main / 1440 드로어)에 피커 데이터(다른 시약장 이름) 없음 — 같은 시약의 교사는 위치 바꾸기에서 보임(대조) · 쓰기 0건`, async ({ browser }, info) => {
     const f = await fresh(info);
     const st = await prepLocState(f);
     // 학생에게 보이는 재주문 기준 줄 = 직접 입력 0 상태 ("아직 없어요" + 출처 "직접 입력", d7 §11-1 — 모든 역할 같은 표시)
     await prepNoThreshold(f, st.x.id);
     expect(R5.components, "R5 에 threshold-edit").toContain(THRESH_EDIT);
     expect(R7.components, "R7 에 location-edit").toContain(LOC_EDIT);
-    // 대조: 교사 응답에는 피커 데이터(옮길 수 있는 다른 시약장 이름)가 있다
+    // 대조: 교사는 위치 바꾸기(피커)에서 옮길 수 있는 다른 시약장 이름을 본다.
+    // (d7 §23 run b: 응답 HTML 에는 폭 전용 사본으로 데스크톱 시약 목록이 함께 렌더되어, 같은 학교 시약장 이름이 목록·필터 몫으로 들어간다 —
+    //  같은 학교 데이터라 노출 금지 대상이 아니다(다른 학교 노출 금지 N1 은 screen-3-isolation). 그래서 "피커 데이터 없음"은 상세 본문에서 본다)
     const t = await openTemp(browser, info, f.teacher, detailPath(st.x.id));
     try {
       await waitDetail(t.page);
-      expect(await t.response!.text(), "대조: 교사 응답 본문에 다른 시약장 이름(피커 데이터)").toContain(st.c2.label);
+      await expect(async () => {
+        if (!(await picker(t.page).isVisible())) await locEditButton(t.page).click({ timeout: 5_000 });
+        await expect(picker(t.page)).toBeVisible({ timeout: 2_000 });
+      }).toPass({ timeout: 30_000 });
+      await expect(picker(t.page), "대조: 교사 피커에 다른 시약장 이름").toContainText(st.c2.label);
     } finally {
       await t.context.close();
     }
@@ -405,7 +415,7 @@ test.describe("일회용 학교", () => {
         expect(await countComponent(page, c), `학생 ${c}`).toBe(0);
         expect(html, `학생 응답 본문 ${c}`).not.toContain(`data-component="${c}"`);
       }
-      expect(html, "학생 응답 본문에 피커 데이터(다른 시약장 이름) 없음").not.toContain(st.c2.label);
+      expect(await detailScope(page).innerText(), "학생 상세 본문(390 main / 1440 드로어)에 피커 데이터(다른 시약장 이름) 없음").not.toContain(st.c2.label);
       await expectLocation(page, { number: st.c1.number, label: st.c1.label, key: "R1" }, "학생");
       expect(await thresholdText(page), "학생 재주문 기준 줄 (값 + 출처)").toBe(`${THRESH_CAPTION} ${THRESH_NONE} ${THRESH_MANUAL}`);
       await expect(locRow(page).getByRole("button"), "학생 보관 위치 줄에 버튼 없음").toHaveCount(0);
@@ -527,7 +537,7 @@ async function placedReagent(page: Page): Promise<string> {
   return one.data!.id as string;
 }
 
-test(`[C2][S${SCREEN}] 학교A 교사 시약 상세: 폭 390 = ${PICKER} 아래 끝 = tab-bar 위쪽 선(전폭·tab-bar 가리지 않음)·"${SAVE}" 가려지지 않음 · 카드 → 탭 → MSDS 한 열 / 폭 1440 = tab-bar 0 · 한 열(시안 3-desktop page-column 720, 가운데) · ${PICKER} 가운데 카드 (쓰기 0건)`, async ({ browser }, info) => {
+test(`[C2][S${SCREEN}] 학교A 교사 시약 상세: 폭 390 = ${PICKER} 아래 끝 = tab-bar 위쪽 선(전폭·tab-bar 가리지 않음)·"${SAVE}" 가려지지 않음 · 카드 → 탭 → MSDS 한 열 / 폭 1440 = tab-bar 0 · 시약 목록 옆 드로어(rules drawer_width) 안 탭 → 정보 줄 → MSDS · ${PICKER} = 드로어 왼쪽 팝오버(시안 3-location-desktop 폭) (쓰기 0건)`, async ({ browser }, info) => {
   test.setTimeout(180_000);
   const tb = rules.tab_bar;
   const first = await openAs(browser, info, "teacher", 13);
@@ -538,15 +548,15 @@ test(`[C2][S${SCREEN}] 학교A 교사 시약 상세: 폭 390 = ${PICKER} 아래 
   try {
     await waitDetail(page);
     const vp = page.viewportSize()!;
-    const blocks = [card(page), page.locator(`main ${sel("segmented-control")}`).first(), page.locator(`main ${sel("msds-entry")}`).first()];
-    const boxes = [];
-    for (const b of blocks) boxes.push(await boxOf(b));
-    for (let i = 1; i < boxes.length; i += 1) {
-      expect(boxes[i].top, "한 열: 카드 → 탭 → MSDS 위에서 아래로").toBeGreaterThan(boxes[i - 1].top);
-      expect(Math.abs(boxes[i].left - boxes[0].left), "한 열: 같은 왼쪽").toBeLessThanOrEqual(1);
-      expect(Math.abs(boxes[i].width - boxes[0].width), "한 열: 같은 폭").toBeLessThanOrEqual(1);
-    }
     if (viewport === "mobile") {
+      const blocks = [card(page), page.locator(`main ${sel("segmented-control")}`).first(), page.locator(`main ${sel("msds-entry")}`).first()];
+      const boxes = [];
+      for (const b of blocks) boxes.push(await boxOf(b));
+      for (let i = 1; i < boxes.length; i += 1) {
+        expect(boxes[i].top, "한 열: 카드 → 탭 → MSDS 위에서 아래로").toBeGreaterThan(boxes[i - 1].top);
+        expect(Math.abs(boxes[i].left - boxes[0].left), "한 열: 같은 왼쪽").toBeLessThanOrEqual(1);
+        expect(Math.abs(boxes[i].width - boxes[0].width), "한 열: 같은 폭").toBeLessThanOrEqual(1);
+      }
       expect(Math.abs(boxes[0].width - (vp.width - 32)), "모바일 한 열 폭 = 390 - 좌우 16").toBeLessThanOrEqual(2);
       const bar = page.locator(sel(tb.component));
       await expect(bar).toHaveCount(1);
@@ -569,21 +579,26 @@ test(`[C2][S${SCREEN}] 학교A 교사 시약 상세: 폭 390 = ${PICKER} 아래 
     } else {
       await expect(page.locator(sel(tb.component)), "1440 tab-bar").toHaveCount(0);
       await expect(page.locator(sel(tb.item)), "1440 tab-item").toHaveCount(0);
-      const want = 720; // design/frames/3-desktop.json content/page-column
-      expect(Math.abs(boxes[0].width - want), `데스크톱 한 열 폭 ≈ 시안 ${want}`).toBeLessThanOrEqual(24);
-      // 가운데 = 본문 영역(사이드바 오른쪽 — rules 1.22 desktop_shell, d7 §23 "본문 = 사이드바 오른쪽") 기준
-      const sb = await boxOf(page.locator(sel(rules.desktop_shell.component)));
-      const bodyCenter = (sb.right + vp.width) / 2;
-      expect(Math.abs(boxes[0].left + boxes[0].width / 2 - bodyCenter), "한 열은 본문 영역 가운데").toBeLessThanOrEqual(16);
+      // 1440 = 시약 목록 옆 오른쪽 드로어 (rules desktop_shell.drawer_width · 시안 3-desktop): 안의 순서 = 탭 → 정보 줄(보관 위치 · 재주문 기준) → MSDS
+      const d = await boxOf(drawer(page));
+      expect(Math.abs(d.width - DRAWER_W), `드로어 폭 = rules drawer_width ${DRAWER_W}`).toBeLessThanOrEqual(1);
+      expect(Math.abs(d.right - vp.width), "드로어는 화면 오른쪽 끝").toBeLessThanOrEqual(1);
+      const inner = [drawer(page).locator(sel("segmented-control")).first(), locRow(page), thrRow(page), drawer(page).locator(sel("msds-entry")).first()];
+      const ib = [];
+      for (const b of inner) ib.push(await boxOf(b));
+      for (let i = 1; i < ib.length; i += 1) expect(ib[i].top, "드로어 안: 탭 → 보관 위치 → 재주문 기준 → MSDS 위에서 아래로").toBeGreaterThan(ib[i - 1].top);
+      for (const b of ib) expect(b.left >= d.left - 0.5 && b.right <= d.right + 0.5, "드로어 안").toBe(true);
       await hydrated(locEditButton(page));
       await locEditButton(page).click();
       const p = picker(page);
       await expect(p).toBeVisible();
       const s = await boxOf(p);
-      expect(Math.abs((s.left + s.right) / 2 - vp.width / 2), "피커 가로 가운데").toBeLessThanOrEqual(16);
+      // 피커 = 드로어 왼쪽 팝오버 (rules desktop_shell.overlay — 바텀시트·가운데 카드 아님, 시안 3-location-desktop)
+      expect(Math.abs(s.width - PICKER_W), `피커 폭 = 시안 ${PICKER_W}`).toBeLessThanOrEqual(1);
+      expect(s.right, "피커는 드로어 왼쪽").toBeLessThanOrEqual(d.left + 1);
       expect(s.top, "피커 화면 안 (위)").toBeGreaterThanOrEqual(0);
       expect(s.bottom, "피커 화면 안 (아래)").toBeLessThanOrEqual(vp.height);
-      expect(s.width, "피커는 전폭이 아닌 카드").toBeLessThan(vp.width / 2);
+      expect(s.width, "피커는 전폭이 아니다").toBeLessThan(vp.width / 2);
     }
     await picker(page).getByRole("button", { name: exact("닫기") }).click();
     await expect(picker(page)).toHaveCount(0);

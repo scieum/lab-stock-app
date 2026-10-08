@@ -8,9 +8,9 @@ import { randomUUID } from "node:crypto";
 import { test, expect, type Page } from "@playwright/test";
 import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
-import { PROFILE_ROLE, browserClient, browserSession, rules, sel, seedRows } from "./screen-helpers";
+import { PROFILE_ROLE, browserClient, browserSession, rules, seedRows } from "./screen-helpers";
 import { seedReagents, seedSchoolOf } from "./screen-3-helpers";
-import { CARD, SCREEN, dbStock, usagePath, waitUsage } from "./screen-4-helpers";
+import { SCREEN, dbStock, usagePath, waitUsage, reagentHead } from "./screen-4-helpers";
 
 const N1 = rules.never.N1;
 const ROLES: Role[] = [...SCHOOL_A_ROLES, "schoolB"];
@@ -52,7 +52,7 @@ for (const role of ROLES) {
         const me = await browserSession(page);
         expect(me.role, "테스트 계정 역할").toBe(PROFILE_ROLE[role]);
         expect(me.schoolName, "테스트 계정 학교 = seed 학교").toBe(school.name);
-        if (withReagent) await expect(page.locator(sel(CARD)).first()).toContainText(own[0].name);
+        if (withReagent) await expect(reagentHead(page).first()).toContainText(own[0].name);
 
         const text = await page.locator("body").innerText();
         checkSchoolNames(text, me.schoolName, schools.filter((s) => s.id !== school.id).map((s) => s.name));
@@ -83,7 +83,7 @@ for (const role of ROLES) {
       await waitUsage(page, false);
       const me = await browserSession(page);
       expect(me.schoolName, "테스트 계정 학교 = seed 학교").toBe(school.name);
-      expect(await page.locator(sel(CARD)).count(), "시약 미지정이면 시약 카드 없음").toBe(0);
+      expect(await reagentHead(page).count(), "시약 미지정이면 시약 카드 없음").toBe(0);
 
       // 자기 세션(RLS)으로 읽은 자기 학교 시약명 (양성 대조: seed 자기 학교 시약이 모두 포함)
       // 자기 세션(RLS)으로 읽은 자기 학교 시약명 (양성 대조: seed 자기 학교 시약이 모두 포함)
@@ -152,7 +152,7 @@ for (const role of ROLES) {
     try {
       expect(o.response?.status(), `${ROLE_LABEL[other]} 자기 시약 사용 기록 응답`).toBe(200);
       await waitUsage(o.page, true);
-      await expect(o.page.locator(sel(CARD)).first()).toContainText(target.name);
+      await expect(reagentHead(o.page).first()).toContainText(target.name);
       expect(await dbStock(o.page, target.id), `${ROLE_LABEL[other]} 세션으로 ${target.name} 읽힘`).not.toBeNull();
     } finally {
       await o.context.close();
@@ -169,7 +169,7 @@ for (const role of ROLES) {
       expect(response!.status(), "다른 학교 시약 id → 404").toBe(404);
       const html = await response!.text();
       const shownForeign = await bodyText(page);
-      expect(await page.locator(sel(CARD)).count(), "다른 학교 시약 카드 없음").toBe(0);
+      expect(await reagentHead(page).count(), "다른 학교 시약 카드 없음").toBe(0);
       expect(await page.locator('main input[name="amount"]').count(), "다른 학교 시약 사용량 입력 없음").toBe(0);
       for (const r of foreign) {
         if (ownNames.some((n) => n.includes(r.name))) continue;

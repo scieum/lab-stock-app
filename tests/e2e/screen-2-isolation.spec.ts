@@ -1,5 +1,6 @@
 // 화면 2 (시약 목록) 학교 격리 N1-ui: 학교명 종류 = rules.json never.N1.distinct_school_names, 자기 학교명만,
 // 다른 학교(seed schools) 이름·다른 학교 시약명(seed reagents) 미노출 (학교 A 계정 ↔ 학교 B 계정 양방향).
+import { isDeskPage } from "./desk-helpers";
 import { test, expect } from "@playwright/test";
 import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
@@ -31,7 +32,8 @@ for (const role of ROLES) {
       const foreignReagents = reagents.filter((r) => foreignIds.has(r.school_id)).map((r) => r.name);
       expect(foreignReagents.length, "다른 학교 seed 시약이 있어야 검사가 의미 있음").toBeGreaterThan(0);
       // 양성 대조: 자기 학교 시약 행이 실제로 그려진 뒤 검사한다 (빈 화면에서 미노출로 통과하지 않도록)
-      await expect(page.locator(sel("reagent-row")).first()).toBeVisible({ timeout: 30_000 });
+      // 390 = reagent-row / 1440 = data-table 행 (d7 §23 run b)
+      await expect(page.locator(isDeskPage(page) ? `main ${sel("data-table")} ${sel("ex-data-table-cell")}` : sel("reagent-row")).first()).toBeVisible({ timeout: 30_000 });
 
       const text = await page.locator("body").innerText();
       const names = [...new Set(text.match(new RegExp(N1.school_name_pattern, "g")) ?? [])];

@@ -39,13 +39,15 @@ const seedLine = D7.split("\n").find((l) => l.startsWith("| 공통 목록")) ?? 
 const SEED = [...seedLine.matchAll(/([^\s,():]+)\((https?:\/\/[^)\s]+)\)/g)].map((m) => ({ name: m[1], website: m[2] }));
 
 // ---------- 시안 프레임 9-mobile(1.17) 의 예시 판매처 ----------
-// 시안 1.17 행 = vendor-name + vendor-site(웹사이트). 부가 정보 줄(vendor-info)은 시안에 없고, d7 §18 이 행의 부가 정보를
-// "연락처만"으로 정했다 — 부가 정보 문구 틀("연락처 · note")의 예시는 아래 D7_INFOS(d7 §12 틀).
+// 화면 9 는 데스크톱 재구성 run b(dev-rules 1.12 desktop_migrated_screens)로 새 프레임(design/frames 1.24)으로 대조한다.
+// 새 시안 행 = vendor-name + vendor-contact(연락처) — d7 §18 화면 9 "목록 행은 이름 + 연락처만(웹사이트는 행에 안 보임)" 과 같다.
+// 웹사이트 줄(vendor-site)은 행에 없다. 부가 정보 문구 틀("연락처 · note")의 예시는 아래 D7_INFOS(d7 §12 틀).
 type FrameNode = { name: string; path: string[]; text: { characters: string } | null };
 const frame = JSON.parse(readFileSync(framePath("9-mobile"), "utf8")) as { frames: { nodes: FrameNode[] }[] };
 const frameText = (name: string) => frame.frames[0].nodes.filter((n) => n.name === name && n.text).map((n) => n.text!.characters);
 const FRAME_NAMES = frameText("vendor-name");
 const FRAME_SITES = frameText("vendor-site");
+const FRAME_CONTACTS = frameText("vendor-contact");
 /** d7 §12 "부가 정보 = 연락처 · note" 틀의 예시 (화면 6 판매처 연결 행이 쓰는 vendorInfo) */
 const D7_INFOS = ["043-221-4560 · 시약·실험 기구", "02-555-0192 · 시약", "043-270-1188 · 실험 기구"];
 
@@ -68,12 +70,13 @@ const urlOfLength = (n: number) => {
 };
 
 describe("vendor rules: 기대값 원본 · 상수", () => {
-  it("[K1][S9] 기대값 원본: d7 §12 에서 길이 4개·공통 seed 4곳, 프레임 9-mobile(1.17) 에서 판매처 3곳을 읽었다", () => {
+  it("[K1][S9] 기대값 원본: d7 §12 에서 길이 4개·공통 seed 4곳, 프레임 9-mobile(1.24) 에서 판매처 3곳(이름 + 연락처)을 읽었다", () => {
     expect([NAME_MAX, CONTACT_MAX, WEBSITE_MAX, NOTE_MAX].every((n) => Number.isInteger(n) && n > 0)).toBe(true);
     expect(SEED.length).toBe(4);
     for (const s of SEED) expect(s.website).toMatch(HTTP);
     expect(FRAME_NAMES.length).toBe(3);
-    expect(FRAME_SITES.length, "시안 행마다 웹사이트 줄").toBe(FRAME_NAMES.length);
+    expect(FRAME_CONTACTS.length, "시안 행마다 연락처 줄 (d7 §18: 행 = 이름 + 연락처)").toBe(FRAME_NAMES.length);
+    expect(FRAME_SITES, "시안 행에 웹사이트 줄 없음 (d7 §18: 웹사이트는 행에 안 보임)").toEqual([]);
     expect(frameText("vendor-info"), "시안 1.17 행에는 부가 정보(연락처 · note) 줄이 없다").toEqual([]);
     for (const info of D7_INFOS) expect(info).toMatch(/^\S+ · .+$/);
   });

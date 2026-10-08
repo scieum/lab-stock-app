@@ -1,7 +1,8 @@
 // 화면 3 (시약 상세, dev-rules.json routes["3"]) 테스트 공용 도우미.
 // - 시약 id 는 seed.sql 에서 고르고, 표시값 비교용 DB 값은 그 계정의 브라우저 세션(publishable 키 + RLS)으로 읽는다.
 // - service role 미사용. 계정 값은 db-helpers.ts 의 환경변수 로딩만 쓴다.
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
+import { drawer, isDeskPage, waitDrawer } from "./desk-helpers";
 import type { Role } from "./db-helpers";
 import { browserClient, routeOf, sel, seedRows } from "./screen-helpers";
 
@@ -76,18 +77,33 @@ export async function dbDetail(page: Page, id: string): Promise<DbDetail | null>
   };
 }
 
-/** 상세 화면이 그려질 때까지 (reagent-detail-card 보임) */
+/**
+ * 상세 화면이 그려질 때까지.
+ * 폭 390 = reagent-detail-card 보임 / 폭 1440 = 시약 목록 옆 오른쪽 detail-drawer 1개 보임 + 하이드레이션
+ * (d7 §23 run b 세부: 데스크톱 /reagents/[id] = 목록 + 드로어, 시안 3-desktop 에 reagent-detail-card 없음)
+ */
+/** 1440 로그인 시약 상세 = 목록 옆 드로어 (둘러보기 /demo 는 run d 전 — 예전 전용 화면) */
+const deskDetail = (page: Page) => isDeskPage(page) && !new URL(page.url()).pathname.startsWith("/demo");
+
 export async function waitDetail(page: Page): Promise<void> {
+  if (deskDetail(page)) {
+    await waitDrawer(page);
+    return;
+  }
   await expect(page.locator(sel("reagent-detail-card")).first()).toBeVisible({ timeout: 30_000 });
   await page.waitForLoadState("load");
 }
+
+/** 상세 본문 범위: 폭 390 = main / 폭 1440 = 드로어 (뒤 시약 목록은 화면 2 몫) */
+export const detailScope = (page: Page): Locator => (deskDetail(page) ? drawer(page) : page.locator("main"));
 
 /**
  * main 안의 segmented-control 탭을 하나씩 눌러 각 탭 패널 글자를 모은다 (어느 탭에 값이 있든 찾도록).
  * 누른 탭이 선택 상태(aria-selected=true)가 될 때까지 기다린다 (하이드레이션 전 클릭 무시 방지).
  */
 export async function textAcrossTabs(page: Page): Promise<string> {
-  const main = page.locator("main");
+  // 데스크톱은 드로어 안 (뒤 시약 목록의 전체/재고 부족 segmented-control 은 화면 2 것)
+  const main = detailScope(page);
   const tabs = main.locator(`${sel("segmented-control")} [role="tab"]`);
   const labels = (await tabs.allInnerTexts()).map((t) => t.trim()).filter(Boolean);
   const parts = [await main.innerText()];

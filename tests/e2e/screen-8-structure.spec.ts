@@ -10,6 +10,7 @@ import { ROLE_LABEL, SCHOOL_A_ROLES } from "./db-helpers";
 import { openAs } from "./auth-state";
 import { PROFILE_ROLE, ROLE_NAME, browserClient, browserSession, countComponent, devRules, roleChecks, routeOf, rules, sel } from "./screen-helpers";
 import { DESKTOP_SHELL, frameActiveLabel } from "../desktop-shell";
+import { newFrame } from "./desk-helpers";
 import { expectShellHeader, shellSchoolScope } from "./shell-helpers";
 import {
   ACTIVE_TAB_LABEL,
@@ -77,6 +78,7 @@ import {
   selfRowBackground,
   waitUsers,
   watchActions,
+  inviteDialog,
   type DbMember,
 } from "./screen-8-helpers";
 
@@ -86,6 +88,12 @@ const NAV_SCREENS = [HOME_SCREEN, 2, 10];
 const USERS_HREF = routeOf(SCREEN);
 
 const isDesktopPage = (page: Page) => page.viewportSize()?.width === devRules.viewports.desktop[0];
+/** 새 프레임 8-desktop (d7 §23 run b): 본문 제목 · 초대 줄(page-actions) · 가운데 확인 카드 폭 */
+const F8D = newFrame(`${SCREEN}-desktop`);
+const DESK_TITLE8 = F8D.find((n) => n.name === "title" && n.path.includes("page-title"))!.text!.characters;
+const DESK_INVITE_PLACEHOLDER = F8D.find((n) => n.name === "placeholder" && n.path.includes("page-actions"))!.text!.characters;
+const DESK_INVITE_ROLES = F8D.filter((n) => n.name === "label" && n.path.includes("page-actions") && n.path.includes(SEGMENT)).map((n) => n.text!.characters);
+const DESK_CARD_W = F8D.find((n) => n.name === MODAL)!.width!;
 /** 셸 이동 링크: 폭 390 = nav-pill nav 링크, 폭 1440 = app-sidebar 의 sidebar-item 링크 (rules 1.22 desktop_shell) */
 const navLinks = (page: Page) =>
   isDesktopPage(page) ? page.locator(`${sel(DESKTOP_SHELL.component)} a${sel(DESKTOP_SHELL.item)}`) : page.locator(`${sel("nav-pill")} nav a`);
@@ -309,11 +317,12 @@ test(`[C1][S${SCREEN}] 학교A admin 기본 상태: nav-pill(워드마크·"${NA
     await waitUsers(page);
     const me = await browserSession(page);
     // 셸 머리: 390 = nav-pill(워드마크·제목·학교명) / 1440 = 사이드바(워드마크·학교명) + 본문 제목 (rules 1.22 desktop_shell)
-    await expectShellHeader(page, viewport, { wordmark: WORDMARK, title: NAV_LABEL, schoolName: me.schoolName }, "화면 8");
+    // 본문 제목: 390 = nav-pill "사용자 관리" / 1440 = 새 프레임 8-desktop page-title (d7 §23 run b)
+    await expectShellHeader(page, viewport, { wordmark: WORDMARK, title: viewport === "desktop" ? DESK_TITLE8 : NAV_LABEL, schoolName: me.schoolName }, "화면 8");
     if (viewport === "mobile") {
       await expect(page.locator(sel("nav-pill")).getByText(exact(NAV_LABEL)).locator("visible=true"), `nav-pill 에 "${NAV_LABEL}" 가 보임`).toHaveCount(1);
     }
-    if (viewport === "desktop") await expect(page.getByRole("heading", { level: 1, name: exact(NAV_LABEL) }), "데스크탑 screen-title").toBeVisible();
+    if (viewport === "desktop") await expect(page.getByRole("heading", { level: 1, name: exact(DESK_TITLE8) }), "데스크탑 page-title").toBeVisible();
 
     await expect(page.locator(sel(USER_MANAGE))).toHaveCount(1);
     await expect(inviteButton(page), `헤더 ${PRIMARY} "${INVITE_BUTTON}"`).toHaveCount(1);
@@ -347,8 +356,13 @@ test(`[C1][S${SCREEN}] 학교A admin 기본 상태: nav-pill(워드마크·"${NA
     await expect(manage(page).locator(sel(ROW)), `${ROW} = 멤버 + 초대`).toHaveCount(members.length + invites.length);
 
     await expect(manage(page).getByText(exact(noteText(me.schoolName))), "하단 유의사항").toBeVisible();
-    // 기본 상태에는 시트·토스트·0건 카드가 없다
-    for (const c of [MODAL, "ex-toast", EMPTY, SEGMENT, SEGMENT_ACTIVE]) expect(await countComponent(page, c), `기본 상태 ${c}`).toBe(0);
+    // 기본 상태에는 시트·토스트·0건 카드가 없다 (1440 의 segmented-control 은 page-head 초대 줄의 학생·교사 — 시안 8-desktop)
+    const noneHere = viewport === "desktop" ? [MODAL, "ex-toast", EMPTY] : [MODAL, "ex-toast", EMPTY, SEGMENT, SEGMENT_ACTIVE];
+    for (const c of noneHere) expect(await countComponent(page, c), `기본 상태 ${c}`).toBe(0);
+    if (viewport === "desktop") {
+      await expect(inviteDialog(page).locator(sel(SEGMENT)), "1440 초대 줄 segmented-control 1").toHaveCount(1);
+      await expect(page.locator(sel(SEGMENT)), "1440 segmented-control = 초대 줄 1").toHaveCount(1);
+    }
   } finally {
     await context.close();
   }
@@ -493,6 +507,15 @@ test(`[C1][S${SCREEN}] 학교A admin 본인·마지막 admin 시트: 라디오 3
     const mine = members.find((m) => m.user_id === me.userId)!;
     expect(members.filter((m) => m.role === "admin").map((m) => m.user_id), "전제: 학교 A admin = 공용 admin 1명").toEqual([me.userId]);
     const actions = watchActions(page);
+    if (isDesktopPage(page)) {
+      // 1440 (시안 8-desktop 본인 행 empty-cell): 마지막 admin 인 본인 행에는 더보기가 없다 — 역할·삭제를 바꿀 수 없다
+      await expect(memberRow(page, mine.display_name).getByRole("button", { name: /더보기/ }), "본인(마지막 admin) 행 더보기 0").toHaveCount(0);
+      for (const m of members.filter((x) => x.user_id !== me.userId)) {
+        await expect(memberRow(page, m.display_name).getByRole("button", { name: /더보기/ }), `${m.display_name} 행 더보기 1`).toHaveCount(1);
+      }
+      expect(actions.count(), "쓰기 요청 없음").toBe(0);
+      return;
+    }
     const dialog = await openRoleSheet(page, mine.display_name);
     await expect(dialog.getByRole("radio")).toHaveCount(ROLE_ORDER.length);
     for (const r of ROLE_ORDER) await expect(radio(dialog, r), `${ROLE_TEXT[r]} 라디오 비활성`).toBeDisabled();
@@ -523,6 +546,27 @@ test(`[C1][S${SCREEN}] 학교A admin 시트 닫기 3종(Esc · 같은 행 다시
     const teacher = otherMember(members, me.userId, "teacher");
     const row = memberRow(page, student.display_name);
     const actions = watchActions(page);
+    if (isDesktopPage(page)) {
+      // 1440: 역할 바꾸기 = 행 끝 더보기 → 가운데 확인 카드. 닫기 = Esc · ×(닫기) → 포커스는 연 더보기로. 다른 행 더보기 → 그 사람 카드 (초대는 시트 없이 page-head 초대 줄)
+      const more = row.getByRole("button", { name: /더보기/ });
+      await openRoleSheet(page, student.display_name);
+      await page.keyboard.press("Escape");
+      await expect(modal(page), "Esc 로 닫힘").toHaveCount(0);
+      await expect(more, "포커스가 누른 더보기로").toBeFocused();
+      const d2 = await openRoleSheet(page, student.display_name);
+      await expect(closeIcon(d2), "카드 닫기 버튼").toHaveCount(1);
+      await closeIcon(d2).click();
+      await expect(modal(page), "닫기 버튼으로 닫힘").toHaveCount(0);
+      await expect(more).toBeFocused();
+      await openRoleSheet(page, teacher.display_name);
+      await expect(page.getByRole("dialog", { name: exact(roleSheetTitle(teacher.display_name)) })).toBeVisible();
+      await expect(modal(page)).toHaveCount(1);
+      await page.keyboard.press("Escape");
+      await expect(modal(page)).toHaveCount(0);
+      await expect(inviteDialog(page), "1440 초대 줄은 늘 보임 (닫을 시트 없음)").toBeVisible();
+      expect(actions.count(), "쓰기 요청 없음").toBe(0);
+      return;
+    }
 
     // 1) Esc
     let dialog = await openRoleSheet(page, student.display_name);
@@ -580,6 +624,25 @@ test(`[C1][S${SCREEN}] 학교A admin 초대 시트: ${MODAL} 1 · 제목 "${INVI
   try {
     await waitUsers(page);
     const actions = watchActions(page);
+    if (isDesktopPage(page)) {
+      // 1440 = page-head 초대 줄 (시안 8-desktop page-actions: 이메일 text-input · segmented-control 학생/교사 · button-primary "초대" · button-pill-soft "초대 링크 복사") — 모달 0
+      const form = await openInviteSheet(page);
+      await expect(modal(page)).toHaveCount(0);
+      await expect(form.getByPlaceholder(DESK_INVITE_PLACEHOLDER), `이메일 칸 "${DESK_INVITE_PLACEHOLDER}"`).toHaveCount(1);
+      const seg = form.locator(sel(SEGMENT));
+      await expect(seg).toHaveCount(1);
+      const options = (await seg.locator("> *").allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim());
+      expect(options, "초대 역할 선택지 = 시안 8-desktop (admin 없음)").toEqual(DESK_INVITE_ROLES);
+      expect(options).toEqual(INVITE_ROLE_ORDER.map((r) => ROLE_TEXT[r]));
+      await expect(seg.locator(sel(SEGMENT_ACTIVE)), "활성 하나").toHaveCount(1);
+      await expect(form.locator(sel(PILL_SOFT)), `${PILL_SOFT} "${COPY_LINK}"`).toHaveText(exact(COPY_LINK));
+      await expect(inviteSubmit(page), `${PRIMARY} "${INVITE_BUTTON}"`).toHaveCount(1);
+      await inviteSubmit(page).click();
+      await expect(page.locator("main").getByRole("alert"), "빈 칸 → 안내").toHaveCount(1);
+      expect(actions.count(), "빈 칸 초대는 요청을 보내지 않는다").toBe(0);
+      expect(await dbPendingInvites(page), "학교 A 에 초대가 생기지 않았다").toHaveLength(0);
+      return;
+    }
     const dialog = await openInviteSheet(page);
     await expect(modal(page)).toHaveCount(1);
     await expect(dialog.getByRole("heading", { name: exact(INVITE_TITLE) })).toBeVisible();
@@ -633,7 +696,8 @@ test(`[C1][S${SCREEN}] 학교A admin "${COPY_LINK}" → 클립보드 = {origin}$
     const dialog = await openInviteSheet(page);
     await page.evaluate(() => navigator.clipboard.writeText("before-copy"));
     await dialog.locator(sel(PILL_SOFT)).click();
-    await expect(dialog.getByText(COPIED_NOTICE)).toBeVisible();
+    // 안내: 390 = 시트 안 / 1440 = 초대 줄 바로 아래
+    await expect((isDesktopPage(page) ? page.locator("main") : dialog).getByText(COPIED_NOTICE)).toBeVisible();
     const copied = await page.evaluate(() => navigator.clipboard.readText());
     expect(copied, "복사된 주소 = 회원가입(화면 14)").toBe(`${new URL(page.url()).origin}${routeOf(SIGNUP_SCREEN)}`);
     await expect(dialog, "시트는 열린 채").toBeVisible();
@@ -704,18 +768,22 @@ test(`[C2][S${SCREEN}] 폭 390 학교A admin: 시트(역할 변경·초대)는 t
     const toTop = () => page.evaluate(() => window.scrollTo(0, 0));
 
     if (viewport === "desktop") {
+      // 1440 (시안 8-desktop · d7 §23 "역할 변경·초대·삭제 확인 시트는 시안 8-desktop 대로"): 역할 바꾸기 = 본문 가운데 확인 카드(폭 = 시안), 초대 = page-head 줄
       await expect(page.locator(sel(tb.component))).toHaveCount(0);
-      for (const open of [() => openRoleSheet(page, student.display_name), () => openInviteSheet(page)]) {
-        const dialog = await open();
-        const m = await boxOf(dialog);
-        const body = await boxOf(manage(page));
-        expect(m.left, "데스크탑 시트는 본문 오른쪽 옆").toBeGreaterThanOrEqual(body.right - 0.5);
-        expect(m.right, "시트가 화면 안").toBeLessThanOrEqual(page.viewportSize()!.width + 0.5);
-        for (const row of await memberRows(page).all()) expect(await onTop(row), "멤버 행이 시트에 덮이지 않음").toBe(true);
-        expect(await onTop(dialog.locator(sel(PRIMARY)).last()), "시트 버튼이 덮이지 않음").toBe(true);
-        await page.keyboard.press("Escape");
-        await expect(modal(page)).toHaveCount(0);
-      }
+      const dialog = await openRoleSheet(page, student.display_name);
+      const m = await boxOf(modal(page));
+      const sb = await boxOf(page.locator(sel(DESKTOP_SHELL.component)));
+      const vw = page.viewportSize()!.width;
+      expect(Math.abs(m.width - DESK_CARD_W), `카드 폭 = 시안 ${DESK_CARD_W}`).toBeLessThanOrEqual(1);
+      expect(Math.abs((m.left + m.right) / 2 - (sb.right + vw) / 2), "카드는 본문(사이드바 오른쪽) 가운데").toBeLessThanOrEqual(16);
+      expect(m.top, "카드가 화면 안").toBeGreaterThanOrEqual(0);
+      expect(m.bottom, "카드가 화면 안").toBeLessThanOrEqual(page.viewportSize()!.height + 0.5);
+      expect(await onTop(dialog.locator(sel(PRIMARY)).last()), "카드 버튼이 덮이지 않음").toBe(true);
+      await page.keyboard.press("Escape");
+      await expect(modal(page)).toHaveCount(0);
+      const form = await openInviteSheet(page);
+      const f = await boxOf(form);
+      expect(f.top, "초대 줄은 본문 위(page-head)").toBeLessThan((await boxOf(manage(page))).top);
       return;
     }
 

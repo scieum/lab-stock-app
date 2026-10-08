@@ -9,6 +9,7 @@
 //  4) 탭 이동에 셸(nav-pill·tab-bar)이 다시 만들어지지 않는다.
 //  5) 아직 없는 화면(dev-rules routes 에 없는 경로)으로의 요청(404)이 저절로 나가지 않는다.
 // 느린 응답은 화면 전환 요청을 붙잡았다 풀어 흉내 낸다 (shell-helpers.ts installNavGate, 고정 대기 없음).
+import { isDeskPage } from "./desk-helpers";
 import { test, expect, type Browser, type BrowserContext, type Page, type TestInfo } from "@playwright/test";
 import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
@@ -351,7 +352,13 @@ for (const { start, target } of TAB_MOVES) {
 const DEEP_MOVES: { start: number; target: number; pick: (page: Page) => ReturnType<Page["locator"]>; done: string }[] = [
   // 도착 표식 = 화면 4 본문 필수 컴포넌트 (rules screens_required[4]) — 데스크톱 셸에는 nav-pill 이 없다 (rules 1.22 desktop_shell)
   { start: HOME, target: USAGE_NEW, pick: (page) => page.locator(`main a[href="${routeOf(USAGE_NEW)}"]`).first(), done: (rules.screens_required[String(USAGE_NEW)] as string[])[0] },
-  { start: LIST, target: DETAIL, pick: (page) => page.locator(`main a${sel("reagent-row")}`).first(), done: "reagent-detail-card" },
+  // 화면 2 → 3: 390 = reagent-row 링크 → reagent-detail-card / 1440 = data-table 행 링크 → 목록 옆 detail-drawer (d7 §23 run b)
+  {
+    start: LIST,
+    target: DETAIL,
+    pick: (page) => (isDeskPage(page) ? page.locator(`main ${sel("data-table")} a[data-row-link]`).first() : page.locator(`main a${sel("reagent-row")}`).first()),
+    done: "reagent-detail-card",
+  },
 ];
 
 for (const { start, target, pick, done } of DEEP_MOVES) {
@@ -382,7 +389,8 @@ for (const { start, target, pick, done } of DEEP_MOVES) {
 
       gate.release();
       await page.waitForURL((u) => u.pathname === path, { timeout: 45_000 });
-      await expect(page.locator(sel(done)).first(), `화면 ${target} 본문`).toBeVisible({ timeout: 45_000 });
+      const doneSel = viewport === "desktop" && target === DETAIL ? "detail-drawer" : done;
+      await expect(page.locator(sel(doneSel)).first(), `화면 ${target} 본문`).toBeVisible({ timeout: 45_000 });
       await expect(page.locator(PENDING), "응답 뒤 표식 없음").toHaveCount(0);
       await expectShell(page, viewport, target, "응답 뒤");
       expect(tb.mobile_screens, `화면 ${target} 은 tab-bar 대상`).toContain(target);

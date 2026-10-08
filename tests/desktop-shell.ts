@@ -1,8 +1,8 @@
 // 데스크톱 셸 기대값 (unit · e2e 공용) — design/rules.json 1.22 desktop_shell, harness/dev-rules.json 1.11, d7 §23, d5 C3.
 // 기대값은 규칙 파일과 새 프레임(design/frames/*-desktop, 셸 대조는 늘 새 프레임)에서만 읽는다.
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { isDesktopMigrated, loadShellFrameNodes } from "./frames";
+import { NEW_FRAMES_DIR, isDesktopMigrated, loadShellFrameNodes } from "./frames";
 
 type DesktopShell = {
   component: string;
@@ -110,4 +110,19 @@ export function frameTexts(frame: string, ancestor: string): string[] {
   return loadShellFrameNodes<Node>(frame)
     .filter((n) => n.type === "TEXT" && n.path.includes(ancestor) && n.text)
     .map((n) => n.text!.characters);
+}
+
+/**
+ * 데스크톱 전용 본문 컴포넌트 (run b: data-table · detail-drawer) — rules desktop_shell.desktop_required 에 있고
+ * 새 프레임의 어느 모바일 프레임(design/frames/*-mobile)에도 없는 이름. d7 §23 "모바일은 지금처럼 전용 화면" 이라 폭 390 에서는 0.
+ * (msds-summary 처럼 모바일 프레임에도 있는 것은 빠진다)
+ */
+export function deskOnlyComponents(): string[] {
+  const req = [...new Set(Object.values(DESKTOP_SHELL.desktop_required).flat())];
+  const mobileNames = new Set<string>();
+  for (const f of readdirSync(NEW_FRAMES_DIR).filter((x) => x.endsWith("-mobile.json"))) {
+    const j = JSON.parse(readFileSync(join(NEW_FRAMES_DIR, f), "utf8")) as { frames: { nodes: { name: string }[] }[] };
+    for (const n of j.frames[0].nodes) mobileNames.add(n.name);
+  }
+  return req.filter((n) => !mobileNames.has(n));
 }

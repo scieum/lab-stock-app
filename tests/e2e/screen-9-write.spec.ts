@@ -100,6 +100,8 @@ import {
   watchActions,
   type DbVendor,
   type Fx,
+  listScope,
+  formScope,
 } from "./screen-6-9-helpers";
 import { framePath } from "../frames";
 
@@ -190,8 +192,8 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin: 0건 "${EMPTY_VENDORS}" → "${RE
     await waitVendors(page);
 
     // 0건
-    await expect(registerBlock(page).locator(sel(EMPTY)), EMPTY).toHaveCount(1);
-    await expect(registerBlock(page).locator(sel(EMPTY)).getByText(exact(EMPTY_VENDORS)), `"${EMPTY_VENDORS}"`).toHaveCount(1);
+    await expect(listScope(page).locator(sel(EMPTY)), EMPTY).toHaveCount(1);
+    await expect(listScope(page).locator(sel(EMPTY)).getByText(exact(EMPTY_VENDORS)), `"${EMPTY_VENDORS}"`).toHaveCount(1);
     await expect(vendorRows(page), "행 0").toHaveCount(0);
     await expect(registerButton(page), `"${REGISTER_BUTTON}"`).toBeVisible();
 
@@ -202,8 +204,11 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin: 0건 "${EMPTY_VENDORS}" → "${RE
       await expect(fieldInput(page, label)).toBeVisible();
       await expect(fieldBox(page, label), `"${label}" 은 ${INPUT}`).toHaveCount(1);
     }
-    await expect(fieldBox(page, FIELD_NAME).getByText(exact("필수")), `"${FIELD_NAME}" 필수 표시`).toHaveCount(1);
-    await expect(fieldBox(page, FIELD_CONTACT).getByText(exact("필수")), `"${FIELD_CONTACT}" 는 선택`).toHaveCount(0);
+    // "필수" 표시: 390 = 입력 칸(text-input) 라벨 옆 / 1440 = 드로어 form-row 라벨 칸 (시안 9-desktop row-label "판매처명" + "필수")
+    const markHolder = (label: string) =>
+      viewport === "desktop" ? formScope(page).locator('[data-name="form-row"]').filter({ has: page.getByLabel(label, { exact: true }) }) : fieldBox(page, label);
+    await expect(markHolder(FIELD_NAME).getByText(exact("필수")), `"${FIELD_NAME}" 필수 표시`).toHaveCount(1);
+    await expect(markHolder(FIELD_CONTACT).getByText(exact("필수")), `"${FIELD_CONTACT}" 는 선택`).toHaveCount(0);
     await expect(saveButton(page), `"${SAVE_BUTTON}"`).toHaveCount(1);
     await expect(saveButton(page), "판매처명이 비면 저장 비활성").toBeDisabled();
     await fillForm(page, { contact: "043-221-4560", website: "www.example.test" });
@@ -244,7 +249,7 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin: 0건 "${EMPTY_VENDORS}" → "${RE
     expect(await readVendorRows(page), "행 = 판매처명 + 부가 정보(연락처)").toEqual([[name, contact]]);
     await expect(row, "방금 등록한 행 강조 (rules.json colors.highlight 연한 쪽)").toHaveCSS("background-color", highlightSoft());
     await expect(moreButton(row), "행의 더보기").toHaveCount(1);
-    await expect(registerBlock(page).locator(sel(EMPTY)), "0건 안내는 사라진다").toHaveCount(0);
+    await expect(listScope(page).locator(sel(EMPTY)), "0건 안내는 사라진다").toHaveCount(0);
     if (viewport === "mobile") {
       await expect(fieldInput(page, FIELD_NAME), "모바일: 저장 후 목록 복귀 (폼 닫힘)").toHaveCount(0);
       await expect(registerButton(page)).toBeVisible();
@@ -418,7 +423,7 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin: 더보기 "${DELETE_ITEM}" → ${
     await primaryIn(deleteDialog(page), DELETE_ITEM).click();
     await expectToast(page, TOAST_DELETED);
     await expect(vendorRows(page)).toHaveCount(0);
-    await expect(registerBlock(page).locator(sel(EMPTY)).getByText(exact(EMPTY_VENDORS)), `0건 "${EMPTY_VENDORS}"`).toHaveCount(1);
+    await expect(listScope(page).locator(sel(EMPTY)).getByText(exact(EMPTY_VENDORS)), `0건 "${EMPTY_VENDORS}"`).toHaveCount(1);
     expect(await vendorsBySchool(f.school.id), "DB 0행").toEqual([]);
   } finally {
     await context.close();
@@ -480,8 +485,9 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin(판매처 3 + 화면에서 1 등�
     await prepVendor(f, { name: `그린케미칼-${hex()}`, contact: "031-778-3021", note: "시약·소모품" }),
   ];
   const frame = frameCounts(`${SCREEN}-${info.project.name}`);
-  // 시안 1.17 9 = 판매처 3곳 목록 위에 등록 시트(ex-modal-card)가 열린 상태 (토스트 없음)
-  expect(frame[MODAL], "프레임은 등록 시트가 열린 상태").toBe(1);
+  // 시안 9 = 판매처 3곳 목록 + 등록 폼이 열린 상태 (토스트 없음): 390 = 하단 시트(ex-modal-card) / 1440 = 오른쪽 detail-drawer (새 프레임 9-desktop — d7 §23 run b)
+  expect(frame[info.project.name === "desktop" ? "detail-drawer" : MODAL], "프레임은 등록 폼이 열린 상태").toBe(1);
+  if (info.project.name === "desktop") expect(frame[MODAL] ?? 0, "1440 시안의 등록 폼은 모달이 아니다").toBe(0);
   expect(frame[TOAST] ?? 0, "1.17 프레임에는 토스트 없음").toBe(0);
   const { context, page, viewport } = await openTemp(browser, info, f.admin, VENDORS_HREF);
   try {
@@ -511,7 +517,7 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin(판매처 3 + 화면에서 1 등�
     await expect.poll(async () => (await readVendorRows(page)).map((r) => r[0]).sort(), { message: `"${part}" 검색 결과` }).toEqual([...want].sort());
     await searchInput(page).fill("없는판매처zzqq");
     await expect(vendorRows(page), "0건: 행 0").toHaveCount(0);
-    await expect(registerBlock(page).locator(sel(EMPTY)), `0건: ${EMPTY}`).toHaveCount(1);
+    await expect(listScope(page).locator(sel(EMPTY)), `0건: ${EMPTY}`).toHaveCount(1);
     await expect(searchInput(page), "검색 바는 유지").toBeVisible();
     await searchInput(page).fill("");
     await expect(vendorRows(page), "검색어를 지우면 전체").toHaveCount(all.length);

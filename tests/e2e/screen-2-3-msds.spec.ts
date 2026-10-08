@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { test, expect, type Page, type TestInfo } from "@playwright/test";
 import { countComponent, routeOf, rules, sel } from "./screen-helpers";
 import { detailPath, waitDetail } from "./screen-3-helpers";
+import { isDeskPage } from "./desk-helpers";
 import { HAS_SERVICE, clientFor, openTemp, service, type TempUser } from "./screen-8-helpers";
 import { NO_S11_RESIDUE, cleanup, makeFixture, prepReagent, purgeSchool, sharedCabinetSnapshot, watchActions, type S11Fixture } from "./screen-11-helpers";
 import { demoReagents, guestDetailPath, guestRouteOf, openGuest, waitGuestShell } from "./guest-helpers";
@@ -401,7 +402,8 @@ test.describe("일회용 학교", () => {
     try {
       const calls = await interceptSearch(page);
       await waitList(page);
-      await expect(page.locator(`main ${sel("reagent-row")}`), "MSDS 없는 시약 2행").toHaveCount(2);
+      // 390 = reagent-row / 1440 = data-table 행 (d7 §23 run b)
+      await expect(page.locator(isDeskPage(page) ? `main ${sel("data-table")} ${sel("ex-data-table-cell")}` : `main ${sel("reagent-row")}`), "MSDS 없는 시약 2행").toHaveCount(2);
       for (const c of [MSDS_BULK_BANNER, MSDS_CANDIDATES, MSDS_SEARCH]) expect(await countComponent(page, c), `학생 ${c} 0`).toBe(0);
       await expectNoN2Terms(page, "학생 화면 2");
       expect(calls.queries).toEqual([]);

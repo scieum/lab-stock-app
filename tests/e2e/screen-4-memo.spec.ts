@@ -12,7 +12,8 @@ import { ROLE_LABEL, SCHOOL_A_ROLES, uniqueTag, type Role } from "./db-helpers";
 import { openAs, type RolePage } from "./auth-state";
 import { PROFILE_ROLE, browserClient, browserSession, countComponent, sel, type ViewportName } from "./screen-helpers";
 import { seedSchoolOf } from "./screen-3-helpers";
-import { CARD, SCREEN, TOAST, amountInput, seedOwnReagents, submitButton, usagePath, waitUsage } from "./screen-4-helpers";
+import { drawer, isDeskPage, newFrame } from "./desk-helpers";
+import { SCREEN, TOAST, amountInput, seedOwnReagents, submitButton, usagePath, waitUsage, reagentHead } from "./screen-4-helpers";
 import {
   MEMO_NONE,
   UI_FIX_STOCK,
@@ -44,12 +45,28 @@ const MEMO_MAX = 200;
 const AMOUNT = 1;
 
 const memoInput = (page: Page) => page.locator("main form").getByLabel(MEMO_LABEL, { exact: true });
-/** 라벨이 이 글자인 text-input */
+/**
+ * 라벨이 이 글자인 입력 칸: 390 = text-input·usage-date(라벨이 칸 안) /
+ * 1440 = 드로어 form-row(라벨 칸 + 입력 칸, 시안 4-desktop usage-form — d7 §23 run b)
+ */
 const fieldOf = (page: Page, label: string) =>
-  page.locator(`main form ${FIELD_SEL}`).filter({ has: page.locator("label").getByText(label, { exact: true }) });
+  isDeskPage(page)
+    ? drawer(page).locator('form [data-name="form-row"]').filter({ has: page.locator("label").getByText(label, { exact: true }) })
+    : page.locator(`main form ${FIELD_SEL}`).filter({ has: page.locator("label").getByText(label, { exact: true }) });
+/** 입력 칸 라벨들 (순서대로) */
+const fieldLabels = (page: Page) => (isDeskPage(page) ? drawer(page).locator('form [data-name="form-row"] label') : page.locator(`main form ${FIELD_SEL} label`));
 
 /** 시안 4 프레임: field-label "메모" 다음 글자 = 메모 칸 안내 글자 */
 function memoPlaceholder(viewport: ViewportName): string {
+  if (viewport === "desktop") {
+    // 새 프레임 4-desktop: form-row(row-label "메모" → text-input placeholder)
+    const nodes = newFrame("4-desktop");
+    const i = nodes.findIndex((n) => n.name === "label" && n.path.includes("row-label") && n.text?.characters === MEMO_LABEL);
+    expect(i, `시안 4-desktop 에 form-row 라벨 "${MEMO_LABEL}"`).toBeGreaterThanOrEqual(0);
+    const next = nodes.slice(i + 1).find((n) => n.text && n.path.includes("text-input"));
+    expect(next, "메모 라벨 다음 입력 칸 글자").toBeTruthy();
+    return next!.text!.characters;
+  }
   const texts = frameTexts(viewport, SCREEN);
   const i = texts.findIndex((t) => t.name === "field-label" && t.characters === MEMO_LABEL);
   expect(i, `시안 4-${viewport} 에 field-label "${MEMO_LABEL}"`).toBeGreaterThanOrEqual(0);
@@ -104,9 +121,10 @@ for (const role of [...SCHOOL_A_ROLES, "schoolB"] as Role[]) {
       expect((await browserSession(page)).role, "테스트 계정 역할").toBe(PROFILE_ROLE[role]);
 
       // 라벨 순서: 사용량 · 사용일 · 사용자 · 메모 ("필수" 표시 글자는 라벨 안에 있을 수 있어 뗀다)
-      const labels = (await page.locator(`main form ${FIELD_SEL} label`).allInnerTexts()).map((t) => t.replace(REQUIRED_MARK, "").trim());
+      const labels = (await fieldLabels(page).allInnerTexts()).map((t) => t.replace(REQUIRED_MARK, "").trim());
       expect(labels.filter((l) => FIELD_ORDER.includes(l)), "입력 순서 (시안 4 · d7 §15)").toEqual(FIELD_ORDER);
-      await expect(fieldOf(page, USED_ON_LABEL).and(page.locator(sel("usage-date"))), `"${USED_ON_LABEL}" 은 usage-date`).toHaveCount(1);
+      if (isDeskPage(page)) await expect(fieldOf(page, USED_ON_LABEL).locator(sel("usage-date")), `"${USED_ON_LABEL}" 은 usage-date`).toHaveCount(1);
+      else await expect(fieldOf(page, USED_ON_LABEL).and(page.locator(sel("usage-date"))), `"${USED_ON_LABEL}" 은 usage-date`).toHaveCount(1);
       expect(labels[labels.length - 1], `"${MEMO_LABEL}" 은 마지막 입력`).toBe(MEMO_LABEL);
 
       // 필수 표시: 사용량·사용일·사용자에만
@@ -164,7 +182,7 @@ for (const c of SAVES) {
         const me = await browserSession(page);
         expect(me.role, "테스트 계정 역할").toBe(PROFILE_ROLE[c.role]);
         expect(me.schoolName, "쓰기는 테스트 학교 A 에서만").toBe(seedSchoolOf("teacher").name);
-        await expect(page.locator(sel(CARD)).first(), "카드에 고정 시약명").toContainText(fx.name);
+        await expect(reagentHead(page).first(), "카드에 고정 시약명").toContainText(fx.name);
         const myName = await myDisplayName(page);
         const before = new Set((await fixtureLogs(page, fx.id)).map((l) => l.id));
         const text = c.withMemo ? `UI 메모 ${uniqueTag(info)} 1반 3조` : "";

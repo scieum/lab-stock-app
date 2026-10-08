@@ -16,6 +16,7 @@ import { join } from "node:path";
 import { expect, type Browser, type BrowserContext, type Locator, type Page, type Response, type TestInfo } from "@playwright/test";
 import { createClient, type Session as AuthSession, type SupabaseClient } from "@supabase/supabase-js";
 import { anonClient } from "./db-helpers";
+import { isDeskPage } from "./desk-helpers";
 import { browserClient, devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
 import { framePath } from "../frames";
 import { adjustPreDesktopShell } from "../desktop-shell";
@@ -74,6 +75,8 @@ export const toastInvited = (n: number) => `${n}명을 초대했어요`;
 export const TOAST_ROLE = "역할을 바꿨어요";
 export const TOAST_REMOVED = "사용자를 삭제했어요";
 export const CLOSE_LABEL = "닫기";
+/** 1440 행 끝 더보기 메뉴 (역할 바꾸기 · 삭제) */
+export const ROLE_MENU = "역할 바꾸기";
 export const ACTIVE_TAB_LABEL = "홈";
 export const STAFF_NAV_LABEL = "입고·시약 등록";
 export const NO_SCHOOL_TITLE = "소속 학교가 없어요";
@@ -121,15 +124,29 @@ export const modal = (page: Page) => page.locator(sel(MODAL));
 export const toast = (page: Page) => page.locator(sel(TOAST));
 export const emptyCard = (page: Page) => manage(page).locator(sel(EMPTY));
 export const searchInput = (page: Page) => manage(page).getByPlaceholder(SEARCH_PLACEHOLDER);
-export const inviteButton = (page: Page) => manage(page).locator(sel(PRIMARY)).filter({ hasText: exact(INVITE_BUTTON) });
-export const memberList = (page: Page) => manage(page).getByRole("list", { name: exact(SECTION_MEMBERS) });
+/**
+ * 데스크톱 재구성 run b (d7 §23 세부, 새 프레임 8-desktop): 1440 = page-head(제목 "사용자" + "N명" · 역할별 인원 줄 / 초대: 이메일 + 학생·교사 + "초대")
+ * → user-manage(이름 검색 · "멤버" data-table · "초대 대기 (N)" data-table · 유의사항), 역할 바꾸기·삭제 = 행 끝 더보기 → 가운데 확인 카드.
+ * 390 은 그대로 (목록 + 하단 시트).
+ */
+const desk8 = (page: Page) => isDeskPage(page);
+/** "초대": 390 = user-manage 헤더 버튼(시트를 연다) / 1440 = page-head 초대 줄의 버튼(바로 보낸다) */
+export const inviteButton = (page: Page) =>
+  desk8(page)
+    ? page.locator('main [data-name="page-head"]').locator(sel(PRIMARY)).filter({ hasText: exact(INVITE_BUTTON) })
+    : manage(page).locator(sel(PRIMARY)).filter({ hasText: exact(INVITE_BUTTON) });
+export const memberList = (page: Page) =>
+  desk8(page) ? manage(page).getByRole("table", { name: exact(SECTION_MEMBERS) }) : manage(page).getByRole("list", { name: exact(SECTION_MEMBERS) });
 export const memberRows = (page: Page) => memberList(page).locator(sel(ROW));
-export const inviteList = (page: Page) => manage(page).getByRole("list", { name: INVITES_HEADING });
+export const inviteList = (page: Page) =>
+  desk8(page) ? manage(page).getByRole("table", { name: "초대 대기", exact: true }) : manage(page).getByRole("list", { name: INVITES_HEADING });
 export const inviteRows = (page: Page) => inviteList(page).locator(sel(ROW));
 export const memberRow = (page: Page, name: string) => memberRows(page).filter({ has: page.getByText(exact(name)) });
 export const inviteRow = (page: Page, email: string) => inviteRows(page).filter({ has: page.getByText(exact(email)) });
 export const roleDialog = (page: Page, name: string) => page.getByRole("dialog", { name: exact(roleSheetTitle(name)) });
-export const inviteDialog = (page: Page) => page.getByRole("dialog", { name: exact(INVITE_TITLE) });
+/** 초대: 390 = 하단 시트(dialog "사용자 초대") / 1440 = page-head 초대 줄(form "사용자 초대" — 시안 8-desktop page-actions, 시트 없음) */
+export const inviteDialog = (page: Page) =>
+  isDeskPage(page) ? page.getByRole("form", { name: exact(INVITE_TITLE) }) : page.getByRole("dialog", { name: exact(INVITE_TITLE) });
 export const confirmDialog = (page: Page) => page.getByRole("dialog", { name: exact(CONFIRM_TITLE) });
 export const closeIcon = (dialog: Locator) => dialog.getByRole("button", { name: exact(CLOSE_LABEL) });
 export const primaryIn = (scope: Locator, label: string | RegExp) =>
@@ -137,9 +154,17 @@ export const primaryIn = (scope: Locator, label: string | RegExp) =>
 export const outlineIn = (scope: Locator, label: string) => scope.locator(sel(OUTLINE)).filter({ hasText: exact(label) });
 export const radio = (dialog: Locator, role: MemberRole) => dialog.getByRole("radio", { name: exact(ROLE_TEXT[role]) });
 /** 초대 시트의 "N명 초대" 버튼 */
-export const inviteSubmit = (page: Page) => primaryIn(inviteDialog(page), /^\s*\d+명 초대\s*$/);
+export const inviteSubmit = (page: Page) =>
+  isDeskPage(page) ? primaryIn(inviteDialog(page), exact(INVITE_BUTTON)) : primaryIn(inviteDialog(page), /^\s*\d+명 초대\s*$/);
+/** 초대 버튼 글자: 390 = "N명 초대" / 1440 = "초대" (시안 8-desktop) */
+export const inviteSubmitText = (page: Page, n: number) => (isDeskPage(page) ? INVITE_BUTTON : inviteSubmitLabel(n));
 /** 초대 시트의 이메일 입력 (시트 안 text-input 의 입력 칸) */
 export const inviteEmailInput = (page: Page) => inviteDialog(page).locator(`${sel(INPUT)} input`).first();
+/** 1440 초대 칸에 담긴 이메일 수 (쉼표·공백으로 나눈 서로 다른 주소) */
+export async function deskInviteCount(page: Page): Promise<number> {
+  const v = await inviteEmailInput(page).inputValue();
+  return new Set(v.split(/[\s,;]+/).map((x) => x.trim().toLowerCase()).filter(Boolean)).size;
+}
 
 /** 화면 8 이 그려졌는지 (빈 화면에서 0개를 세어 통과하지 않도록) */
 export async function waitUsers(page: Page): Promise<void> {
@@ -150,16 +175,32 @@ export async function waitUsers(page: Page): Promise<void> {
 
 export type ShownMember = { name: string; role: MemberRole | null; self: boolean; texts: string[] };
 
+/** 행 안 글자 조각 (글자 노드마다 — 1440 표 칸·이름 옆 "나" 배지를 따로 읽는다) */
+const rowTexts = (rows: Locator) =>
+  rows.evaluateAll((els) =>
+    els.map((el) => {
+      const out: string[] = [];
+      const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      for (let n = w.nextNode(); n; n = w.nextNode()) {
+        const t = (n.textContent ?? "").replace(/\s+/g, " ").trim();
+        if (t) out.push(t);
+      }
+      return out;
+    }),
+  );
+
 /** 멤버 행에 보이는 글자 → 이름(첫 줄)·역할 글자·"나" 배지 */
 export async function readMembers(page: Page): Promise<ShownMember[]> {
-  const raw = await memberRows(page).evaluateAll((els) =>
-    els.map((el) =>
-      (el as HTMLElement).innerText
-        .split(/\n/)
-        .map((t) => t.replace(/\s+/g, " ").trim())
-        .filter(Boolean),
-    ),
-  );
+  const raw = desk8(page)
+    ? await rowTexts(memberRows(page))
+    : await memberRows(page).evaluateAll((els) =>
+        els.map((el) =>
+          (el as HTMLElement).innerText
+            .split(/\n/)
+            .map((t) => t.replace(/\s+/g, " ").trim())
+            .filter(Boolean),
+        ),
+      );
   return raw.map((texts) => {
     const role = ROLE_ORDER.find((r) => texts.slice(1).includes(ROLE_TEXT[r])) ?? null;
     return { name: texts[0] ?? "", role, self: texts.slice(1).includes(ME_BADGE), texts };
@@ -169,6 +210,7 @@ export async function readMembers(page: Page): Promise<ShownMember[]> {
 export type ShownInvite = { email: string; texts: string[] };
 
 export async function readInvites(page: Page): Promise<ShownInvite[]> {
+  if (desk8(page)) return (await rowTexts(inviteRows(page))).map((texts) => ({ email: texts[0] ?? "", texts }));
   const raw = await inviteRows(page).evaluateAll((els) =>
     els.map((el) =>
       (el as HTMLElement).innerText
@@ -184,6 +226,19 @@ export type HeaderCounts = { school: string; total: number; student: number; tea
 
 /** 헤더 "{학교명} 사용자 N명" + "학생 a · 교사 b · admin c" (d7 §8) */
 export async function readHeader(page: Page): Promise<HeaderCounts> {
+  if (desk8(page)) {
+    // 1440 page-head (시안 8-desktop): 제목 "사용자" + "N명" · "학생 a · 교사 b · admin c" — 학교명은 사이드바(셸)·user-manage 이름
+    const head = page.locator('main [data-name="page-head"]');
+    await expect(head.getByRole("heading", { level: 1, name: "사용자", exact: true }), '제목 "사용자"').toHaveCount(1);
+    const total = head.getByText(/^\s*\d+명\s*$/);
+    await expect(total, '"N명"').toHaveCount(1);
+    const line = head.getByText(/^\s*학생 \d+ · 교사 \d+ · admin \d+\s*$/);
+    await expect(line, '"학생 a · 교사 b · admin c"').toHaveCount(1);
+    const c = ((await line.innerText()).replace(/\s+/g, " ").trim().match(/^학생 (\d+) · 교사 (\d+) · admin (\d+)$/) ?? []) as string[];
+    const label = (await manage(page).getAttribute("aria-label")) ?? "";
+    const school = (/^(.+) 사용자$/.exec(label) ?? [])[1] ?? "";
+    return { school, total: Number((await total.innerText()).replace(/\D/g, "")), student: Number(c[1]), teacher: Number(c[2]), admin: Number(c[3]) };
+  }
   const heading = manage(page).getByRole("heading", { name: /사용자 \d+명\s*$/ });
   await expect(heading, '헤더 "{학교명} 사용자 N명"').toHaveCount(1);
   const h = ((await heading.innerText()).replace(/\s+/g, " ").trim().match(/^(.+) 사용자 (\d+)명$/) ?? []) as string[];
@@ -236,6 +291,19 @@ export async function openRoleSheet(page: Page, name: string): Promise<Locator> 
   const row = memberRow(page, name);
   await expect(row, `멤버 행 "${name}"`).toHaveCount(1);
   const dialog = roleDialog(page, name);
+  if (desk8(page)) {
+    // 1440: 행 끝 더보기 → "역할 바꾸기" → 가운데 확인 카드 (시안 8-desktop)
+    await expect(async () => {
+      if (!(await dialog.isVisible())) {
+        const item = page.getByRole("menuitem", { name: exact(ROLE_MENU) });
+        if (!(await item.isVisible())) await row.getByRole("button", { name: /더보기/ }).click({ timeout: 5_000 });
+        await item.click({ timeout: 2_000 });
+      }
+      await expect(dialog).toBeVisible({ timeout: 2_000 });
+    }).toPass({ timeout: 30_000 });
+    await expect(modal(page), `${MODAL} 은 한 번에 하나`).toHaveCount(1);
+    return dialog;
+  }
   await expect(async () => {
     if (!(await dialog.isVisible())) await row.click({ timeout: 5_000 });
     await expect(dialog).toBeVisible({ timeout: 2_000 });
@@ -247,6 +315,12 @@ export async function openRoleSheet(page: Page, name: string): Promise<Locator> 
 /** 헤더 "초대" 를 눌러 초대 시트를 연다 (다시 누르면 닫히므로 닫혀 있을 때만 누른다) */
 export async function openInviteSheet(page: Page): Promise<Locator> {
   const dialog = inviteDialog(page);
+  if (isDeskPage(page)) {
+    // 1440: 초대 줄은 늘 보인다 (열 시트 없음) — 모달 0
+    await expect(dialog, "1440 초대 줄").toBeVisible({ timeout: 30_000 });
+    await expect(modal(page), "1440 초대는 모달이 아니다").toHaveCount(0);
+    return dialog;
+  }
   await expect(async () => {
     if (!(await dialog.isVisible())) await inviteButton(page).click({ timeout: 5_000 });
     await expect(dialog).toBeVisible({ timeout: 2_000 });
@@ -264,6 +338,13 @@ export async function pickRole(dialog: Locator, role: MemberRole): Promise<void>
 /** 초대 시트에 이메일 한 개 담기 (입력 후 Enter) → "N명 초대" 의 N 이 늘어난다 */
 export async function addInviteEmail(page: Page, email: string, expectedCount: number): Promise<void> {
   const input = inviteEmailInput(page);
+  if (isDeskPage(page)) {
+    // 1440 초대 줄: 한 칸에 여러 주소(쉼표로 이어 쓰기)
+    const cur = await input.inputValue();
+    await input.fill(cur.trim() ? `${cur.trim()}, ${email}` : email);
+    await expect.poll(() => deskInviteCount(page), { message: `초대 칸 주소 ${expectedCount}개` }).toBe(expectedCount);
+    return;
+  }
   await input.fill(email);
   await input.press("Enter");
   await expect(inviteSubmit(page), `"${inviteSubmitLabel(expectedCount)}"`).toHaveText(exact(inviteSubmitLabel(expectedCount)));
