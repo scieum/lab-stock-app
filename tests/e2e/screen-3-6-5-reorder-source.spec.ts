@@ -19,7 +19,7 @@ import { detailPath, waitDetail } from "./screen-3-helpers";
 import { demoReagents, guestDetailPath, openGuest } from "./guest-helpers";
 import { autoFromIntake, autoFromUsage } from "./reorder-auto-helpers";
 import { frameCounts, hydrated, prepReagent, watchActions } from "./screen-11-helpers";
-import { CARD_AMOUNT, NO_RESIDUE_69, cleanup, makeSchool, purge, readAlerts, sharedSnapshot, waitReorder, type Fx } from "./screen-6-9-helpers";
+import { CARD_AMOUNT, MANUAL_BASIS_TEXT, NO_RESIDUE_69, cleanup, makeSchool, purge, readAlerts, sharedSnapshot, waitReorder, type Fx } from "./screen-6-9-helpers";
 import {
   BASIS_RE,
   GROUPS,
@@ -530,7 +530,7 @@ test(`[GM-ui][S3g] 둘러보기 시약 상세: ${THRESH_EDIT}·"${RESET_LABEL}" 
 // 화면 6 — 알림 카드 기준 문구
 // =====================================================================
 
-test(`[C1][S6] 일회용 학교 교사 재주문 알림 카드 기준 문구(d7 §11-1 "같은 세 형태 + 기존 두 형태" · §18 배지·캡션): 자동(사용) "${AUTO_LABEL}"+"${USAGE_TEXT}" · 자동(입고) "${AUTO_LABEL}"+"${INTAKE_TEXT}" · 매뉴얼 "1반 1회 실험량 …" · 직접 입력 "재주문 기준 N" ("${AUTO_LABEL}" 없음) · 재주문 기준/현재 재고 = DB · 부족하지 않은 자동·0 은 카드 없음`, async ({ browser }, info) => {
+test(`[C1][S6] 일회용 학교 교사 재주문 알림 카드 기준 문구(d7 §11-1 "같은 세 형태 + 기존 두 형태" · §18 배지·캡션): 자동(사용) "${AUTO_LABEL}"+"${USAGE_TEXT}" · 자동(입고) "${AUTO_LABEL}"+"${INTAKE_TEXT}" · 매뉴얼 "1반 1회 실험량 …" · 직접 입력 "${MANUAL_BASIS_TEXT}" ("${AUTO_LABEL}" 없음) · 재주문 기준/현재 재고 = DB · 부족하지 않은 자동·0 은 카드 없음`, async ({ browser }, info) => {
   const f = await fresh(info);
   // 자동(사용): 재고 10 → 사용 9 → 재고 1 < 사용량 근거 값
   const usage = await prepReagent(f, "사용", 10);
@@ -586,7 +586,7 @@ test(`[C1][S6] 일회용 학교 교사 재주문 알림 카드 기준 문구(d7 
       } else {
         expect(sq, `${r.name}: 수량 줄 (d7 §11 1.21)`).toContain(nospace(`${CARD_AMOUNT.need} ${r.min_stock}${r.unit} / ${CARD_AMOUNT.stock} ${r.stock}${r.unit}`));
         await expect(cardEl.locator(sel(AUTO_BADGE)), `${r.name}: 자동이 아니면 ${AUTO_BADGE} 0`).toHaveCount(0);
-        const text = r.min_stock_source === "basis" ? basisLine(r.reorder_per_group!, r.unit, r.reorder_groups!) : `재주문 기준 ${r.min_stock} ${r.unit}`;
+        const text = r.min_stock_source === "basis" ? basisLine(r.reorder_per_group!, r.unit, r.reorder_groups!) : MANUAL_BASIS_TEXT;
         expect(sq, `${r.name}: 기준 문구 "${text}"`).toContain(nospace(text));
         expect(card.lines.filter((l) => l.includes(AUTO_LABEL)), `${r.name}: "${AUTO_LABEL}" 없음`).toEqual([]);
       }

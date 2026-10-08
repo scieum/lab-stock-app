@@ -1,5 +1,5 @@
 // 화면 10 (사용 기록 내역) 기록 상세 C1 — 행을 누르면 ex-modal-card
-// 기준: harness/d7-data.md §7 (상세 = 시약명 + 사용량, 사용자 · 메모(없으면 "-"), msds-entry "MSDS 보기"(msds_url 이 있으면 새 창), "닫기"),
+// 기준: harness/d7-data.md §7 (상세 = 시약명 + 사용량, 사용자 · 메모(없으면 "-"), msds-entry "MSDS 보기"(msds_url 이 있으면 화면 16 — 2026-10-08 d7 §22), "닫기"),
 //       §15 (2026-10-07: "일시" → 사용일 · 기록한 날 — design/frames/10-desktop.json ex-modal-card),
 //       디자인 s2-spec "## 화면 10" (누른 행 배경 #e6f4fc, 상세 = ex-modal-card), 시안 10 프레임.
 // 메모가 있는 기록·없는 기록이 모두 필요하므로 UI 전용 고정 시약(학교 A, `R-db-UI10-fixture-{project}`)의 기록을 쓴다.
@@ -8,7 +8,7 @@
 import { test, expect, type Browser, type TestInfo } from "@playwright/test";
 import { ROLE_LABEL, SCHOOL_A_ROLES } from "./db-helpers";
 import { openAs } from "./auth-state";
-import { PROFILE_ROLE, browserSession, sel } from "./screen-helpers";
+import { PROFILE_ROLE, browserSession, routeOf, sel } from "./screen-helpers";
 import { seedSchoolOf } from "./screen-3-helpers";
 import {
   CLOSE_LABEL,
@@ -48,7 +48,7 @@ async function prepare(browser: Browser, info: TestInfo): Promise<FixtureReagent
 }
 
 for (const role of SCHOOL_A_ROLES) {
-  test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]} 행을 누르면 ${MODAL} 1개: 시약명 · 사용량+단위 · 사용자 · 사용일(YYYY-MM-DD) · 기록한 날(YYYY-MM-DD HH:mm) · 메모 = DB · ${MSDS} "${MSDS_LABEL}"(새 창 링크) · button-outline "${CLOSE_LABEL}" · 누른 행 배경 · 메모 없는 기록은 "${MEMO_NONE}" · 다른 행을 누르면 교체`, async ({ browser }, info) => {
+  test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]} 행을 누르면 ${MODAL} 1개: 시약명 · 사용량+단위 · 사용자 · 사용일(YYYY-MM-DD) · 기록한 날(YYYY-MM-DD HH:mm) · 메모 = DB · ${MSDS} "${MSDS_LABEL}"(화면 16 /msds/{id}?from=usage, 같은 창 — d7 §22) · button-outline "${CLOSE_LABEL}" · 누른 행 배경 · 메모 없는 기록은 "${MEMO_NONE}" · 다른 행을 누르면 교체`, async ({ browser }, info) => {
     test.setTimeout(240_000);
     const fx = await prepare(browser, info);
     const { context, page, viewport } = await openAs(browser, info, role, SCREEN);
@@ -79,14 +79,14 @@ for (const role of SCHOOL_A_ROLES) {
       await expect.poll(() => rowA.evaluate((el) => getComputedStyle(el).backgroundColor), { message: "누른 행 배경 #e6f4fc" }).toBe(PRESSED_ROW_BG);
       const rowB = rows(page).nth(noMemo);
       expect(await rowB.evaluate((el) => getComputedStyle(el).backgroundColor), "누르지 않은 행 배경").not.toBe(PRESSED_ROW_BG);
-      // MSDS 보기: 시약에 msds_url 이 있으면 새 창 링크
+      // MSDS 보기: 시약에 msds_url 이 있으면 화면 16(MSDS 요약)으로 — 바깥 링크로 바로 가지 않는다, 뒤로 = 화면 10 (d7 §22 · rules 1.21 msds_summary.entry)
       expect(a.msds_url, "고정 시약은 MSDS 주소가 있음").toBe(fx.msds_url);
       const link = modal(page).locator(`${sel(MSDS)} a`);
       await expect(link, "MSDS 링크 1개").toHaveCount(1);
       await expect(link).toHaveText(new RegExp(MSDS_LABEL));
-      await expect(link).toHaveAttribute("href", fx.msds_url!);
-      await expect(link, "새 창").toHaveAttribute("target", "_blank");
-      expect((await link.getAttribute("rel")) ?? "", "새 창 링크는 noopener").toContain("noopener");
+      await expect(link, "화면 16 주소 (?from=usage)").toHaveAttribute("href", `${routeOf(16).replace(/\[[^\]]+\]/, fx.id)}?from=usage`);
+      expect(await link.getAttribute("href"), "바깥 MSDS 주소로 바로 가지 않는다").not.toBe(fx.msds_url);
+      expect(await link.getAttribute("target"), "같은 창 (target 없음)").toBeNull();
       expect((await link.boundingBox())!.height, "MSDS 보기 높이 ≥ 44").toBeGreaterThanOrEqual(44);
       expect((await closeButton(page).boundingBox())!.height, "닫기 높이 ≥ 44").toBeGreaterThanOrEqual(44);
 

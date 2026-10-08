@@ -15,6 +15,7 @@ import {
   NO_RESIDUE_69,
   amountText as cardAmountText,
   basisText,
+  MANUAL_BASIS_TEXT,
   checkSchoolNames,
   cleanup,
   exact,
@@ -379,7 +380,7 @@ test(`[C1][S${SCREEN}] 일회용 학교 교사 저장: "${SAVE}" 연타에도 �
     expect(cardAmountText(hclRow), "재주문 기준·현재 재고 문구 = 저장값 (d7 §11 1.21)").toBe(`${CARD_AMOUNT.need} ${requiredNumber(HCL.amount!, GROUPS)}${HCL.unit} / ${CARD_AMOUNT.stock} 50${HCL.unit}`);
     const hclCard = shown.find((s) => s.name === hcl.name)!;
     expect(hclCard.lines.map((l) => l.replace(/[\s,]/g, "")), "염산 카드 기준 문구").toContain(basisText(hclRow).replace(/[\s,]/g, ""));
-    expect(basisText(low.find((r) => r.name === naoh.name)!), "수산화나트륨 카드는 기존 기준 문구 그대로").toBe(`재주문 기준 30 ${NAOH.unit}`);
+    expect(basisText(low.find((r) => r.name === naoh.name)!), "수산화나트륨 카드는 직접 입력 기준 문구 (d7 §11 2026-10-08)").toBe(MANUAL_BASIS_TEXT);
     expect((await main(page).innerText()).includes(etoh.name), "재고가 충분한 증류수는 알림에 없다").toBe(false);
   } finally {
     await context.close();

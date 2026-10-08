@@ -82,8 +82,8 @@ export const rules = readJson<DesignRules>("design/rules.json");
 
 /**
  * 둘러보기 화면 중 이 개발 하네스가 이미 만든 것 = rules.json guest.screens 중 dev-rules mvp_screens 에 있는 화면 (rules 순서 그대로).
- * rules 1.21 에서 guest.screens 에 화면 16(MSDS 요약)이 들어왔지만 화면 16 은 다음 run 에서 만든다 — 그동안은 빠진 화면으로 로그만 남긴다.
- * 화면 16 이 mvp_screens 에 들어오면 이 목록에 자동으로 들어와 dev-rules guest_screens·routes "{화면}-guest" 를 다시 요구한다.
+ * rules 1.21 에서 guest.screens 에 화면 16(MSDS 요약)이 들어왔고, dev-rules 1.10 에서 mvp_screens 에 16 이 들어와 이 목록에 포함된다
+ * (dev-rules guest_screens·routes "16-guest" 를 요구한다 — screen-16g-guest.spec.ts 가 빠진 화면 0 을 확인).
  */
 export function implementedGuestScreens(): { screens: number[]; pending: number[] } {
   const mvp = new Set(devRules.mvp_screens);

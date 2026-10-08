@@ -32,6 +32,9 @@ const D7_AMOUNT = /"([^"{]+) \{min_stock\}\{unit\} \/ ([^"{]+) \{stock\}\{unit\}
   D7.split(/\r?\n/).find((l) => l.startsWith("| 카드 |") && l.includes("reorder-alert-card")) ?? "",
 );
 const STOCK = D7_AMOUNT?.[2] ?? "";
+/** d7 §11 "재주문 기준" 행 (2026-10-08): 직접 입력(source=manual·근거 없음) 카드의 기준 문구 줄은 "직접 입력" */
+const D7_MANUAL_BASIS =
+  /기준 문구 줄은 "([^"]+)"/.exec(D7.split(/\r?\n/).find((l) => l.startsWith("| 재주문 기준 |")) ?? "")?.[1] ?? "";
 /** d7 §11 수량 줄 (숫자·단위 붙여 씀) */
 const amountOf = (min: number | string, stock: number | string, unit: string) => `${NEED} ${min}${unit} / ${STOCK} ${stock}${unit}`;
 /** "올해" 를 정하는 기준 시각: 한국 시간 2026-10-08 12:00 */
@@ -190,12 +193,14 @@ describe("reorder rules: 기준 문구 두 형태", () => {
     ["둘 다 없음", undefined, undefined],
     ["1조 사용량만 있음", 10, null],
     ["조 수만 있음", null, 6],
-  ])('[K1][S6] %s → "재주문 기준 {min_stock} {unit}"', (_label, perGroup, groups) => {
-    expect(reorderBasisText({ minStock: 60, unit: "g", perGroup, groups })).toBe("재주문 기준 60 g");
+  ])('[K1][S6] %s → 직접 입력 기준 문구 (d7 §11 2026-10-08: 수량 줄이 이미 "재주문 기준 N" 이라 "직접 입력")', (_label, perGroup, groups) => {
+    expect(D7_MANUAL_BASIS, "d7 §11 '재주문 기준' 행에서 직접 입력 기준 문구를 읽음").not.toBe("");
+    expect(reorderBasisText({ minStock: 60, unit: "g", perGroup, groups })).toBe(D7_MANUAL_BASIS);
+    expect(reorderBasisText({ minStock: 60, unit: "g", perGroup, groups }), "같은 말 두 번 금지").not.toContain(NEED);
   });
 
   it.each(["g", "mL", "병"])("[K1][S6] 단위 %s 로 두 형태 모두", (unit) => {
-    expect(reorderBasisText({ minStock: 500, unit, perGroup: null, groups: null })).toBe(`재주문 기준 500 ${unit}`);
+    expect(reorderBasisText({ minStock: 500, unit, perGroup: null, groups: null })).toBe(D7_MANUAL_BASIS);
     expect(reorderBasisText({ minStock: 40, unit, perGroup: 5, groups: 8 })).toBe(`1반 1회 실험량 5 ${unit} × 8조 기준`);
   });
 });

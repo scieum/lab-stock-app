@@ -43,6 +43,9 @@ const SOURCES = ["auto", "basis", "manual"] as const;
 const S18_LINE = D7.split(/\r?\n/).find((l) => l.startsWith("| 자동 기준 표시")) ?? "";
 const [S18_USAGE, S18_INTAKE] = [...S18_LINE.matchAll(/\*\*"([^"]+)"\*\*/g)].map((m) => m[1]);
 
+/** d7 §11 "재주문 기준" 행 (2026-10-08): 직접 입력(근거 없음) 카드의 기준 문구 줄 = "직접 입력" (수량 줄과 같은 말 두 번 금지) */
+const D7_MANUAL_BASIS = /기준 문구 줄은 "([^"]+)"/.exec(D7.split(/\r?\n/).find((l) => l.startsWith("| 재주문 기준 |")) ?? "")?.[1] ?? "";
+
 describe("재주문 기준 자동 표시: 기대값 원본 (d7 §11-1)", () => {
   it("[K1][S3] d7 §11-1 '표시' 에서 자동 표시·근거 세 형태를 읽고, '자동 값' 의 입고 비율이 근거 문구와 같다", () => {
     expect(SHOW.length, `표시 줄의 따옴표 문구: ${JSON.stringify(SHOW)}`).toBeGreaterThanOrEqual(4);
@@ -116,11 +119,12 @@ describe("reorderBasisText (화면 6 카드 기준 문구: 자동 세 형태 + �
     expect(reorderBasisText({ source: "auto", autoBasis: "usage", minStock: 4.5, unit: "g", perGroup: 10, groups: 6 })).toBe(D7_USAGE);
   });
 
-  it("[K1][S6] source basis·manual·없음 → 기존 두 형태 (근거 열 둘 다 있으면 '1반 1회 …', 아니면 '재주문 기준 N')", () => {
+  it("[K1][S6] source basis·manual·없음 → 근거 열 둘 다 있으면 '1반 1회 …', 아니면 d7 §11 직접 입력 기준 문구 (2026-10-08)", () => {
+    expect(D7_MANUAL_BASIS, "d7 §11 '재주문 기준' 행의 직접 입력 기준 문구").not.toBe("");
     for (const source of ["basis", "manual", undefined] as const) {
       expect(reorderBasisText({ source, minStock: 60, unit: "g", perGroup: 10, groups: 6 }), `${source}`).toBe("1반 1회 실험량 10 g × 6조 기준");
-      expect(reorderBasisText({ source, minStock: 60, unit: "g", perGroup: null, groups: null }), `${source}`).toBe("재주문 기준 60 g");
-      expect(reorderBasisText({ source, minStock: 1000, unit: "mL" }), `${source}`).toBe("재주문 기준 1,000 mL");
+      expect(reorderBasisText({ source, minStock: 60, unit: "g", perGroup: null, groups: null }), `${source}`).toBe(D7_MANUAL_BASIS);
+      expect(reorderBasisText({ source, minStock: 1000, unit: "mL" }), `${source}`).toBe(D7_MANUAL_BASIS);
     }
   });
 

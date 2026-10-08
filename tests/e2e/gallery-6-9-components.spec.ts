@@ -40,6 +40,8 @@ const root = process.cwd();
 const rules = JSON.parse(readFileSync(join(root, "design/rules.json"), "utf8")) as Rules;
 const dev = JSON.parse(readFileSync(join(root, "harness/dev-rules.json"), "utf8")) as Dev;
 const D7 = readFileSync(join(root, "harness/d7-data.md"), "utf8");
+/** d7 §11 "재주문 기준" 행 (2026-10-08): 직접 입력(근거 없음) 카드의 기준 문구 줄 — 수량 줄과 같은 "재주문 기준 N" 을 두 번 쓰지 않는다 */
+const MANUAL_BASIS = /기준 문구 줄은 "([^"]+)"/.exec(D7.split(/\r?\n/).find((l) => l.startsWith("| 재주문 기준 |")) ?? "")?.[1] ?? "";
 const loadFrame = (name: string) => (JSON.parse(readFileSync(join(root, `design/frames/${name}.json`), "utf8")) as Frame).frames[0].nodes;
 /** 시안 1.17 프레임 (d7 §18 로 바뀐 부분만) */
 const loadFrame117 = (name: string) => (JSON.parse(readFileSync(join(root, `design/frames/${name}.json`), "utf8")) as Frame).frames[0].nodes;
@@ -119,7 +121,7 @@ const FRAME_CARDS = groups(d6, "reorder-alert-card").map((g) => {
     /** 자동이면 배지 글자, 아니면 "" */
     auto,
     /** 자동이면 시안 캡션, 아니면 d7 §11 "재주문 기준 N u" (1조 사용량·조 수가 없는 시약) */
-    basis: auto ? textIn(g, "auto-caption") : `재주문 기준 ${min} ${unit}`,
+    basis: auto ? textIn(g, "auto-caption") : MANUAL_BASIS,
     date: date ? alertDate(Number(date[1]), Number(date[2]), Number(date[3])) : "",
     link: textIn(g, "label", "button-primary"),
     /** 화면에 보이는 수량 줄 조각 (자동이면 "재주문 기준 Nu" · "자동" · "/ 현재 재고 Mu" — 배지가 두 조각 사이) */
@@ -272,7 +274,6 @@ const d7Number = (re: RegExp) => Number(re.exec(D7)?.[1] ?? Number.NaN);
 const NAME_MAX = d7Number(/name\(1~(\d+)자\)/);
 // d7 §11 카드 문구 틀 (1.21: 수량 줄은 숫자·단위를 붙여 쓴다, 기준 문구는 띄어 쓴다)
 const AMOUNT_RE = new RegExp(String.raw`^${NEED} ([\d.,]+)([^\d\s.,]\S*) \/ ${STOCK} ([\d.,]+)([^\d\s.,]\S*)$`);
-const BASIS_PLAIN_RE = /^재주문 기준 ([\d.,]+) (\S+)$/;
 const DATE_RE = /(?:\d{4}년 )?\d{1,2}월 \d{1,2}일 알림/;
 const PHONE_RE = /\d{2,4}-\d{3,4}-\d{4}/;
 
@@ -534,7 +535,10 @@ test(`[K1][S${S6}] 기대값 원본: 프레임 6-desktop·6-mobile(1.17) 과 rul
     if (c.auto) {
       expect(c.auto).toBe("자동");
       expect(c.basis, "자동 캡션 = d7 §18").toBe("최근 사용량으로 계산했어요");
-    } else expect(c.basis).toMatch(BASIS_PLAIN_RE);
+    } else {
+      expect(MANUAL_BASIS, "d7 §11 '재주문 기준' 행의 직접 입력 기준 문구").not.toBe("");
+      expect(c.basis, "직접 입력 기준 문구 = d7 §11").toBe(MANUAL_BASIS);
+    }
     expect(c.date).toMatch(new RegExp(`^${DATE_RE.source}$`));
     expect(c.link).toBe("판매처 연결");
     expect([ACCENT, ACCENT_SOFT, ...HIGHLIGHTS], "카드 채움은 핑크·하늘색이 아니다").not.toContain(c.fill);
@@ -1010,7 +1014,7 @@ test.describe("화면 6 재주문 알림 (/gallery/reorder)", () => {
     expect(writes, "쓰기 요청 없음").toEqual([]);
   });
 
-  test(`[K1][S${S6}] 기준 문구 두 번째 형태: 실험 매뉴얼 값·알림 날짜가 없는 시약 카드는 "재주문 기준 {필요량} {단위}", 날짜 줄 없음`, async ({ page }) => {
+  test(`[K1][S${S6}] 기준 문구 두 번째 형태: 실험 매뉴얼 값·알림 날짜가 없는 시약 카드는 "${MANUAL_BASIS}"(d7 §11 2026-10-08 — "${NEED}" 은 수량 줄 한 번만), 날짜 줄 없음`, async ({ page }) => {
     const sec = await area(page, "basis");
     const card = cards(sec);
     await expect(card).toHaveCount(1);
@@ -1021,10 +1025,8 @@ test.describe("화면 6 재주문 알림 (/gallery/reorder)", () => {
     expect(amount, `"${NEED} Nu / ${STOCK} Mu" 줄 (d7 §11 1.21)`).toBeTruthy();
     const a = AMOUNT_RE.exec(amount!)!;
     expect(a[2], "재주문 기준·현재 재고 단위가 같다").toBe(a[4]);
-    const basis = lines.find((l) => BASIS_PLAIN_RE.test(l));
-    expect(basis, '"재주문 기준 N 단위" 줄').toBeTruthy();
-    const b = BASIS_PLAIN_RE.exec(basis!)!;
-    expect([b[1], b[2]], "재주문 기준 = 필요량(min_stock)·단위").toEqual([a[1], a[2]]);
+    expect(lines.filter((l) => l === MANUAL_BASIS), `"${MANUAL_BASIS}" 기준 문구 줄 1개`).toHaveLength(1);
+    expect(lines.filter((l) => l.includes(NEED)), `"${NEED}" 은 수량 줄 한 번만`).toHaveLength(1);
     expect(lines.filter((l) => /1반 1회 실험량/.test(l)), "첫 번째 형태 문구는 없다").toEqual([]);
     expect(lines.filter((l) => DATE_RE.test(l) || /알림$/.test(l)), "알림 날짜 줄 없음").toEqual([]);
     expect(lines.length, "배지 · 시약명 · 재주문 기준/현재 재고 · 기준 · 판매처 연결 5줄").toBe(5);
