@@ -2,7 +2,7 @@
 // - 시약 id 는 seed.sql 에서 고르고, 표시값 비교용 DB 값은 그 계정의 브라우저 세션(publishable 키 + RLS)으로 읽는다.
 // - service role 미사용. 계정 값은 db-helpers.ts 의 환경변수 로딩만 쓴다.
 import { expect, type Locator, type Page } from "@playwright/test";
-import { drawer, isDeskPage, waitDrawer } from "./desk-helpers";
+import { drawer, isDeskPage, waitDrawer, waitWidthSettled } from "./desk-helpers";
 import type { Role } from "./db-helpers";
 import { browserClient, routeOf, sel, seedRows } from "./screen-helpers";
 
@@ -88,10 +88,13 @@ const deskDetail = (page: Page) => isDeskPage(page) && !new URL(page.url()).path
 export async function waitDetail(page: Page): Promise<void> {
   if (deskDetail(page)) {
     await waitDrawer(page);
+    await waitWidthSettled(page);
     return;
   }
   await expect(page.locator(sel("reagent-detail-card")).first()).toBeVisible({ timeout: 30_000 });
   await page.waitForLoadState("load");
+  // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 (개수 세기 전)
+  await waitWidthSettled(page);
 }
 
 /** 상세 본문 범위: 폭 390 = main / 폭 1440 = 드로어 (뒤 시약 목록은 화면 2 몫) */

@@ -22,7 +22,7 @@ import {
 import { framePath } from "../frames";
 import { SHELL_COMPONENTS, expectShell, isShellComponent } from "./shell-helpers";
 import { deskOnlyComponents } from "../desktop-shell";
-import { mobileOnlyOf } from "./desk-helpers";
+import { mobileOnlyOf, waitWidthSettled } from "./desk-helpers";
 
 const SCREEN = 2;
 const ROLES: Role[] = [...SCHOOL_A_ROLES, "schoolB"];
@@ -42,6 +42,8 @@ const NO_MATCH_QUERY = "없는시약zzq";
 async function waitList(page: Page): Promise<void> {
   await expect(page.locator(sel("segmented-control")).first()).toBeVisible({ timeout: 30_000 });
   await page.waitForLoadState("load");
+  // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 (개수 세기 전)
+  await waitWidthSettled(page);
 }
 
 /** 자기 세션(RLS)으로 읽은 재고 부족(stock < min_stock) 시약 수 */

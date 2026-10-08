@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { expect, type Locator, type Page, type Response } from "@playwright/test";
 import { devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
 import { framePath } from "../frames";
-import { drawer, isDeskPage, newFrame } from "./desk-helpers";
+import { drawer, isDeskPage, newFrame, waitWidthSettled } from "./desk-helpers";
 
 export const SCREEN = 16;
 export const SUMMARY = "msds-summary";
@@ -185,6 +185,8 @@ export async function waitMsds(page: Page): Promise<void> {
   await expect(page.locator(sel(ORIGINAL)).first(), `${ORIGINAL} 보임`).toBeVisible({ timeout: 30_000 });
   await expect(page.locator(sel(SKELETON)), "불러오는 중 끝").toHaveCount(0, { timeout: 30_000 });
   await page.waitForLoadState("load");
+  // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 (개수 세기 전)
+  await waitWidthSettled(page);
 }
 
 export const boxOf = async (l: Locator) => {

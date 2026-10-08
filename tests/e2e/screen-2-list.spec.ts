@@ -9,7 +9,7 @@ import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
 import { PROFILE_ROLE, browserClient, browserSession, countComponent, routeOf, sel } from "./screen-helpers";
 
-import { PAGE_SIZE, isDeskPage, pagination } from "./desk-helpers";
+import { PAGE_SIZE, isDeskPage, pagination, waitWidthSettled } from "./desk-helpers";
 const SCREEN = 2;
 const DETAIL_SCREEN = 3;
 const ROLES: Role[] = [...SCHOOL_A_ROLES, "schoolB"];
@@ -25,6 +25,8 @@ const detailHref = (id: string) => routeOf(DETAIL_SCREEN).replace(/\[[^\]]+\]/, 
 async function waitList(page: Page): Promise<void> {
   await expect(page.locator(sel("segmented-control")).first()).toBeVisible({ timeout: 30_000 });
   await page.waitForLoadState("load");
+  // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 (개수 세기 전)
+  await waitWidthSettled(page);
 }
 
 async function dbReagents(page: Page): Promise<DbReagent[]> {

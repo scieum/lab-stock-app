@@ -16,7 +16,7 @@ import { join } from "node:path";
 import { expect, type Browser, type BrowserContext, type Locator, type Page, type Response, type TestInfo } from "@playwright/test";
 import { createClient, type Session as AuthSession, type SupabaseClient } from "@supabase/supabase-js";
 import { anonClient } from "./db-helpers";
-import { isDeskPage } from "./desk-helpers";
+import { isDeskPage, waitWidthSettled } from "./desk-helpers";
 import { browserClient, devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
 import { framePath } from "../frames";
 import { adjustPreDesktopShell } from "../desktop-shell";
@@ -171,6 +171,8 @@ export async function waitUsers(page: Page): Promise<void> {
   await page.waitForLoadState("load");
   await expect(manage(page), `${USER_MANAGE} 본문`).toBeVisible({ timeout: 30_000 });
   await expect(memberRows(page).first(), "멤버 행").toBeVisible();
+  // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 (개수 세기 전)
+  await waitWidthSettled(page);
 }
 
 export type ShownMember = { name: string; role: MemberRole | null; self: boolean; texts: string[] };
@@ -790,3 +792,34 @@ export async function sharedSnapshot(): Promise<{ profiles: string[]; invites: n
     invites: (invs.data ?? []).length,
   };
 }
+
+// ---------- 초대 대기 줄 초대일 (새 프레임 8-mobile invite-date "교사 · 10월 6일 초대" · 8-desktop 초대일 칸 "10월 6일") ----------
+const F8M_INVITE = JSON.parse(readFileSync(join(process.cwd(), "design", "frames", "8-mobile.json"), "utf8")) as { frames: { nodes: { name: string; text: { characters: string } | null }[] }[] };
+const F8D_INVITE = JSON.parse(readFileSync(join(process.cwd(), "design", "frames", "8-desktop.json"), "utf8")) as { frames: { nodes: { name: string; path: string[]; text: { characters: string } | null }[] }[] };
+/** 시안 8-mobile 초대 보조줄 예시 → 틀 [역할 자리 뒤 구분, 날짜 뒤 꼬리] ("교사 · 10월 6일 초대" → " · ", " 초대") */
+export const INVITE_CAPTION_FRAME = (() => {
+  const t = F8M_INVITE.frames[0].nodes.find((n) => n.name === "invite-date" && n.text)?.text?.characters ?? "";
+  const m = /^(\S+)( · )(\d{1,2}월 \d{1,2}일)(.*)$/.exec(t);
+  if (!m) throw new Error(`시안 8-mobile invite-date 틀을 읽지 못함: "${t}"`);
+  return { example: t, sep: m[2], tail: m[4] };
+})();
+/** 시안 8-desktop 초대 대기 표의 초대일 칸 예시 ("10월 6일") — 날짜만 */
+export const INVITE_DATE_DESK_EXAMPLE = (() => {
+  const nodes = F8D_INVITE.frames[0].nodes;
+  let tables = 0;
+  const cells: string[] = [];
+  for (const n of nodes) {
+    if (n.name === "data-table") tables += 1;
+    else if (tables === 2 && n.name === "cell" && n.text) cells.push(n.text.characters);
+  }
+  const d = cells.find((c) => /^\d{1,2}월 \d{1,2}일$/.test(c));
+  if (!d) throw new Error("시안 8-desktop 초대일 칸 예시 없음");
+  return d;
+})();
+/** 한국 날짜 → "M월 D일" (시안 8 초대일) */
+export function inviteDay(at: Date = new Date()): string {
+  const [, m, d] = todayDots(at).split(".").map(Number);
+  return `${m}월 ${d}일`;
+}
+/** 390 초대 보조줄 = "{역할} · {M월 D일} 초대" (시안 8-mobile 틀) */
+export const inviteCaption = (roleText: string, day: string) => `${roleText}${INVITE_CAPTION_FRAME.sep}${day}${INVITE_CAPTION_FRAME.tail}`;

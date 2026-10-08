@@ -18,7 +18,7 @@ import { expect, type Locator, type Page, type TestInfo } from "@playwright/test
 import { browserClient, devRules, routeOf, sel, type ViewportName } from "./screen-helpers";
 import { framePath } from "../frames";
 import { adjustPreDesktopShell } from "../desktop-shell";
-import { PAGE_SIZE, drawer, isDeskPage, newFrame, pagination } from "./desk-helpers";
+import { PAGE_SIZE, drawer, isDeskPage, newFrame, pagination, waitWidthSettled } from "./desk-helpers";
 
 export const SCREEN = 10;
 export const ROW = "ex-data-table-cell";
@@ -148,6 +148,8 @@ export async function waitHistory(page: Page): Promise<void> {
     `main ${sel(SEGMENT)}`,
     { timeout: 30_000 },
   );
+  // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 (개수 세기 전)
+  await waitWidthSettled(page);
 }
 
 /** "전체 / 내 기록" 전환 (하이드레이션 전 클릭이 무시돼도 다시 누른다) */

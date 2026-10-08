@@ -8,7 +8,7 @@
 //   (이름·재고·입고일·분류·칸·MSDS 를 정해 정렬 동률·분류 없음·칸 없음·MSDS 없음·결과 0 을 모두 만든다). 화면 동작은 쓰기를 하지 않는다.
 // 둘러보기(/demo/reagents, [S2g])는 anon 데모 학교 데이터로 같은 동작을 본다. 공용 학교 A·B·데모 데이터는 바꾸지 않는다.
 import { join } from "node:path";
-import { isDeskPage } from "./desk-helpers";
+import { isDeskPage, waitWidthSettled } from "./desk-helpers";
 import { test, expect, type Browser, type Locator, type Page, type TestInfo } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { anonClient } from "./db-helpers";
@@ -85,6 +85,8 @@ async function waitList(page: Page): Promise<void> {
     `main ${sel("list-filter-button")}`,
     { timeout: 30_000 },
   );
+  // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 (개수 세기 전)
+  await waitWidthSettled(page);
 }
 
 async function openSheet(page: Page): Promise<Locator> {

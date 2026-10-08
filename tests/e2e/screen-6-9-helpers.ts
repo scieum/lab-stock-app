@@ -21,7 +21,7 @@ import { tempSchoolLike, exact, service, sweep, todayDots, type Residue } from "
 import { makeFixture, type S11Fixture } from "./screen-11-helpers";
 import { framePath } from "../frames";
 import { DESKTOP_SHELL, frameActiveLabel } from "../desktop-shell";
-import { drawer, isDeskPage } from "./desk-helpers";
+import { drawer, isDeskPage, waitWidthSettled } from "./desk-helpers";
 
 export { boxOf, frameCounts, highlightSoft, hydrated, onTop, watchActions } from "./screen-11-helpers";
 export { exact };
@@ -546,6 +546,8 @@ export async function waitVendors(page: Page): Promise<void> {
   await expect(segment(page), SEGMENT).toBeVisible({ timeout: 45_000 });
   await expect(registerBlock(page), REGISTER).toBeVisible();
   await expect(page.locator(BUSY), "자리 표시는 본문으로 바뀐다").toHaveCount(0);
+  // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 (개수 세기 전)
+  await waitWidthSettled(page);
 }
 
 /** 탭 바꾸기 → 활성 탭이 그 라벨 */

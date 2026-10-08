@@ -149,3 +149,16 @@ export function countScoped(scope: Locator, name: string): Promise<number> {
     name,
   );
 }
+
+/**
+ * 폭 정리 대기: 서버 HTML 에는 두 폭(모바일 전용 · 데스크톱 전용 묶음)이 함께 들어 있고, 하이드레이션 뒤 맞지 않는 폭이 DOM 에서 빠진다.
+ * 개수를 세기 전에 그 폭이 정리될 때까지 기다린다 (d7 §23 "모바일은 지금처럼 전용 화면", rules desktop_shell).
+ * - 390: 데스크톱 전용 app-sidebar · data-table · detail-drawer 0
+ * - 1440: 모바일 셸 nav-pill · tab-bar 0, 모바일 전용 본문 reagent-detail-card 0
+ */
+export async function waitWidthSettled(page: Page, timeout = 45_000): Promise<void> {
+  const gone = isDeskPage(page) ? ["nav-pill", "tab-bar", "reagent-detail-card"] : [DESKTOP_SHELL.component, TABLE, DRAWER];
+  // 둘러보기(/demo)는 run d 전이라 1440 도 예전 화면(reagent-detail-card · nav-pill)
+  if (isDeskPage(page) && new URL(page.url()).pathname.startsWith("/demo")) return;
+  for (const n of gone) await expect(page.locator(sel(n)), `폭 정리 대기: ${n} 0 (하이드레이션 뒤)`).toHaveCount(0, { timeout });
+}

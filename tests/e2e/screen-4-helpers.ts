@@ -5,7 +5,7 @@ import { expect, type Browser, type Page, type TestInfo } from "@playwright/test
 import { REAGENT_SLOT, projectIndex, type Role } from "./db-helpers";
 import { openAs, type RolePage } from "./auth-state";
 import { browserClient, routeOf, sel } from "./screen-helpers";
-import { drawer, isDeskPage, waitDrawer } from "./desk-helpers";
+import { drawer, isDeskPage, waitDrawer, waitWidthSettled } from "./desk-helpers";
 import { seedReagents, seedSchoolOf, squash } from "./screen-3-helpers";
 
 export const SCREEN = 4;
@@ -68,6 +68,8 @@ export async function waitUsage(page: Page, withReagent: boolean): Promise<void>
     undefined,
     { timeout: 30_000 },
   );
+  // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 (개수 세기 전)
+  await waitWidthSettled(page);
 }
 
 const fmt = new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 2 });

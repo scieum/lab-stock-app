@@ -10,7 +10,7 @@ import { join } from "node:path";
 import { test, expect, type Page, type TestInfo } from "@playwright/test";
 import { countComponent, routeOf, rules, sel } from "./screen-helpers";
 import { detailPath, waitDetail } from "./screen-3-helpers";
-import { isDeskPage } from "./desk-helpers";
+import { isDeskPage, waitWidthSettled } from "./desk-helpers";
 import { HAS_SERVICE, clientFor, openTemp, service, type TempUser } from "./screen-8-helpers";
 import { NO_S11_RESIDUE, cleanup, makeFixture, prepReagent, purgeSchool, sharedCabinetSnapshot, watchActions, type S11Fixture } from "./screen-11-helpers";
 import { demoReagents, guestDetailPath, guestRouteOf, openGuest, waitGuestShell } from "./guest-helpers";
@@ -117,6 +117,8 @@ async function msdsOf(u: TempUser, id: string): Promise<{ msds_url: string | nul
 async function waitList(page: Page): Promise<void> {
   await expect(page.locator(sel("segmented-control")).first()).toBeVisible({ timeout: 30_000 });
   await page.waitForLoadState("load");
+  // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 (개수 세기 전)
+  await waitWidthSettled(page);
 }
 async function hydratedButton(page: Page, scope: ReturnType<typeof page.locator>): Promise<void> {
   await expect

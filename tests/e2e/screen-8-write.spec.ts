@@ -91,6 +91,9 @@ import {
   toast,
   toastInvited,
   todayDots,
+  inviteDay,
+  inviteCaption,
+  INVITE_DATE_DESK_EXAMPLE,
   viewportOf,
   waitUsers,
   watchActions,
@@ -273,8 +276,11 @@ test(`[C1][S${SCREEN}] 초대 2명(교사): "${inviteSubmitLabel(2)}" → ${TOAS
     for (const email of [e1, e2]) {
       const row = shown.find((s) => s.email === email);
       expect(row, `초대 대기 행 ${email} (소문자)`).toBeTruthy();
-      // 초대일: 390 = "{날짜} 초대" 줄 / 1440 = 초대일 칸 (시안 8-desktop 초대 대기 표 — 이메일 · 역할 · 초대일 · 상태)
-      const dayTexts = isDeskPage(page) ? [day0, day1] : [`${day0} 초대`, `${day1} 초대`];
+      // 초대일 (새 프레임 8 — 오케스트레이터 결정): 390 = 보조줄 "{역할} · {M월 D일} 초대"(8-mobile invite-date) /
+      // 1440 = 초대일 칸 "{M월 D일}"(8-desktop 초대 대기 표) + 역할 칸
+      const days = [day0, day1].map((d) => inviteDay(new Date(`${d.replace(/\./g, "-")}T12:00:00+09:00`)));
+      expect(INVITE_DATE_DESK_EXAMPLE, "시안 8-desktop 초대일 칸 틀 = M월 D일").toMatch(/^\d{1,2}월 \d{1,2}일$/);
+      const dayTexts = isDeskPage(page) ? days : days.map((d) => inviteCaption(ROLE_TEXT.teacher, d));
       expect(row!.texts.some((t) => dayTexts.includes(t)), `초대일 "${dayTexts[1]}" (${row!.texts.join(" / ")})`).toBe(true);
       if (isDeskPage(page)) expect(row!.texts, "1440 초대 역할 칸 = 교사").toContain(ROLE_TEXT.teacher);
       expect(row!.texts, `상태 "${INVITE_STATUS}"`).toContain(INVITE_STATUS);
