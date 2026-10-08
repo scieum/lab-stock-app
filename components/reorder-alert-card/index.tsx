@@ -26,16 +26,16 @@ export function ReorderAlertCard({ count, href }: { count: number; href?: string
 type ItemProps = {
   /** 시약명 (heading-4, 한 줄) */
   name: string;
-  /** "필요량 60 g / 현재 재고 30 g" (lib/reorder-rules reorderAmountText) */
+  /** "재주문 기준 60g / 현재 재고 30g" (lib/reorder-rules reorderAmountText) */
   amount: string;
   /** 기준 문구 "1반 1회 실험량 10 g × 6조 기준" 또는 "재주문 기준 60 g" (자동 기준이면 쓰지 않는다) */
   basis?: string;
   /**
-   * 자동 기준 (d7 §18, 시안 6 stock-line): 수량 줄을 "필요량 …" [자동] "/ 현재 재고 …" 로 그리고
+   * 자동 기준 (d7 §18, 시안 6 stock-line): 수량 줄을 "재주문 기준 …" [자동] "/ 현재 재고 …" 로 그리고
    * 아래에 캡션 한 줄("최근 사용량으로 계산했어요" 등). 있으면 amount·basis 대신 쓴다.
    */
   auto?: { need: string; stock: string; caption: string | null };
-  /** "2026.09.30 알림" — 없으면 줄을 그리지 않는다 */
+  /** "10월 7일 알림" — 없으면 줄을 그리지 않는다 */
   date?: string | null;
   /** 오른쪽(데스크톱)·아래(모바일) 동작 칸 (vendor-link "판매처 연결" · 새 창 안내 줄) */
   children?: React.ReactNode;

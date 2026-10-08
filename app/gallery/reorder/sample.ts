@@ -8,7 +8,7 @@ import {
   sortByShortage,
 } from "@/lib/reorder-rules";
 
-// 시안 1.17 6 의 예시 데이터 (갤러리 전용): 염산 · 에탄올(자동 기준) · 질산은, 알림 2026-10-07
+// 시안 1.17 6 의 예시 데이터 (갤러리 전용): 염산 · 에탄올(자동 기준) · 질산은, 알림 2026-10-07 ("10월 7일 알림", 디자인 1.21 reorder.card_text)
 type SampleReagent = {
   id: string;
   name: string;
@@ -80,7 +80,7 @@ export const sampleAlertAuto: SampleAlert = (() => {
   };
 })();
 
-/** 자동 기준 — 입고량 근거 (d7 §18 개발 쪽 예외 문구 "마지막 입고량의 20%로 계산했어요") */
+/** 자동 기준 — 입고량 근거 (디자인 1.21 reorder.auto 문구 "마지막 입고량의 20%로 계산했어요") */
 export const sampleAlertAutoIntake: SampleAlert = (() => {
   const r = { name: "질산칼륨", unit: "g", stock: 10, minStock: 100 };
   return {

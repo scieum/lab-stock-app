@@ -94,3 +94,13 @@ export function formatYearMonthOf(ymd: string): { key: string; label: string } {
   const m = /^(\d{4})-(\d{2})/.exec(ymd);
   return m ? { key: `${m[1]}-${m[2]}`, label: `${m[1]}년 ${Number(m[2])}월` } : { key: ymd, label: ymd };
 }
+
+/**
+ * 한국 시간 날짜 "10월 7일" — 올해(한국 시간 기준)가 아니면 "2025년 10월 7일".
+ * 화면 6 알림 날짜(d7 §11, 디자인 1.21 reorder.card_text) · 사용일 안내와 같은 표기.
+ */
+export function formatKoreanDate(d: Date, now: Date = new Date()): string {
+  const p = parts(d);
+  const md = `${Number(p.month)}월 ${Number(p.day)}일`;
+  return p.year === parts(now).year ? md : `${p.year}년 ${md}`;
+}

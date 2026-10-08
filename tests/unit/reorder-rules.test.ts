@@ -1,13 +1,18 @@
-// 화면 6 재주문 알림 순수 규칙 (lib/reorder-rules).
-// 기대값: harness/d7-data.md §11(알림 대상 stock < min_stock · 카드 문구 틀 · 기준 문구 두 형태 · 알림 날짜 "YYYY.MM.DD 알림"(한국 시간) ·
-//         부족한 정도가 큰 순), design/frames/6-desktop.json(시안 1.17 알림 카드 3건의 값·자동 배지·캡션 — 문구 틀은 d7).
+// 화면 6 재주문 알림 순수 규칙 (lib/reorder-rules) · 한국 날짜 표기 (lib/format formatKoreanDate).
+// 기대값: harness/d7-data.md §11(알림 대상 stock < min_stock · 카드 문구 틀 "재주문 기준 {min_stock}{unit} / 현재 재고 {stock}{unit}" ·
+//         기준 문구 두 형태 · 알림 날짜 "M월 D일 알림"(한국 시간, 올해가 아니면 "YYYY년 M월 D일 알림") · 부족한 정도가 큰 순 — 2026-10-08 디자인 1.21 맞춤),
+//         design/rules.json reorder.card_text('재주문 기준 N{단위}' · '10월 7일 알림'),
+//         design/frames/6-desktop.json(시안 1.17 알림 카드 3건의 값·자동 배지·캡션 — 문구 틀은 d7·rules).
 //         구현에서 읽지 않는다.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { formatKoreanDate } from "../../lib/format";
 import {
+  REORDER_NEED_LABEL,
   isReorderNeeded,
   reorderAlertDateText,
+  reorderAmountParts,
   reorderAmountText,
   reorderBasisText,
   shortageRatio,
@@ -15,12 +20,28 @@ import {
 } from "../../lib/reorder-rules";
 import { ROOT } from "./helpers";
 
+// ---------- 기대값: rules.json reorder.card_text · d7 §11 (1.21) ----------
+const RULES = JSON.parse(readFileSync(join(ROOT, "design/rules.json"), "utf8")) as { reorder: { card_text: string } };
+const D7 = readFileSync(join(ROOT, "harness/d7-data.md"), "utf8");
+/** rules.json card_text 의 '재주문 기준 N{단위}' 앞말 */
+const NEED = /'([^']+) N\{단위\}'/.exec(RULES.reorder.card_text)?.[1] ?? "";
+/** rules.json card_text 의 날짜 예시 '10월 7일 알림' */
+const RULES_DATE = /'(\d{1,2}월 \d{1,2}일 알림)'/.exec(RULES.reorder.card_text)?.[1] ?? "";
+/** d7 §11 카드 행의 수량 줄 틀: "{NEED} {min_stock}{unit} / {STOCK} {stock}{unit}" */
+const D7_AMOUNT = /"([^"{]+) \{min_stock\}\{unit\} \/ ([^"{]+) \{stock\}\{unit\}"/.exec(
+  D7.split(/\r?\n/).find((l) => l.startsWith("| 카드 |") && l.includes("reorder-alert-card")) ?? "",
+);
+const STOCK = D7_AMOUNT?.[2] ?? "";
+/** d7 §11 수량 줄 (숫자·단위 붙여 씀) */
+const amountOf = (min: number | string, stock: number | string, unit: string) => `${NEED} ${min}${unit} / ${STOCK} ${stock}${unit}`;
+/** "올해" 를 정하는 기준 시각: 한국 시간 2026-10-08 12:00 */
+const NOW_2026 = new Date("2026-10-08T03:00:00Z");
+
 // ---------- 시안 프레임 6-desktop (1.17) 의 알림 카드 ----------
 // 시안 1.17 카드: alert-info(badge-low-stock · reagent-name · stock-line · [auto-caption] · alert-date).
 // 자동 기준 카드는 stock-line 이 threshold · auto-threshold-badge "자동" · stock 세 조각, 그 아래 auto-caption.
-// 시안의 수량 줄 문구("재주문 기준 … / 현재 재고 …")와 날짜 모양("YYYY-MM-DD 알림")은 d7 §11 의 틀
-// ("필요량 … / 현재 재고 …", "YYYY.MM.DD 알림")과 다르다 — d7 §18 이 바꾸지 않았으므로 문구 틀은 d7 §11 이 기대값이고,
-// 시안에서는 값(재고 < 기준, 날짜 숫자, 자동 배지·캡션)만 읽는다.
+// 시안 1.17 의 수량 줄("재주문 기준 N u / 현재 재고 …" 띄어 씀)·날짜 모양("YYYY-MM-DD 알림")은 프레임이 예전 그대로라
+// 1.21 문구 틀(d7 §11 · rules.json reorder.card_text)과 다르다 — 문구 틀은 d7·rules 가 기대값이고, 시안에서는 값(재고 < 기준, 날짜 숫자, 자동 배지·캡션)만 읽는다.
 type FrameNode = { name: string; path: string[]; text: { characters: string } | null };
 const frame = JSON.parse(readFileSync(join(ROOT, "design/frames/6-desktop.json"), "utf8")) as { frames: { nodes: FrameNode[] }[] };
 type FrameCard = { name: string; line: string; badge: string | null; caption: string | null; date: string };
@@ -47,10 +68,10 @@ const FRAME_SIMPLE = FRAME_CARDS.filter((c) => FRAME_LINE_RE.test(c.line)).map((
   return { ...c, minStock: Number(m[1]), unit: m[2], stock: Number(m[3]) };
 });
 
-// d7 §11 문구 틀
-const AMOUNT_RE = /^필요량 (\d+) (\S+) \/ 현재 재고 (\d+) (\S+)$/;
+// d7 §11 문구 틀 (1.21)
+const AMOUNT_RE = new RegExp(String.raw`^${NEED} (\d+)([^\d\s]\S*) \/ ${STOCK} (\d+)([^\d\s]\S*)$`);
 const BASIS_RE = /^1반 1회 실험량 (\d+) (\S+) × (\d+)조 기준$/;
-const DATE_RE = /^(\d{4})\.(\d{2})\.(\d{2}) 알림$/;
+const DATE_RE = /^(?:(\d{4})년 )?(\d{1,2})월 (\d{1,2})일 알림$/;
 
 // d7 §11 틀로 만든 카드 예시 (시안 1.17 에는 근거 문구 카드가 없다): 필요량 = 1조 사용량 × 조 수
 const CARDS = [
@@ -59,7 +80,7 @@ const CARDS = [
   ...FRAME_SIMPLE.map((c) => ({ minStock: c.minStock, stock: c.stock, unit: c.unit, perGroup: c.minStock, groups: 1 })),
 ].map((c) => ({
   ...c,
-  amount: `필요량 ${c.minStock} ${c.unit} / 현재 재고 ${c.stock} ${c.unit}`,
+  amount: amountOf(c.minStock, c.stock, c.unit),
   basis: `1반 1회 실험량 ${c.perGroup} ${c.unit} × ${c.groups}조 기준`,
 }));
 
@@ -83,6 +104,17 @@ describe("reorder rules: 기대값 원본", () => {
     expect(autos[0].badge).toBe("자동");
     expect(autos[0].caption).toBe("최근 사용량으로 계산했어요");
     for (const c of FRAME_CARDS.filter((x) => x.badge === null)) expect(c.caption, `${c.name}: 자동 아니면 캡션 없음`).toBeNull();
+  });
+
+  it("[K1][S6] 1.21 문구 틀: rules.json reorder.card_text 앞말 = d7 §11 카드 행 앞말, 날짜 예시 = d7 §11 날짜 모양", () => {
+    expect(NEED, "rules.json card_text '… N{단위}'").toBe("재주문 기준");
+    expect(D7_AMOUNT, "d7 §11 카드 행 수량 줄 틀").not.toBeNull();
+    expect(D7_AMOUNT![1], "d7 앞말 = rules 앞말").toBe(NEED);
+    expect(STOCK).toBe("현재 재고");
+    expect(RULES_DATE, "rules.json card_text 날짜 예시").toBe("10월 7일 알림");
+    expect(RULES_DATE).toMatch(DATE_RE);
+    expect(D7, "d7 §11 날짜 모양").toContain('"M월 D일 알림"(한국 시간, 올해가 아니면 "YYYY년 M월 D일 알림"');
+    expect(REORDER_NEED_LABEL, "구현 앞말 = rules.json card_text 앞말").toBe(NEED);
   });
 
   it("[K1][S6] d7 §11 틀: 카드 예시가 틀과 맞고, 필요량 = 1조 사용량 × 조 수, 재고 < 필요량", () => {
@@ -120,17 +152,29 @@ describe("reorder rules: 알림 대상 (stock < min_stock)", () => {
   });
 });
 
-describe('reorder rules: "필요량 {min_stock} {unit} / 현재 재고 {stock} {unit}"', () => {
+describe('reorder rules: "재주문 기준 {min_stock}{unit} / 현재 재고 {stock}{unit}" (d7 §11 · rules 1.21)', () => {
   it("[K1][S6] 카드 예시(d7 §11 틀 · 시안 카드 값) → amount 문구", () => {
     for (const c of CARDS) expect(reorderAmountText({ minStock: c.minStock, stock: c.stock, unit: c.unit })).toBe(c.amount);
   });
 
-  it.each(["g", "mL", "병"])("[K1][S6] 단위 %s: 필요량·현재 재고 양쪽에 같은 단위", (unit) => {
-    expect(reorderAmountText({ minStock: 5, stock: 2, unit })).toBe(`필요량 5 ${unit} / 현재 재고 2 ${unit}`);
+  it.each(["g", "mL", "병"])("[K1][S6] 단위 %s: 재주문 기준·현재 재고 양쪽에 같은 단위, 숫자와 붙여 씀", (unit) => {
+    expect(reorderAmountText({ minStock: 5, stock: 2, unit })).toBe(amountOf(5, 2, unit));
   });
 
   it("[K1][S6] 현재 재고 0 도 그대로 적는다", () => {
-    expect(reorderAmountText({ minStock: 40, stock: 0, unit: "g" })).toBe("필요량 40 g / 현재 재고 0 g");
+    expect(reorderAmountText({ minStock: 40, stock: 0, unit: "g" })).toBe(amountOf(40, 0, "g"));
+  });
+
+  it("[K1][S6] 시안 1.17 예시 값: 재주문 기준 60g / 현재 재고 30g", () => {
+    expect(reorderAmountText({ minStock: 60, stock: 30, unit: "g" })).toBe(`${NEED} 60g / ${STOCK} 30g`);
+  });
+
+  it("[K1][S6] 자동 기준 카드 조각(reorderAmountParts): need = \"재주문 기준 Nu\", stock = \"현재 재고 Mu\" — 이어 붙이면 수량 줄", () => {
+    for (const c of CARDS) {
+      const p = reorderAmountParts({ minStock: c.minStock, stock: c.stock, unit: c.unit });
+      expect(p).toEqual({ need: `${NEED} ${c.minStock}${c.unit}`, stock: `${STOCK} ${c.stock}${c.unit}` });
+      expect(`${p.need} / ${p.stock}`).toBe(c.amount);
+    }
   });
 });
 
@@ -156,42 +200,99 @@ describe("reorder rules: 기준 문구 두 형태", () => {
   });
 });
 
-describe('reorder rules: 알림 날짜 "YYYY.MM.DD 알림" (한국 시간)', () => {
-  it("[K1][S6] 시안 날짜(alert-date)의 한국 날짜 낮 → 같은 날짜 숫자, d7 §11 모양 \"YYYY.MM.DD 알림\"", () => {
+describe('reorder rules: 알림 날짜 "M월 D일 알림" · 올해가 아니면 "YYYY년 M월 D일 알림" (한국 시간, d7 §11 · rules 1.21)', () => {
+  it("[K1][S6] 시안 날짜(alert-date)의 한국 날짜 낮 → 같은 날짜, 올해면 rules.json 예시 모양 \"10월 7일 알림\"", () => {
     const [, y, m, d] = FRAME_DATE_RE.exec(FRAME_CARDS[0].date)!;
-    const want = `${y}.${m}.${d} 알림`;
+    const want = `${Number(m)}월 ${Number(d)}일 알림`;
     expect(want).toMatch(DATE_RE);
-    expect(reorderAlertDateText(`${y}-${m}-${d}T02:10:00Z`)).toBe(want);
-    expect(reorderAlertDateText(`${y}-${m}-${d}T11:10:00+09:00`)).toBe(want);
+    const now = new Date(`${y}-10-08T03:00:00Z`);
+    expect(reorderAlertDateText(`${y}-${m}-${d}T02:10:00Z`, now)).toBe(want);
+    expect(reorderAlertDateText(`${y}-${m}-${d}T11:10:00+09:00`, now)).toBe(want);
+    // 시안 날짜 2026-10-07 = rules.json card_text 예시
+    expect(reorderAlertDateText(`${y}-${m}-${d}T02:10:00Z`, now)).toBe(RULES_DATE);
   });
 
   it.each([
-    ["UTC 14:59:59 = 한국 23:59:59 → 같은 날", "2026-09-29T14:59:59Z", "2026.09.29 알림"],
-    ["UTC 15:00:00 = 한국 다음 날 00:00 → 다음 날", "2026-09-29T15:00:00Z", "2026.09.30 알림"],
-    ["UTC 23:59:59 → 한국은 다음 날", "2026-09-29T23:59:59Z", "2026.09.30 알림"],
-    ["UTC 00:00:00 → 한국 09:00 같은 날", "2026-09-30T00:00:00Z", "2026.09.30 알림"],
-    ["UTC 9월 30일 15:00 → 한국 10월 1일 (달 넘김)", "2026-09-30T15:00:00Z", "2026.10.01 알림"],
-    ["UTC 12월 31일 15:00 → 한국 새해 1월 1일 (해 넘김)", "2026-12-31T15:00:00Z", "2027.01.01 알림"],
-    ["한 자리 월·일은 0 을 채운다", "2026-03-05T03:00:00Z", "2026.03.05 알림"],
-    ["소수 초·+00:00 표기 (timestamptz)", "2026-09-29T15:00:00.123456+00:00", "2026.09.30 알림"],
-  ])("[K1][S6] %s", (_label, iso, want) => {
-    expect(reorderAlertDateText(iso)).toBe(want);
+    ["UTC 14:59:59 = 한국 23:59:59 → 같은 날", "2026-09-29T14:59:59Z", "9월 29일 알림"],
+    ["UTC 15:00:00 = 한국 다음 날 00:00 → 다음 날", "2026-09-29T15:00:00Z", "9월 30일 알림"],
+    ["UTC 23:59:59 → 한국은 다음 날", "2026-09-29T23:59:59Z", "9월 30일 알림"],
+    ["UTC 00:00:00 → 한국 09:00 같은 날", "2026-09-30T00:00:00Z", "9월 30일 알림"],
+    ["UTC 9월 30일 15:00 → 한국 10월 1일 (달 넘김)", "2026-09-30T15:00:00Z", "10월 1일 알림"],
+    ["한 자리 월·일은 0 을 채우지 않는다", "2026-03-05T03:00:00Z", "3월 5일 알림"],
+    ["두 자리 월·일", "2026-10-12T03:00:00Z", "10월 12일 알림"],
+    ["소수 초·+00:00 표기 (timestamptz)", "2026-09-29T15:00:00.123456+00:00", "9월 30일 알림"],
+    ["올해 첫날 한국 00:00 (UTC 전년 12월 31일 15:00) → 올해", "2025-12-31T15:00:00Z", "1월 1일 알림"],
+  ])("[K1][S6] 올해(한국 2026): %s", (_label, iso, want) => {
+    expect(reorderAlertDateText(iso, NOW_2026)).toBe(want);
+  });
+
+  it.each([
+    ["전년 한국 12월 31일 23:59:59 (UTC 14:59:59) → 해 붙임", "2025-12-31T14:59:59Z", "2025년 12월 31일 알림"],
+    ["전년 10월 7일 → 해 붙임", "2025-10-07T03:00:00Z", "2025년 10월 7일 알림"],
+    ["UTC 12월 31일 15:00 → 한국 새해 1월 1일 (해 넘김) — 기준이 2026 이면 2027년", "2026-12-31T15:00:00Z", "2027년 1월 1일 알림"],
+    ["두 해 전 한 자리 월·일", "2024-03-05T03:00:00Z", "2024년 3월 5일 알림"],
+  ])("[K1][S6] 다른 해(한국 2026 기준): %s", (_label, iso, want) => {
+    expect(reorderAlertDateText(iso, NOW_2026)).toBe(want);
+  });
+
+  it("[K1][S6] 올해는 '지금' 의 한국 날짜로 가른다 — 지금이 한국 새해 첫 순간이면 전날(12월 31일)은 다른 해", () => {
+    const since = "2026-12-31T14:00:00Z"; // 한국 2026-12-31 23:00
+    expect(reorderAlertDateText(since, new Date("2026-12-31T14:59:59Z")), "지금 = 한국 2026-12-31 23:59:59").toBe("12월 31일 알림");
+    expect(reorderAlertDateText(since, new Date("2026-12-31T15:00:00Z")), "지금 = 한국 2027-01-01 00:00").toBe("2026년 12월 31일 알림");
+    // UTC 로는 아직 2026 이지만 한국은 2027
+    expect(reorderAlertDateText("2026-12-31T15:30:00Z", new Date("2026-12-31T16:00:00Z")), "알림·지금 모두 한국 2027-01-01").toBe("1월 1일 알림");
   });
 
   it("[K1][S6] Date 객체도 같은 결과", () => {
-    expect(reorderAlertDateText(new Date("2026-09-29T15:00:00Z"))).toBe("2026.09.30 알림");
-    expect(reorderAlertDateText(new Date("2026-09-29T14:59:59Z"))).toBe("2026.09.29 알림");
+    expect(reorderAlertDateText(new Date("2026-09-29T15:00:00Z"), NOW_2026)).toBe("9월 30일 알림");
+    expect(reorderAlertDateText(new Date("2026-09-29T14:59:59Z"), NOW_2026)).toBe("9월 29일 알림");
+    expect(reorderAlertDateText(new Date("2025-09-29T14:59:59Z"), NOW_2026)).toBe("2025년 9월 29일 알림");
   });
 
-  it.each(["UTC", "America/Los_Angeles", "Asia/Seoul", "Pacific/Kiritimati"])("[K1][S6] 실행 환경 시간대(TZ=%s)와 무관하게 한국 날짜", (tz) => {
+  it("[K1][S6] now 를 주지 않으면 지금을 기준으로 — 지금 막 부족해진 시약은 해 없이 \"M월 D일 알림\"", () => {
+    const t = reorderAlertDateText(new Date());
+    expect(t).toMatch(DATE_RE);
+    expect(t, "올해 날짜에는 해를 붙이지 않는다").not.toMatch(/년/);
+  });
+
+  it.each(["UTC", "America/Los_Angeles", "Asia/Seoul", "Pacific/Kiritimati"])("[K1][S6] 실행 환경 시간대(TZ=%s)와 무관하게 한국 날짜·한국 해", (tz) => {
     process.env.TZ = tz;
-    expect(reorderAlertDateText("2026-09-29T15:00:00Z")).toBe("2026.09.30 알림");
-    expect(reorderAlertDateText("2026-09-29T14:59:59Z")).toBe("2026.09.29 알림");
-    expect(reorderAlertDateText(new Date("2026-12-31T15:00:00Z"))).toBe("2027.01.01 알림");
+    expect(reorderAlertDateText("2026-09-29T15:00:00Z", NOW_2026)).toBe("9월 30일 알림");
+    expect(reorderAlertDateText("2026-09-29T14:59:59Z", NOW_2026)).toBe("9월 29일 알림");
+    expect(reorderAlertDateText(new Date("2026-12-31T15:00:00Z"), NOW_2026)).toBe("2027년 1월 1일 알림");
+    expect(reorderAlertDateText("2026-12-31T14:00:00Z", new Date("2026-12-31T15:00:00Z"))).toBe("2026년 12월 31일 알림");
   });
 
   it.each([["null", null], ["undefined", undefined], ["빈 문자열", ""], ["날짜가 아닌 글자", "알 수 없음"]])("[K1][S6] 날짜 %s → 표시 없음(null)", (_label, v) => {
+    expect(reorderAlertDateText(v, NOW_2026)).toBeNull();
     expect(reorderAlertDateText(v)).toBeNull();
+  });
+});
+
+describe("formatKoreanDate (d7 §11 날짜 표기 · rules 1.21 '화면 3 용어·사용일 안내와 같은 표기')", () => {
+  it.each([
+    ["올해 → 해 없이", "2026-10-07T03:00:00Z", NOW_2026, "10월 7일"],
+    ["올해 한 자리 월·일", "2026-03-05T03:00:00Z", NOW_2026, "3월 5일"],
+    ["다른 해 → 해 붙임", "2025-10-07T03:00:00Z", NOW_2026, "2025년 10월 7일"],
+    ["다음 해 → 해 붙임", "2027-01-02T03:00:00Z", NOW_2026, "2027년 1월 2일"],
+    ["한국 자정 경계: UTC 15:00 = 한국 다음 날", "2026-10-06T15:00:00Z", NOW_2026, "10월 7일"],
+    ["한국 자정 직전: UTC 14:59:59 = 한국 같은 날", "2026-10-06T14:59:59Z", NOW_2026, "10월 6일"],
+    ["해 경계: 한국 새해 00:00 의 날짜, 지금도 새해", "2026-12-31T15:00:00Z", new Date("2027-01-01T00:00:00Z"), "1월 1일"],
+    ["해 경계: 한국 12월 31일, 지금은 한국 새해", "2026-12-31T14:59:59Z", new Date("2026-12-31T15:00:00Z"), "2026년 12월 31일"],
+  ])("[K1][S6] %s", (_label, iso, now, want) => {
+    expect(formatKoreanDate(new Date(iso), now)).toBe(want);
+  });
+
+  it("[K1][S6] 알림 날짜 = formatKoreanDate + \" 알림\" (같은 표기)", () => {
+    for (const iso of ["2026-10-07T03:00:00Z", "2025-12-31T14:59:59Z", "2026-12-31T15:00:00Z"]) {
+      expect(reorderAlertDateText(iso, NOW_2026)).toBe(`${formatKoreanDate(new Date(iso), NOW_2026)} 알림`);
+    }
+  });
+
+  it.each(["UTC", "America/Los_Angeles", "Pacific/Kiritimati"])("[K1][S6] 실행 환경 시간대(TZ=%s)와 무관", (tz) => {
+    process.env.TZ = tz;
+    expect(formatKoreanDate(new Date("2026-10-06T15:00:00Z"), NOW_2026)).toBe("10월 7일");
+    expect(formatKoreanDate(new Date("2026-12-31T14:59:59Z"), new Date("2026-12-31T15:00:00Z"))).toBe("2026년 12월 31일");
   });
 });
 

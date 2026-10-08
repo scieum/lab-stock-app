@@ -20,6 +20,7 @@ const GALLERY_VENDORS = "/gallery/vendors";
 type FrameNode = { name: string; type: string; path: string[]; fills: string[]; strokes: string[]; text: { characters: string } | null };
 type Frame = { frames: { name: string; nodes: FrameNode[] }[] };
 type Rules = {
+  reorder: { card_text: string };
   colors: {
     accent: { value: string; only_within: string[] };
     accent_soft: { value: string; only_within: string[] };
@@ -74,6 +75,17 @@ const textIn = (g: Group, name: string, parent?: string) =>
   g.children.find((c) => c.name === name && c.text && (parent === undefined || parentName(c) === parent))?.text?.characters ?? "";
 const labelOf = (g: Group | undefined) => (g ? textIn(g, "label") : "");
 
+// 화면 6 카드 문구 틀 (d7 §11 · rules.json reorder.card_text 1.21) — 아래 "기대값 원본" 테스트가 두 문서에 있는지 확인한다
+const NEED = "재주문 기준";
+const STOCK = "현재 재고";
+const D7_CARD_TEMPLATE = `"${NEED} {min_stock}{unit} / ${STOCK} {stock}{unit}"`;
+const D7_DATE_TEMPLATE = `"M월 D일 알림"(한국 시간, 올해가 아니면 "YYYY년 M월 D일 알림"`;
+const RULES_CARD_QUOTES = [`'${NEED} N{단위}'`, "'10월 7일 알림'"];
+/** 지금 한국 시간의 해 (갤러리 예시 날짜가 올해인지 가른다) */
+const KST_YEAR = Number(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric" }).format(new Date()));
+/** d7 §11 날짜 문구: 올해면 "M월 D일 알림", 아니면 "YYYY년 M월 D일 알림" */
+const alertDate = (y: number, m: number, d: number) => `${y === KST_YEAR ? "" : `${y}년 `}${m}월 ${d}일 알림`;
+
 // 화면 6 (시안 1.17 6 — d7 §18)
 const guideNodes = under(d6, "manual-upload");
 const GUIDE = {
@@ -86,7 +98,8 @@ const GUIDE = {
 };
 /**
  * 시안 1.17 6 카드: 수량 줄은 "재주문 기준 N u / 현재 재고 …"(1병(50 mL 남음) 같은 병 표기 포함), 날짜는 "YYYY-MM-DD 알림".
- * d7 §11 이 정한 문구 틀("필요량 N u / 현재 재고 M u" · "재주문 기준 N u" · "YYYY.MM.DD 알림")은 d7 대로 기대하고, 시안에서는 값만 읽는다.
+ * 문구 틀은 d7 §11(2026-10-08 디자인 1.21 맞춤 · rules.json reorder.card_text): 수량 줄 "재주문 기준 {min}{unit} / 현재 재고 {stock}{unit}"(숫자·단위 붙여 씀),
+ * 기준 문구 "재주문 기준 N u", 날짜 "M월 D일 알림"(한국 시간, 올해가 아니면 "YYYY년 M월 D일 알림"). 시안에서는 값만 읽는다.
  */
 const FRAME_CARDS = groups(d6, "reorder-alert-card").map((g) => {
   const line = g.children.filter((c) => c.text && (c.name === "stock-line" || c.name === "threshold" || c.name === "stock")).map((c) => c.text!.characters).join(" ");
@@ -101,16 +114,16 @@ const FRAME_CARDS = groups(d6, "reorder-alert-card").map((g) => {
     fill: lower(g.node.fills[0]),
     badge: textIn(g, "label", "badge-low-stock"),
     name: textIn(g, "reagent-name"),
-    /** d7 §11 수량 줄 */
-    amount: `필요량 ${min} ${unit} / 현재 재고 ${stock} ${unit}`,
+    /** d7 §11 수량 줄 (1.21) */
+    amount: `${NEED} ${min}${unit} / ${STOCK} ${stock}${unit}`,
     /** 자동이면 배지 글자, 아니면 "" */
     auto,
     /** 자동이면 시안 캡션, 아니면 d7 §11 "재주문 기준 N u" (1조 사용량·조 수가 없는 시약) */
     basis: auto ? textIn(g, "auto-caption") : `재주문 기준 ${min} ${unit}`,
-    date: date ? `${date[1]}.${date[2]}.${date[3]} 알림` : "",
+    date: date ? alertDate(Number(date[1]), Number(date[2]), Number(date[3])) : "",
     link: textIn(g, "label", "button-primary"),
-    /** 화면에 보이는 수량 줄 조각 (자동이면 "필요량 N u" · "자동" · "/ 현재 재고 M u" — 배지가 두 조각 사이) */
-    amountLines: auto ? [`필요량 ${min} ${unit}`, auto, `/ 현재 재고 ${stock} ${unit}`] : [`필요량 ${min} ${unit} / 현재 재고 ${stock} ${unit}`],
+    /** 화면에 보이는 수량 줄 조각 (자동이면 "재주문 기준 Nu" · "자동" · "/ 현재 재고 Mu" — 배지가 두 조각 사이) */
+    amountLines: auto ? [`${NEED} ${min}${unit}`, auto, `/ ${STOCK} ${stock}${unit}`] : [`${NEED} ${min}${unit} / ${STOCK} ${stock}${unit}`],
     /** 시안의 새 창 안내 줄 (그 카드에서 판매처 "확인" 뒤): [안내 글자, "직접 열기"] — 화면은 안내 앞에 판매처명을 붙인다 */
     newWindow: g.children.some((c) => c.name === "vendor-new-window") ? [textIn(g, "note"), textIn(g, "label", "button-pill-soft")] : null,
     minStock: Number(min.replace(/,/g, "")),
@@ -257,10 +270,10 @@ const seedLine = D7.split(/\r?\n/).find((l) => l.startsWith("| 공통 목록")) 
 const SEED = [...seedLine.matchAll(/([^\s,():]+)\((https?:\/\/[^)\s]+)\)/g)].map((m) => ({ name: m[1], website: m[2] }));
 const d7Number = (re: RegExp) => Number(re.exec(D7)?.[1] ?? Number.NaN);
 const NAME_MAX = d7Number(/name\(1~(\d+)자\)/);
-// d7 §11 카드 문구 틀
-const AMOUNT_RE = /^필요량 ([\d.,]+) (\S+) \/ 현재 재고 ([\d.,]+) (\S+)$/;
+// d7 §11 카드 문구 틀 (1.21: 수량 줄은 숫자·단위를 붙여 쓴다, 기준 문구는 띄어 쓴다)
+const AMOUNT_RE = new RegExp(String.raw`^${NEED} ([\d.,]+)([^\d\s.,]\S*) \/ ${STOCK} ([\d.,]+)([^\d\s.,]\S*)$`);
 const BASIS_PLAIN_RE = /^재주문 기준 ([\d.,]+) (\S+)$/;
-const DATE_RE = /\d{4}\.\d{2}\.\d{2} 알림/;
+const DATE_RE = /(?:\d{4}년 )?\d{1,2}월 \d{1,2}일 알림/;
 const PHONE_RE = /\d{2,4}-\d{3,4}-\d{4}/;
 
 const sel = (name: string) => `[data-component="${name}"]`;
@@ -527,7 +540,13 @@ test(`[K1][S${S6}] 기대값 원본: 프레임 6-desktop·6-mobile(1.17) 과 rul
     expect([ACCENT, ACCENT_SOFT, ...HIGHLIGHTS], "카드 채움은 핑크·하늘색이 아니다").not.toContain(c.fill);
   }
   expect(FRAME_CARDS.filter((c) => c.auto).length, "자동 기준 카드 1").toBe(1);
-  expect(FRAME_CARDS[0].amount, "염산: 1병(50 mL 남음) → 현재 재고 50 mL").toBe("필요량 100 mL / 현재 재고 50 mL");
+  expect(FRAME_CARDS[0].amount, "염산: 1병(50 mL 남음) → 현재 재고 50mL").toBe("재주문 기준 100mL / 현재 재고 50mL");
+  expect(FRAME_CARDS.map((c) => c.date), "시안 날짜 2026-10-07 → d7 §11 날짜 문구").toEqual(FRAME_CARDS.map(() => alertDate(2026, 10, 7)));
+  expect(D7, "d7 §11 카드 수량 줄 틀 (1.21)").toContain(D7_CARD_TEMPLATE);
+  expect(D7, "d7 §11 날짜 틀 (1.21)").toContain(D7_DATE_TEMPLATE);
+  for (const q of RULES_CARD_QUOTES) expect(rules.reorder.card_text, `rules.json reorder.card_text 에 ${q}`).toContain(q);
+  expect(alertDate(KST_YEAR, 10, 7), "올해 날짜 = rules 예시 모양").toBe("10월 7일 알림");
+  expect(alertDate(KST_YEAR - 1, 10, 7)).toBe(`${KST_YEAR - 1}년 10월 7일 알림`);
   expect(REGISTER_ENTRY).toBe("판매처 등록");
   expect([NEW_WINDOW.note, NEW_WINDOW.action]).toEqual(["사이트를 새 창으로 열었어요. 열리지 않았다면", "직접 열기"]);
 
@@ -567,7 +586,8 @@ test(`[K1][S${S9}] 기대값 원본: 프레임 9-mobile·9-desktop(1.17) 과 d7 
     expect(r.site, "시안 행은 웹사이트를 그렸다 (d7 §18: 화면은 연락처만)").not.toBe("");
     expect(r.info, `${r.name}: 1.16 시안 연락처 · note`).toMatch(new RegExp(`^${PHONE_RE.source} · .+$`));
   }
-  expect(D7, "d7 §18 화면 9 행 = 연락처만").toMatch(/목록 행의 부가 정보는 연락처만/);
+  expect(D7, "d7 §18 화면 9 행 = 이름 + 연락처만 (1.21)").toMatch(/목록 행은 이름 \+ 연락처만/);
+  expect(D7, "d7 §18 화면 9 등록·수정 폼에는 웹사이트 칸 유지").toMatch(/등록·수정 폼에는 웹사이트 칸 유지/);
   expect(REGISTER).toBe("판매처 등록");
   expect(D7, "d7 §12 토스트").toContain(`"${TOAST_SAVED}" / "${TOAST_DELETED}"`);
   expect(FORM.fields.map((f) => f.label)).toEqual(["판매처명", "연락처", "웹사이트 주소"]);
@@ -682,7 +702,7 @@ test.describe("화면 6 재주문 알림 (/gallery/reorder)", () => {
     expect(await boxEl.locator(sel(BADGE)).count(), "안내 박스에 배지 없음").toBe(0);
   });
 
-  test(`[K1][S${S6}] reorder-alert-card: 배지 "${FRAME_CARDS[0].badge}" 1 → 시약명 → 필요량/현재 재고 → 기준 문구 → 알림 날짜 → vendor-link 1(button-primary "${FRAME_CARDS[0].link}"), 시안 2건 문구 그대로`, async ({ page }) => {
+  test(`[K1][S${S6}] reorder-alert-card: 배지 "${FRAME_CARDS[0].badge}" 1 → 시약명 → 재주문 기준/현재 재고(d7 §11 1.21) → 기준 문구 → 알림 날짜 → vendor-link 1(button-primary "${FRAME_CARDS[0].link}"), 시안 2건 문구 그대로`, async ({ page }) => {
     const sec = await area(page, "default");
     await expect(cards(sec)).toHaveCount(FRAME_CARDS.length);
     for (const [i, want] of FRAME_CARDS.entries()) {
@@ -998,16 +1018,16 @@ test.describe("화면 6 재주문 알림 (/gallery/reorder)", () => {
     expect(lines[0], "배지").toBe(FRAME_CARDS[0].badge);
     expect(lines[lines.length - 1], "맨 아래 판매처 연결").toBe(FRAME_CARDS[0].link);
     const amount = lines.find((l) => AMOUNT_RE.test(l));
-    expect(amount, "필요량 / 현재 재고 줄").toBeTruthy();
+    expect(amount, `"${NEED} Nu / ${STOCK} Mu" 줄 (d7 §11 1.21)`).toBeTruthy();
     const a = AMOUNT_RE.exec(amount!)!;
-    expect(a[2], "필요량·현재 재고 단위가 같다").toBe(a[4]);
+    expect(a[2], "재주문 기준·현재 재고 단위가 같다").toBe(a[4]);
     const basis = lines.find((l) => BASIS_PLAIN_RE.test(l));
     expect(basis, '"재주문 기준 N 단위" 줄').toBeTruthy();
     const b = BASIS_PLAIN_RE.exec(basis!)!;
     expect([b[1], b[2]], "재주문 기준 = 필요량(min_stock)·단위").toEqual([a[1], a[2]]);
     expect(lines.filter((l) => /1반 1회 실험량/.test(l)), "첫 번째 형태 문구는 없다").toEqual([]);
     expect(lines.filter((l) => DATE_RE.test(l) || /알림$/.test(l)), "알림 날짜 줄 없음").toEqual([]);
-    expect(lines.length, "배지 · 시약명 · 필요량 · 기준 · 판매처 연결 5줄").toBe(5);
+    expect(lines.length, "배지 · 시약명 · 재주문 기준/현재 재고 · 기준 · 판매처 연결 5줄").toBe(5);
     await expect(card.locator(sel(BADGE))).toHaveCount(1);
     await expect(card.locator(sel("vendor-link"))).toHaveCount(1);
     await expect(linkButton(card)).toHaveCount(1);

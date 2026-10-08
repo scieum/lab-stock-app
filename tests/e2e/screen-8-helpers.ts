@@ -336,8 +336,20 @@ export interface TempSchool {
 }
 
 const rand = () => randomBytes(4).toString("hex");
-const emailPrefix = (group: string, project: string) => `s8ui-${group}-${project}-`;
-const schoolPrefix = (group: string, project: string) => `S8UI-${group}-${project}-`;
+/**
+ * 이 실행(Playwright worker 프로세스) 고유 토큰. 일회용 계정 이메일·학교 neis_code 에 넣어, 정리(sweep)·잔여물 검사가
+ * 이 실행이 만든 것만 세고 지우게 한다 — 같은 group·project 를 쓰는 다른 worker(동시에 도는 다른 spec·같은 spec 의 다른 반복)의
+ * 일회용 데이터를 세거나 지우지 않는다. afterAll 은 데이터를 만든 같은 worker 에서 돌므로 토큰이 같다.
+ */
+export const RUN_TOKEN = `${Date.now().toString(36)}${randomBytes(3).toString("hex")}`;
+const baseEmailPrefix = (group: string, project: string) => `s8ui-${group}-${project}-`;
+const baseSchoolPrefix = (group: string, project: string) => `S8UI-${group}-${project}-`;
+const emailPrefix = (group: string, project: string) => `${baseEmailPrefix(group, project)}${RUN_TOKEN}-`;
+const schoolPrefix = (group: string, project: string) => `${baseSchoolPrefix(group, project)}${RUN_TOKEN}-`;
+/** 이 실행이 만든 일회용 학교의 neis_code like 패턴 (정리·잔여물 검사용) */
+export const tempSchoolLike = (group: string, project: string) => `${schoolPrefix(group, project)}%`;
+/** 지난 실행(worker 가 afterAll 없이 끝난 경우)의 잔여물로 보는 나이 — 이보다 오래된 같은 group·project 데이터만 지운다(세지 않는다) */
+const STALE_MS = 3 * 60 * 60 * 1000;
 
 /** 이 스펙 묶음(group)이 만드는 이메일 (실제 발송 없음: example.test) */
 export function tempEmail(info: TestInfo, group: string, tag = ""): string {
@@ -593,7 +605,31 @@ export async function openTemp(browser: Browser, info: TestInfo, u: TempUser, pa
 export type Residue = { users: number; schools: number; invites: number; profiles: number };
 
 /** 이 묶음(group)·프로젝트 접두사의 잔여물(초대·프로필·계정·학교)을 지우고, 남은 수를 돌려준다 */
+/** 지난 실행 잔여물(같은 group·project, 다른 토큰, STALE_MS 보다 오래된 것)을 지운다 — 동시에 도는 다른 실행의 데이터는 건드리지 않는다. 세지 않는다 */
+async function sweepStale(group: string, project: string): Promise<void> {
+  const sb = service();
+  const cutoff = new Date(Date.now() - STALE_MS).toISOString();
+  const schools = await sb.from("schools").select("id").like("neis_code", `${baseSchoolPrefix(group, project)}%`).lt("created_at", cutoff);
+  const ids = (schools.data ?? []).map((s) => s.id as string);
+  if (ids.length) {
+    for (const table of ["vendor_favorites", "usage_logs", "invites", "reagents", "vendors", "cabinets", "profiles"]) await sb.from(table).delete().in("school_id", ids);
+  }
+  for (let page = 1; page <= 20; page++) {
+    const list = await sb.auth.admin.listUsers({ page, perPage: 200 });
+    const users = list.data?.users ?? [];
+    for (const u of users) {
+      if (!u.email?.startsWith(baseEmailPrefix(group, project)) || u.email.startsWith(emailPrefix(group, project))) continue;
+      if (!u.created_at || u.created_at >= cutoff) continue;
+      await sb.from("profiles").delete().eq("user_id", u.id);
+      await sb.auth.admin.deleteUser(u.id);
+    }
+    if (users.length < 200) break;
+  }
+  if (ids.length) await sb.from("schools").delete().in("id", ids);
+}
+
 export async function sweep(group: string, project: string): Promise<Residue> {
+  await sweepStale(group, project).catch(() => undefined);
   const sb = service();
   const ePrefix = emailPrefix(group, project);
   const sLike = `${schoolPrefix(group, project)}%`;

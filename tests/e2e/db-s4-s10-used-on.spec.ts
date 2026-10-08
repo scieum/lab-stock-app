@@ -15,7 +15,7 @@ import { test, expect, type TestInfo } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { anonClient } from "./db-helpers";
 import { AUTO_WINDOW_DAYS, autoFromIntake, autoFromUsage } from "./reorder-auto-helpers";
-import { HAS_SERVICE, NO_RESIDUE, addMember, clientFor, profileByService, service, sweep, tempSchool, type TempSchool, type TempUser } from "./screen-8-helpers";
+import { tempSchoolLike, HAS_SERVICE, NO_RESIDUE, addMember, clientFor, profileByService, service, sweep, tempSchool, type TempSchool, type TempUser } from "./screen-8-helpers";
 
 test.describe.configure({ mode: "default" });
 
@@ -169,7 +169,7 @@ test.afterAll(async ({}, info) => {
   let sharedLogsByTemp = -1;
   if (HAS_SERVICE) {
     const sb = service();
-    const schools = await sb.from("schools").select("id").like("neis_code", `S8UI-${GROUP}-${info.project.name}-%`);
+    const schools = await sb.from("schools").select("id").like("neis_code", tempSchoolLike(GROUP, info.project.name));
     const ids = (schools.data ?? []).map((s) => s.id as string);
     const profs = ids.length ? await sb.from("profiles").select("user_id").in("school_id", ids) : { data: [] as Row[] };
     const tempUsers = ((profs.data ?? []) as Row[]).map((p) => p.user_id as string);

@@ -19,7 +19,7 @@ import { join } from "node:path";
 import { test, expect, type TestInfo } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ROLE_LABEL, anonClient, signIn, type Role, type Session } from "./db-helpers";
-import {
+import { tempSchoolLike,
   HAS_SERVICE,
   NO_RESIDUE,
   addMember,
@@ -393,7 +393,7 @@ test.afterAll(async ({}, info) => {
   const rest: Record<string, number> = {};
   if (HAS_SERVICE) {
     const sb = service();
-    const schools = await sb.from("schools").select("id").like("neis_code", `S8UI-${GROUP}-${info.project.name}-%`);
+    const schools = await sb.from("schools").select("id").like("neis_code", tempSchoolLike(GROUP, info.project.name));
     const ids = (schools.data ?? []).map((s) => s.id as string);
     if (ids.length) {
       await sb.from("reagents").delete().in("school_id", ids);

@@ -1,6 +1,6 @@
 // 화면 6 재주문 알림 규칙 (harness/d7-data.md §11). 화면 표시 문구와 정렬만 — 알림 대상·날짜는 DB 가 정한다.
 // 화면 3 재주문 기준 직접 입력 (d7 §14) 의 입력 검사·표시 문구도 여기 둔다.
-import { formatDateTimeDots, formatStock } from "./format";
+import { formatAmount, formatKoreanDate, formatStock } from "./format";
 import { INTAKE_AMOUNT_MAX, type Checked } from "./intake-rules";
 
 /* ───────── 재주문 기준 직접 입력 (d7 §14 set_reorder_threshold: 0 이상, 0 = 알림 없음) ───────── */
@@ -65,7 +65,7 @@ export const AUTO_BASIS_USAGE_TEXT = "최근 4주 사용량 기준";
 export const AUTO_BASIS_INTAKE_TEXT = "마지막 입고량의 20%";
 /**
  * 자동 기준 캡션 (d7 §18 — auto-threshold-badge 아래 한 줄, 화면 3·6).
- * 사용 기록 근거 = 시안 문구 그대로. 입고량 근거 = 시안 문구가 사실과 달라 개발 쪽 예외 문구. 값 0 = THRESHOLD_NONE_LABEL.
+ * 두 꼴 모두 디자인 1.21 reorder.auto 문구 그대로(사용 기록 근거 / 입고량 근거). 값 0 = THRESHOLD_NONE_LABEL.
  */
 export const AUTO_CAPTION_USAGE_TEXT = "최근 사용량으로 계산했어요";
 export const AUTO_CAPTION_INTAKE_TEXT = "마지막 입고량의 20%로 계산했어요";
@@ -143,12 +143,15 @@ export function thresholdSourceText(r: {
 /** 화면 6 재주문 기준 안내 박스 본문 (시안 1.17 6 manual-upload info-body) */
 export const REORDER_GUIDE_TEXT = "필요량 = 1반 1회 실험량 × 조 수 · 기준이 없는 시약은 최근 사용량으로 계산해요";
 
+/** 알림 카드 수량 줄 앞말 (디자인 1.21 reorder.card_text — 화면 3 용어와 같다) */
+export const REORDER_NEED_LABEL = "재주문 기준";
+
 /** 알림 대상: 재고가 필요량(min_stock)보다 적은 시약 (홈의 재고 부족과 같은 기준) */
 export function isReorderNeeded(stock: number, minStock: number): boolean {
   return stock < minStock;
 }
 
-/** "필요량 60 g / 현재 재고 30 g" */
+/** "재주문 기준 60g / 현재 재고 30g" (d7 §11 · 디자인 1.21 reorder.card_text — 숫자와 단위 붙여 씀) */
 export function reorderAmountText(r: { minStock: number; stock: number; unit: string }): string {
   const p = reorderAmountParts(r);
   return `${p.need} / ${p.stock}`;
@@ -156,10 +159,10 @@ export function reorderAmountText(r: { minStock: number; stock: number; unit: st
 
 /**
  * 알림 카드 수량 줄의 두 조각 — 자동 기준이면 그 사이에 auto-threshold-badge 를 둔다 (시안 6 stock-line, d7 §18).
- * { need: "필요량 60 g", stock: "현재 재고 30 g" }
+ * { need: "재주문 기준 60g", stock: "현재 재고 30g" }
  */
 export function reorderAmountParts(r: { minStock: number; stock: number; unit: string }): { need: string; stock: string } {
-  return { need: `필요량 ${formatStock(r.minStock, r.unit)}`, stock: `현재 재고 ${formatStock(r.stock, r.unit)}` };
+  return { need: `${REORDER_NEED_LABEL} ${formatAmount(r.minStock, r.unit)}`, stock: `현재 재고 ${formatAmount(r.stock, r.unit)}` };
 }
 
 function positive(v: number | null | undefined): v is number {
@@ -187,12 +190,15 @@ export function reorderBasisText(r: {
   return `재주문 기준 ${formatStock(r.minStock, r.unit)}`;
 }
 
-/** 알림 날짜 "2026.09.30 알림" (한국 시간). 값이 없거나 날짜가 아니면 null */
-export function reorderAlertDateText(since: string | Date | null | undefined): string | null {
+/**
+ * 알림 날짜 "10월 7일 알림" (한국 시간, 올해가 아니면 "2025년 10월 7일 알림" — d7 §11, 디자인 1.21 reorder.card_text).
+ * 값이 없거나 날짜가 아니면 null. now = 올해를 가르는 기준 시각(기본 지금).
+ */
+export function reorderAlertDateText(since: string | Date | null | undefined, now: Date = new Date()): string | null {
   if (since === null || since === undefined || since === "") return null;
   const d = since instanceof Date ? since : new Date(since);
   if (Number.isNaN(d.getTime())) return null;
-  return `${formatDateTimeDots(d).slice(0, 10)} 알림`;
+  return `${formatKoreanDate(d, now)} 알림`;
 }
 
 /** 부족한 정도 = 필요량 대비 모자란 비율 (0~1). 단위가 달라도 견줄 수 있게 비율로 본다 */

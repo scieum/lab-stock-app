@@ -35,6 +35,14 @@ const DK = rules.neis.default_kind;
 const OTHER_KINDS = KINDS.filter((k) => k !== DK);
 const KIND_FIRST = rules.school_kind_select.default.match(/'([^']+)'/)?.[1] ?? "";
 const NO_SCHOOL_VARIANT = rules.variants[String(SCREEN)]["no-school"];
+/** rules.json school_kind_select.no_school 의 안내 틀 '이 지역에 {학교급}가 없어요 — 지역을 다시 골라 주세요' */
+const NO_SCHOOL_TEMPLATE = rules.school_kind_select.no_school.match(/'([^']*\{학교급\}[^']*)'/)?.[1] ?? "";
+const noSchoolText = (kind: string) => NO_SCHOOL_TEMPLATE.replace("{학교급}", kind);
+/** d7 §19 "화면 14" 행 (디자인 1.21 맞춤) */
+const D7_S14 =
+  readFileSync(join(process.cwd(), "harness", "d7-data.md"), "utf8")
+    .split(/\r?\n/)
+    .find((l) => l.startsWith("| 화면 14 |") && l.includes("school-select-kind")) ?? "";
 
 type NeisSchool = { name: string; sido: string; region: string; neis_code: string; office_code: string; kind: string };
 
@@ -384,6 +392,16 @@ test(`[C1][S${SCREEN}] 학교급을 바꾸면 학교 비움 · 지역을 바꾸�
   expect(schoolLogs(fake).at(-1)!.params.get("kind")).toBe(k2);
 });
 
+test(`[C1][S${SCREEN}] 기대값 원본 (디자인 1.21 맞춤): 학교 0개 안내 = rules.json school_kind_select.no_school '{학교급}가 없어요' = d7 §19 화면 14 = 시안 14-no-school(${DK})`, () => {
+  expect(NO_SCHOOL_TEMPLATE, "rules.json no_school 안내 틀").toBe("이 지역에 {학교급}가 없어요 — 지역을 다시 골라 주세요");
+  expect(D7_S14, "d7 §19 화면 14 행").not.toBe("");
+  expect(D7_S14, "d7 §19 안내 = rules 틀 (1.21 맞춤)").toContain(`"${NO_SCHOOL_TEMPLATE}"(디자인 1.21 맞춤)`);
+  for (const vp of ["mobile", "desktop"] as const) {
+    expect(frameText(`${SCREEN}-no-school-${vp}`, "note-text"), `시안 14-no-school-${vp} = rules 틀(${DK})`).toBe(noSchoolText(DK));
+  }
+  for (const k of KINDS) expect(noSchoolText(k), `${k}: 학교급 이름 + "가 없어요"`).toContain(`이 지역에 ${k}가 없어요`);
+});
+
 for (const emptyKind of [DK, OTHER_KINDS[0]]) {
   test(`[C1][S${SCREEN}] 14-no-school (${emptyKind} 0개, 가로챈 빈 응답): 학교 칸 자리에 무채색 안내(시안 note-text) · 선택 상자 없음 · variants ${SCREEN}.no-school 컴포넌트 · 불러오는 중엔 안내 없음`, async ({ page }, info) => {
     test.setTimeout(90_000);
@@ -395,6 +413,7 @@ for (const emptyKind of [DK, OTHER_KINDS[0]]) {
     const frameNote = frameText(`${SCREEN}-no-school-${vp}`, "note-text");
     expect(frameNote, "시안 안내 문구에 default_kind").toContain(DK);
     const want = frameNote.replace(DK, emptyKind);
+    expect(want, "d7 §19 · rules.json no_school '{학교급}가 없어요' (1.21)").toBe(noSchoolText(emptyKind));
 
     await chooseKind(page, emptyKind);
     await expect.poll(() => fake.held.length, { message: "학교 요청 붙잡음" }).toBe(1);

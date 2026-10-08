@@ -73,11 +73,27 @@ export type DevRules = {
   viewports: Record<string, [number, number]>;
   components: Record<string, number[]>;
   guest_screens: number[];
+  mvp_screens: number[];
 };
 
 const readJson = <T>(rel: string): T => JSON.parse(readFileSync(join(process.cwd(), rel), "utf8")) as T;
 
 export const rules = readJson<DesignRules>("design/rules.json");
+
+/**
+ * 둘러보기 화면 중 이 개발 하네스가 이미 만든 것 = rules.json guest.screens 중 dev-rules mvp_screens 에 있는 화면 (rules 순서 그대로).
+ * rules 1.21 에서 guest.screens 에 화면 16(MSDS 요약)이 들어왔지만 화면 16 은 다음 run 에서 만든다 — 그동안은 빠진 화면으로 로그만 남긴다.
+ * 화면 16 이 mvp_screens 에 들어오면 이 목록에 자동으로 들어와 dev-rules guest_screens·routes "{화면}-guest" 를 다시 요구한다.
+ */
+export function implementedGuestScreens(): { screens: number[]; pending: number[] } {
+  const mvp = new Set(devRules.mvp_screens);
+  const screens = rules.guest.screens.filter((s) => mvp.has(s));
+  const pending = rules.guest.screens.filter((s) => !mvp.has(s));
+  if (pending.length > 0) {
+    console.log(`[guest] rules.json guest.screens 중 아직 만들지 않은 화면 ${pending.join("·")} — 다음 run(화면 ${pending.join("·")})에서 둘러보기 비교에 들어간다`);
+  }
+  return { screens, pending };
+}
 export const devRules = readJson<DevRules>("harness/dev-rules.json");
 
 export function routeOf(screen: number): string {

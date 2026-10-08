@@ -1,9 +1,9 @@
 // 개발 예외 시안 반영 (harness/d7-data.md §18, 디자인 run 20261007-0848 — design/frames 1.17 · rules.json 1.17 reorder.auto·app_exceptions):
 // [C1][S3] 시약 상세 reorder-threshold: 자동이면 auto-threshold-badge "자동"(시안 3 회색 pill) + 캡션, basis·manual 은 배지 없음
-// [C1][S6] 알림 카드: 자동이면 수량 줄 "필요량 N [자동] / 현재 재고 M" + 캡션, 판매처 "확인" 뒤 카드 안 새 창 안내 줄 + "직접 열기"
+// [C1][S6] 알림 카드: 자동이면 수량 줄 "재주문 기준 Nu [자동] / 현재 재고 Mu"(d7 §11 1.21) + 캡션, 판매처 "확인" 뒤 카드 안 새 창 안내 줄 + "직접 열기"
 // [C1][S8] 삭제 확인 시트: × 닫기 · "{이름} · 사용·입고 기록은 남아요" · "{이름} 삭제" / 초대 시트: 역할(학생·교사) 고르기 유지 + × 닫기
-//          (사용자 결정 2026-10-07: rules.json app_exceptions.sheet-close 의 "초대는 이메일만" 보다 d7 §18·§8 이 우선 — 역할 고르기를 기대한다)
-// [C1][S9] 등록·수정 폼: × 닫기 · 취소 · 부가 정보 칸 없음 · 저장해도 기존 note 는 DB 에 그대로 · 목록 행 = 연락처만
+//          (rules.json 1.21 app_exceptions.sheet-close "초대는 이메일 + 역할(학생·교사) 고르기" · d7 §18 화면 8 — 머리 "학생 a · 교사 b · admin c" 유지)
+// [C1][S9] 등록·수정 폼: × 닫기 · 취소 · 부가 정보 칸 없음 · 웹사이트 칸 유지 · 저장해도 기존 note 는 DB 에 그대로 · 목록 행 = 이름 + 연락처만(웹사이트 안 보임)
 // [C1][S5] 추출 행: 아래 연결 줄("우리 학교 시약" 선택·삭제·"기존 기준 N · 그대로 둬요/바뀌어요") · 단위 = 선택 상자(병·mL·g) · "N개 행을 합쳤어요" 무채색 줄
 //
 // 기대값: 문구·색은 design/frames(1.17)·design/rules.json·d7 §18 에서 읽는다 (구현에서 읽지 않는다).
@@ -52,6 +52,7 @@ import {
   SAVE_BUTTON,
   SKY,
   VENDORS_HREF,
+  CARD_AMOUNT,
   boxOf,
   cardOf,
   chooseRowMenu,
@@ -128,6 +129,14 @@ const SHOW = [...d7Row(S11_1, "표시").matchAll(/"([^"]+)"/g)].map((m) => m[1])
 const AUTO_LABEL = SHOW[0];
 const NONE_TEXT = SHOW.find((q) => /아직/.test(q)) ?? "";
 const MANUAL_TEXT = /'manual'\(화면 3 ([^)]+)\)/.exec(d7Row(S11_1, "기준의 출처"))?.[1] ?? "";
+/** d7 §11 카드 수량 줄 앞말 (1.21: "재주문 기준 {min_stock}{unit} / 현재 재고 {stock}{unit}" — 숫자·단위 붙여 씀) */
+const NEED = CARD_AMOUNT.need;
+const STOCK_WORD = CARD_AMOUNT.stock;
+/** d7 §18 화면 8·9 행 (1.21 맞춤) */
+const S18_ROWS_8 = S18.split(/\r?\n/).filter((l) => l.startsWith("| 화면 8 |"));
+const S18_ROW_9 = d7Row(S18, "화면 9");
+/** rules.json 1.21 app_exceptions (sheet-close · user-count-line) */
+const APP_EXC = (rules as unknown as { app_exceptions: Record<string, string> }).app_exceptions;
 
 // ---------- 기대값: 시안 1.17 프레임 ----------
 type FNode = { name: string; path: string[]; fills: string[]; strokes: string[]; cornerRadius: unknown; padding?: number[] | null; text: { characters: string } | null };
@@ -288,6 +297,35 @@ test(`[C1][S3] 기대값 원본: d7 §18 캡션("${USAGE_CAPTION}" · "${INTAKE_
   expect(UNITS, "d7 §13 단위").toEqual(["병", "mL", "g"]);
 });
 
+test(`[C1][S6] 기대값 원본 (디자인 1.21 맞춤): d7 §11 카드 수량 줄 "${NEED} {min_stock}{unit} / ${STOCK_WORD} {stock}{unit}" = rules.json reorder.card_text '${NEED} N{단위}'`, () => {
+  expect(NEED).toBe("재주문 기준");
+  expect(STOCK_WORD).toBe("현재 재고");
+  const card = (rules as unknown as { reorder: { card_text: string } }).reorder.card_text;
+  expect(card, "rules.json reorder.card_text 수량 앞말").toContain(`'${NEED} N{단위}'`);
+  expect(card, "rules.json reorder.card_text 날짜 모양").toContain("'10월 7일 알림'");
+});
+
+test(`[C1][S8] 기대값 원본 (디자인 1.21 맞춤): rules.json app_exceptions sheet-close "초대는 이메일 + 역할(${INVITE_ROLE_ORDER.map((r) => ROLE_TEXT[r]).join("·")}) 고르기" · user-count-line "학생 a · 교사 b · admin c" = d7 §18 화면 8`, () => {
+  const sheet = APP_EXC["sheet-close"];
+  const roles = /초대는 이메일 \+ 역할\(([^)]+)\) 고르기/.exec(sheet)?.[1] ?? "";
+  expect(roles.split("·"), "rules 초대 역할 = 학생·교사 (admin 없음)").toEqual(INVITE_ROLE_ORDER.map((r) => ROLE_TEXT[r]));
+  expect(sheet, "초대 시트 이름 칸 없음").toContain("이름 칸 없음");
+  expect(APP_EXC["user-count-line"], "rules 8 머리 인원 줄").toContain("'학생 a · 교사 b · admin c'");
+  const r8 = S18_ROWS_8.find((l) => /1\.21/.test(l)) ?? "";
+  expect(r8, "d7 §18 화면 8 (1.21) 행").not.toBe("");
+  expect(r8, "d7 §18 화면 8 머리 유지").toContain(`"학생 a · 교사 b · admin c" 유지`);
+  expect(r8, "d7 §18 화면 8 초대 = 이메일 + 역할").toContain(`초대 = 이메일 + 역할(${INVITE_ROLE_ORDER.map((r) => ROLE_TEXT[r]).join("·")})`);
+});
+
+test(`[C1][S9] 기대값 원본 (디자인 1.21 맞춤): rules.json sheet-close "판매처 행은 이름 + 연락처만(웹사이트 주소 표시 안 함)" · "부가 정보 칸 없음" = d7 §18 화면 9 (등록·수정 폼에는 웹사이트 칸 유지)`, () => {
+  const sheet = APP_EXC["sheet-close"];
+  expect(sheet).toContain("판매처 행은 이름 + 연락처만(웹사이트 주소 표시 안 함)");
+  expect(sheet).toContain("9 부가 정보 칸 없음");
+  expect(S18_ROW_9, "d7 §18 화면 9 행 = 이름 + 연락처만").toContain("목록 행은 이름 + 연락처만");
+  expect(S18_ROW_9, "d7 §18 화면 9 폼 웹사이트 칸 유지").toContain("등록·수정 폼에는 웹사이트 칸 유지");
+  expect(S9_FIELDS, "시안 9 폼 칸에 웹사이트 주소").toContain(FIELD_WEBSITE);
+});
+
 // =====================================================================
 // 화면 3 — auto-threshold-badge + 캡션
 // =====================================================================
@@ -383,7 +421,7 @@ test(`[C1][S3] 일회용 학교 교사 시약 상세 reorder-threshold (d7 §18)
 // 화면 6 — 알림 카드 배지·캡션
 // =====================================================================
 
-test(`[C1][S6] 일회용 학교 교사 재주문 알림 카드 (d7 §18): 자동 기준 카드 = 수량 줄 "필요량 N [${AUTO_LABEL}] / 현재 재고 M"(배지는 두 조각 사이·한 줄) + 그 아래 캡션("${USAGE_CAPTION}"/"${INTAKE_CAPTION}", 시안 6 회색) · 배지 = 시안 6(바탕 ${BADGE6.fills[0]}·테두리 ${BADGE6.strokes[0]}) · 직접 입력 카드는 배지·캡션 0 · 핑크는 badge-low-stock 에만`, async ({ browser }, info) => {
+test(`[C1][S6] 일회용 학교 교사 재주문 알림 카드 (d7 §18): 자동 기준 카드 = 수량 줄 "${NEED} Nu [${AUTO_LABEL}] / ${STOCK_WORD} Mu"(d7 §11 1.21 · 배지는 두 조각 사이·한 줄) + 그 아래 캡션("${USAGE_CAPTION}"/"${INTAKE_CAPTION}", 시안 6 회색) · 배지 = 시안 6(바탕 ${BADGE6.fills[0]}·테두리 ${BADGE6.strokes[0]}) · 직접 입력 카드는 배지·캡션 0 · 핑크는 badge-low-stock 에만`, async ({ browser }, info) => {
   const f = await fresh(info);
   const usage = await prepBare(f, "사용", 10);
   await teacherRpc(f, "record_usage", { reagent_id: usage.id, amount: 9 });
@@ -410,12 +448,12 @@ test(`[C1][S6] 일회용 학교 교사 재주문 알림 카드 (d7 §18): 자동
       expect(await css(badge, "color"), `${k}: 배지 글자 = 시안 6`).toBe(rgb(BADGE6_LABEL.fills[0]));
       expect(await css(badge, "border-top-color"), `${k}: 배지 테두리 = 시안 6`).toBe(rgb(BADGE6.strokes[0]));
       await expectNoPinkSky(badge, `${k} 카드 배지`);
-      const need = card.getByText(exact(`필요량 ${r.min_stock} ${r.unit}`));
-      const stock = card.getByText(exact(`/ 현재 재고 ${r.stock} ${r.unit}`));
-      await expect(need, `${k}: "필요량 ${r.min_stock} ${r.unit}"`).toHaveCount(1);
-      await expect(stock, `${k}: "/ 현재 재고 ${r.stock} ${r.unit}"`).toHaveCount(1);
+      const need = card.getByText(exact(`${NEED} ${r.min_stock}${r.unit}`));
+      const stock = card.getByText(exact(`/ ${STOCK_WORD} ${r.stock}${r.unit}`));
+      await expect(need, `${k}: "${NEED} ${r.min_stock}${r.unit}"`).toHaveCount(1);
+      await expect(stock, `${k}: "/ ${STOCK_WORD} ${r.stock}${r.unit}"`).toHaveCount(1);
       const [nb, bb, sb] = [await boxOf(need), await boxOf(badge), await boxOf(stock)];
-      expect(bb.left, `${k}: 배지는 필요량 오른쪽`).toBeGreaterThanOrEqual(nb.right - 0.5);
+      expect(bb.left, `${k}: 배지는 재주문 기준 오른쪽`).toBeGreaterThanOrEqual(nb.right - 0.5);
       expect(sb.left, `${k}: 재고는 배지 오른쪽`).toBeGreaterThanOrEqual(bb.right - 0.5);
       for (const x of [bb, sb]) expect(Math.abs(x.top + x.height / 2 - (nb.top + nb.height / 2)), `${k}: 수량 줄 한 줄`).toBeLessThan(nb.height);
       const caption = card.getByText(exact(cap));
@@ -427,7 +465,9 @@ test(`[C1][S6] 일회용 학교 교사 재주문 알림 카드 (d7 §18): 자동
     const plain = cardOf(page, db.manual.name);
     await expect(plain.locator(sel(AUTO_BADGE)), "직접 입력 카드: 배지 0").toHaveCount(0);
     for (const cap of [USAGE_CAPTION, INTAKE_CAPTION]) await expect(plain.getByText(exact(cap)), `직접 입력 카드: "${cap}" 없음`).toHaveCount(0);
-    await expect(plain.getByText(exact(`필요량 ${db.manual.min_stock} ${db.manual.unit} / 현재 재고 ${db.manual.stock} ${db.manual.unit}`)), "직접 입력 카드 수량 줄 그대로").toHaveCount(1);
+    await expect(plain.getByText(exact(`${NEED} ${db.manual.min_stock}${db.manual.unit} / ${STOCK_WORD} ${db.manual.stock}${db.manual.unit}`)), "직접 입력 카드 수량 줄 그대로 (d7 §11 1.21)").toHaveCount(1);
+    await expect(plain.getByText(exact(`재주문 기준 ${db.manual.min_stock} ${db.manual.unit}`)), "직접 입력 카드 기준 문구 (d7 §11 두 번째 형태)").toHaveCount(1);
+    await expect(page.locator("main").getByText(/필요량 \d/), "옛 앞말 \"필요량 N\" 없음").toHaveCount(0);
     // 핑크는 badge-low-stock 밖에 없다 (자동 배지 포함)
     const pinkOutside = await page.locator("main").evaluate((root, pink) => {
       const out: string[] = [];
@@ -647,6 +687,7 @@ test(`[C1][S9] 일회용 학교 admin 판매처 폼 (시안 1.17 9 · d7 §18): 
     // 수정: 연락처만 바꿔 저장 → note 그대로
     await chooseRowMenu(page, v.name, "수정");
     await expect(fieldInput(page, FIELD_CONTACT)).toHaveValue(v.contact!);
+    await expect(fieldInput(page, FIELD_WEBSITE), "수정 폼 웹사이트 칸 = 기존 값 (d7 §18 1.21: 폼에는 웹사이트 칸 유지)").toHaveValue(v.website!);
     await expect(registerBlock(page).locator("form").getByLabel(/부가 정보/), "수정 폼에도 부가 정보 칸 없음").toHaveCount(0);
     await fieldInput(page, FIELD_CONTACT).fill("043-555-0202");
     await saveButton(page).click();

@@ -128,7 +128,7 @@ test.afterAll(async ({}, info) => {
 // C1 — 정렬 · 카드 문구
 // =====================================================================
 
-test(`[C1][S${SCREEN}] 일회용 학교 교사: 알림 = stock < min_stock 인 시약만(같음·기준 0 은 제외) · 부족 비율(모자란 양 ÷ 필요량) 큰 순 · 카드 줄 = "${BADGE_TEXT}" → 시약명 → "필요량 … / 현재 재고 …" → 기준 문구(per_group × groups 있음/없음 두 형태) → "YYYY.MM.DD 알림"(low_stock_since 한국 날짜) → "${LINK_BUTTON}" · 핑크는 ${BADGE} 에만 · 카드 안 하늘색 0`, async ({ browser }, info) => {
+test(`[C1][S${SCREEN}] 일회용 학교 교사: 알림 = stock < min_stock 인 시약만(같음·기준 0 은 제외) · 부족 비율(모자란 양 ÷ 필요량) 큰 순 · 카드 줄 = "${BADGE_TEXT}" → 시약명 → "재주문 기준 {min}{unit} / 현재 재고 {stock}{unit}"(d7 §11 1.21) → 기준 문구(per_group × groups 있음/없음 두 형태) → "M월 D일 알림"(low_stock_since 한국 날짜, 올해가 아니면 "YYYY년 M월 D일 알림") → "${LINK_BUTTON}" · 핑크는 ${BADGE} 에만 · 카드 안 하늘색 0`, async ({ browser }, info) => {
   const f = await fresh(info);
   const half = await prepReagent(f, { tag: "절반", stock: 30, min: 60, unit: "g", perGroup: 10, groups: 6 });
   const most = await prepReagent(f, { tag: "거의없음", stock: 1, min: 10, unit: "병" });

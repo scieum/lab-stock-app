@@ -1,6 +1,6 @@
 /* 자동 생성 파일 — 직접 고치지 않는다. */
 /* 원본: design/rules.json · 생성: node scripts/gen-tokens.mjs */
-/* rules.json version 1.18 */
+/* rules.json version 1.21 */
 
 :root {
   /* color (rules.json colors.allowed) */
@@ -20,6 +20,7 @@
   --color-highlight: #2b9fe0;
   --color-highlight-soft: #e6f4fc;
   --color-badge-overlay: rgba(115,115,115,0.56);
+  --color-ghs-pictogram: #ff0000;
   --color-text: var(--color-gray-950);
   --color-text-strong: var(--color-gray-900);
   --color-text-muted: var(--color-gray-600);

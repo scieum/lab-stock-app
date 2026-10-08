@@ -10,6 +10,7 @@ import { browserClient, browserSession, countComponent, rules, sel } from "./scr
 import { HAS_SERVICE, openTemp } from "./screen-8-helpers";
 import { autoFromIntake } from "./reorder-auto-helpers";
 import {
+  CARD_AMOUNT,
   MANUAL_BUTTON,
   NO_RESIDUE_69,
   amountText as cardAmountText,
@@ -375,7 +376,7 @@ test(`[C1][S${SCREEN}] 일회용 학교 교사 저장: "${SAVE}" 연타에도 �
     for (const card of shown) expectCardMatches(card, low.find((r) => r.name === card.name)!, `카드 "${card.name}"`);
     const hclRow = low.find((r) => r.name === hcl.name)!;
     expect(basisText(hclRow), "기준 문구 = 저장값").toBe(`1반 1회 실험량 ${HCL.amount} ${HCL.unit} × ${GROUPS}조 기준`);
-    expect(cardAmountText(hclRow), "필요량·재고 문구 = 저장값").toBe(`필요량 ${requiredNumber(HCL.amount!, GROUPS)} ${HCL.unit} / 현재 재고 50 ${HCL.unit}`);
+    expect(cardAmountText(hclRow), "재주문 기준·현재 재고 문구 = 저장값 (d7 §11 1.21)").toBe(`${CARD_AMOUNT.need} ${requiredNumber(HCL.amount!, GROUPS)}${HCL.unit} / ${CARD_AMOUNT.stock} 50${HCL.unit}`);
     const hclCard = shown.find((s) => s.name === hcl.name)!;
     expect(hclCard.lines.map((l) => l.replace(/[\s,]/g, "")), "염산 카드 기준 문구").toContain(basisText(hclRow).replace(/[\s,]/g, ""));
     expect(basisText(low.find((r) => r.name === naoh.name)!), "수산화나트륨 카드는 기존 기준 문구 그대로").toBe(`재주문 기준 30 ${NAOH.unit}`);

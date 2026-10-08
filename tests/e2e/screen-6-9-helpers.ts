@@ -17,7 +17,7 @@ import { join } from "node:path";
 import { expect, type BrowserContext, type Locator, type Page, type TestInfo } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { browserClient, devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
-import { exact, service, sweep, todayDots, type Residue } from "./screen-8-helpers";
+import { tempSchoolLike, exact, service, sweep, todayDots, type Residue } from "./screen-8-helpers";
 import { makeFixture, type S11Fixture } from "./screen-11-helpers";
 
 export { boxOf, frameCounts, highlightSoft, hydrated, onTop, watchActions } from "./screen-11-helpers";
@@ -397,15 +397,34 @@ export async function dbLow(page: Page): Promise<DbReagent[]> {
   return (await ownReagentsOf(client)).filter(isLow);
 }
 
+/**
+ * d7 §11 "카드" 행의 수량 줄 틀 (2026-10-08 디자인 1.21 맞춤 · rules.json reorder.card_text):
+ * "재주문 기준 {min_stock}{unit} / 현재 재고 {stock}{unit}" — 숫자와 단위를 붙여 쓴다. 앞말 두 개를 d7 에서 읽는다.
+ */
+export const CARD_AMOUNT = (() => {
+  const line = d7.split(/\r?\n/).find((l) => l.startsWith("| 카드 |") && l.includes("reorder-alert-card"));
+  const m = line ? /"([^"{]+) \{min_stock\}\{unit\} \/ ([^"{]+) \{stock\}\{unit\}"/.exec(line) : null;
+  if (!m) throw new Error("harness/d7-data.md §11 카드 행에서 수량 줄 틀을 읽지 못했습니다");
+  return { need: m[1], stock: m[2] };
+})();
 /** d7 §11 카드 문구 */
-export const amountText = (r: DbReagent) => `필요량 ${r.min_stock} ${r.unit} / 현재 재고 ${r.stock} ${r.unit}`;
+export const amountText = (r: DbReagent) => `${CARD_AMOUNT.need} ${r.min_stock}${r.unit} / ${CARD_AMOUNT.stock} ${r.stock}${r.unit}`;
 export const basisText = (r: DbReagent) =>
   r.reorder_per_group !== null && r.reorder_groups !== null
     ? `1반 1회 실험량 ${r.reorder_per_group} ${r.unit} × ${r.reorder_groups}조 기준`
     : `재주문 기준 ${r.min_stock} ${r.unit}`;
-/** "YYYY.MM.DD 알림" — low_stock_since 의 한국 날짜 */
-export const dateText = (r: DbReagent) => `${todayDots(new Date(r.low_stock_since!))} 알림`;
-export const DATE_LINE = /^\d{4}\.\d{2}\.\d{2} 알림$/;
+/**
+ * d7 §11 "알림 날짜" (2026-10-08 디자인 1.21 맞춤): "M월 D일 알림"(한국 시간), 올해(한국 시간)가 아니면 "YYYY년 M월 D일 알림".
+ * now = 올해를 가르는 시각 (기본 지금).
+ */
+export function koreanAlertDate(at: Date, now: Date = new Date()): string {
+  const [y, m, d] = todayDots(at).split(".").map(Number);
+  const nowY = Number(todayDots(now).slice(0, 4));
+  return `${y === nowY ? "" : `${y}년 `}${m}월 ${d}일 알림`;
+}
+/** low_stock_since 의 한국 날짜 → 카드 날짜 줄 */
+export const dateText = (r: DbReagent) => koreanAlertDate(new Date(r.low_stock_since!));
+export const DATE_LINE = /^(\d{4}년 )?\d{1,2}월 \d{1,2}일 알림$/;
 
 /** 카드 한 장이 DB 행과 맞는지 (숫자 표기의 자릿수 쉼표·공백 차이는 무시한다) */
 export function expectCardMatches(card: ShownAlert, r: DbReagent, what: string): void {
@@ -639,7 +658,7 @@ export const NO_RESIDUE_69: Residue69 = {
 /** 이 묶음(group)·프로젝트의 일회용 학교·계정과 그 학교의 기록·시약·판매처·시약장을 지우고 남은 수를 돌려준다 */
 export async function cleanup(group: string, project: string): Promise<Residue69> {
   const sb = service();
-  const schools = await sb.from("schools").select("id").like("neis_code", `S8UI-${group}-${project}-%`);
+  const schools = await sb.from("schools").select("id").like("neis_code", tempSchoolLike(group, project));
   const ids = (schools.data ?? []).map((s) => s.id as string);
   if (ids.length) {
     for (const table of ["vendor_favorites", "usage_logs", "reagents", "vendors", "cabinets"]) await sb.from(table).delete().in("school_id", ids);

@@ -15,7 +15,7 @@ import { randomBytes } from "node:crypto";
 import { expect, type Locator, type Page, type TestInfo } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { browserClient, devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
-import {
+import { tempSchoolLike,
   addMember,
   clientFor,
   exact,
@@ -738,7 +738,7 @@ export const NO_S11_RESIDUE: S11Residue = { users: 0, schools: 0, invites: 0, pr
 /** 이 묶음(group)·프로젝트의 일회용 학교·계정과 그 학교의 시약·시약장을 지우고 남은 수를 돌려준다 */
 export async function cleanup(group: string, project: string): Promise<S11Residue> {
   const sb = service();
-  const schools = await sb.from("schools").select("id").like("neis_code", `S8UI-${group}-${project}-%`);
+  const schools = await sb.from("schools").select("id").like("neis_code", tempSchoolLike(group, project));
   const ids = (schools.data ?? []).map((s) => s.id as string);
   if (ids.length) {
     await sb.from("reagents").delete().in("school_id", ids);
