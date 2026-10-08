@@ -222,3 +222,35 @@
     font-size: var(--font-size-17);
   }
 }
+
+/*
+ * 데스크톱 고르기 창 = 팝오버 (rules.json 1.24 desktop_shell.overlay — 모바일 바텀시트는 데스크톱 드롭다운·팝오버).
+ * - 오른쪽 detail-drawer 안에서 연 창(위치 바꾸기 · MSDS 찾기) = 드로어 왼쪽 옆, 세로 가운데, 폭 400 (시안 3-location · 3-msds)
+ * - 목록 머리의 창(MSDS 한 번에 찾기) = 본문 오른쪽 위 띠 아래, 폭 400 (시안 2-msds-bulk) — 드로어가 열려 있으면 드로어 왼쪽
+ */
+@media (min-width: 1024px) {
+  :global([data-component="detail-drawer"]) .sheet,
+  :global([data-sheet-placement="top-end"]) .sheet {
+    left: auto;
+    width: var(--side-column-width);
+    max-width: var(--side-column-width);
+  }
+
+  :global([data-component="detail-drawer"]) .sheet {
+    top: 50%;
+    right: calc(var(--drawer-width) + var(--space-8));
+    max-height: calc(100% - var(--space-32));
+    transform: translateY(-50%);
+  }
+
+  :global([data-sheet-placement="top-end"]) .sheet {
+    top: calc(var(--space-64) * 2 + var(--space-32) + var(--space-8));
+    right: calc(var(--space-32) + var(--space-16));
+    max-height: calc(100% - var(--space-64) * 3);
+    transform: none;
+  }
+
+  :global(body:has([data-component="detail-drawer"])) :global([data-sheet-placement="top-end"]) .sheet {
+    right: calc(var(--drawer-width) + var(--space-8));
+  }
+}

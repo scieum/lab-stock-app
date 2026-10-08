@@ -8,9 +8,11 @@ import { test, expect } from "@playwright/test";
 import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
 import { PROFILE_ROLE, ROLE_NAME, browserSession, countComponent, devRules, roleChecks, rules, sel } from "./screen-helpers";
-import { CARD, SCREEN, TOAST, seedOwnReagents, usagePath, waitUsage } from "./screen-4-helpers";
+import { CARD, SCREEN, TOAST, seedOwnReagents, submitButton, usagePath, waitUsage } from "./screen-4-helpers";
 import { framePath } from "../frames";
-import { expectShell, isShellComponent } from "./shell-helpers";
+import { SHELL_COMPONENTS, expectShell, isShellComponent } from "./shell-helpers";
+import { deskOnlyComponents } from "../desktop-shell";
+import { DRAWER, countScoped, drawer, frameNamesIn, mobileOnlyOf, screenScope } from "./desk-helpers";
 
 const ROLES: Role[] = [...SCHOOL_A_ROLES, "schoolB"];
 
@@ -44,7 +46,14 @@ for (const role of ROLES) {
     expect(fromDev.length, `dev-rules components 에 화면 ${SCREEN} 컴포넌트가 있어야 함`).toBeGreaterThan(0);
     expect(fromDev, `${TOAST} 는 화면 ${SCREEN} 컴포넌트 (제출 후 검사는 screen-4-record)`).toContain(TOAST);
     // 디자인 1.17: 기본 프레임 4-{폭} 에 없고 rules.json variants[4] 상태 프레임에만 있는 컴포넌트(past-date-note)는 기본 상태 0, 그 상태에서 ≥ 1
-    const baseFrame = frameNames(`${SCREEN}-${info.project.name}`);
+    // 데스크톱 재구성 run b (d7 §23 세부): 1440 의 화면 4 = 시약 목록 옆 오른쪽 detail-drawer — 본문은 드로어 안(뒤 목록은 화면 2).
+    // 1440 기본 프레임 = 새 프레임 4-desktop 의 detail-drawer 아래, 개수도 드로어 안. 폭 전용: 390 reagent-detail-card / 1440 detail-drawer
+    const desk = info.project.name === "desktop";
+    const deskOnly = deskOnlyComponents();
+    const mobileOnly = mobileOnlyOf(SCREEN, SHELL_COMPONENTS);
+    expect(mobileOnly, "새 프레임: 화면 4 모바일 전용 = reagent-detail-card").toEqual([CARD]);
+    const widthOff = desk ? mobileOnly : deskOnly;
+    const baseFrame = desk ? frameNamesIn(`${SCREEN}-desktop`, DRAWER) : frameNames(`${SCREEN}-${info.project.name}`);
     const variantOnly = [...new Set(Object.values(VARIANTS4).flat())].filter((n) => fromDev.includes(n) && !baseFrame.has(n));
     expect(variantOnly, "variants[4] 에만 있는 화면 4 컴포넌트").toContain("past-date-note");
 
@@ -59,15 +68,27 @@ for (const role of ROLES) {
       const me = await browserSession(page);
       expect(me.role, "테스트 계정 역할").toBe(PROFILE_ROLE[role]);
       expect(me.schoolName, "테스트 계정 학교 = seed 학교").toBe(school.name);
-      await expect(page.locator(sel(CARD)).first(), "카드에 고른 시약명").toContainText(pick.name);
+      // 고른 시약명: 390 = reagent-detail-card / 1440 = 드로어 제목 아래 캡션 (시안 4-desktop drawer-title "에탄올 · 현재 1,200 mL")
+      if (desk) await expect(drawer(page).locator('[data-name="drawer-title"]'), "드로어 캡션에 고른 시약명").toContainText(pick.name);
+      else await expect(page.locator(sel(CARD)).first(), "카드에 고른 시약명").toContainText(pick.name);
+      const scope = screenScope(page, SCREEN, viewport);
+      const countComponent = (_p: unknown, name: string) => countScoped(scope, name);
+      // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 (서버 HTML 에는 두 폭 모두 있다)
+      for (const name of widthOff) await expect(page.locator(sel(name)), `${name} — ${desk ? "모바일" : "데스크톱"} 전용 (폭 ${viewport}: 0)`).toHaveCount(0, { timeout: 30_000 });
 
       for (const name of required) {
         if (forbidden.has(name)) continue;
         expect(await countComponent(page, name), `screens_required ${name}`).toBeGreaterThanOrEqual(1);
       }
+      const appEx = (rules as unknown as { app_exceptions: Record<string, string> }).app_exceptions;
       for (const name of fromDev) {
         // 셸은 위 expectShell 에서 폭별 기대값으로 봤다
-        if (isShellComponent(name)) continue;
+        if (isShellComponent(name) || widthOff.includes(name)) continue;
+        // 셸 예외(nav-account-menu — 1440 은 사이드바 계정 줄)는 드로어 밖: 문서 전체에서 1
+        if (name in appEx) {
+          expect(await countScoped(page.locator("body"), name), `셸 ${name} = 1`).toBe(1);
+          continue;
+        }
         if (forbidden.has(name)) {
           expect(await countComponent(page, name), `${name} (roles 상 ${ROLE_LABEL[role]} 0)`).toBe(0);
           continue;
@@ -82,11 +103,17 @@ for (const role of ROLES) {
           continue;
         }
         expect(await countComponent(page, name), `${name}`).toBeGreaterThanOrEqual(1);
-        await expect(page.locator(sel(name)).first(), `${name} 보임`).toBeVisible();
+        if (desk && name === DRAWER) await expect(scope, `${name} 보임`).toBeVisible();
+        else await expect(scope.locator(sel(name)).first(), `${name} 보임`).toBeVisible();
       }
-      // 사용량 입력(text-input 안)과 저장 버튼(button-primary)이 폼 안에 있음
+      // 사용량 입력(text-input 안)과 저장 버튼(button-primary) — 390 은 폼 안, 1440 은 드로어 아래 drawer-actions(form 속성으로 이어짐)
       await expect(page.locator(`main ${sel("text-input")} input[name="amount"]`), "사용량 text-input").toHaveCount(1);
-      await expect(page.locator(`main form button[type="submit"]${sel("button-primary")}`), "저장 button-primary").toHaveCount(1);
+      await expect(submitButton(page), "저장 button-primary").toHaveCount(1);
+      if (desk) {
+        const formId = await page.locator('main input[name="amount"]').evaluate((el) => (el as HTMLInputElement).form?.id ?? "");
+        expect(formId, "사용량 칸은 id 있는 폼 안").not.toBe("");
+        await expect(submitButton(page), "저장 버튼은 그 폼을 제출 (form 속성)").toHaveAttribute("form", formId);
+      }
 
       // variants[4] 상태: 사용일을 어제(한국 날짜)로 고르면 그 상태의 컴포넌트가 모두 보인다 (저장하지 않는다)
       await page.locator(`main ${sel("usage-date")} input`).fill(seoulDaysAgo(1));

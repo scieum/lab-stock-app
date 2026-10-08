@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { formatDateTimeDashes, formatMonthDayOf, formatStock, formatTimeHm } from "@/lib/format";
 import { getUsageHistory } from "@/lib/supabase/usage-history";
 import {
+  monthDayLabel,
   normalizeUsageQuery,
   recordedOnCaption,
   seoulDate,
@@ -57,9 +58,11 @@ export default async function UsageHistoryPage({ searchParams }: Props) {
     group.records.push({
       id: r.id,
       date: formatMonthDayOf(r.usedOn),
+      dayLabel: monthDayLabel(r.usedOn),
       usedOn: r.usedOn,
       recordedAt: formatDateTimeDashes(at),
       recordedCaption: r.recordedOn !== r.usedOn ? recordedOnCaption(r.recordedOn) : null,
+      recordedTime: formatTimeHm(at),
       reagentName: r.reagentName,
       userName: r.userName,
       subtitle: usageRowSubtitle(r.userName, r.usedOn, r.recordedOn, formatTimeHm(at)),

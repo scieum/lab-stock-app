@@ -39,6 +39,19 @@ export const MSDS_SECTION_TITLES: Record<MsdsSectionKey, string> = {
 
 export const MSDS_SECTION_KEYS: readonly MsdsSectionKey[] = ["s2", "s4", "s7", "s8"];
 
+/** 데스크톱 드로어 항목 바로가기 글자 (시안 16-desktop section-anchors) */
+export const MSDS_SECTION_ANCHORS: Record<MsdsSectionKey, string> = {
+  s2: "2. 유해·위험성",
+  s4: "4. 응급조치",
+  s7: "7. 취급·저장",
+  s8: "8. 보호구",
+};
+
+/** 항목 카드 id (바로가기 대상) */
+export function msdsSectionId(prefix: string, key: MsdsSectionKey): string {
+  return `${prefix}-${key}`;
+}
+
 /** 접힌 상태에서 보이는 줄 수 */
 export const MSDS_SUMMARY_PREVIEW_LINES = 3;
 

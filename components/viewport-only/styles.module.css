@@ -1,0 +1,18 @@
+/* 폭 전용 묶음 — 기준 폭 1024 (lib/breakpoints) */
+.mobileOnly {
+  display: contents;
+}
+
+.desktopOnly {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .mobileOnly {
+    display: none;
+  }
+
+  .desktopOnly {
+    display: contents;
+  }
+}

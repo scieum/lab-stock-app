@@ -202,6 +202,21 @@ for (const screen of SHELL_SCREENS) {
           // 화면별 본문(desktop_required)은 이전된 화면만 (d5 C3)
           if (isDesktopMigrated(screen)) {
             for (const name of DS.desktop_required[String(screen)] ?? []) {
+              // 화면 16 msds-summary 는 "요약 있음" 상태의 컴포넌트 (rules variants 16: no-summary · fail 상태에는 없다).
+              // 실제 경로의 시약이 요약 없음·실패 상태면 그 상태의 컴포넌트가 드로어 안에 있어야 한다 — 요약 있는 상태는 c3-run-b(갤러리)에서 본다
+              if (screen === 16 && name === "msds-summary" && (await page.locator(sel(name)).count()) === 0) {
+                const v16 = (rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants["16"];
+                const states = ["no-summary", "fail"].filter((k) => v16[k]);
+                expect(states.length, "rules variants 16 no-summary · fail").toBe(2);
+                const hit: string[] = [];
+                for (const k of states) {
+                  const ok = await Promise.all(v16[k].map(async (c) => (await page.locator(`${sel("detail-drawer")} ${sel(c)}`).count()) > 0));
+                  if (ok.every(Boolean)) hit.push(k);
+                }
+                expect(hit.length, `${where}: msds-summary 없음 → 드로어가 variants 16 ${states.join("·")} 상태 (${states.map((k) => v16[k].join("+")).join(" / ")})`).toBeGreaterThan(0);
+                info.annotations.push({ type: "C3 범위", description: `${where}: 이 시약은 MSDS 요약 ${hit.join("·")} 상태 — msds-summary 는 c3-run-b 갤러리에서` });
+                continue;
+              }
               await expect(page.locator(sel(name)).first(), `${where}: desktop_required ${name}`).toBeVisible();
             }
           } else {
@@ -297,13 +312,24 @@ const PAGE_HEADS: { screen: number; title: string; back: number | null; role: Sh
 ];
 
 for (const h of PAGE_HEADS) {
-  test(`[C3][S${h.screen}] 학교A ${ROLE_LABEL[h.role]} ${routeOf(h.screen)}: 1440 제목 "${h.title}"(새 프레임) 보이는 것 1 · 뒤로 ${h.back === null ? "없음" : `→ ${routeOf(h.back)} (누르면 도착)`} · nav-pill 0 / 390 = nav-pill 뒤로 대상 같음`, async ({ browser }, info) => {
+  test(`[C3][S${h.screen}] 학교A ${ROLE_LABEL[h.role]} ${routeOf(h.screen)}: 1440 제목 "${h.title}"(새 프레임) 보이는 것 1 · 뒤로 ${h.back === null ? "없음" : `→ ${routeOf(h.back)} (누르면 도착)`}${h.screen === 4 ? " (화면 4 1440 = 드로어 제목 — 드로어 뒤로는 c3-run-b)" : ""} · nav-pill 0 / 390 = nav-pill 뒤로 대상 같음`, async ({ browser }, info) => {
     test.setTimeout(150_000);
     expect(h.title, "프레임 제목").toBeTruthy();
     const { context, page, viewport } = await openAs(browser, info, h.role, h.screen);
     try {
       await waitBody(page);
       const back = page.getByRole("link", { name: "뒤로", exact: true }).filter({ visible: true });
+      if (viewport === "desktop" && isDesktopMigrated(h.screen) && h.screen === 4) {
+        // 화면 4 는 run b 로 이전 (d7 §23 세부): 1440 = 시약 목록 옆 드로어 — 제목은 드로어 drawer-title, 뒤로 = drawer-nav "‹ 시약 상세"(시약을 고른 경우)
+        // → c3-run-b.spec 이 본다. 여기서는 셸만: nav-pill 0 · 본문(드로어) 제목 "${h.title}" 1 · 사이드바 오른쪽
+        await expect(page.locator(sel("nav-pill")), "nav-pill 0").toHaveCount(0);
+        const d = page.locator(sel("detail-drawer"));
+        await expect(d, "detail-drawer 1").toHaveCount(1);
+        await expect(d.getByRole("heading", { name: h.title, exact: true }), `드로어 제목 "${h.title}"`).toBeVisible();
+        const sb = (await sidebar(page).boundingBox())!;
+        expect((await d.boundingBox())!.x, "드로어는 본문(사이드바 오른쪽)").toBeGreaterThanOrEqual(sb.x + sb.width);
+        return;
+      }
       if (viewport === "desktop") {
         await expect(page.locator(sel("nav-pill")), "nav-pill 0").toHaveCount(0);
         // 본문(main) 안 제목 — 사이드바 메뉴 글자(예: "실험 매뉴얼" · "시약장")와 따로 센다
@@ -461,7 +487,10 @@ test(`[C3][S*] 로그인 전 ${PRE.screens.join("·")} · 둘러보기 ${rules.g
       await page.waitForLoadState("load");
       await expect(page.locator("main, body").first()).toBeVisible();
       const where = `${t.kind === "pre" ? "로그인 전" : "둘러보기"} 화면 ${t.screen} ${t.path} (${viewport})`;
-      if (viewport === "desktop" && isDesktopMigrated(t.screen)) {
+      // 둘러보기(/demo) 데스크톱은 로그인 전 1·14·15 와 함께 run d (d7 §23 "로그인 전·둘러보기 (run d)") — 같은 화면 번호(2·3·16)가
+      // 로그인 화면으로 이전(run b)됐어도 둘러보기 판은 run d 표시(로그인 전 화면이 모두 이전됐을 때)를 따른다
+      const migrated = t.kind === "pre" ? isDesktopMigrated(t.screen) : PRE.screens.every((x) => isDesktopMigrated(x));
+      if (viewport === "desktop" && migrated) {
         if (t.kind === "pre") {
           await expect(page.locator(sel(PRE.component)), `${where}: ${PRE.component} 1`).toHaveCount(1, { timeout: 30_000 });
           for (const f of PRE.forbidden) await expect(page.locator(sel(f)), `${where}: ${f} 0`).toHaveCount(0);
@@ -477,7 +506,7 @@ test(`[C3][S*] 로그인 전 ${PRE.screens.join("·")} · 둘러보기 ${rules.g
       await expect(page.locator(sel("nav-pill")), `${where}: nav-pill 1`).toHaveCount(1, { timeout: 30_000 });
       await expect(sidebar(page), `${where}: ${DS.component} 0`).toHaveCount(0);
       await expect(page.locator(sel(DS.item)), `${where}: ${DS.item} 0`).toHaveCount(0);
-      if (viewport === "desktop") info.annotations.push({ type: "C3 범위", description: `${where} — desktop_migrated_screens 에 없음 (run d)` });
+      if (viewport === "desktop") info.annotations.push({ type: "C3 범위", description: `${where} — ${t.kind === "pre" ? "desktop_migrated_screens 에 없음" : "둘러보기 데스크톱"} (run d)` });
     }
   } finally {
     await context.close();

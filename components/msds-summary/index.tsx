@@ -1,11 +1,18 @@
 import { GhsPictogram } from "@/components/ghs-pictogram";
 import { MsdsSkeleton } from "@/components/msds-skeleton";
-import { MSDS_SECTION_KEYS, MSDS_SECTION_TITLES, MSDS_SUMMARY_TEXT, type MsdsSummary as Summary } from "@/lib/msds-summary";
+import {
+  MSDS_SECTION_KEYS,
+  MSDS_SECTION_TITLES,
+  MSDS_SUMMARY_TEXT,
+  msdsSectionId,
+  type MsdsSummary as Summary,
+} from "@/lib/msds-summary";
 import { MsdsSection } from "./section";
 import styles from "./styles.module.css";
 
 type Props =
-  | { summary: Summary; loading?: false }
+  /** sectionIdPrefix = 항목 카드 id 앞부분 (데스크톱 드로어 바로가기 대상) */
+  | { summary: Summary; loading?: false; sectionIdPrefix?: string }
   /** 16-loading: 안에 msds-skeleton 만 */
   | { summary?: undefined; loading: true };
 
@@ -40,7 +47,12 @@ export function MsdsSummary(props: Props) {
         </div>
       ) : null}
       {MSDS_SECTION_KEYS.map((key) => (
-        <MsdsSection key={key} title={MSDS_SECTION_TITLES[key]} lines={sections[key]} />
+        <MsdsSection
+          key={key}
+          title={MSDS_SECTION_TITLES[key]}
+          lines={sections[key]}
+          id={props.sectionIdPrefix ? msdsSectionId(props.sectionIdPrefix, key) : undefined}
+        />
       ))}
     </section>
   );

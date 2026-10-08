@@ -1,0 +1,17 @@
+/* 갤러리 — 데스크톱 목록 표 · 드로어 예시 */
+.location {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.chips {
+  display: flex;
+  gap: var(--space-8);
+}
+
+/* 드로어 예시는 실제 폭(480)으로 */
+.drawerStage {
+  display: flex;
+  justify-content: flex-end;
+}

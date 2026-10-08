@@ -122,3 +122,74 @@
     top: var(--space-24);
   }
 }
+
+/* 데스크톱 (디자인 1.24 10-desktop, d7 §23 run b): [목록(안쪽 32, 사이 16)] [detail-drawer 480] */
+.deskFrame {
+  display: flex;
+  align-items: flex-start;
+  min-height: 100dvh;
+}
+
+.deskList {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+  padding: var(--space-32);
+}
+
+.deskHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+}
+
+.deskTitleRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+}
+
+.deskTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-24);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}
+
+.deskCount {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+/* 검색 240 */
+.deskSearch {
+  width: var(--sidebar-width);
+}
+
+.deskToolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.deskToolbar > [data-component="segmented-control"] {
+  flex-shrink: 0;
+}
+
+.deskPeriod {
+  flex: 0 0 auto;
+}
+
+/* 드로어 큰 사용량 (32/700) */
+.deskAmount {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-32);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}

@@ -21,7 +21,7 @@ import { anonClient, signIn } from "./db-helpers";
 import { countComponent, roleChecks, routeOf, sel } from "./screen-helpers";
 import { HAS_SERVICE, anonContext, clientFor, openTemp, type TempUser } from "./screen-8-helpers";
 import { NO_RESIDUE_69, cleanup, makeSchool, sharedSnapshot, type Fx } from "./screen-6-9-helpers";
-import { historyPath, modal, rows, waitHistory } from "./screen-10-helpers";
+import { historyPath, modal, rowTarget, rows, waitHistory } from "./screen-10-helpers";
 import { waitDetail } from "./screen-3-helpers";
 import {
   EMPTY,
@@ -49,6 +49,8 @@ import {
   redPaint,
   visibleText,
   waitMsds,
+  scope16,
+  visibleBack,
 } from "./screen-16-helpers";
 
 test.describe.configure({ mode: "default" });
@@ -131,8 +133,10 @@ async function counts(page: Page, names: string[]): Promise<Record<string, numbe
 async function expectVariant(page: Page, state: "no-summary" | "fail", what: string): Promise<void> {
   const want = VARIANTS[state];
   expect(want, `rules.json variants 16 ${state}`).toBeTruthy();
-  for (const c of want) expect(await countComponent(page, c), `${what}: ${c} (variants ${state})`).toBeGreaterThanOrEqual(1);
-  for (const c of REQUIRED.filter((x) => !want.includes(x))) expect(await countComponent(page, c), `${what}: 요약 성공 컴포넌트 ${c} 0`).toBe(0);
+  // 1440 = 드로어 안에서 센다 (16-no-summary · 16-fail-desktop 은 드로어 안 상태)
+  const scope = scope16(page);
+  for (const c of want) expect(await scope.locator(sel(c)).count(), `${what}: ${c} (variants ${state})`).toBeGreaterThanOrEqual(1);
+  for (const c of REQUIRED.filter((x) => !want.includes(x))) expect(await scope.locator(sel(c)).count(), `${what}: 요약 성공 컴포넌트 ${c} 0`).toBe(0);
   expect(await countComponent(page, SKELETON), `${what}: 불러오는 중 끝 (${SKELETON} 0)`).toBe(0);
   const foreign = await foreignOnPage(page, allowedComponents());
   expect(foreign, `${what}: 화면 16(프레임 16-mobile · variants · components 16) 밖 컴포넌트 0`).toEqual({});
@@ -186,7 +190,7 @@ for (const role of ["student", "teacher", "admin"] as const) {
       await expectNoN2(page, await page.request.get(msdsPath(r.id)), "16-no-summary");
 
       // 뒤로 → 화면 3
-      const back = page.getByRole("link", { name: "뒤로", exact: true }).filter({ visible: true });
+      const back = visibleBack(page);
       await back.click();
       await page.waitForURL((u) => u.pathname === reagentPath(r.id), { timeout: 30_000 });
       await waitDetail(page);
@@ -239,7 +243,7 @@ test(`[C1][S${SCREEN}] 일회용 학생: 화면 10 기록 상세 "MSDS 보기" �
     const row = rows(page).filter({ hasText: r.name });
     await expect(row, "그 시약 기록 행").toHaveCount(1, { timeout: 30_000 });
     await expect(async () => {
-      if ((await modal(page).count()) === 0) await row.click({ timeout: 3_000 });
+      if ((await modal(page).count()) === 0) await rowTarget(page, row).click({ timeout: 3_000 });
       await expect(modal(page)).toHaveCount(1, { timeout: 2_000 });
     }).toPass({ timeout: 30_000 });
     const link = modal(page).locator(`${sel(ENTRY)} a`);
@@ -252,7 +256,7 @@ test(`[C1][S${SCREEN}] 일회용 학생: 화면 10 기록 상세 "MSDS 보기" �
     await waitMsds(page);
     expect(context.pages(), "새 창 없음").toHaveLength(1);
     await expectHeader(page, r.name, routeOf(10), "화면 10 에서 온 16", f.school.name);
-    await page.getByRole("link", { name: "뒤로", exact: true }).filter({ visible: true }).click();
+    await visibleBack(page).click();
     await page.waitForURL((u) => u.pathname === routeOf(10), { timeout: 30_000 });
     await waitHistory(page);
   } finally {

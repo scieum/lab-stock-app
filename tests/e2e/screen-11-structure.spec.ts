@@ -316,10 +316,12 @@ for (const role of SCHOOL_A_ROLES) {
       const { client } = await browserClient(page);
       const one = await client.from("reagents").select("id").not("slot_id", "is", null).order("id").limit(1).single();
       expect(one.error, "대조: 칸에 배치된 시약 1개").toBeNull();
+      // 화면 2·3 표식: 390 = reagent-row · reagent-detail-card / 1440 = data-table 행 · 오른쪽 detail-drawer (d7 §23 run b)
+      const desk = first.viewport === "desktop";
       const visits: [number, string, string][] = [
         [HOME_SCREEN, routeOf(HOME_SCREEN), sel("home-summary")],
-        [LIST_SCREEN, routeOf(LIST_SCREEN), sel("reagent-row")],
-        [DETAIL_SCREEN, detailPath(one.data!.id as string), sel("reagent-detail-card")],
+        [LIST_SCREEN, routeOf(LIST_SCREEN), desk ? `${sel("data-table")} ${sel("ex-data-table-cell")}` : sel("reagent-row")],
+        [DETAIL_SCREEN, detailPath(one.data!.id as string), desk ? sel("detail-drawer") : sel("reagent-detail-card")],
       ];
       for (const [screen, path, marker] of visits) {
         const res = await page.goto(path);

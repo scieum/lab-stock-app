@@ -695,8 +695,10 @@ test(`[C1][S${SCREEN}] 일회용 교사 · 시안 상태(시약장 2개 · 1번 
     const target = st.unassigned[0];
     await rows(page).filter({ hasText: target.name }).click();
     await page.waitForURL((u) => u.pathname === detailPath(target.id), { timeout: 45_000 });
-    await expect(page.locator(`main ${sel("reagent-detail-card")}`).first()).toBeVisible({ timeout: 45_000 });
-    await expect(page.locator("main")).toContainText(target.name);
+    // 도착 = 화면 3 (390 reagent-detail-card / 1440 시약 목록 옆 오른쪽 detail-drawer — d7 §23 run b)
+    const detail = page.locator(`main ${sel(viewport === "desktop" ? "detail-drawer" : "reagent-detail-card")}`).first();
+    await expect(detail).toBeVisible({ timeout: 45_000 });
+    await expect(viewport === "desktop" ? detail : page.locator("main")).toContainText(target.name);
     expect(actions.count(), "쓰기 요청 0건").toBe(0);
   } finally {
     await context.close();

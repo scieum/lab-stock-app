@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { expect, type Locator, type Page, type Response } from "@playwright/test";
 import { devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
 import { framePath } from "../frames";
+import { drawer, isDeskPage, newFrame, waitWidthSettled } from "./desk-helpers";
 
 export const SCREEN = 16;
 export const SUMMARY = "msds-summary";
@@ -154,8 +155,9 @@ export function allowedComponents(extra: string[] = []): Set<string> {
 /** dev-rules components 중 문서에 있는데 화면 16 에 없어야 하는 것 */
 export async function foreignOnPage(page: Page, allowed: Set<string>): Promise<Record<string, number>> {
   const names = Object.keys(devRules.components).filter((c) => !allowed.has(c));
-  const counts = await page.evaluate(
-    (list) => Object.fromEntries(list.map((n) => [n, document.querySelectorAll(`[data-component="${n}"]`).length])),
+  // 1440: 드로어 안만 (드로어 뒤 시약 목록은 화면 2, 사이드바는 셸 — d7 §23 run b)
+  const counts = await scope16(page).evaluate(
+    (root, list) => Object.fromEntries(list.map((n) => [n, root.querySelectorAll(`[data-component="${n}"]`).length])),
     names,
   );
   return Object.fromEntries(Object.entries(counts).filter(([, v]) => v > 0));
@@ -164,7 +166,17 @@ export async function foreignOnPage(page: Page, allowed: Set<string>): Promise<R
 // ---------- 요소 ----------
 export const exact = (s: string) => new RegExp(`^\\s*${s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`);
 export const originalLink = (page: Page) => page.locator(`${sel(ORIGINAL)} a`);
-export const visibleBack = (page: Page) => page.getByRole("link", { name: "뒤로", exact: true }).filter({ visible: true });
+/**
+ * 뒤로: 390 = nav-pill "뒤로" / 1440 = 시약 목록 옆 드로어의 drawer-nav 뒤로 링크(시안 16-desktop back-link "‹ 시약 상세" — d7 §23 run b)
+ */
+/** 1440 로그인 화면 16 = 드로어 (둘러보기 /demo 는 run d 전 — 예전 전용 화면) */
+const deskDrawer16 = (page: Page) => isDeskPage(page) && !new URL(page.url()).pathname.startsWith("/demo");
+export const visibleBack = (page: Page) =>
+  deskDrawer16(page) ? drawer(page).locator('[data-name="back-link"]') : page.getByRole("link", { name: "뒤로", exact: true }).filter({ visible: true });
+/** 시안 16-desktop 드로어 뒤로 글자 ("‹ 시약 상세") */
+export const DESK_BACK = newFrame("16-desktop").find((n) => n.name === "label" && n.path.includes("back-link"))!.text!.characters;
+/** 화면 16 본문 범위: 390 = 문서 / 1440 = 드로어 (뒤 목록은 화면 2 몫) */
+export const scope16 = (page: Page) => (deskDrawer16(page) ? drawer(page) : page.locator("body"));
 export const visibleText = (page: Page, text: string) => page.getByText(text, { exact: true }).filter({ visible: true });
 export const entryLink = (page: Page) => page.locator(`main ${sel(ENTRY)} a`).filter({ hasText: "MSDS 보기" });
 
@@ -173,6 +185,8 @@ export async function waitMsds(page: Page): Promise<void> {
   await expect(page.locator(sel(ORIGINAL)).first(), `${ORIGINAL} 보임`).toBeVisible({ timeout: 30_000 });
   await expect(page.locator(sel(SKELETON)), "불러오는 중 끝").toHaveCount(0, { timeout: 30_000 });
   await page.waitForLoadState("load");
+  // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 (개수 세기 전)
+  await waitWidthSettled(page);
 }
 
 export const boxOf = async (l: Locator) => {
@@ -203,6 +217,13 @@ export async function expectHeader(page: Page, name: string, backHref: string, w
   }
   const back = visibleBack(page);
   await expect(back, `${what}: 보이는 뒤로 1`).toHaveCount(1);
+  if (deskDrawer16(page)) {
+    // 1440 드로어 뒤로 = "‹ {들어온 화면}" (시안 16-desktop "‹ 시약 상세", 기록에서 왔으면 "‹ 기록"), 주소 = 들어온 화면(+ 목록 쿼리)
+    await expect(back, `${what}: 뒤로 글자 "‹ …" (시안 ${DESK_BACK})`).toHaveText(/^‹ \S/);
+    if (backHref.startsWith(routeOf(3).split("[")[0])) await expect(back, `${what}: 뒤로 = 시안 "${DESK_BACK}"`).toHaveText(DESK_BACK);
+    expect(new URL((await back.getAttribute("href"))!, "http://x").pathname, `${what}: 뒤로 = 들어온 화면`).toBe(backHref);
+    return;
+  }
   await expect(back, `${what}: 뒤로 = 들어온 화면`).toHaveAttribute("href", backHref);
   // 누름 높이(rules.json button.min_height)는 button- 컴포넌트 규칙이라 원문 보기·더 보기에서 본다.
   // 뒤로(nav-pill 공용 링크)의 크기는 시안 nav-back 44×44 와 V1 에서 비교한다 (모바일 nav-pill 뒤로 = 20px — 보고 항목).

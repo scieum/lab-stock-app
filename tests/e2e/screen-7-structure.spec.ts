@@ -5,6 +5,7 @@
 // 이 파일은 저장하지 않는다 (DB 불변). 저장 흐름·ex-toast 는 screen-7-save.spec.ts.
 // 로그인은 auth-state.ts 의 역할별 storageState 를 재사용한다.
 import { join } from "node:path";
+import { isDeskPage } from "./desk-helpers";
 import { test, expect, type Page } from "@playwright/test";
 import { ROLE_LABEL, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
@@ -163,7 +164,8 @@ test(`[R-ui][S${SCREEN}] ${ROLE_LABEL[STUDENT]} 홈·시약 목록·시약 상�
   const { own } = seedOwnReagents(STUDENT);
   const pages: { screen: number; path: string; ready: (p: Page) => Promise<void> }[] = [
     { screen: HOME_SCREEN, path: routeOf(HOME_SCREEN), ready: async (p) => expect(p.locator(sel("home-summary")).first()).toBeVisible({ timeout: 30_000 }) },
-    { screen: LIST_SCREEN, path: routeOf(LIST_SCREEN), ready: async (p) => expect(p.locator(sel("reagent-row")).first()).toBeVisible({ timeout: 30_000 }) },
+    // 화면 2 표식: 390 = reagent-row / 1440 = data-table 행 (d7 §23 run b)
+    { screen: LIST_SCREEN, path: routeOf(LIST_SCREEN), ready: async (p) => expect(p.locator(isDeskPage(p) ? `main ${sel("data-table")} ${sel("ex-data-table-cell")}` : sel("reagent-row")).first()).toBeVisible({ timeout: 30_000 }) },
     { screen: DETAIL_SCREEN, path: detailPath(own[0].id), ready: waitDetail },
   ];
   for (const t of pages) {

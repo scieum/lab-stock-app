@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { formatDateTimeDots } from "@/lib/format";
+import { formatDateTimeDashes } from "@/lib/format";
+import { monthDayLabel } from "@/lib/usage-history-rules";
 import { getUserManage } from "@/lib/supabase/users";
 import { UsersScreen } from "./users-screen";
 
@@ -24,13 +25,22 @@ export default async function UsersPage() {
   return (
     <UsersScreen
       schoolName={schoolName}
-      members={members}
+      members={members.map((m) => ({
+        id: m.id,
+        name: m.name,
+        role: m.role,
+        isSelf: m.isSelf,
+        isLastAdmin: m.isLastAdmin,
+        // "2026-03-02 09:10" → "2026-03-02" (한국 시간)
+        joinedOn: m.joinedAt ? formatDateTimeDashes(new Date(m.joinedAt)).slice(0, 10) : null,
+      }))}
       counts={{ student: counts.student, teacher: counts.teacher, admin: counts.admin }}
       invites={invites.map((v) => ({
         id: v.id,
         email: v.email,
-        // "2026.09.28 14:20" → "2026.09.28"
-        invitedAt: formatDateTimeDots(new Date(v.invitedAt)).slice(0, 10),
+        role: v.role,
+        // 한국 날짜 "2026-10-06" → "10월 6일" (시안 1.24 8-mobile · 8-desktop 초대일)
+        invitedAt: monthDayLabel(formatDateTimeDashes(new Date(v.invitedAt)).slice(0, 10)),
       }))}
     />
   );

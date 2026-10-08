@@ -6,6 +6,8 @@
 // 일회용 admin 의 브라우저 세션은 쿠키로 심는다 (로그인 화면·가입 API 를 거치지 않는다 — 메일 발송 없음).
 // service role 은 준비·정리·대조 조회에만 쓰고, 판정 대상은 브라우저 화면과 그 화면이 보낸 요청의 결과다.
 // 한 워커에서 순서대로 돈다 (afterAll 정리가 다른 워커의 일회용 학교를 지우지 않게).
+import { deskOnlyComponents } from "../desktop-shell";
+import { isDeskPage, newFrame } from "./desk-helpers";
 import { test, expect, type TestInfo } from "@playwright/test";
 import { countComponent, routeOf, rules, sel } from "./screen-helpers";
 import { expectShell, isShellComponent, shellNavLabel, shellNavLabels, shellSchoolScope } from "./shell-helpers";
@@ -58,6 +60,9 @@ import {
   inviteRow,
   inviteSubmit,
   inviteSubmitLabel,
+  inviteSubmitText,
+  inviteEmailInput,
+  deskInviteCount,
   invitesByService,
   invitesHeading,
   manage,
@@ -86,6 +91,9 @@ import {
   toast,
   toastInvited,
   todayDots,
+  inviteDay,
+  inviteCaption,
+  INVITE_DATE_DESK_EXAMPLE,
   viewportOf,
   waitUsers,
   watchActions,
@@ -137,9 +145,19 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin, 시안 1.17 과 같은 상태(멤
   const school = await sharedSchool(info);
   const viewport = viewportOf(info).name;
   const frame = frameCounts(viewport);
-  // 시안 1.17 의 멤버 행 수 = member-name 노드, 초대 대기 행 수 = invite-email 노드
-  const wantMembers = frame["member-name"] ?? 0;
-  const wantInvites = frame["invite-email"] ?? 0;
+  // 시안의 멤버 행 수 · 초대 대기 행 수: 390(시안 8-mobile) = member-name · invite-email 노드 /
+  // 1440(새 프레임 8-desktop, d7 §23 run b) = 첫 data-table("멤버")의 행 · 둘째 data-table("초대 대기")의 행
+  let wantMembers = frame["member-name"] ?? 0;
+  let wantInvites = frame["invite-email"] ?? 0;
+  if (viewport === "desktop") {
+    const per: number[] = [];
+    for (const n of newFrame(`${SCREEN}-desktop`)) {
+      if (n.name === "data-table") per.push(0);
+      else if (n.name === ROW && n.path.includes("data-table")) per[per.length - 1] += 1;
+    }
+    expect(per.length, "시안 8-desktop data-table = 멤버 · 초대 대기").toBe(2);
+    [wantMembers, wantInvites] = per;
+  }
   expect(wantMembers + wantInvites, `시안 ${ROW} = 멤버 + 초대`).toBe(frame[ROW]);
   expect(wantMembers, "시안 멤버 행").toBeGreaterThanOrEqual(2);
   while ((await membersByService(school.id)).length < wantMembers) await addMember(school, info, GROUP);
@@ -164,7 +182,8 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin, 시안 1.17 과 같은 상태(멤
     const dialog = confirmDialog(page);
     await expect(dialog, "삭제 확인 시트").toBeVisible();
 
-    const absent = [PILL_SOFT, SEGMENT, SEGMENT_ACTIVE, EMPTY, TOAST];
+    // 폭 390: 데스크톱 전용 data-table(run b, rules desktop_required · d7 §23)도 0
+    const absent = [PILL_SOFT, SEGMENT, SEGMENT_ACTIVE, EMPTY, TOAST, ...(viewport === "mobile" ? deskOnlyComponents() : [])];
     let checked = 0;
     // 셸은 폭별 기대값 (390 nav-pill 1 · 탭바 / 1440 app-sidebar 1 · nav-pill 0 — rules 1.22 desktop_shell, C2 · C3)
     await expectShell(page, viewport, SCREEN, "삭제 확인 시트");
@@ -225,8 +244,14 @@ test(`[C1][S${SCREEN}] 초대 2명(교사): "${inviteSubmitLabel(2)}" → ${TOAS
     const day0 = todayDots();
 
     const dialog = await openInviteSheet(page);
-    await expect(inviteSubmit(page)).toHaveText(exact(inviteSubmitLabel(0)));
-    await expect(inviteSubmit(page)).toBeDisabled();
+    await expect(inviteSubmit(page)).toHaveText(exact(inviteSubmitText(page, 0)));
+    if (isDeskPage(page)) {
+      // 1440 초대 줄(시안 8-desktop): 빈 칸으로 "초대" → 안내만 · 요청 0
+      const a0 = watchActions(page);
+      await inviteSubmit(page).click();
+      await expect(page.locator("main").getByRole("alert"), "빈 칸 → 안내").toHaveCount(1);
+      expect(a0.count(), "빈 칸 → 요청 0").toBe(0);
+    } else await expect(inviteSubmit(page)).toBeDisabled();
     // 대문자로 넣어도 소문자로 저장된다 (d7 §8 invites.email 소문자)
     await addInviteEmail(page, e1.toUpperCase(), 1);
     await addInviteEmail(page, e2, 2);
@@ -251,7 +276,13 @@ test(`[C1][S${SCREEN}] 초대 2명(교사): "${inviteSubmitLabel(2)}" → ${TOAS
     for (const email of [e1, e2]) {
       const row = shown.find((s) => s.email === email);
       expect(row, `초대 대기 행 ${email} (소문자)`).toBeTruthy();
-      expect(row!.texts.some((t) => t === `${day0} 초대` || t === `${day1} 초대`), `초대일 "${day1} 초대" (${row!.texts.join(" / ")})`).toBe(true);
+      // 초대일 (새 프레임 8 — 오케스트레이터 결정): 390 = 보조줄 "{역할} · {M월 D일} 초대"(8-mobile invite-date) /
+      // 1440 = 초대일 칸 "{M월 D일}"(8-desktop 초대 대기 표) + 역할 칸
+      const days = [day0, day1].map((d) => inviteDay(new Date(`${d.replace(/\./g, "-")}T12:00:00+09:00`)));
+      expect(INVITE_DATE_DESK_EXAMPLE, "시안 8-desktop 초대일 칸 틀 = M월 D일").toMatch(/^\d{1,2}월 \d{1,2}일$/);
+      const dayTexts = isDeskPage(page) ? days : days.map((d) => inviteCaption(ROLE_TEXT.teacher, d));
+      expect(row!.texts.some((t) => dayTexts.includes(t)), `초대일 "${dayTexts[1]}" (${row!.texts.join(" / ")})`).toBe(true);
+      if (isDeskPage(page)) expect(row!.texts, "1440 초대 역할 칸 = 교사").toContain(ROLE_TEXT.teacher);
       expect(row!.texts, `상태 "${INVITE_STATUS}"`).toContain(INVITE_STATUS);
       await expect(inviteRow(page, email)).toBeVisible();
     }
@@ -274,9 +305,10 @@ test(`[C1][S${SCREEN}] 초대 2명(교사): "${inviteSubmitLabel(2)}" → ${TOAS
     await expect(modal(page), "초대 대기 행은 누를 수 없다").toHaveCount(0);
     // 토스트는 잠깐 뒤 사라진다
     await expect(toast(page), "토스트가 사라짐").toHaveCount(0, { timeout: TOAST_GONE_TIMEOUT });
-    // 다시 열면 빈 시트 (앞서 넣은 이메일이 남아 있지 않다)
+    // 다시 열면 빈 시트 (앞서 넣은 이메일이 남아 있지 않다) — 1440 은 초대 칸이 비었다
     await openInviteSheet(page);
-    await expect(inviteSubmit(page)).toHaveText(exact(inviteSubmitLabel(0)));
+    await expect(inviteSubmit(page)).toHaveText(exact(inviteSubmitText(page, 0)));
+    if (isDeskPage(page)) await expect(inviteEmailInput(page), "보낸 뒤 초대 칸 비움").toHaveValue("");
   } finally {
     await context.close();
   }
@@ -307,13 +339,15 @@ test(`[C1][S${SCREEN}] 초대 거부: 이미 초대한 이메일 · 이미 멤�
       await addInviteEmail(page, c.bad, 2);
       const actions = watchActions(page);
       await inviteSubmit(page).click();
-      const alert = dialog.getByRole("alert");
+      // 오류 문구: 390 = 시트 안 / 1440 = 초대 줄 바로 아래 (시트 없음)
+      const alert = (isDeskPage(page) ? page.locator("main") : dialog).getByRole("alert");
       await expect(alert, `${c.what}: 시트 안 오류 문구`).toHaveCount(1, { timeout: SAVE_TIMEOUT });
       await expect(alert).toBeVisible();
       await expect(alert, `${c.what}: 문제 이메일`).toContainText(c.bad);
       expect(await alert.innerText(), `${c.what}: 문제없는 이메일은 오류 문구에 없다`).not.toContain(fresh);
       await expect(inviteDialog(page), `${c.what}: 시트 유지`).toBeVisible();
-      await expect(inviteSubmit(page), "넣은 이메일이 그대로").toHaveText(exact(inviteSubmitLabel(2)));
+      if (isDeskPage(page)) await expect.poll(() => deskInviteCount(page), { message: "넣은 이메일이 그대로" }).toBe(2);
+      else await expect(inviteSubmit(page), "넣은 이메일이 그대로").toHaveText(exact(inviteSubmitLabel(2)));
       await expect(toast(page), `${c.what}: 토스트 없음`).toHaveCount(0);
       expect(actions.count(), "요청 1건").toBe(1);
       // 전체 거부: 새 이메일도 초대되지 않았다
@@ -406,17 +440,24 @@ test(`[C1][S${SCREEN}] 사용자 삭제: "${DELETE_USER_BUTTON}" → 확인 카�
     await expect(confirm.getByText(exact(deleteBodyText(m.name))), `본문 "${deleteBodyText(m.name)}"`).toBeVisible();
     await expect(confirm.getByRole("button", { name: "닫기", exact: true }), "오른쪽 위 × 닫기").toHaveCount(1);
 
-    // "취소" → 역할 시트로 복귀, 아무것도 지워지지 않는다
+    // "취소" → 390 = 역할 시트로 복귀 / 1440 = 가운데 확인 카드만 닫힘(시안 8-desktop — 삭제 진입은 행 끝 더보기) · 아무것도 지워지지 않는다
     await outlineIn(confirm, CANCEL_BUTTON).click();
     await expect(confirmDialog(page)).toHaveCount(0);
-    await expect(roleDialog(page, m.name), '"취소" 는 역할 변경 시트로').toBeVisible();
-    await expect(modal(page)).toHaveCount(1);
+    if (isDeskPage(page)) {
+      await expect(modal(page), '1440 "취소" → 카드 닫힘').toHaveCount(0);
+    } else {
+      await expect(roleDialog(page, m.name), '"취소" 는 역할 변경 시트로').toBeVisible();
+      await expect(modal(page)).toHaveCount(1);
+    }
     expect(actions.count(), "취소까지 쓰기 요청 없음").toBe(0);
     expect(await profileByService(m.id), "취소: 프로필 그대로").not.toBeNull();
     await expect(memberRow(page, m.name)).toHaveCount(1);
 
-    // "사용자 삭제" → "삭제"
-    await outlineIn(roleDialog(page, m.name), DELETE_USER_BUTTON).click();
+    // "사용자 삭제" → "삭제" (1440 = 행 끝 더보기 "삭제" → 확인 카드)
+    if (isDeskPage(page)) {
+      await memberRow(page, m.name).getByRole("button", { name: /더보기/ }).click();
+      await page.getByRole("menuitem", { name: exact(DELETE_BUTTON) }).click();
+    } else await outlineIn(roleDialog(page, m.name), DELETE_USER_BUTTON).click();
     await expect(confirmDialog(page)).toBeVisible();
     await primaryIn(confirmDialog(page), deleteButtonLabel(m.name)).click();
     await expect(toast(page), `${TOAST}`).toHaveText(exact(TOAST_REMOVED), { timeout: SAVE_TIMEOUT });

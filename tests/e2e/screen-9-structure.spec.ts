@@ -5,6 +5,7 @@
 // 등록·수정·삭제 흐름과 판매처가 있는 상태는 일회용 학교의 screen-9-write.
 import { join } from "node:path";
 import { test, expect } from "@playwright/test";
+import { isDeskPage } from "./desk-helpers";
 import { ROLE_LABEL } from "./db-helpers";
 import { openAs } from "./auth-state";
 import { PROFILE_ROLE, ROLE_NAME, browserClient, browserSession, countComponent, devRules, roleChecks, routeOf, rules, sel } from "./screen-helpers";
@@ -63,6 +64,9 @@ import {
   visibleVendors,
   waitVendors,
   watchWrites,
+  commonCell,
+  listScope,
+  vendorTable,
 } from "./screen-6-9-helpers";
 
 const SCREEN = VENDORS;
@@ -214,10 +218,10 @@ test(`[C1][S${SCREEN}] 학교A admin 기본 구성: ${SEGMENT} 1("${TAB_SCHOOL}"
     const school = (await visibleVendors(page)).filter((v) => v.school_id !== null);
     const rows = await readVendorRows(page);
     expect(rows.map((r) => r[0]).sort(), "행 = 자기 학교 판매처").toEqual(school.map((v) => v.name).sort());
-    await expect(registerBlock(page).locator(sel(EMPTY)), `${EMPTY}`).toHaveCount(school.length === 0 ? 1 : 0);
-    if (school.length === 0) await expect(registerBlock(page).locator(sel(EMPTY)).getByText(exact(EMPTY_VENDORS)), `"${EMPTY_VENDORS}"`).toHaveCount(1);
+    await expect(listScope(page).locator(sel(EMPTY)), `${EMPTY}`).toHaveCount(school.length === 0 ? 1 : 0);
+    if (school.length === 0) await expect(listScope(page).locator(sel(EMPTY)).getByText(exact(EMPTY_VENDORS)), `"${EMPTY_VENDORS}"`).toHaveCount(1);
     // 우리 학교 탭에는 공통 판매처가 섞이지 않는다
-    const text = await registerBlock(page).innerText();
+    const text = await listScope(page).innerText();
     for (const name of COMMON_NAMES) expect(text.includes(name), `우리 학교 탭에 공통 판매처 '${name}'`).toBe(false);
 
     expect(await countsOf(page, [MODAL, TOAST]), "처음 상태: 모달·토스트 0").toEqual({ [MODAL]: 0, [TOAST]: 0 });
@@ -253,7 +257,11 @@ test(`[C1][S${SCREEN}] 학교A admin "${TAB_COMMON}" 탭: ${CELL} 2열(${COMMON_
 
     await switchTab(page, TAB_COMMON);
     await expect(page.locator(sel(SEGMENT_ACTIVE)), `${SEGMENT_ACTIVE} 1`).toHaveCount(1);
-    for (const head of COMMON_HEAD) await expect(main(page).locator(sel(CELL)).filter({ hasText: exact(head) }), `머리글 "${head}"`).toHaveCount(1);
+    // 머리글: 390 = 머리 셀 / 1440 = data-table 머리행 칸 (d7 §23 run b)
+    for (const head of COMMON_HEAD) {
+      if (isDeskPage(page)) await expect(vendorTable(page).locator("thead th").filter({ hasText: exact(head) }), `머리글 "${head}"`).toHaveCount(1);
+      else await expect(main(page).locator(sel(CELL)).filter({ hasText: exact(head) }), `머리글 "${head}"`).toHaveCount(1);
+    }
     const cellsAll = await readCommonCells(page);
     expect(cellsAll.length, `셀 수 = ${COMMON_SEED.length}곳 × 2열`).toBe(COMMON_SEED.length * COMMON_HEAD.length);
     const pairs: [string, string][] = [];
@@ -268,7 +276,7 @@ test(`[C1][S${SCREEN}] 학교A admin "${TAB_COMMON}" 탭: ${CELL} 2열(${COMMON_
     await expect(main(page).locator("input, textarea, select").filter({ visible: true }), "입력 칸은 검색뿐").toHaveCount(1);
     for (const name of COMMON_NAMES) {
       // 판매처명 글자를 누른다 (d7 §12-1 별표가 같은 칸에 있다 — 공용 학교 즐겨찾기를 쓰지 않도록 별표는 누르지 않는다)
-      await main(page).locator(sel(CELL)).filter({ hasText: exact(name) }).getByText(name, { exact: true }).click();
+      await commonCell(page, name).getByText(name, { exact: true }).click();
       await expect(page.locator(sel(MODAL)), `공통 행 "${name}" 을 눌러도 모달 없음`).toHaveCount(0);
       await expect(page.getByRole("menuitem")).toHaveCount(0);
     }
@@ -294,7 +302,9 @@ test(`[C1][S${SCREEN}] 학교A admin "${TAB_COMMON}" 탭: ${CELL} 2열(${COMMON_
     // 탭을 되돌리면 우리 학교 블록
     await switchTab(page, TAB_SCHOOL);
     await expect(registerBlock(page)).toHaveCount(1);
-    await expect(main(page).locator(sel(CELL)), "우리 학교 탭에는 공통 목록 셀 없음").toHaveCount(0);
+    if (isDeskPage(page)) {
+      for (const name of COMMON_NAMES) await expect(commonCell(page, name), `우리 학교 탭에 공통 판매처 행 "${name}" 없음`).toHaveCount(0);
+    } else await expect(main(page).locator(sel(CELL)), "우리 학교 탭에는 공통 목록 셀 없음").toHaveCount(0);
     expect(writes.list(), "쓰기 요청 0건").toEqual([]);
     expect((await visibleVendors(page)).filter((v) => v.school_id === null), "공통 목록 불변").toEqual(common);
   } finally {

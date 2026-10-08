@@ -1,0 +1,234 @@
+/* 오른쪽 상세 드로어 (디자인 1.24 detail-drawer, 시안 3·4·9·10·16-desktop)
+ * 폭 480(--drawer-width) · 흰 바탕 · 왼쪽 hairline · 화면 높이로 고정(sticky top 0) — 본문(drawer-body)만 스크롤
+ * drawer-body: 안쪽 24, 묶음 사이 16. drawer-head(제목 20/700 + × 44) 또는 drawer-nav(‹ 뒤로 15/600 + ×) → drawer-title
+ * drawer-actions: 위 hairline, 안쪽 16 · 24, 버튼 사이 8 (버튼은 남는 폭을 나눠 가진다)
+ */
+
+.drawer {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex: 0 0 var(--drawer-width);
+  flex-direction: column;
+  width: var(--drawer-width);
+  max-width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  border-left: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-sizing: border-box;
+}
+
+/* 갤러리: 제자리 상자 (화면 높이 고정 없음) */
+.inline {
+  position: relative;
+  height: auto;
+  border: var(--border-width) solid var(--color-border);
+}
+
+.body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-height: 0;
+  padding: var(--space-24);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.headRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: var(--button-min-height);
+}
+
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.title {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}
+
+.title:focus {
+  outline: none;
+}
+
+.title:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.caption {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+/* × (44 누름 영역, 하늘색 아이콘 20) — 오른쪽 끝을 안쪽 여백에 맞춘다 */
+.close {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+  margin-right: calc(var(--space-12) * -1);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-highlight);
+  cursor: pointer;
+}
+
+.close:active {
+  opacity: var(--pressed-opacity);
+}
+
+.close:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.closeIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+}
+
+/* ‹ 뒤로 (15/600 기본색, 누름 높이 44) */
+.back {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--button-min-height);
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-decoration: none;
+}
+
+.back:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-16) var(--space-24);
+  border-top: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+}
+
+/* 정보 줄 (시안 info-row / form-row): 위아래 12, 아래 hairline, 라벨 104 칸 + 값, 사이 16 */
+.rows {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: calc(var(--space-64) + var(--space-32) + var(--space-8)) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-16);
+  padding: var(--space-12) var(--space-0);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.rowLabel {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.rowValue {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.display {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-4);
+}
+
+.displayValue {
+  font-size: var(--font-size-32);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.displayUnit {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-15);
+}
+
+/* drawer-actions 안 버튼 줄 — 버튼이 폭을 나눠 가진다 (wide = 주 버튼이 더 넓게, 시안 9 취소 153 · 저장 270) */
+.actionRow {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.actionRow > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* 감싼 버튼(stock-intake 등)도 칸을 채운다 */
+.actionRow > span > * {
+  width: 100%;
+}
+
+.actionRow.wideLast > :last-child {
+  flex-grow: 1.8;
+}
+
+/* 입력 줄 라벨 (시안 form-row row-label: 13 회색 + "필수" 12 회색, 사이 4) */
+.fieldLabel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.required {
+  font-size: var(--font-size-12);
+}
+
+.fieldValue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+/* 마지막 줄은 아래 hairline 없음 (시안 info-rows 마지막 info-row) */
+.rows > :last-child {
+  border-bottom: 0;
+}

@@ -1,0 +1,179 @@
+/* 데스크톱 목록 + 오른쪽 드로어 (d7 §23 run b, 시안 2·3·4·16-desktop)
+ * frame: 모바일 = 배치에 끼지 않음(display: contents) · 데스크톱 = 가로 [list(남는 폭, 안쪽 32)] [detail-drawer 480]
+ * list-body: page-head → (msds-bulk-banner) → toolbar → data-table → pagination, 사이 16
+ */
+
+.frame {
+  display: contents;
+}
+
+@media (min-width: 1024px) {
+  .frame {
+    display: flex;
+    align-items: flex-start;
+    min-height: 100dvh;
+  }
+}
+
+.list {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: var(--space-32);
+}
+
+.listBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+/* page-head: 왼쪽 page-title(제목 줄 + 요약 줄, 사이 4) · 오른쪽 page-actions(검색 + 필터, 사이 8) */
+.pageHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.pageTitle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-24);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
+.count,
+.summary {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.count {
+  font-size: var(--font-size-12);
+  white-space: nowrap;
+}
+
+.summary {
+  font-size: var(--font-size-13);
+}
+
+.pageActions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+/* 검색 320 (드로어가 열리면 240 — 시안 3-desktop) */
+.search {
+  width: calc(var(--space-64) * 5);
+}
+
+.frame:has([data-component="detail-drawer"]) .search {
+  width: var(--sidebar-width);
+}
+
+/* 필터 버튼 + 드롭다운의 기준 상자 */
+.filterAnchor {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+}
+
+/* toolbar: segmented-control + 적용 칩 줄(남는 폭, 결과 수는 오른쪽 끝) */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.toolbar > [data-component="segmented-control"] {
+  flex-shrink: 0;
+}
+
+.chips {
+  flex: 1 1 auto;
+}
+
+/* 보관 위치 칸: 번호 원 + 글자 (사이 4) */
+.location {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.locationText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 목록을 받는 동안 (Suspense) */
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+.skeletonBar,
+.skeletonTable {
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.skeletonBar {
+  height: var(--button-min-height);
+}
+
+.skeletonTable {
+  height: calc(var(--control-height) * 10);
+}
+
+.drawerNote {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+}
+
+/*
+ * 목록 화면 전환 자리 표시 (reagents/(list)/loading) — 데스크톱:
+ * 다른 화면에서 들어오는 중이면 자리 표시가 본문 폭을 차지하고 목록(미리 받은 것)은 숨긴다 — 자리 표시 하나, 학교 데이터 0.
+ * 목록이 한 번 보인 뒤(data-shown — 드로어를 닫아 /reagents 로)는 자리 표시를 숨기고 목록을 그대로 둔다 (DeskListGate).
+ */
+@media (min-width: 1024px) {
+  .loading {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: var(--space-32);
+  }
+
+  .frame:has(.loading) .list:not([data-shown]),
+  .frame:has(.list[data-shown]) .loading {
+    display: none;
+  }
+}

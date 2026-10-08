@@ -1,0 +1,120 @@
+/*
+ * 화면 16 MSDS 요약 (시안 16-mobile): 본문 사이 24, 출처 줄 12/400 회색.
+ * 모바일: 원문 보기 버튼 줄(bottom-actions 12/16/16, 흰 바탕)은 tab-bar 바로 위 고정 — 그만큼 아래를 비운다.
+ * 데스크톱: 가운데 한 열(폭 720), page-header(뒤로가기 + 제목 24/700), 버튼 줄은 열 안.
+ */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  padding-bottom: calc(var(--space-12) + var(--control-height) + var(--space-16) + var(--border-width));
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  min-width: 0;
+}
+
+.pageHeader {
+  display: none;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--button-min-height);
+  min-height: var(--button-min-height);
+  color: var(--color-highlight);
+}
+
+.back:active {
+  opacity: var(--pressed-opacity);
+}
+
+.backIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+}
+
+.pageTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-24);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}
+
+.source {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.actions {
+  position: fixed;
+  right: 0;
+  bottom: var(--tab-bar-height);
+  left: 0;
+  z-index: 10;
+  display: flex;
+  padding: var(--space-12) var(--space-16) var(--space-16);
+  border-top: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+}
+
+@media (min-width: 1024px) {
+  .page {
+    padding-bottom: var(--space-0);
+  }
+
+  .column {
+    width: 100%;
+    max-width: calc(var(--space-48) * 15);
+    margin: 0 auto;
+  }
+
+  .pageHeader {
+    display: flex;
+  }
+
+  .actions {
+    position: static;
+    padding: var(--space-0);
+    border-top: 0;
+  }
+}
+
+/* 데스크톱 드로어 항목 바로가기 (시안 16-desktop section-anchors: 13/600, 위아래 12, 사이 16, 고른 것 = 하늘색 밑줄 2) */
+.anchors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-16);
+}
+
+.anchor {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--button-min-height);
+  border-bottom: var(--nav-indicator-height) solid transparent;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.anchor:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.anchorActive {
+  border-bottom-color: var(--color-highlight);
+}

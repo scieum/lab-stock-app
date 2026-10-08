@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { MsdsView } from "@/app/(app)/(member)/msds/[id]/msds-view";
+import { MsdsView } from "@/app/(app)/(member)/(desk)/msds/[id]/msds-view";
 import { DemoNav } from "@/app/demo/demo-shell";
 import { msdsBackHref, msdsTitle } from "@/lib/msds-summary";
 import { getDemoSchool } from "@/lib/supabase/demo-data";

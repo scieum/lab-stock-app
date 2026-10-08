@@ -9,11 +9,14 @@ import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
 import { PROFILE_ROLE, browserClient, browserSession, countComponent, routeOf, sel } from "./screen-helpers";
 
+import { PAGE_SIZE, isDeskPage, pagination, waitWidthSettled } from "./desk-helpers";
 const SCREEN = 2;
 const DETAIL_SCREEN = 3;
 const ROLES: Role[] = [...SCHOOL_A_ROLES, "schoolB"];
 const ROW = "reagent-row";
 const BADGE = "badge-low-stock";
+const TABLE = "data-table";
+const DESK_ROW = "ex-data-table-cell";
 
 type DbReagent = { id: string; name: string; low: boolean };
 
@@ -22,6 +25,8 @@ const detailHref = (id: string) => routeOf(DETAIL_SCREEN).replace(/\[[^\]]+\]/, 
 async function waitList(page: Page): Promise<void> {
   await expect(page.locator(sel("segmented-control")).first()).toBeVisible({ timeout: 30_000 });
   await page.waitForLoadState("load");
+  // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 (개수 세기 전)
+  await waitWidthSettled(page);
 }
 
 async function dbReagents(page: Page): Promise<DbReagent[]> {
@@ -37,8 +42,35 @@ async function dbReagents(page: Page): Promise<DbReagent[]> {
 
 type ShownRow = { href: string | null; badges: number; text: string };
 
+/** 화면의 시약 행: 390 = reagent-row(링크) / 1440 = data-table 행(대표 칸 링크, 쪽마다 — d7 §23 run b) */
+const rowLocator = (page: Page) => (isDeskPage(page) ? page.locator(`main ${sel(TABLE)} ${sel(DESK_ROW)}`) : page.locator(sel(ROW)));
+
+/** 1440: 모든 쪽의 표 행 (쪽을 넘기며 읽고 1쪽으로 돌아온다) */
+async function readDeskRows(page: Page): Promise<ShownRow[]> {
+  const out: ShownRow[] = [];
+  const nav = pagination(page.locator("main"));
+  const pages = (await nav.count()) === 0 ? 1 : Math.max(...(await nav.locator("button, a").allInnerTexts()).map((t) => Number(t.trim())).filter(Number.isFinite));
+  for (let p = 1; p <= pages; p++) {
+    if (pages > 1) {
+      await nav.getByRole("button", { name: String(p), exact: true }).click();
+      await expect(nav.locator('[aria-current="true"]'), `${p}쪽`).toHaveText(String(p));
+    }
+    const rows = rowLocator(page);
+    const n = await rows.count();
+    expect(n, `${p}쪽 행 ≤ 한 쪽 ${PAGE_SIZE}`).toBeLessThanOrEqual(PAGE_SIZE);
+    for (let i = 0; i < n; i++) {
+      const row = rows.nth(i);
+      const raw = await row.locator("a[data-row-link]").getAttribute("href");
+      out.push({ href: raw === null ? null : new URL(raw, "http://x").pathname, badges: await row.locator(sel(BADGE)).count(), text: await row.innerText() });
+    }
+  }
+  if (pages > 1) await nav.getByRole("button", { name: "1", exact: true }).click();
+  return out;
+}
+
 /** 화면의 reagent-row 각각: 링크 경로 · 행 안 배지 수 · 글자 */
 async function readRows(page: Page): Promise<ShownRow[]> {
+  if (isDeskPage(page)) return readDeskRows(page);
   const rows = page.locator(sel(ROW));
   const out: ShownRow[] = [];
   const n = await rows.count();
@@ -69,7 +101,9 @@ async function snapshot(page: Page, url: string): Promise<{ db: DbReagent[]; row
     await page.goto(url);
     await waitList(page);
     const want = (lowOnly ? before.filter((r) => r.low) : before).map((r) => detailHref(r.id)).sort();
-    await expect(page.locator(sel(ROW))).toHaveCount(want.length, { timeout: 10_000 }).catch(() => undefined);
+    await expect(rowLocator(page)).toHaveCount(isDeskPage(page) ? Math.min(PAGE_SIZE, want.length) : want.length, { timeout: 10_000 }).catch(() => undefined);
+    // 1440: 하이드레이션 뒤 (모바일 사본이 빠진 뒤) 읽는다
+    if (isDeskPage(page)) await expect(page.locator(sel(ROW)), "1440 reagent-row 0").toHaveCount(0, { timeout: 30_000 });
     const rows = await readRows(page);
     const main = await page.locator("main").innerText();
     const after = await dbReagents(page);
@@ -105,7 +139,12 @@ for (const role of ROLES) {
         expect(s.badges, `${r.name} (${r.low ? "부족" : "충분"}) 행 안 ${BADGE}`).toBe(r.low ? 1 : 0);
       }
       const lowN = db.filter((r) => r.low).length;
-      expect(await countComponent(page, BADGE), `화면 전체 ${BADGE} = 부족 행 ${lowN}개 (행 밖 배지 없음)`).toBe(lowN);
+      if (isDeskPage(page)) {
+        // 1440: 표는 쪽마다 — 모든 쪽 행의 배지 합 = 부족 수, 지금 쪽 화면 전체 배지 = 그 쪽 행 안 배지 (행 밖 배지 없음)
+        expect(shown.reduce((a, s) => a + s.badges, 0), `모든 쪽 ${BADGE} = 부족 행 ${lowN}개`).toBe(lowN);
+        const onPage = await rowLocator(page).locator(sel(BADGE)).count();
+        expect(await countComponent(page, BADGE), `화면 전체 ${BADGE} = 표 행 안 배지 (행 밖 배지 없음)`).toBe(onPage);
+      } else expect(await countComponent(page, BADGE), `화면 전체 ${BADGE} = 부족 행 ${lowN}개 (행 밖 배지 없음)`).toBe(lowN);
     } finally {
       await context.close();
     }

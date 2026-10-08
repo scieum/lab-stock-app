@@ -4,6 +4,7 @@
 //  - 없는 id: 다른 학교 id 와 같은 상태 코드·같은 화면 글자 (존재 여부 비노출)
 // 다른 학교 시약 id 가 실제로 있다는 양성 대조는 그 학교 계정의 브라우저 세션(RLS)으로 확인한다. service role 미사용.
 import { randomUUID } from "node:crypto";
+import { drawerTitle, isDeskPage } from "./desk-helpers";
 import { test, expect, type Page } from "@playwright/test";
 import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
@@ -18,6 +19,11 @@ const otherOf = (role: Role): Role => (role === "schoolB" ? "teacher" : "schoolB
 
 /** 화면 글자 (nav·탭바 포함 body) — 404 화면 비교용, 공백 정리 */
 async function bodyText(page: Page): Promise<string> {
+  // 1440: 드로어 뒤 시약 목록(Suspense 로 늦게 오는 부분)까지 그려진 뒤, 하이드레이션 뒤에 읽는다 (d7 §23 run b)
+  if (isDeskPage(page)) {
+    await expect(page.locator(`main [data-component="data-table"]`).first(), "1440 시약 목록").toBeVisible({ timeout: 45_000 });
+    await expect(page.locator('[data-component="nav-pill"]'), "하이드레이션 뒤").toHaveCount(0, { timeout: 45_000 });
+  }
   return (await page.locator("body").innerText()).replace(/\s+/g, " ").trim();
 }
 
@@ -44,7 +50,8 @@ for (const role of ROLES) {
       expect(me.role, "테스트 계정 역할").toBe(PROFILE_ROLE[role]);
       expect(me.schoolName, "테스트 계정 학교 = seed 학교").toBe(school.name);
       // 양성 대조: 그 시약 카드가 실제로 그려짐
-      await expect(page.locator(sel("reagent-detail-card")).first()).toContainText(pick!.name);
+      // (390 = 카드 / 1440 = 시약 목록 옆 드로어 제목 — d7 §23 run b)
+      await expect(isDeskPage(page) ? drawerTitle(page) : page.locator(sel("reagent-detail-card")).first()).toContainText(pick!.name);
 
       const text = await page.locator("body").innerText();
       const names = [...new Set(text.match(new RegExp(N1.school_name_pattern, "g")) ?? [])];

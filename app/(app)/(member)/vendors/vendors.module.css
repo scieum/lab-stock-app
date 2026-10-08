@@ -81,3 +81,105 @@
     display: none;
   }
 }
+
+/* 데스크톱 (디자인 1.24 9-desktop, d7 §23 run b): [목록(안쪽 32, 사이 16)] [detail-drawer 480] */
+.deskFrame {
+  display: flex;
+  align-items: flex-start;
+  min-height: 100dvh;
+}
+
+.deskList {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+  padding: var(--space-32);
+}
+
+.deskHead,
+.deskToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+}
+
+.deskTitleRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+}
+
+.deskTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-24);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}
+
+.deskCount {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.deskRegister {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.deskToolbar > [data-component="segmented-control"] {
+  flex-shrink: 0;
+}
+
+/* 검색 240 */
+.deskSearch {
+  width: var(--sidebar-width);
+}
+
+.deskName {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: 100%;
+}
+
+.deskNameText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.deskFavorite {
+  flex-shrink: 0;
+  margin: calc(var(--space-12) * -1) var(--space-0) calc(var(--space-12) * -1) calc(var(--space-12) * -1);
+}
+
+.deskHelper {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.deskError {
+  margin: var(--space-12) var(--space-0) var(--space-0);
+  color: var(--color-text-strong);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+/* 삭제 확인 카드: 본문(사이드바 오른쪽) 가운데, 폭 440 */
+.deskModal {
+  position: fixed;
+  top: 50%;
+  left: calc(var(--sidebar-width) + (100vw - var(--sidebar-width)) / 2);
+  z-index: 30;
+  width: calc(var(--side-column-width) + var(--space-32) + var(--space-8));
+  max-width: calc(100vw - var(--sidebar-width) - var(--space-64));
+  transform: translate(-50%, -50%);
+}

@@ -8,6 +8,7 @@
 //   (이름·재고·입고일·분류·칸·MSDS 를 정해 정렬 동률·분류 없음·칸 없음·MSDS 없음·결과 0 을 모두 만든다). 화면 동작은 쓰기를 하지 않는다.
 // 둘러보기(/demo/reagents, [S2g])는 anon 데모 학교 데이터로 같은 동작을 본다. 공용 학교 A·B·데모 데이터는 바꾸지 않는다.
 import { join } from "node:path";
+import { isDeskPage, waitWidthSettled } from "./desk-helpers";
 import { test, expect, type Browser, type Locator, type Page, type TestInfo } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { anonClient } from "./db-helpers";
@@ -51,7 +52,10 @@ const button = (page: Page) => main(page).locator(sel("list-filter-button"));
 const sheet = (page: Page) => page.locator(sel("list-filter-sheet"));
 const chipRow = (page: Page) => main(page).locator(sel("filter-chip-row"));
 const emptyCard = (page: Page) => main(page).locator(sel("ex-empty-state-card"));
-const rowsOf = (page: Page) => main(page).locator(sel("reagent-row"));
+/** 목록 행: 390 = reagent-row / 1440 = data-table 행 (d7 §23 run b — 일회용 학교 시약 수는 한 쪽 안) */
+/** 둘러보기(/demo, run d 전)는 1440 도 예전 목록(reagent-row) */
+const deskList = (page: Page) => isDeskPage(page) && !new URL(page.url()).pathname.startsWith("/demo");
+const rowsOf = (page: Page) => main(page).locator(deskList(page) ? `${sel("data-table")} ${sel("ex-data-table-cell")}` : sel("reagent-row"));
 const exact = (s: string) => new RegExp(`^\\s*${s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`);
 
 /** 목록 행의 시약명 (행의 첫 글자 조각) */
@@ -69,6 +73,8 @@ async function shownNames(page: Page): Promise<string[]> {
 }
 
 async function waitList(page: Page): Promise<void> {
+  // 서버 HTML 에는 두 폭의 목록이 함께 있다 — 하이드레이션 뒤 그 폭의 것 1개
+  await expect(button(page), "list-filter-button 1 (하이드레이션 뒤)").toHaveCount(1, { timeout: 30_000 });
   await expect(button(page), "list-filter-button").toBeVisible({ timeout: 30_000 });
   await page.waitForLoadState("load");
   await page.waitForFunction(
@@ -79,6 +85,8 @@ async function waitList(page: Page): Promise<void> {
     `main ${sel("list-filter-button")}`,
     { timeout: 30_000 },
   );
+  // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 (개수 세기 전)
+  await waitWidthSettled(page);
 }
 
 async function openSheet(page: Page): Promise<Locator> {

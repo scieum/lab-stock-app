@@ -70,3 +70,140 @@
     top: var(--space-24);
   }
 }
+
+/* 데스크톱 (디자인 1.24 8-desktop, d7 §23 run b): 안쪽 32, 사이 24 */
+.deskPage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  min-width: 0;
+  padding: var(--space-32);
+}
+
+.deskHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+}
+
+.deskTitleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.deskTitleRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+}
+
+.deskTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-24);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}
+
+.deskCount,
+.deskCountLine,
+.deskNotice,
+.deskFootnote {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.deskCount {
+  font-size: var(--font-size-12);
+}
+
+.deskCountLine,
+.deskNotice,
+.deskFootnote {
+  font-size: var(--font-size-13);
+}
+
+.deskNotice {
+  margin-top: calc(var(--space-16) * -1);
+  color: var(--color-text);
+  text-align: right;
+}
+
+/* 초대: 이메일 240 + 학생/교사 + 초대 + 초대 링크 복사, 사이 8 */
+.deskInvite {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.deskInviteEmail {
+  width: var(--sidebar-width);
+}
+
+.deskManage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.deskToolbar {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.deskSearch {
+  width: calc(var(--space-64) * 5);
+}
+
+.deskSection {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+/* 이름 + "나" pill (12/600, 회색 채움) */
+.deskName {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  max-width: 100%;
+}
+
+.deskNameText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.deskMe {
+  flex-shrink: 0;
+  padding: var(--space-0) var(--space-8);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+/* 역할 바꾸기 · 삭제 확인 카드: 본문(사이드바 오른쪽) 가운데, 폭 440 */
+.deskModal {
+  position: fixed;
+  top: 50%;
+  left: calc(var(--sidebar-width) + (100vw - var(--sidebar-width)) / 2);
+  z-index: 30;
+  width: calc(var(--side-column-width) + var(--space-32) + var(--space-8));
+  max-width: calc(100vw - var(--sidebar-width) - var(--space-64));
+  max-height: calc(100dvh - var(--space-64));
+  overflow-y: auto;
+  transform: translate(-50%, -50%);
+}

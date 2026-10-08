@@ -1,0 +1,18 @@
+{
+    "stages":  [
+                   "D1",
+                   "D3",
+                   "G",
+                   "D4"
+               ],
+    "screens":  [
+                    2,
+                    3,
+                    4,
+                    8,
+                    9,
+                    10,
+                    16
+                ],
+    "reason":  "데스크톱 재구성 b: 목록 data-table(2 8 9 10) + 오른쪽 detail-drawer(3 4 9 10 16) + 고르기 팝오버와 상태 프레임(2-filter 2-msds-bulk 3-location 3-msds 4-past-date 16-*). 이 화면들은 새 프레임(모바일 데스크톱 모두)으로 대조 이전. DB 변경 없음 (d7 23)"
+}

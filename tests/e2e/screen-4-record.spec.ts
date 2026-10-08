@@ -25,6 +25,7 @@ import {
   submitButton,
   usagePath,
   waitUsage,
+  reagentHead,
 } from "./screen-4-helpers";
 
 test.describe.configure({ mode: "default" });
@@ -70,7 +71,7 @@ for (const role of SCHOOL_A_ROLES) {
         const before = await dbStock(page, reagent.id);
         expect(before, "자기 세션으로 시약 읽힘").not.toBeNull();
         expect(before!.stock, "자기 세션 stock = 교사 세션 stock").toBe(start);
-        const card = page.locator(sel(CARD));
+        const card = reagentHead(page);
         await expect(card, `${CARD} 1개`).toHaveCount(1);
         await expect(card).toContainText(reagent.name);
         expect(cardShowsStock(await card.innerText(), start!, before!.unit), `제출 전 카드 재고 ${start}${before!.unit}`).toBe(true);
@@ -136,7 +137,7 @@ for (const role of SCHOOL_A_ROLES) {
       try {
         await waitUsage(page, true);
         expect((await browserSession(page)).role, "테스트 계정 역할").toBe(PROFILE_ROLE[role]);
-        const card = page.locator(sel(CARD));
+        const card = reagentHead(page);
         await expect(card, `${CARD} 1개`).toHaveCount(1);
 
         for (const bad of INVALID) {

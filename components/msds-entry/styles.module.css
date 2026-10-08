@@ -37,3 +37,28 @@
   line-height: var(--line-height-normal);
   text-align: center;
 }
+
+/* 데스크톱 드로어 (시안 3-desktop msds-entry): QR 타일(안쪽 12 · QR 64) + 버튼 가로, 사이 16. MSDS 없음 = 캡션 위 · 찾기 버튼 아래, 왼쪽 정렬 */
+.row {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-16);
+}
+
+.row > [data-component="msds-qr-tile"] {
+  align-self: auto;
+  padding: var(--space-12);
+}
+
+.row > [data-component="msds-qr-tile"] > :first-child {
+  width: var(--space-64);
+  height: var(--space-64);
+}
+
+.row .missing {
+  align-items: flex-start;
+}
+
+.row .missingCaption {
+  text-align: left;
+}

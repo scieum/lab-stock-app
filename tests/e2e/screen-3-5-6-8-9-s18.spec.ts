@@ -60,6 +60,7 @@ import {
   confirmButton,
   fakeSite,
   fieldInput,
+  formScope,
   hex,
   linkDialog,
   makeSchool,
@@ -71,7 +72,6 @@ import {
   purge,
   readAlerts,
   readVendorRows,
-  registerBlock,
   saveButton,
   sharedSnapshot,
   stubExternal,
@@ -174,7 +174,12 @@ const S9_FIELDS = SHEET9.filter((n) => n.name === "field-label" && n.text).map((
 const S9_CANCEL = node(SHEET9, (n) => n.name === "label" && n.path.includes("button-outline"), "9 취소").text!.characters;
 const S9_SAVE = node(SHEET9, (n) => n.name === "label" && n.path.includes("button-primary"), "9 저장").text!.characters;
 const S9_SHEET_PAD = node(f9, (n) => n.name === "ex-modal-card", "9 ex-modal-card").padding!;
-const S9_DESKTOP_W = (JSON.parse(readFileSync(framePath("9-desktop"), "utf8")) as { frames: { nodes: { name: string; width: number }[] }[] }).frames[0].nodes.find((n) => n.name === "ex-modal-card")!.width;
+/** 데스크톱 등록·수정 폼 = 오른쪽 detail-drawer (시안 9-desktop, d7 §23 run b — 가운데 카드 대신) */
+const S9_DESKTOP_W = (() => {
+  const n = (JSON.parse(readFileSync(framePath("9-desktop"), "utf8")) as { frames: { nodes: { name: string; width: number }[] }[] }).frames[0].nodes.find((x) => x.name === "detail-drawer");
+  if (!n) throw new Error("9-desktop 에 detail-drawer 없음");
+  return n.width;
+})();
 const MERGE5 = node(f5, (n) => n.name === "label" && n.path.includes("merge-note"), "5 merge-note label");
 const LINK_LABEL5 = node(f5, (n) => n.name === "field-label" && n.path.includes("link-row"), "5 link-row field-label").text!.characters;
 const DELETE5 = node(f5, (n) => n.name === "label" && n.path.includes("delete-link"), "5 delete-link").text!.characters;
@@ -603,11 +608,17 @@ test(`[C1][S8] 일회용 학교 admin 초대 시트: 역할 고르기(${INVITE_R
     await expect(seg.getByText(exact(ROLE_TEXT.admin)), "초대 역할에 admin 없음 (d7 §8)").toHaveCount(0);
     await seg.getByText(exact(ROLE_TEXT.teacher)).click();
     await expect(seg.locator(sel("segmented-control-active")), "고른 역할만 활성").toHaveText(exact(ROLE_TEXT.teacher));
-    const close = dlg.getByRole("button", { name: "닫기", exact: true });
-    await expect(close, "× 닫기 1").toHaveCount(1);
-    expect((await boxOf(close)).height, `× 누름 높이 ≥ ${MIN_H}`).toBeGreaterThanOrEqual(MIN_H);
-    await close.click();
-    await expect(inviteDialog(page), "× 로 닫힘").toHaveCount(0);
+    if (info.project.name !== "desktop") {
+      const close = dlg.getByRole("button", { name: "닫기", exact: true });
+      await expect(close, "× 닫기 1").toHaveCount(1);
+      expect((await boxOf(close)).height, `× 누름 높이 ≥ ${MIN_H}`).toBeGreaterThanOrEqual(MIN_H);
+      await close.click();
+      await expect(inviteDialog(page), "× 로 닫힘").toHaveCount(0);
+    } else {
+      // 1440 (시안 8-desktop): 초대는 page-head 의 초대 줄 — 시트·× 없음, 늘 보인다 (d7 §23 run b)
+      await expect(dlg.getByRole("button", { name: "닫기", exact: true }), "1440 초대 줄에 × 없음").toHaveCount(0);
+      await expect(page.locator(sel("ex-modal-card")), "1440 초대는 모달 아님").toHaveCount(0);
+    }
     const inv = await service().from("invites").select("id").eq("school_id", f.school.id);
     expect(inv.data ?? [], "초대 0건").toEqual([]);
   } finally {
@@ -619,7 +630,7 @@ test(`[C1][S8] 일회용 학교 admin 초대 시트: 역할 고르기(${INVITE_R
 // 화면 9 — 등록·수정 폼
 // =====================================================================
 
-test(`[C1][S9] 일회용 학교 admin 판매처 폼 (시안 1.17 9 · d7 §18): 등록 = 제목 + × 닫기 + "${S9_HELPER}" + ${S9_FIELDS.join("·")} (부가 정보 칸 없음) + "${S9_CANCEL}"·"${S9_SAVE}" · ×·취소는 저장 없이 닫음 · 모바일 tab-bar 위 하단 시트 / 데스크톱 가운데 카드(폭 ${S9_DESKTOP_W}) · 수정 저장해도 기존 note 는 DB 에 그대로 · 목록 행 = 판매처명 + 연락처만`, async ({ browser }, info) => {
+test(`[C1][S9] 일회용 학교 admin 판매처 폼 (시안 1.17 9 · d7 §18): 등록 = 제목 + × 닫기 + "${S9_HELPER}" + ${S9_FIELDS.join("·")} (부가 정보 칸 없음) + "${S9_CANCEL}"·"${S9_SAVE}" · ×·취소는 저장 없이 닫음 · 모바일 tab-bar 위 하단 시트 / 데스크톱 오른쪽 드로어(폭 ${S9_DESKTOP_W}, 시안 9-desktop) · 수정 저장해도 기존 note 는 DB 에 그대로 · 목록 행 = 판매처명 + 연락처만`, async ({ browser }, info) => {
   const f = await fresh(info);
   const v = await prepVendor(f, { name: `노트 판매처-${hex()}`, contact: "043-555-0101", note: "시약·실험 기구", website: fakeSite("nt") });
   const plain = await prepVendor(f, { name: `연락처없음-${hex()}`, contact: null, note: "소모품" });
@@ -634,18 +645,19 @@ test(`[C1][S9] 일회용 학교 admin 판매처 폼 (시안 1.17 9 · d7 §18): 
       if (x.website) expect(t, `${x.name}: 웹사이트 안 보임`).not.toContain(new URL(x.website).host);
     }
 
-    // 등록 폼 구성
+    // 등록 폼 구성 — 390 = 하단 시트 안 폼 / 1440 = 오른쪽 드로어(× · 안내 · 취소 · 저장은 드로어 머리·아래 줄, 폼과 form 속성으로 이어짐 — d7 §23 run b)
     await openCreateForm(page);
-    const form = registerBlock(page).locator("form");
+    const form = formScope(page).locator("form");
     await expect(form, "폼 1").toHaveCount(1);
-    const close = form.getByRole("button", { name: "닫기", exact: true });
+    const holder = viewport === "desktop" ? formScope(page) : form;
+    const close = holder.getByRole("button", { name: "닫기", exact: true });
     await expect(close, "× 닫기 1").toHaveCount(1);
     expect((await boxOf(close)).height, `× 누름 높이 ≥ ${MIN_H}`).toBeGreaterThanOrEqual(MIN_H);
-    await expect(form.getByText(exact(S9_HELPER)), `안내 "${S9_HELPER}"`).toBeVisible();
+    await expect(holder.getByText(exact(S9_HELPER)), `안내 "${S9_HELPER}"`).toBeVisible();
     for (const label of S9_FIELDS) await expect(fieldInput(page, label), `"${label}" 칸`).toHaveCount(1);
     await expect(form.locator("input:not([type=hidden]), textarea"), "입력 칸 = 시안 3개 (부가 정보 없음)").toHaveCount(S9_FIELDS.length);
     await expect(form.getByLabel(/부가 정보/), "부가 정보 칸 없음").toHaveCount(0);
-    const cancel = form.locator(sel("button-outline")).filter({ hasText: exact(S9_CANCEL) });
+    const cancel = holder.locator(sel("button-outline")).filter({ hasText: exact(S9_CANCEL) });
     await expect(cancel, `"${S9_CANCEL}"`).toHaveCount(1);
     const [cb, sb] = [await boxOf(cancel), await boxOf(saveButton(page))];
     expect(Math.abs(cb.top - sb.top), "취소·저장 한 줄").toBeLessThan(2);
@@ -665,10 +677,11 @@ test(`[C1][S9] 일회용 학교 admin 판매처 폼 (시안 1.17 9 · d7 §18): 
       expect(Math.abs(top - sb.bottom - S9_SHEET_PAD[2]), `모바일: 저장 아래 = 시안 시트 아래 여백 ${S9_SHEET_PAD[2]}`).toBeLessThanOrEqual(1.5);
       expect(Math.round(fb.width), "모바일: 시트 전폭").toBe(vp.width);
     } else {
-      expect(Math.abs(fb.width - S9_DESKTOP_W), `데스크톱: 카드 폭 = 시안 ${S9_DESKTOP_W}`).toBeLessThanOrEqual(1);
-      expect(Math.abs(fb.left + fb.width / 2 - vp.width / 2), "데스크톱: 가운데").toBeLessThanOrEqual(2);
-      expect(fb.top, "데스크톱: 화면 안").toBeGreaterThanOrEqual(0);
-      expect(fb.bottom, "데스크톱: 화면 안").toBeLessThanOrEqual(vp.height + 0.5);
+      // 1440 = 오른쪽 detail-drawer (시안 9-desktop: 폭 480 · 화면 오른쪽 끝 · 화면 높이)
+      expect(Math.abs(fb.width - S9_DESKTOP_W), `데스크톱: 드로어 폭 = 시안 ${S9_DESKTOP_W}`).toBeLessThanOrEqual(1);
+      expect(Math.abs(fb.right - vp.width), "데스크톱: 화면 오른쪽 끝").toBeLessThanOrEqual(1);
+      expect(Math.abs(fb.top), "데스크톱: 위 0").toBeLessThanOrEqual(1);
+      expect(Math.abs(fb.bottom - vp.height), "데스크톱: 화면 높이").toBeLessThanOrEqual(1);
     }
     // 하늘색은 폼 안에서 허용(아이콘·포커스) — rules.json highlight.forbidden_within 인 button-primary 안에만 없어야 한다
     expect((await paints(form)).filter((c) => PINK.includes(c)), "폼: 핑크 없음").toEqual([]);
@@ -681,7 +694,7 @@ test(`[C1][S9] 일회용 학교 admin 판매처 폼 (시안 1.17 9 · d7 §18): 
     await openCreateForm(page);
     await expect(fieldInput(page, FIELD_NAME), "다시 열면 빈 값").toHaveValue("");
     await fieldInput(page, FIELD_NAME).fill(`취소할 판매처-${hex()}`);
-    await registerBlock(page).locator("form").locator(sel("button-outline")).filter({ hasText: exact(S9_CANCEL) }).click();
+    await (viewport === "desktop" ? formScope(page) : formScope(page).locator("form")).locator(sel("button-outline")).filter({ hasText: exact(S9_CANCEL) }).click();
     await expect(fieldInput(page, FIELD_NAME), "취소로 닫힘").toHaveCount(0);
     expect((await vendorsBySchool(f.school.id)).map((x) => x.id).sort(), "×·취소: DB 그대로").toEqual([v.id, plain.id].sort());
 
@@ -689,7 +702,7 @@ test(`[C1][S9] 일회용 학교 admin 판매처 폼 (시안 1.17 9 · d7 §18): 
     await chooseRowMenu(page, v.name, "수정");
     await expect(fieldInput(page, FIELD_CONTACT)).toHaveValue(v.contact!);
     await expect(fieldInput(page, FIELD_WEBSITE), "수정 폼 웹사이트 칸 = 기존 값 (d7 §18 1.21: 폼에는 웹사이트 칸 유지)").toHaveValue(v.website!);
-    await expect(registerBlock(page).locator("form").getByLabel(/부가 정보/), "수정 폼에도 부가 정보 칸 없음").toHaveCount(0);
+    await expect(formScope(page).locator("form").getByLabel(/부가 정보/), "수정 폼에도 부가 정보 칸 없음").toHaveCount(0);
     await fieldInput(page, FIELD_CONTACT).fill("043-555-0202");
     await saveButton(page).click();
     await expect(page.locator(sel("ex-toast")).filter({ hasText: "판매처를 저장했어요" }), "저장 토스트").toBeVisible({ timeout: SAVE_TIMEOUT });

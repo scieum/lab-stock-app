@@ -22,6 +22,8 @@ export type UserManageMember = {
   isSelf?: boolean;
   /** 학교의 마지막 admin (다른 역할로 못 바꾸고 삭제도 못 한다) */
   isLastAdmin?: boolean;
+  /** 가입일 "2026-03-02" (데스크톱 표) */
+  joinedOn?: string | null;
 };
 
 export type UserManageInvite = {
@@ -29,6 +31,8 @@ export type UserManageInvite = {
   email: string;
   /** 표시용 초대일 (예: "2026.09.28") */
   invitedAt: string;
+  /** 초대 역할 (데스크톱 표) */
+  role?: "student" | "teacher";
 };
 
 type Props = {
@@ -48,6 +52,11 @@ type Props = {
   /** 멤버 행을 눌렀을 때 (역할 변경 시트를 연다) */
   onSelectMember?: (member: UserManageMember) => void;
 };
+
+/** 초대 대기 행 보조줄 — 시안 1.24 8-mobile "교사 · 10월 6일 초대" (역할 · 초대일) */
+function inviteCaption(v: UserManageInvite): string {
+  return v.role ? `${ROLE_LABEL[v.role]} · ${v.invitedAt} 초대` : `${v.invitedAt} 초대`;
+}
 
 function memberNote(m: UserManageMember): string | undefined {
   const parts = [m.isSelf ? "본인" : "", m.isLastAdmin ? "마지막 admin" : ""].filter(Boolean);
@@ -154,7 +163,7 @@ export function UserManage({
             <ul className={styles.rows} aria-labelledby={invitesId}>
               {invites.map((v) => (
                 <li key={v.id} className={styles.item}>
-                  <DataInviteRow email={v.email} caption={`${v.invitedAt} 초대`} status="대기" />
+                  <DataInviteRow email={v.email} caption={inviteCaption(v)} status="대기" />
                 </li>
               ))}
             </ul>

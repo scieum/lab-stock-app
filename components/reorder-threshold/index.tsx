@@ -45,6 +45,8 @@ type Props = {
   pending?: boolean;
   /** 저장 실패 안내 */
   error?: string | null;
+  /** card = reagent-detail-card 안 줄(기본) · row = 데스크톱 detail-drawer 정보 줄 (시안 3-desktop) */
+  layout?: "card" | "row";
 };
 
 /**
@@ -71,6 +73,7 @@ export function ReorderThreshold({
   onSave,
   pending,
   error,
+  layout = "card",
 }: Props) {
   const [editingState, setEditingState] = useState(defaultEditing);
   // 연필을 눌러 연 경우에만 입력으로 포커스 (처음부터 열린 갤러리 예시는 포커스를 가져가지 않는다)
@@ -82,6 +85,7 @@ export function ReorderThreshold({
     onEditingChange?.(next);
   };
   const has = typeof minStock === "number" && minStock > 0;
+  const rowCls = layout === "row" ? styles.rowLayout : "";
   const auto = source === "auto";
   let basis: string | null;
   if (auto) {
@@ -95,7 +99,7 @@ export function ReorderThreshold({
 
   if (editing) {
     return (
-      <div data-component="reorder-threshold" className={[styles.row, styles.editing].join(" ")}>
+      <div data-component="reorder-threshold" className={[styles.row, styles.editing, rowCls].filter(Boolean).join(" ")}>
         <span className={styles.label}>재주문 기준</span>
         <ThresholdEdit
           mode="form"
@@ -113,7 +117,7 @@ export function ReorderThreshold({
   }
 
   return (
-    <div data-component="reorder-threshold" className={styles.row}>
+    <div data-component="reorder-threshold" className={[styles.row, rowCls].filter(Boolean).join(" ")}>
       <div className={styles.field}>
         <span className={styles.label}>재주문 기준</span>
         <span className={styles.valueGroup}>

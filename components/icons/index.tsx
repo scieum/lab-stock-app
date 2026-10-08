@@ -37,7 +37,10 @@ export type IconName =
   | "download"
   | "book"
   | "user"
-  | "store";
+  | "store"
+  | "arrow-up"
+  | "arrow-down"
+  | "sort";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: (
@@ -222,6 +225,25 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <path d="M4 9.5h16a2.7 2.7 0 0 1-5.3 0 2.7 2.7 0 0 1-5.4 0 2.7 2.7 0 0 1-5.3 0Z" />
       <path d="M5.5 12.5V20h13v-7.5" />
       <path d="M10 20v-4.5h4V20" />
+    </>
+  ),
+  // 시안 1.24 data-table sort-arrow: 정렬 중인 열 = 화살표(하늘색), 정렬할 수 있는 열 = 위아래 꺾쇠(회색)
+  "arrow-up": (
+    <>
+      <path d="M12 19V5.5" />
+      <path d="m7 10.5 5-5 5 5" />
+    </>
+  ),
+  "arrow-down": (
+    <>
+      <path d="M12 5v13.5" />
+      <path d="m7 13.5 5 5 5-5" />
+    </>
+  ),
+  sort: (
+    <>
+      <path d="m8.5 9.5 3.5-3.5 3.5 3.5" />
+      <path d="m8.5 14.5 3.5 3.5 3.5-3.5" />
     </>
   ),
   bell: (

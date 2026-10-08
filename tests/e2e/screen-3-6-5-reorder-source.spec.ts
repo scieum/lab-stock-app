@@ -12,6 +12,7 @@
 // 공용 학교 A·B 는 쓰지 않는다. 데모 학교는 읽기만 (afterAll 에서 학교 A·B·데모의 기준 열 불변 확인).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { drawer, isDeskPage } from "./desk-helpers";
 import { test, expect, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { countComponent, rules, sel } from "./screen-helpers";
 import { HAS_SERVICE, clientFor, openTemp, service } from "./screen-8-helpers";
@@ -189,7 +190,8 @@ const pencil = (page: Page) => thrRow(page).locator(`${sel(THRESH_EDIT)} button`
 const thrInput = (page: Page) => thrRow(page).locator(`${sel("text-input")} input`);
 const resetButton = (page: Page) => thrRow(page).getByTestId(RESET_TESTID);
 const thrSave = (page: Page) => thrRow(page).locator(sel("button-primary")).filter({ hasText: exact(SAVE) });
-const badge = (page: Page) => page.locator(`main ${sel(CARD)} ${sel(BADGE)}`);
+/** 시약 상세의 재고 부족 배지: 390 = 카드 안 / 1440 = 드로어 안 status-chips (d7 §23 run b — 뒤 목록 행의 배지는 화면 2 것) */
+const badge = (page: Page) => (isDeskPage(page) ? drawer(page).locator(sel(BADGE)) : page.locator(`main ${sel(CARD)} ${sel(BADGE)}`));
 const toastWith = (page: Page, text: string | RegExp) => page.locator(sel("ex-toast")).filter({ hasText: text });
 
 /** reorder-threshold 줄: 글자(연필 버튼 제외)·"자동" 표시·출처 줄 */

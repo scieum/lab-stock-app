@@ -6,6 +6,7 @@
 //  - 사용 기록 버튼(button-primary) 링크 = routes["4"] + ?reagent={id}
 // 같은 실행의 R-db 테스트가 재고를 바꿨다 되돌리므로, 화면을 읽기 전·후 DB 가 같을 때만 비교한다.
 import { test, expect, type Page } from "@playwright/test";
+import { drawer, isDeskPage } from "./desk-helpers";
 import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
 import { PROFILE_ROLE, browserSession, countComponent, routeOf, sel } from "./screen-helpers";
@@ -28,7 +29,22 @@ const CARD = "reagent-detail-card";
 
 type Shown = { card: string; cardBadges: number; pageBadges: number; text: string };
 
+/**
+ * 390 = reagent-detail-card(시약명 · 재고) + 화면 전체 / 1440 = 시약 목록 옆 드로어(제목 = 시약명 · "현재 재고" 줄, 시안 3-desktop — d7 §23 run b).
+ * 1440 의 "화면 전체" 배지는 드로어 안에서 센다 — 드로어 뒤 목록 행의 배지는 화면 2 것이다.
+ */
 async function readShown(page: Page): Promise<Shown> {
+  if (isDeskPage(page)) {
+    const d = drawer(page);
+    await expect(d, "detail-drawer 1개").toHaveCount(1);
+    await expect(page.locator(sel(CARD)), `1440 ${CARD} 0`).toHaveCount(0);
+    return {
+      card: await d.innerText(),
+      cardBadges: await d.locator(sel(BADGE)).count(),
+      pageBadges: await d.locator(sel(BADGE)).count(),
+      text: await textAcrossTabs(page),
+    };
+  }
   const card = page.locator(sel(CARD));
   await expect(card, `${CARD} 1개`).toHaveCount(1);
   return {

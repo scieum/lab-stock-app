@@ -18,6 +18,7 @@ import { expect, type Locator, type Page, type TestInfo } from "@playwright/test
 import { browserClient, devRules, routeOf, sel, type ViewportName } from "./screen-helpers";
 import { framePath } from "../frames";
 import { adjustPreDesktopShell } from "../desktop-shell";
+import { PAGE_SIZE, drawer, isDeskPage, newFrame, pagination, waitWidthSettled } from "./desk-helpers";
 
 export const SCREEN = 10;
 export const ROW = "ex-data-table-cell";
@@ -30,6 +31,19 @@ export const INPUT = "text-input";
 
 // ---- s2-spec 화면 10 · 시안 10 프레임 · d7 §7 문구 ----
 export const NAV_LABEL = "사용 기록 내역";
+/**
+ * 데스크톱 재구성 run b (d7 §23 세부, 새 프레임 10-desktop): 1440 = 기록 data-table + 오른쪽 detail-drawer(모달 대신).
+ * 본문 제목은 새 프레임 10-desktop page-title (390 은 nav-pill 제목 그대로).
+ */
+export const DESK_TITLE = newFrame("10-desktop").find((n) => n.name === "title" && n.path.includes("page-title"))!.text!.characters;
+export const titleOf = (viewport: ViewportName) => (viewport === "desktop" ? DESK_TITLE : NAV_LABEL);
+/** 1440 상세 = detail-drawer, 390 = ex-modal-card */
+export const DRAWER = "detail-drawer";
+export const detailOf = (page: Page) => (isDeskPage(page) ? DRAWER : MODAL);
+/** 1440 드로어 정보 줄 라벨 (새 프레임 10-desktop detail-drawer info-row row-label 순서) */
+export const DESK_DETAIL_LABELS = newFrame("10-desktop")
+  .filter((n) => n.name === "row-label" && n.path.includes(DRAWER) && n.text)
+  .map((n) => n.text!.characters);
 export const SCOPE_ALL = "전체";
 export const SCOPE_MINE = "내 기록";
 export const SEARCH_PLACEHOLDER = "시약명 검색";
@@ -108,7 +122,8 @@ export function frameTexts(viewport: ViewportName, screen: number = SCREEN): { n
 
 // ---------- 화면 locator ----------
 export const rows = (page: Page) => page.locator(`main ${sel(ROW)}`);
-export const modal = (page: Page) => page.locator(sel(MODAL));
+/** 상세: 390 = ex-modal-card / 1440 = 오른쪽 detail-drawer (d7 §23 run b) */
+export const modal = (page: Page) => (isDeskPage(page) ? drawer(page) : page.locator(sel(MODAL)));
 export const segment = (page: Page) => page.locator(`main ${sel(SEGMENT)}`);
 export const activeSegment = (page: Page) => page.locator(`main ${sel(SEGMENT)} ${sel(SEGMENT_ACTIVE)}`);
 export const segmentOption = (page: Page, label: string) => segment(page).getByText(exact(label));
@@ -133,6 +148,8 @@ export async function waitHistory(page: Page): Promise<void> {
     `main ${sel(SEGMENT)}`,
     { timeout: 30_000 },
   );
+  // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 (개수 세기 전)
+  await waitWidthSettled(page);
 }
 
 /** "전체 / 내 기록" 전환 (하이드레이션 전 클릭이 무시돼도 다시 누른다) */
@@ -150,8 +167,90 @@ export type Entry = { kind: "group"; label: string } | { kind: "row"; texts: str
 /** 사용일 묶음 헤더 "10월 7일 · 오늘" · "10월 6일" · "2025년 12월 3일" (시안 10 group-label) */
 export const GROUP_LABEL = /^(?:\d{4}년 )?\d{1,2}월 \d{1,2}일(?: · 오늘)?$/;
 
-/** main 안의 사용일 묶음 헤더("10월 7일 · 오늘")와 기록 행(글자 조각)을 문서 순서대로 읽는다 */
+/** 1440 표 한 쪽: 묶음 머리 행 + 기록 행(칸: 사용일 · 시약명(+캡션) · 사용자 · 사용량 · 기록 시각) */
+type DeskCells = { day: string; name: string; caption: string | null; user: string; amount: string; time: string };
+type DeskEntry = { kind: "group"; label: string } | { kind: "row"; cells: DeskCells };
+async function readDeskPage(page: Page): Promise<DeskEntry[]> {
+  return page.locator(`main ${sel("data-table")}`).first().evaluate(
+    (table, a) => {
+      const out: ({ kind: "group"; label: string } | { kind: "row"; cells: { day: string; name: string; caption: string | null; user: string; amount: string; time: string } })[] = [];
+      const clean = (s: string | null | undefined) => (s ?? "").replace(/\s+/g, " ").trim();
+      for (const tr of table.querySelectorAll("tbody tr")) {
+        if (tr.getAttribute("data-name") === "date-group-row") {
+          out.push({ kind: "group", label: clean((tr as HTMLElement).innerText) });
+          continue;
+        }
+        if (tr.getAttribute("data-component") !== a.row) continue;
+        const td = [...tr.querySelectorAll("td")];
+        const nameCell = td[1];
+        const parts: string[] = [];
+        const w = document.createTreeWalker(nameCell, NodeFilter.SHOW_TEXT);
+        for (let n = w.nextNode(); n; n = w.nextNode()) {
+          const t = clean(n.textContent);
+          if (t) parts.push(t);
+        }
+        out.push({
+          kind: "row",
+          cells: {
+            day: clean((td[0] as HTMLElement)?.innerText),
+            name: parts[0] ?? "",
+            caption: parts.length > 1 ? parts.slice(1).join(" ") : null,
+            user: clean((td[2] as HTMLElement)?.innerText),
+            amount: clean((td[3] as HTMLElement)?.innerText),
+            time: clean((td[4] as HTMLElement)?.innerText),
+          },
+        });
+      }
+      return out;
+    },
+    { row: ROW },
+  );
+}
+
+/** 1440: 마지막으로 읽은 목록의 행별 칸 (사용일 칸 · 기록 시각 칸 — 모바일 행에는 없는 열, DB 와 따로 대조) */
+const deskCellsSeen = new WeakMap<Page, DeskCells[]>();
+
+/** 1440: 쪽마다 넘기며 표 전체를 읽고(쪽 경계의 같은 묶음 머리는 한 번으로) 1쪽으로 돌아온다 → 모바일과 같은 Entry */
+async function readDeskList(page: Page): Promise<Entry[]> {
+  const nav = pagination(page.locator("main"));
+  const pageCount =
+    (await nav.count()) === 0
+      ? 1
+      : Math.max(...(await nav.locator("button, a").allInnerTexts()).map((t) => Number(t.trim())).filter((n) => Number.isFinite(n)));
+  const all: DeskEntry[] = [];
+  for (let p = 1; p <= pageCount; p++) {
+    if (pageCount > 1) {
+      const cur = nav.locator('[aria-current="true"]');
+      if ((await cur.innerText()).trim() !== String(p)) {
+        await nav.getByRole("button", { name: String(p), exact: true }).click();
+        await expect(cur, `${p}쪽`).toHaveText(String(p));
+      }
+    }
+    const part = await readDeskPage(page);
+    const prev = [...all].reverse().find((e) => e.kind === "group") as { label: string } | undefined;
+    if (part[0]?.kind === "group" && prev && part[0].label === prev.label) part.shift(); // 쪽 경계에서 이어지는 같은 사용일 묶음
+    expect(part.filter((e) => e.kind === "row").length, `${p}쪽 행 수 ≤ 한 쪽(${PAGE_SIZE})`).toBeLessThanOrEqual(PAGE_SIZE);
+    all.push(...part);
+  }
+  if (pageCount > 1) {
+    await nav.getByRole("button", { name: "1", exact: true }).click();
+    await expect(nav.locator('[aria-current="true"]'), "1쪽으로").toHaveText("1");
+  }
+  deskCellsSeen.set(page, all.filter((e) => e.kind === "row").map((e) => (e as { cells: DeskCells }).cells));
+  // 모바일 Entry 와 같은 꼴: 시약명 · 사용자 줄("이름 · HH:mm" — 캡션 있으면 이름만) · (캡션) · 사용량
+  return all.map((e) =>
+    e.kind === "group"
+      ? e
+      : {
+          kind: "row" as const,
+          texts: [e.cells.name, e.cells.caption ? e.cells.user : `${e.cells.user} · ${e.cells.time}`, ...(e.cells.caption ? [e.cells.caption] : []), e.cells.amount],
+        },
+  );
+}
+
+/** main 안의 사용일 묶음 헤더("10월 7일 · 오늘")와 기록 행(글자 조각)을 문서 순서대로 읽는다 (1440 = 표 모든 쪽) */
 export async function readList(page: Page): Promise<Entry[]> {
+  if (isDeskPage(page)) return readDeskList(page);
   return page.locator("main").evaluate(
     (main, a) => {
       const out: ({ kind: "group"; label: string } | { kind: "row"; texts: string[] })[] = [];
@@ -392,10 +491,23 @@ export async function expectListMatchesDb(page: Page, f: Filter, t0: number): Pr
       throw new Error(m.diff);
     }
     result = { db, shown: db.slice(m.offset, m.offset + flat.length), flat };
-  }, `화면 목록 = DB usage_history(${JSON.stringify(f)}) ${last}`).toPass({ timeout: 20_000, intervals: [200, 500, 1000] });
+  }, `화면 목록 = DB usage_history(${JSON.stringify(f)}) ${last}`).toPass({ timeout: 30_000, intervals: [200, 500, 1000] });
   const snap = result as Snapshot | null;
   if (!snap) throw new Error("목록 비교 실패");
-  await expect(rows(page), "행 수").toHaveCount(snap.flat.length);
+  if (isDeskPage(page)) {
+    // 1440 표: 1쪽 행 = 한 쪽(시안 2-desktop 표 행 수)까지 · 사용일 칸 "M월 D일" · 기록 시각 칸 "HH:mm" (시안 10-desktop) = DB
+    await expect(rows(page), "1쪽 행 수").toHaveCount(Math.min(PAGE_SIZE, snap.flat.length));
+    const cells = deskCellsSeen.get(page) ?? [];
+    expect(cells.length, "읽은 표 행 = 목록 행").toBe(snap.flat.length);
+    for (const [i, c] of cells.entries()) {
+      const r = snap.shown[i];
+      const md = `${Number(r.used_on.slice(5, 7))}월 ${Number(r.used_on.slice(8, 10))}일`;
+      expect([md, `${r.used_on.slice(0, 4)}년 ${md}`], `${i + 1}행 사용일 칸`).toContain(c.day);
+      expect(c.time, `${i + 1}행 기록 시각 칸`).toBe(recordedTime(r.used_at));
+    }
+  } else {
+    await expect(rows(page), "행 수").toHaveCount(snap.flat.length);
+  }
   if (snap.flat.length === 0) {
     await expect(emptyCard(page), `0건 → ${EMPTY}`).toHaveCount(1);
   } else {
@@ -426,8 +538,12 @@ export async function gotoAndMatch(page: Page, f: Filter): Promise<Snapshot & { 
 // ---------- 상세 ----------
 export type Detail = { title: string; amount: string; fields: Record<string, string>; texts: string[] };
 
-/** ex-modal-card 의 글자 조각 → 제목 · 사용량 · 라벨-값 */
+/** 상세(390 ex-modal-card / 1440 드로어)의 라벨: 390 = d7 §15 상세 라벨 · 1440 = 새 프레임 10-desktop 드로어 정보 줄 */
+export const detailLabels = (page: Page): readonly string[] => (isDeskPage(page) ? DESK_DETAIL_LABELS : DETAIL_LABELS);
+
+/** 상세(390 ex-modal-card / 1440 드로어)의 글자 조각 → 제목 · 사용량 · 라벨-값 */
 export async function readDetail(page: Page): Promise<Detail> {
+  const DETAIL_LABELS = detailLabels(page);
   const texts = await modal(page).evaluate((card) => {
     const out: string[] = [];
     const walker = document.createTreeWalker(card, NodeFilter.SHOW_TEXT);
@@ -463,8 +579,10 @@ export function memoText(memo: string | null): string {
  * (+ 기록한 날이 사용일과 다르면 회색 캡션 "N월 N일에 기록") · 메모(없으면 "-") · msds-entry · "닫기"
  */
 export async function expectDetail(page: Page, r: HistoryRow): Promise<void> {
-  await expect(modal(page), `${MODAL} 1개`).toHaveCount(1);
+  const desk = isDeskPage(page);
+  await expect(modal(page), `${detailOf(page)} 1개`).toHaveCount(1);
   await expect(modal(page)).toBeVisible();
+  if (desk) await expect(page.locator(sel(MODAL)), "1440 기록 상세 = 드로어 (ex-modal-card 0)").toHaveCount(0);
   await expect(async () => {
     const d = await readDetail(page);
     expect(d.title, "상세 시약명").toBe(r.reagent_name);
@@ -472,10 +590,16 @@ export async function expectDetail(page: Page, r: HistoryRow): Promise<void> {
     expect(d.fields["사용자"], "상세 사용자").toBe(r.user_name);
     expect(d.fields["사용일"], "상세 사용일 = used_on").toBe(r.used_on);
     expect(d.fields["사용일"], "사용일 형식 YYYY-MM-DD").toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    // 기록한 날 칸: 기록 시각, 기록한 날이 사용일과 다르면 그 뒤에 캡션이 붙을 수 있다
     const cap = captionOf(r);
-    const recorded = d.fields["기록한 날"];
-    expect([detailDateTime(r.used_at), ...(cap ? [`${detailDateTime(r.used_at)} ${cap}`] : [])], `상세 기록한 날 (${recorded})`).toContain(recorded);
+    if (desk) {
+      // 1440 드로어 "기록 시각"(시안 10-desktop): 같은 날 = "HH:mm", 기록한 날이 사용일과 다르면 날짜까지 "YYYY-MM-DD HH:mm" (d7 §15 기록한 날)
+      const at = d.fields["기록 시각"];
+      expect(cap ? [detailDateTime(r.used_at), `${detailDateTime(r.used_at)} ${cap}`] : [recordedTime(r.used_at)], `드로어 기록 시각 (${at})`).toContain(at);
+    } else {
+      // 기록한 날 칸: 기록 시각, 기록한 날이 사용일과 다르면 그 뒤에 캡션이 붙을 수 있다
+      const recorded = d.fields["기록한 날"];
+      expect([detailDateTime(r.used_at), ...(cap ? [`${detailDateTime(r.used_at)} ${cap}`] : [])], `상세 기록한 날 (${recorded})`).toContain(recorded);
+    }
     // 상세의 캡션: d7 §15 "행·상세" + "데스크톱 상세는 시안대로"(10-desktop 은 캡션 없이 '기록한 날' 칸) — 다를 때 캡션은 있어도 없어도 되지만
     // 같은 날이면 없어야 하고, 있다면 기록한 날의 문구여야 한다
     const caps = d.texts.filter((t) => CAPTION_RE.test(t));
@@ -496,6 +620,23 @@ export const closeButton = (page: Page) => modal(page).locator(sel("button-outli
 
 /** i 번째 행을 눌러 상세를 연다 (이미 그 행의 상세가 열려 있으면 그대로) */
 export async function openRow(page: Page, index: number): Promise<Locator> {
+  if (isDeskPage(page)) {
+    // 1440: index 가 있는 쪽으로 넘긴 뒤 그 행 (행 = 표 한 쪽 PAGE_SIZE)
+    const p = Math.floor(index / PAGE_SIZE) + 1;
+    const nav = pagination(page.locator("main"));
+    if ((await nav.count()) > 0) {
+      const cur = nav.locator('[aria-current="true"]');
+      if ((await cur.innerText()).trim() !== String(p)) {
+        await nav.getByRole("button", { name: String(p), exact: true }).click();
+        await expect(cur, `${p}쪽`).toHaveText(String(p));
+      }
+    }
+    const row = rows(page).nth(index % PAGE_SIZE);
+    await row.scrollIntoViewIfNeeded();
+    await row.locator("[data-row-link]").click();
+    await expect(modal(page), `행을 누르면 ${DRAWER}`).toHaveCount(1);
+    return row;
+  }
   const row = rows(page).nth(index);
   await row.scrollIntoViewIfNeeded();
   await row.click();
@@ -592,4 +733,34 @@ export async function ensureFixtureLogs(staffPage: Page, info: TestInfo): Promis
     }
   });
   return reagent;
+}
+
+// ---------- 1440 표 쪽 (d7 §23 run b) ----------
+/** index 번째 기록 행 (1440 = 그 쪽으로 넘긴 뒤 그 쪽 안의 행) */
+export async function rowAt(page: Page, index: number): Promise<Locator> {
+  if (!isDeskPage(page)) return rows(page).nth(index);
+  const p = Math.floor(index / PAGE_SIZE) + 1;
+  const nav = pagination(page.locator("main"));
+  if ((await nav.count()) > 0) {
+    const cur = nav.locator('[aria-current="true"]');
+    if ((await cur.innerText()).trim() !== String(p)) {
+      await nav.getByRole("button", { name: String(p), exact: true }).click();
+      await expect(cur, `${p}쪽`).toHaveText(String(p));
+    }
+  }
+  return rows(page).nth(index % PAGE_SIZE);
+}
+
+/** 행을 누르는 곳 · 닫은 뒤 포커스가 돌아올 곳: 390 = 행(button) / 1440 = 행의 대표 칸 버튼 */
+export const rowTarget = (page: Page, row: Locator): Locator => (isDeskPage(page) ? row.locator("[data-row-link]") : row);
+
+/** 목록에 보이는 행 수: 390 = 전체 / 1440 = 지금 쪽의 행 (한 쪽 PAGE_SIZE) */
+export async function expectRowsShown(page: Page, total: number, what: string): Promise<void> {
+  if (!isDeskPage(page)) {
+    await expect(rows(page), what).toHaveCount(total);
+    return;
+  }
+  const nav = pagination(page.locator("main"));
+  const cur = (await nav.count()) > 0 ? Number((await nav.locator('[aria-current="true"]').innerText()).trim()) : 1;
+  await expect(rows(page), `${what} (1440 ${cur}쪽)`).toHaveCount(Math.max(0, Math.min(PAGE_SIZE, total - (cur - 1) * PAGE_SIZE)));
 }

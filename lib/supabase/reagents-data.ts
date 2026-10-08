@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { getServerClient, getServerSession } from "./server";
 import { formatDateDots, formatStock } from "@/lib/format";
 import { isDoorType } from "@/lib/cabinet-rules";
@@ -79,8 +80,9 @@ export function toFilterCabinets(rows: readonly CabinetListRow[]): FilterCabinet
 /**
  * 화면 2 시약 목록 — 로그인 세션(publishable 키 + 쿠키)으로 읽어 RLS 가 자기 학교 행만 돌려준다.
  * 필터(d7 §16)에 쓰는 보관 분류·칸·MSDS 유무와 학교 시약장 목록도 함께 읽는다. 세션·프로필이 없으면 null.
+ * 요청당 한 번만 읽는다 (React cache — 데스크톱 목록(레이아웃)과 모바일 목록(페이지)이 같은 결과를 쓴다).
  */
-export async function getReagentList(): Promise<ReagentListData | null> {
+export const getReagentList = cache(async function getReagentList(): Promise<ReagentListData | null> {
   const supabase = await getServerClient();
   // 세션 검증(요청당 1회, layout 과 공유)과 목록 조회를 같이 보낸다 — 결과는 세션이 확인된 뒤에만 쓴다 (행은 RLS 가 거른다)
   const [me, reagents, cabinets] = await Promise.all([
@@ -95,4 +97,4 @@ export async function getReagentList(): Promise<ReagentListData | null> {
     items: ((reagents.data ?? []) as ReagentListRow[]).map(toReagentListItem),
     cabinets: toFilterCabinets((cabinets.data ?? []) as CabinetListRow[]),
   };
-}
+});

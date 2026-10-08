@@ -1,0 +1,375 @@
+/* 데스크톱 목록 표 (디자인 1.24 data-table, 시안 2·3·8·9·10-desktop)
+ * 틀: 흰 바탕 + border 한 줄 + radius 16 (안쪽 행이 모서리를 넘지 않게 overflow hidden)
+ * 머리행 40 · 좌우 16, 열 이름 12/400 회색 + sort-arrow 20 (정렬 중 = 하늘색 화살표, 아니면 회색 꺾쇠)
+ * 행 48 · 좌우 16 · 아래 hairline (마지막 행 제외), 글자 13/400. 선택 = highlight-soft 바탕 + 대표 칸 600
+ */
+
+.wrap {
+  min-width: 0;
+  overflow: hidden;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.head {
+  height: calc(var(--space-32) + var(--space-8));
+  background: var(--color-surface);
+}
+
+.headCell {
+  padding: var(--space-0) var(--space-4);
+  border-bottom: var(--border-width) solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.headLabel {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: 100%;
+  min-height: var(--button-min-height);
+  margin: calc(var(--space-12) * -1) var(--space-0);
+  padding: var(--space-0);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sortButton > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sortButton:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.sortIcon {
+  flex-shrink: 0;
+  width: var(--icon-md);
+  height: var(--icon-md);
+  color: var(--color-text-muted);
+}
+
+.sortActive {
+  color: var(--color-highlight);
+}
+
+/* 행 안 첫·마지막 칸만 좌우 16 (시안 행 padding 0 16), 칸 사이 8 (칸마다 좌우 4) */
+.head > :first-child,
+.row > :first-child,
+.groupCell {
+  padding-left: var(--space-16);
+}
+
+.head > :last-child,
+.row > :last-child {
+  padding-right: var(--space-16);
+}
+
+.row {
+  height: var(--control-height);
+  background: var(--color-surface);
+}
+
+.row > * {
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+tbody > .row:last-child > * {
+  border-bottom: 0;
+}
+
+.tall > * {
+  padding-top: var(--space-12);
+  padding-bottom: var(--space-12);
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  background: var(--color-surface-muted);
+}
+
+.selected,
+.selected:hover {
+  background: var(--color-highlight-soft);
+}
+
+.cell {
+  padding: var(--space-0) var(--space-4);
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.strong {
+  font-weight: var(--font-weight-semibold);
+}
+
+.end {
+  text-align: right;
+}
+
+/* 대표 칸 링크: 글자만 (밑줄·색 없음), 누름 영역은 행 */
+.rowLink {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+  padding: var(--space-0);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.rowLink:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: var(--space-4);
+}
+
+.rowLinkText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.caption {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 묶음 머리 행 (시안 10 date-group-row: 위 12 · 아래 8, 하늘색 막대 4 × 16 + 12/600 회색) */
+.group {
+  background: var(--color-surface);
+}
+
+.groupCell {
+  padding-top: var(--space-12);
+  padding-right: var(--space-16);
+  padding-bottom: var(--space-8);
+  border-bottom: var(--border-width) solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-align: left;
+}
+
+.groupInner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.groupIndicator {
+  flex-shrink: 0;
+  width: var(--space-4);
+  height: var(--space-16);
+  background: var(--color-highlight);
+}
+
+/* 행이 없을 때: 머리행 아래 가운데 (시안 2-filter-empty — 위아래 48) */
+.empty {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-48) var(--space-24);
+}
+
+.empty > * {
+  width: 100%;
+  max-width: calc(var(--side-column-width) + var(--space-64) + var(--space-16));
+}
+
+/* 쪽 번호 (시안 pagination: 가운데, 32 원 사이 8, 현재 = 연하늘 채움 + 기본색, 나머지 회색) */
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-8);
+}
+
+.page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-32);
+  height: var(--space-32);
+  padding: var(--space-0);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.page:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.pageCurrent {
+  background: var(--color-highlight-soft);
+  color: var(--color-text);
+}
+
+.srOnly {
+  position: absolute;
+  width: var(--border-width);
+  height: var(--border-width);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* 행 끝 더보기 (시안 more-cell: 하늘색 점 3개 20, 누름 영역 44 — 행 높이가 늘지 않게 바깥 여백으로 되돌린다) */
+.menuWrap {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.moreButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+  margin: calc(var(--space-12) * -1) var(--space-0);
+  padding: var(--space-0);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  cursor: pointer;
+}
+
+.moreButton:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.moreButton:active:not(:disabled) {
+  opacity: var(--pressed-opacity);
+}
+
+.moreButton:disabled {
+  cursor: not-allowed;
+  opacity: var(--pressed-opacity);
+}
+
+.moreIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  color: var(--color-highlight);
+}
+
+/* 작은 메뉴: 화면 기준(fixed) 버튼 아래 오른쪽 맞춤, 흰 바탕 + 테두리 (그림자 없음) */
+.menu {
+  position: fixed;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: calc(var(--control-height) * 3);
+  padding: var(--space-8);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-none);
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--button-min-height);
+  padding: var(--space-0) var(--space-12);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.menuItem:hover:not(:disabled),
+.menuItem:focus-visible {
+  background: var(--color-surface-muted);
+}
+
+.menuItem:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.menuItem:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.pageGap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-32);
+  height: var(--space-32);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+}
+
+/* 더보기가 든 칸은 말줄임 없이 (누름 영역 44 가 칸보다 클 수 있다) */
+.cell:has(> [data-name="more-menu"]) {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+/* 행 링크를 누른 뒤 응답 전 (LinkPending — data-pending) = 눌린 모양 */
+.row:has([data-pending]) {
+  background: var(--color-surface-muted);
+}

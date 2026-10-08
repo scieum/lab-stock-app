@@ -4,6 +4,7 @@
 //
 // 느린 응답 흉내: 고정 대기(sleep)를 쓰지 않는다. 화면 전환 요청(RSC, 미리 받기 제외)을 붙잡아 두었다가
 // 테스트가 직접 풀어 준다 — "응답 전" 상태를 원하는 만큼 유지한 채 단언한다.
+import { waitWidthSettled } from "./desk-helpers";
 import { expect, type Browser, type BrowserContext, type Locator, type Page, type Request, type TestInfo } from "@playwright/test";
 import type { Role } from "./db-helpers";
 import { ROLE_NAME, browserClient, devRules, routeOf, rules, sel, seedRows, type ViewportName } from "./screen-helpers";
@@ -267,9 +268,11 @@ export async function waitHydrated(link: Locator): Promise<void> {
 
 /** 화면 본문이 그려졌는지 (빈 화면·자리 표시에서 개수를 세어 통과하지 않도록) */
 export async function waitContent(page: Page, screen: number): Promise<void> {
+  // 화면 2 표식: 폭 390 = reagent-row / 폭 1440 = data-table 행 (d7 §23 run b — 데스크톱 시약 목록은 data-table)
+  const desk = (page.viewportSize()?.width ?? 0) >= devRules.viewports.desktop[0];
   const marker: Record<number, string> = {
     [HOME]: `main ${sel("home-summary")}`,
-    [LIST]: `main ${sel("reagent-row")}`,
+    [LIST]: desk ? `main ${sel("data-table")} ${sel("ex-data-table-cell")}` : `main ${sel("reagent-row")}`,
     [HISTORY]: `main ${sel("segmented-control")}`,
   };
   const m = marker[screen];
@@ -281,6 +284,8 @@ export async function waitContent(page: Page, screen: number): Promise<void> {
   await expect(page.locator(m).first(), `화면 ${screen} 본문`).toBeVisible({ timeout: 45_000 });
   await expect(page.locator(BUSY), "자리 표시는 본문으로 바뀐다").toHaveCount(0);
   expect(new URL(page.url()).pathname, `화면 ${screen} 경로`).toBe(routeOf(screen));
+  // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 (개수 세기 전)
+  await waitWidthSettled(page);
 }
 
 /**

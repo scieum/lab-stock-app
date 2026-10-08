@@ -10,9 +10,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test, expect, type Browser, type Page, type TestInfo } from "@playwright/test";
 import { routeOf, rules, sel } from "./screen-helpers";
+import { isDeskPage } from "./desk-helpers";
 import { tempSchoolLike, HAS_SERVICE, clientFor, openTemp, service, type TempUser } from "./screen-8-helpers";
 import { NO_S11_RESIDUE, cleanup, makeFixture, sharedCabinetSnapshot, type S11Fixture } from "./screen-11-helpers";
-import { CARD, TOAST, amountInput, submitButton, usagePath, waitUsage } from "./screen-4-helpers";
+import { TOAST, amountInput, submitButton, usagePath, waitUsage, reagentHead } from "./screen-4-helpers";
 import {
   CAPTION_RE,
   captionOf,
@@ -154,10 +155,12 @@ test.describe("일회용 학교", () => {
       const page = t.page;
       try {
         await waitUsage(page, true);
-        await expect(page.locator(sel(CARD)).first()).toContainText(name);
+        await expect(reagentHead(page).first()).toContainText(name);
         // 기본 상태
         await expect(dateField(page), `usage-date "${DATE_LABEL}" 1개`).toHaveCount(1);
-        await expect(dateField(page).locator("label"), "라벨").toContainText(DATE_LABEL);
+        // 라벨: 390 = usage-date 안 label / 1440 = 드로어 form-row 라벨 칸(htmlFor 로 사용일 입력과 이어짐, 시안 4-desktop)
+        if (isDeskPage(page)) await expect(dateInput(page), "라벨").toHaveAccessibleName(DATE_LABEL);
+        else await expect(dateField(page).locator("label"), "라벨").toContainText(DATE_LABEL);
         await expect(dateInput(page), "기본 = 한국 오늘").toHaveValue(today);
         await expect(dateInput(page), "고를 수 있는 마지막 날 = 오늘").toHaveAttribute("max", today);
         await expect(note(page), "오늘이면 past-date-note 없음").toHaveCount(0);
@@ -220,7 +223,7 @@ test.describe("일회용 학교", () => {
         await expectDetail(page, snap.shown[idx]);
         const d = await readDetail(page);
         expect(d.fields["사용일"], "상세 사용일").toBe(past);
-        expect(d.fields["기록한 날"].startsWith(today), "상세 기록한 날 = 오늘").toBe(true);
+        expect(d.fields[isDeskPage(page) ? "기록 시각" : "기록한 날"].startsWith(today), "상세 기록한 날 = 오늘 (1440 드로어 기록 시각)").toBe(true);
         // 최근 1개월(기본)에는 없다 — 기간도 사용일 기준
         const one = await gotoAndMatch(page, { q: name });
         expect(one.shown.some((r) => r.id === added[0].id), "최근 1개월에는 40일 전 사용일 기록 없음").toBe(false);
@@ -289,7 +292,8 @@ test.describe("일회용 학교", () => {
       await expectDetail(page, snap.shown.find((r) => r.id === made[1])!);
       const d = await readDetail(page);
       expect(d.fields["사용일"]).toBe(daysAgo(1));
-      expect(d.fields["기록한 날"].startsWith(today), "기록한 날 = 오늘 시각").toBe(true);
+      // 390 상세 "기록한 날" / 1440 드로어 "기록 시각"(새 프레임 10-desktop — 다른 날 기록이면 날짜까지)
+      expect(d.fields[isDeskPage(page) ? "기록 시각" : "기록한 날"].startsWith(today), "기록한 날 = 오늘 시각").toBe(true);
       expect(d.fields["메모"]).toBe("어제를 오늘 기록");
       // 기본 기간(최근 1개월)은 사용일 기준: 35일 전 사용일 기록은 빠진다
       const one = await gotoAndMatch(page, { q: name });

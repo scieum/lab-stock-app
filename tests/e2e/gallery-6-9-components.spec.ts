@@ -10,8 +10,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test, expect, type Locator, type Page } from "@playwright/test";
-import { framePath } from "../frames";
-import { DESKTOP_SHELL_NAMES } from "../desktop-shell";
+import { framePath, preDesktopFramePath } from "../frames";
+import { DESKTOP_SHELL_NAMES, deskOnlyComponents } from "../desktop-shell";
 
 const S6 = 6;
 const S9 = 9;
@@ -46,11 +46,17 @@ const D7 = readFileSync(join(root, "harness/d7-data.md"), "utf8");
 const MANUAL_BASIS = /기준 문구 줄은 "([^"]+)"/.exec(D7.split(/\r?\n/).find((l) => l.startsWith("| 재주문 기준 |")) ?? "")?.[1] ?? "";
 const loadFrame = (name: string) => (JSON.parse(readFileSync(framePath(`${name}`), "utf8")) as Frame).frames[0].nodes;
 /** 시안 1.17 프레임 (d7 §18 로 바뀐 부분만) */
-const loadFrame117 = (name: string) => (JSON.parse(readFileSync(framePath(`${name}`), "utf8")) as Frame).frames[0].nodes;
+/**
+ * 화면 9 갤러리 예시(/gallery/vendors) = 모바일 판매처 목록·등록 시트 + 예전 데스크톱 가운데 카드 — 예전 시안 1.17 값으로 만든 컴포넌트 예시다.
+ * 화면 9 는 데스크톱 재구성 run b(dev-rules 1.12 desktop_migrated_screens)로 새 프레임(표 + 드로어)으로 넘어갔지만, 폭 390 은 변경 없음(d7 §23)이고
+ * 데스크톱 data-table · detail-drawer 는 /gallery/desk(gallery-desk-components)에서 본다. 그래서 이 파일의 화면 9 기대값은 예전 프레임에서 읽는다.
+ * (새 시안 9-mobile 은 같은 구조에 예시 판매처 이름·연락처 줄만 바뀌었다 — 새 프레임 대조는 run-b-frames.spec)
+ */
+const loadFrame117 = (name: string) => (JSON.parse(readFileSync(preDesktopFramePath(`${name}`), "utf8")) as Frame).frames[0].nodes;
 const d6 = loadFrame(`${S6}-desktop`);
 const m6 = loadFrame(`${S6}-mobile`);
-const d9 = loadFrame(`${S9}-desktop`);
-const m9 = loadFrame(`${S9}-mobile`);
+const d9 = loadFrame117(`${S9}-desktop`);
+const m9 = loadFrame117(`${S9}-mobile`);
 
 // ---------- 기대값: 프레임 ----------
 type Group = { node: FrameNode; children: FrameNode[] };
@@ -639,7 +645,10 @@ test(`[K1][S${S6}] /gallery/reorder DOM 에 화면 ${S6} 컴포넌트(dev-rules,
 });
 
 test(`[K1][S${S9}] /gallery/vendors DOM 에 화면 ${S9} 컴포넌트(dev-rules, nav-pill·tab-bar 제외)가 각각 1개 이상, 메뉴·폼을 연 상태까지 새 data-component 이름 없음`, async ({ page }) => {
-  const want = screenComponents(S9);
+  // 데스크톱 전용 data-table · detail-drawer(run b) 는 /gallery/desk 에 있다 (gallery-desk-components)
+  const deskOnly = deskOnlyComponents();
+  expect(screenComponents(S9), "dev-rules 화면 9 에 data-table · detail-drawer (run b)").toEqual(expect.arrayContaining(deskOnly));
+  const want = screenComponents(S9).filter((n) => !deskOnly.includes(n));
   expect(want.length, "dev-rules 화면 9 컴포넌트").toBeGreaterThanOrEqual(9);
   await open(page, GALLERY_VENDORS);
   for (const n of want) expect(await page.locator(sel(n)).count(), `/gallery/vendors ${n}`).toBeGreaterThanOrEqual(1);
