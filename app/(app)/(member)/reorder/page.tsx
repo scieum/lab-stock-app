@@ -19,7 +19,7 @@ export const metadata: Metadata = { title: "재주문 알림 · Lab_Stock" };
  * 비로그인 → /login, 학생 → / (시약·판매처를 읽지도, 화면을 그리지도 않는다 — getReorderScreen 이 역할을 먼저 본다).
  * 프로필이 없는 세션(내보낸 계정)도 / 로 — 거기서 "소속 학교가 없어요" 안내를 본다.
  * 이 세그먼트에는 loading 경계를 두지 않는다 — 역할 판정이 HTTP 3xx 로 나가야 한다 (/intake·/users 와 같다).
- * 카드의 글자(필요량·기준·알림 날짜)는 여기(서버)에서 만든다 — 날짜는 한국 시간, 브라우저 시간대와 무관.
+ * 카드의 글자(재주문 기준·현재 재고·기준 문구·알림 날짜)는 여기(서버)에서 만든다 — 날짜는 한국 시간, 브라우저 시간대와 무관.
  */
 export default async function ReorderPage() {
   const result = await getReorderScreen();

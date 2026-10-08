@@ -20,13 +20,13 @@ import styles from "./reorder.module.css";
 export type ReorderScreenAlert = {
   id: string;
   name: string;
-  /** "필요량 60 g / 현재 재고 30 g" */
+  /** "재주문 기준 60g / 현재 재고 30g" */
   amount: string;
   /** "1반 1회 실험량 10 g × 6조 기준" 또는 "재주문 기준 60 g" */
   basis: string;
   /** 자동 기준이면 수량 줄 조각 + 캡션 (카드가 auto-threshold-badge 를 끼운다, d7 §18). 아니면 null */
   auto: { need: string; stock: string; caption: string | null } | null;
-  /** "2026.09.30 알림" (서버가 한국 시간으로 만든 글자). 없으면 null */
+  /** "10월 7일 알림" (올해가 아니면 "2025년 10월 7일 알림", 서버가 한국 시간으로 만든 글자). 없으면 null */
   date: string | null;
 };
 
