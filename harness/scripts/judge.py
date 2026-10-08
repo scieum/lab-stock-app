@@ -281,7 +281,7 @@ CHECKS = {
     "T1": check_T1, "T2": check_T2, "K1": check_K1,
     "N2-env": check_N2env, "N2-bundle": check_N2bundle, "V1": check_V1,
 }
-for _r in ("N1-db", "R-db", "R-ui", "C1", "C2", "N1-ui", "N1-d", "GM-ui", "GM-db"):
+for _r in ("N1-db", "R-db", "R-ui", "C1", "C2", "C3", "N1-ui", "N1-d", "GM-ui", "GM-db"):
     CHECKS[_r] = check_test_rule(_r)
 
 

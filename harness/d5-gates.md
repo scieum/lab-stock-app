@@ -56,6 +56,7 @@
 |---|---|
 | C1 | rules.json `screens_required` 컴포넌트가 해당 화면 DOM에 존재 (MVP: 13 = home-summary·quick-action, 15 = landing-hero·feature-card·landing-cta) |
 | C2 | 폭 390: 화면 2~13에 `tab-bar` 1개·`tab-item` 4개, 화면 1·14·15에 0 / 폭 1440: `tab-bar` 0 |
+| C3 | (2026-10-08, design/rules.json 1.22 `desktop_shell`) 폭 1440: `desktop_shell.screens`(2~13·16)에 `app-sidebar` 1개·`sidebar-item` ≥ min_items(역할별 메뉴 = desktop_shell.menu)·`nav-pill` 0, `desktop_required` 컴포넌트 존재(data-table·detail-drawer 등), 둘러보기 데스크톱 = 사이드바 1·guest-lock 2, 로그인 전 1·14·15 = `web-header` 1·`app-sidebar`·`nav-pill` 0(+ 15 의 pre_login.desktop_required). 폭 390 은 변경 없음. 셸 부분(app-sidebar·sidebar-item·nav-pill 0)은 dev-rules `desktop_shell_done` 이 true 이면 desktop_shell.screens 전부, 화면별 본문(desktop_required·새 프레임 대조)은 **dev-rules `desktop_migrated_screens` 에 든 화면만**(데스크톱 재구성 run 마다 늘림 — 끝나면 전부) |
 
 ### N — 어기면 안 되는 것 ★
 

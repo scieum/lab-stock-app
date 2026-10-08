@@ -1,5 +1,5 @@
 {
-  "version": "1.21",
+  "version": "1.22",
   "sources": [
     "docs/design.md",
     "docs/story-service.md",
@@ -21,7 +21,8 @@
     "2026-10-07 초·중·고 학교급 (개발 세션 요청 4)",
     "2026-10-08 데스크톱 웹앱 재구성 — 왼쪽 사이드바·데이터 테이블·오른쪽 드로어 (refs/uibowl-desktop-web-20261008.md, 사용자 결정 A)",
     "2026-10-08 화면 16 MSDS 요약 · GHS 표준 빨강 예외 · 개발 기준 맞춤 6건 (개발 세션 요청 5)",
-    "2026-10-08 데스크톱 2차 — 로그인 전 web-header·반 나눔, 둘러보기 사이드바"
+    "2026-10-08 데스크톱 2차 — 로그인 전 web-header·반 나눔, 둘러보기 사이드바",
+    "2026-10-08 랜딩 긴 페이지 — 15-desktop 세로 프레임·랜딩 큰 글자·섹션 컴포넌트 (refs/uibowl-landing-hero-20261008.md)"
   ],
   "colors": {
     "allowed": [
@@ -123,7 +124,19 @@
     "text_case": [
       "ORIGINAL"
     ],
-    "text_case_source": "R4 결정"
+    "text_case_source": "R4 결정",
+    "display_sizes": {
+      "sizes": [
+        40,
+        48
+      ],
+      "only_within": [
+        "landing-hero",
+        "landing-section",
+        "cta-band"
+      ],
+      "source": "2026-10-08 사용자 결정: 랜딩 헤드라인 48 (히어로 32 → 48)"
+    }
   },
   "effects": {
     "drop_shadow_max": 0,
@@ -190,7 +203,15 @@
     ],
     "guest_name_pattern": "^([1-9]|1[0-6])-guest-(mobile|desktop)$",
     "variant_name_pattern": "^([1-9]|1[0-6])-(empty|delete|slot|print|unsaved|location|result|doc-upload|doc-review|doc-fail|suggest|msds|msds-bulk|filter|filter-empty|past-date|no-school|loading|fail|no-summary)-(mobile|desktop)$",
-    "variant_note": "같은 화면의 다른 상태 프레임. input.json variants {\"11\": [\"empty\",\"delete\"]} 로 요청 (2026-10-04) · 2026-10-06 상태 추가: 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 상태 추가: 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk · 2026-10-07 상태 추가: 2-filter·2-filter-empty, 4-past-date · 2026-10-07 상태 추가: 14-no-school · 2026-10-08 상태 추가: 16-loading·16-fail·16-no-summary"
+    "variant_note": "같은 화면의 다른 상태 프레임. input.json variants {\"11\": [\"empty\",\"delete\"]} 로 요청 (2026-10-04) · 2026-10-06 상태 추가: 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 상태 추가: 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk · 2026-10-07 상태 추가: 2-filter·2-filter-empty, 4-past-date · 2026-10-07 상태 추가: 14-no-school · 2026-10-08 상태 추가: 16-loading·16-fail·16-no-summary",
+    "tall": {
+      "15-desktop": {
+        "width": 1440,
+        "min_height": 900,
+        "max_height": 6000
+      },
+      "source": "2026-10-08 사용자 결정: 랜딩 데스크톱만 스크롤 긴 페이지"
+    }
   },
   "s1": {
     "refs_per_screen": [
@@ -878,7 +899,18 @@
         "app-sidebar"
       ],
       "layout": "web-header = 전폭 상단 바(왼쪽 Lab_Stock / 오른쪽 로그인·회원가입, radius 0, canvas 바탕 + 아래 hairline-soft). 1·14 = 왼쪽 폼 / 오른쪽 서비스 소개 패널 반 나눔(14는 번호 붙은 섹션: 1 학교 선택 → 2 계정). 15 = 웹 랜딩(히어로 + feature-card 4열 + landing-cta)",
-      "source": "2026-10-08 사용자 결정 (상단 전폭 바 + 반 나눔)"
+      "source": "2026-10-08 사용자 결정 (상단 전폭 바 + 반 나눔)",
+      "desktop_required": {
+        "15": [
+          "product-shot",
+          "landing-tabs",
+          "landing-section",
+          "step-flow",
+          "cta-band",
+          "web-footer"
+        ]
+      },
+      "landing_sections": "15-desktop 순서: 히어로(landing-hero·product-shot·landing-cta·guest-entry) → landing-tabs(접는 선, 스크롤 시 고정) → 문제 공감 feature-card 3 → landing-section 4(좌우 번갈아, 꼬리표·제목·점 목록 3·승인 화면 조각) → step-flow 5단계 → 대상 탭(segmented-control 교사·학생·관리자) → 안심 2×2(hairline 격자, 운영 숫자 없음) → cta-band → web-footer 4열"
     }
   },
   "msds_summary": {
