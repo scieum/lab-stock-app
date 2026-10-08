@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { test, expect, type Page } from "@playwright/test";
 import { anonClient } from "./db-helpers";
 import { openAs } from "./auth-state";
-import { countComponent, devRules, routeOf, rules, seedRows, sel } from "./screen-helpers";
+import { countComponent, devRules, implementedGuestScreens, routeOf, rules, seedRows, sel } from "./screen-helpers";
 import {
   GUEST,
   checkBanner,
@@ -31,9 +31,11 @@ async function waitHome(page: Page): Promise<void> {
   await expect(page.locator(sel("home-summary")).first()).toBeVisible({ timeout: 30_000 });
 }
 
-test(`[GM-ui][${TAG}] rules.json guest.screens 에 화면 ${SCREEN} · dev-rules guest_screens 와 같음 · routes ${SCREEN}-guest 있음`, () => {
+test(`[GM-ui][${TAG}] rules.json guest.screens 에 화면 ${SCREEN} · dev-rules guest_screens = guest.screens 중 구현된(mvp_screens) 화면 · routes ${SCREEN}-guest 있음`, () => {
   expect(GUEST.screens, "guest.screens").toContain(SCREEN);
-  expect([...devRules.guest_screens].sort(), "dev-rules guest_screens = rules guest.screens").toEqual([...GUEST.screens].sort());
+  // 빠진 화면(지금 16 MSDS 요약)은 다음 run(화면 16)에서 — mvp_screens 에 들어오면 자동으로 다시 요구된다
+  const { screens } = implementedGuestScreens();
+  expect([...devRules.guest_screens].sort(), "dev-rules guest_screens = rules guest.screens ∩ mvp_screens").toEqual([...screens].sort());
   expect(guestRouteOf(SCREEN)).toBeTruthy();
   expect(GUEST.write_lock_screens, `화면 ${SCREEN} 은 쓰기 잠금 대상`).toContain(SCREEN);
 });
