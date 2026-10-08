@@ -1,0 +1,81 @@
+/*
+ * app-sidebar (시안 1.22, 2-desktop 376:3): 240 × 화면 높이, padding 24/12, radius 0,
+ * 바탕 surface-muted + 오른쪽 hairline(border). 위(sidebar-top, 사이 24) · 아래(sidebar-account) 양 끝.
+ */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-24);
+  width: var(--sidebar-width);
+  min-height: var(--frame-desktop-height);
+  padding: var(--space-24) var(--space-12);
+  border-right: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sidebar);
+  background: var(--color-surface-muted);
+  box-sizing: border-box;
+}
+
+.top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  min-width: 0;
+}
+
+/* sidebar-brand: padding 0/12, 사이 4. 워드마크 18/700, 학교명 17/600 */
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: 0 var(--space-12);
+}
+
+.wordmark {
+  align-self: flex-start;
+  color: var(--color-text);
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.school {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* sidebar-menu: 항목 사이 4 */
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* sidebar-group-title: padding 16/12/4/12, caption 12/400 회색 */
+.groupTitle {
+  margin: 0;
+  padding: var(--space-16) var(--space-12) var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.account {
+  display: flex;
+  min-width: 0;
+}

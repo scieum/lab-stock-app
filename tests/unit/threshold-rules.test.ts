@@ -7,11 +7,12 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { THRESHOLD_MAX, THRESHOLD_MIN, THRESHOLD_NONE_LABEL, THRESHOLD_ZERO_HINT, checkThreshold, thresholdText } from "../../lib/reorder-rules";
 import { ROOT, rules } from "./helpers";
+import { framePath } from "../frames";
 
 const D7 = readFileSync(join(ROOT, "harness/d7-data.md"), "utf8");
 const D7_14 = D7.slice(D7.indexOf("## 14."), D7.indexOf("\n## ", D7.indexOf("## 14.") + 1));
 type FrameNode = { name: string; path: string[]; text: { characters: string } | null };
-const F3 = (JSON.parse(readFileSync(join(ROOT, "design/frames/3-mobile.json"), "utf8")) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes;
+const F3 = (JSON.parse(readFileSync(framePath("3-mobile"), "utf8")) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes;
 /** 시안 3 재주문 기준 값 "3병" */
 const FRAME_THRESHOLD = F3.find((n) => n.name === "value" && n.text && n.path.includes("reorder-threshold"))!.text!.characters;
 

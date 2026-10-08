@@ -10,9 +10,9 @@
 import { test, expect, type BrowserContext, type Page, type TestInfo } from "@playwright/test";
 import { openAs } from "./auth-state";
 import { anonClient } from "./db-helpers";
-import { browserSession, devRules, routeOf, rules, sel } from "./screen-helpers";
+import { browserSession, devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
 import { HAS_SERVICE, forgetSession, openTemp, sessionFor, type TempUser } from "./screen-8-helpers";
-import { anonContext } from "./shell-helpers";
+import { anonContext, shellAccountLabel } from "./shell-helpers";
 import { NO_S11_RESIDUE, cleanup, exact, makeFixture, prepCabinet, prepReagent, type S11Fixture } from "./screen-11-helpers";
 
 test.describe.configure({ mode: "default" });
@@ -57,14 +57,23 @@ test.afterAll(async ({}, info) => {
   expect(left, "일회용 계정·학교·시약장·시약 잔여물").toEqual(NO_S11_RESIDUE);
 });
 
+/** 로그인 전·둘러보기 화면의 nav-pill (데스크톱 web-header·둘러보기 사이드바는 run d — 지금은 두 폭 모두 nav-pill) */
 const nav = (page: Page) => page.locator(sel(NAV));
-const menuButton = (page: Page) => nav(page).locator('button[aria-haspopup="menu"]');
+/** 지금 폭 (dev-rules viewports) */
+const vpOf = (page: Page): ViewportName => (page.viewportSize()?.width === devRules.viewports.desktop[0] ? "desktop" : "mobile");
+/**
+ * 로그인 후 셸의 계정 메뉴 자리: 폭 390 = nav-pill(학교명 ▾), 폭 1440 = app-sidebar(위 학교명 · 아래 계정 줄 "이름 · 역할" ▾)
+ * — rules 1.22 desktop_shell, d7 §23 (계정 ▾ → 로그아웃 = d7 §10 nav-account-menu 역할)
+ */
+const shell = (page: Page) => page.locator(sel(vpOf(page) === "mobile" ? NAV : rules.desktop_shell.component));
+const shellName = (page: Page) => (vpOf(page) === "mobile" ? NAV : rules.desktop_shell.component);
+const menuButton = (page: Page) => shell(page).locator('button[aria-haspopup="menu"]');
 const menu = (page: Page) => page.getByRole("menu");
 const occurrences = (text: string, word: string) => text.split(word).length - 1;
 
 async function waitShell(page: Page): Promise<void> {
   await page.waitForLoadState("load");
-  await expect(nav(page), NAV).toHaveCount(1);
+  await expect(shell(page), shellName(page)).toHaveCount(1);
   await expect(page.locator("main").first()).toBeVisible({ timeout: 45_000 });
   await expect(page.locator('main [aria-busy="true"]')).toHaveCount(0, { timeout: 45_000 });
 }
@@ -79,11 +88,16 @@ async function openMenu(page: Page): Promise<void> {
   }).toPass({ timeout: 30_000 });
 }
 
-/** 학교명 메뉴의 모양 (d7 §10): 학교명 = 메뉴 버튼 · nav-pill 에 학교명 1번 · 메뉴에 "로그아웃" 1개만 */
+/**
+ * 계정 메뉴의 모양 (d7 §10 · §23): 계정 버튼(390 학교명 / 1440 "이름 · 역할") = 메뉴 버튼 · 셸에 학교명 1번 · 메뉴에 "로그아웃" 1개만
+ */
 async function expectMenu(page: Page, schoolName: string, where: string): Promise<void> {
   const button = menuButton(page);
-  await expect(button, `${where}: 학교명 메뉴 버튼 1개`).toHaveCount(1);
-  await expect(button, `${where}: 버튼 글자 = 학교명`).toHaveText(exact(schoolName));
+  const label = await shellAccountLabel(page, vpOf(page));
+  const NAV = shellName(page);
+  const nav = shell;
+  await expect(button, `${where}: 계정 메뉴 버튼 1개`).toHaveCount(1);
+  await expect(button, `${where}: 버튼 글자 = "${label}"`).toHaveText(exact(label));
   await expect(button).toHaveAttribute("aria-expanded", "false");
   await expect(menu(page), `${where}: 처음에는 메뉴 닫힘`).toHaveCount(0);
   await expect(nav(page).getByText(LOGOUT_LABEL), `${where}: 닫힌 메뉴의 "${LOGOUT_LABEL}" 은 없다`).toHaveCount(0);
@@ -141,7 +155,7 @@ test(`[C1][S${HOME}] 학교A 교사 셸 화면(홈·시약 목록·기록·시�
       expect(new URL(page.url()).pathname).toBe(routeOf(screen));
       await expectMenu(page, me.schoolName, `화면 ${screen}`);
       await closeByEscape(page);
-      await expect(menuButton(page), "Esc 뒤 포커스는 학교명 버튼").toBeFocused();
+      await expect(menuButton(page), "Esc 뒤 포커스는 계정 메뉴 버튼").toBeFocused();
       // 바깥을 누르면 닫힌다
       await openMenu(page);
       await page.mouse.click(1, 1); // 화면 왼쪽 위 모서리 (여백 — 누르는 요소가 없는 자리)

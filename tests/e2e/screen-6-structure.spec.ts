@@ -9,7 +9,7 @@ import { ROLE_LABEL } from "./db-helpers";
 import { openAs } from "./auth-state";
 import { PROFILE_ROLE, ROLE_NAME, browserClient, browserSession, countComponent, devRules, roleChecks, routeOf, rules, sel } from "./screen-helpers";
 import { anonContext } from "./screen-8-helpers";
-import { locationPath } from "./shell-helpers";
+import { locationPath, shellSchoolScope } from "./shell-helpers";
 import {
   BADGE,
   BASIS_WORD,
@@ -58,6 +58,7 @@ import {
   linksTo,
   manual,
   modal,
+  navLabelFor,
   navLabels,
   navLinks,
   openLinkModal,
@@ -162,7 +163,7 @@ test(`[R-ui][S${SCREEN}] 비로그인 ${REORDER_HREF} → ${LOGIN_HREF} (HTTP 3x
 
 test(`[R-ui][S${SCREEN}] 학교A 학생 화면 ${STUDENT_SCREENS.join("·")}: ${STUDENT_HIDDEN.join("·")} 0 (R1·R2) · ${REORDER_HREF} 링크 0 · nav 에 "${REORDER_NAV}"·"${VENDORS_NAV}" 없음`, async ({ browser }, info) => {
   test.setTimeout(240_000);
-  const { context, page } = await openAs(browser, info, "student", HOME);
+  const { context, page, viewport } = await openAs(browser, info, "student", HOME);
   try {
     expect((await browserSession(page)).role, "테스트 계정 역할").toBe(PROFILE_ROLE.student);
     for (const screen of STUDENT_SCREENS) {
@@ -171,15 +172,16 @@ test(`[R-ui][S${SCREEN}] 학교A 학생 화면 ${STUDENT_SCREENS.join("·")}: ${
       expect(res?.status(), `${path} 응답`).toBe(200);
       await page.waitForLoadState("load");
       expect(new URL(page.url()).pathname, `${path} 그대로`).toBe(path);
-      await expect(page.locator(sel("nav-pill")), "nav-pill").toHaveCount(1);
+      // 셸 (390 nav-pill / 1440 app-sidebar — rules 1.22 desktop_shell)
+      await expect(shellSchoolScope(page, viewport), "셸").toHaveCount(1);
       await expect(page.locator(BUSY), "자리 표시는 본문으로 바뀐다").toHaveCount(0, { timeout: 45_000 });
       expect((await page.locator("main").innerText()).trim().length, `화면 ${screen} 본문이 그려졌다`).toBeGreaterThan(0);
       const counts = await countsOf(page, STUDENT_HIDDEN);
       for (const c of STUDENT_HIDDEN) expect(counts[c], `학생 화면 ${screen} ${c}`).toBe(0);
       await expect(linksTo(page, REORDER_HREF), `학생 화면 ${screen} ${REORDER_HREF} 링크`).toHaveCount(0);
       const labels = await navLabels(page);
-      expect(labels, `학생 화면 ${screen} nav`).not.toContain(REORDER_NAV);
-      expect(labels, `학생 화면 ${screen} nav`).not.toContain(VENDORS_NAV);
+      expect(labels, `학생 화면 ${screen} nav`).not.toContain(navLabelFor(page, REORDER_NAV));
+      expect(labels, `학생 화면 ${screen} nav`).not.toContain(navLabelFor(page, VENDORS_NAV));
     }
   } finally {
     await context.close();
@@ -211,22 +213,22 @@ for (const role of ["teacher", "admin"] as const) {
 
       // nav
       const labels = await navLabels(page);
-      expect(labels.filter((l) => l === REORDER_NAV), `nav "${REORDER_NAV}"`).toHaveLength(1);
-      expect(labels.filter((l) => l === VENDORS_NAV), `nav "${VENDORS_NAV}"`).toHaveLength(isAdmin ? 1 : 0);
-      const reorderLink = navLinks(page).filter({ hasText: exact(REORDER_NAV) });
+      expect(labels.filter((l) => l === navLabelFor(page, REORDER_NAV)), `nav "${REORDER_NAV}"`).toHaveLength(1);
+      expect(labels.filter((l) => l === navLabelFor(page, VENDORS_NAV)), `nav "${VENDORS_NAV}"`).toHaveLength(isAdmin ? 1 : 0);
+      const reorderLink = navLinks(page).filter({ hasText: exact(navLabelFor(page, REORDER_NAV)) });
       await expect(reorderLink, `nav "${REORDER_NAV}" → ${REORDER_HREF}`).toHaveAttribute("href", REORDER_HREF);
       if (viewport === "desktop") {
         await expect(reorderLink).toBeVisible();
         await expect(reorderLink, "현재 섹션 표시").toHaveAttribute("aria-current", "page");
-        if (isAdmin) await expect(navLinks(page).filter({ hasText: exact(VENDORS_NAV) })).toBeVisible();
+        if (isAdmin) await expect(navLinks(page).filter({ hasText: exact(navLabelFor(page, VENDORS_NAV)) })).toBeVisible();
       }
       // 다른 최상위 화면에서도 같은 nav
       await page.goto(routeOf(2));
       await page.waitForLoadState("load");
       await expect(page.locator(BUSY)).toHaveCount(0, { timeout: 45_000 });
       const listLabels = await navLabels(page);
-      expect(listLabels.filter((l) => l === REORDER_NAV), `화면 2 nav "${REORDER_NAV}"`).toHaveLength(1);
-      expect(listLabels.filter((l) => l === VENDORS_NAV), `화면 2 nav "${VENDORS_NAV}"`).toHaveLength(isAdmin ? 1 : 0);
+      expect(listLabels.filter((l) => l === navLabelFor(page, REORDER_NAV)), `화면 2 nav "${REORDER_NAV}"`).toHaveLength(1);
+      expect(listLabels.filter((l) => l === navLabelFor(page, VENDORS_NAV)), `화면 2 nav "${VENDORS_NAV}"`).toHaveLength(isAdmin ? 1 : 0);
     } finally {
       await context.close();
     }

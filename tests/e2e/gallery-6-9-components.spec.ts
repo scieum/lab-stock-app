@@ -10,6 +10,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test, expect, type Locator, type Page } from "@playwright/test";
+import { framePath } from "../frames";
+import { DESKTOP_SHELL_NAMES } from "../desktop-shell";
 
 const S6 = 6;
 const S9 = 9;
@@ -42,9 +44,9 @@ const dev = JSON.parse(readFileSync(join(root, "harness/dev-rules.json"), "utf8"
 const D7 = readFileSync(join(root, "harness/d7-data.md"), "utf8");
 /** d7 §11 "재주문 기준" 행 (2026-10-08): 직접 입력(근거 없음) 카드의 기준 문구 줄 — 수량 줄과 같은 "재주문 기준 N" 을 두 번 쓰지 않는다 */
 const MANUAL_BASIS = /기준 문구 줄은 "([^"]+)"/.exec(D7.split(/\r?\n/).find((l) => l.startsWith("| 재주문 기준 |")) ?? "")?.[1] ?? "";
-const loadFrame = (name: string) => (JSON.parse(readFileSync(join(root, `design/frames/${name}.json`), "utf8")) as Frame).frames[0].nodes;
+const loadFrame = (name: string) => (JSON.parse(readFileSync(framePath(`${name}`), "utf8")) as Frame).frames[0].nodes;
 /** 시안 1.17 프레임 (d7 §18 로 바뀐 부분만) */
-const loadFrame117 = (name: string) => (JSON.parse(readFileSync(join(root, `design/frames/${name}.json`), "utf8")) as Frame).frames[0].nodes;
+const loadFrame117 = (name: string) => (JSON.parse(readFileSync(framePath(`${name}`), "utf8")) as Frame).frames[0].nodes;
 const d6 = loadFrame(`${S6}-desktop`);
 const m6 = loadFrame(`${S6}-mobile`);
 const d9 = loadFrame(`${S9}-desktop`);
@@ -218,7 +220,8 @@ const sheet117 = (() => {
 
 // 프레임의 컴포넌트 개수 (dev-rules components 이름만, nav-pill·tab-bar 는 갤러리 예시 구역 밖이라 뺀다)
 const componentNames = Object.keys(dev.components);
-const SHELL = ["nav-pill", rules.tab_bar.component, rules.tab_bar.item];
+// 데스크톱 셸(rules 1.22 desktop_shell app-sidebar · sidebar-item)은 dev-rules 가 화면마다 더하지만 /gallery/sidebar 에 있다
+const SHELL = ["nav-pill", rules.tab_bar.component, rules.tab_bar.item, ...DESKTOP_SHELL_NAMES];
 const countByName = (nodes: FrameNode[]) => {
   const out: Record<string, number> = {};
   for (const n of nodes) {

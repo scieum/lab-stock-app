@@ -19,6 +19,7 @@ import {
   sortByShortage,
 } from "../../lib/reorder-rules";
 import { ROOT } from "./helpers";
+import { framePath } from "../frames";
 
 // ---------- 기대값: rules.json reorder.card_text · d7 §11 (1.21) ----------
 const RULES = JSON.parse(readFileSync(join(ROOT, "design/rules.json"), "utf8")) as { reorder: { card_text: string } };
@@ -46,7 +47,7 @@ const NOW_2026 = new Date("2026-10-08T03:00:00Z");
 // 시안 1.17 의 수량 줄("재주문 기준 N u / 현재 재고 …" 띄어 씀)·날짜 모양("YYYY-MM-DD 알림")은 프레임이 예전 그대로라
 // 1.21 문구 틀(d7 §11 · rules.json reorder.card_text)과 다르다 — 문구 틀은 d7·rules 가 기대값이고, 시안에서는 값(재고 < 기준, 날짜 숫자, 자동 배지·캡션)만 읽는다.
 type FrameNode = { name: string; path: string[]; text: { characters: string } | null };
-const frame = JSON.parse(readFileSync(join(ROOT, "design/frames/6-desktop.json"), "utf8")) as { frames: { nodes: FrameNode[] }[] };
+const frame = JSON.parse(readFileSync(framePath("6-desktop"), "utf8")) as { frames: { nodes: FrameNode[] }[] };
 type FrameCard = { name: string; line: string; badge: string | null; caption: string | null; date: string };
 const FRAME_CARDS: FrameCard[] = (() => {
   const out: FrameCard[] = [];

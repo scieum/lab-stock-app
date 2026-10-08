@@ -8,6 +8,7 @@
 // 한 워커에서 순서대로 돈다 (afterAll 정리가 다른 워커의 일회용 학교를 지우지 않게).
 import { test, expect, type TestInfo } from "@playwright/test";
 import { countComponent, routeOf, rules, sel } from "./screen-helpers";
+import { expectShell, isShellComponent, shellNavLabel, shellNavLabels, shellSchoolScope } from "./shell-helpers";
 import {
   CANCEL_BUTTON,
   CHANGE_BUTTON,
@@ -163,11 +164,12 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin, 시안 1.17 과 같은 상태(멤
     const dialog = confirmDialog(page);
     await expect(dialog, "삭제 확인 시트").toBeVisible();
 
-    const tb = rules.tab_bar;
     const absent = [PILL_SOFT, SEGMENT, SEGMENT_ACTIVE, EMPTY, TOAST];
     let checked = 0;
+    // 셸은 폭별 기대값 (390 nav-pill 1 · 탭바 / 1440 app-sidebar 1 · nav-pill 0 — rules 1.22 desktop_shell, C2 · C3)
+    await expectShell(page, viewport, SCREEN, "삭제 확인 시트");
     for (const name of screenComponents()) {
-      if (name === tb.component || name === tb.item) continue; // C2
+      if (isShellComponent(name)) continue;
       const want = frame[name] ?? 0;
       // 공통 셸 예외(rules.json app_exceptions — 디자인 1.15 nav-account-menu)는 이 화면의 옛 시안 프레임에 없고 dev-rules 가 더한다:
       // 로그인 후 셸이 있는 화면마다 정확히 1개 (dev-rules components_note · route_auth.logout)
@@ -187,7 +189,8 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin, 시안 1.17 과 같은 상태(멤
       if (["nav-pill", USER_MANAGE, MODAL, INPUT].includes(name)) expect(n, `${name} = 시안 ${want}`).toBe(want);
       checked++;
     }
-    expect(checked, "프레임과 비교한 컴포넌트 수").toBeGreaterThanOrEqual(7);
+    // 예전엔 nav-pill 을 여기서 셌다(≥ 7) — 셸은 위 expectShell(폭별)로 봤다: 본문 컴포넌트 = 예전 프레임 8 의 본문 6종
+    expect(checked, "프레임과 비교한 본문 컴포넌트 수").toBeGreaterThanOrEqual(6);
     await expect(manage(page).locator(sel(ROW)), `${ROW} = 멤버 + 초대 대기`).toHaveCount(members.length + invites.length);
     await expect(manage(page).getByRole("heading", { name: exact(invitesHeading(invites.length)) }), `"초대 대기 (N)"`).toBeVisible();
     // 시트 안 (시안 1.17 8): 제목 · × 닫기 · "{이름} · 사용·입고 기록은 남아요" · button-outline "취소" · button-primary "{이름} 삭제"
@@ -197,8 +200,8 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin, 시안 1.17 과 같은 상태(멤
     await expect(dialog.getByText(exact(deleteBodyText(target.display_name)))).toBeVisible();
     await expect(dialog.getByRole("button", { name: "닫기", exact: true }), "× 닫기").toHaveCount(1);
     await expect(dialog.getByRole("radio"), "삭제 확인 시트에는 역할 라디오 없음").toHaveCount(0);
-    // 학교명은 자기 학교 하나
-    await expect(page.locator(sel("nav-pill"))).toContainText(school.name);
+    // 학교명은 자기 학교 하나 (셸: 390 nav-pill / 1440 app-sidebar)
+    await expect(shellSchoolScope(page, viewport)).toContainText(school.name);
     expect((await readHeader(page)).school).toBe(school.name);
   } finally {
     await context.close();
@@ -498,7 +501,7 @@ test(`[R-ui][S${SCREEN}] admin 2명 학교에서 본인 admin → 교사: 라디
   expect(promote.error, `준비: 두 번째 admin (${promote.error?.message})`).toBeNull();
   expect((await profileByService(second.id))?.role).toBe("admin");
 
-  const { context, page } = await openTemp(browser, info, school.admin);
+  const { context, page, viewport } = await openTemp(browser, info, school.admin);
   try {
     await waitUsers(page);
     expect(await readHeader(page)).toEqual({ school: school.name, ...countsOf(await dbMembers(page)) });
@@ -520,9 +523,10 @@ test(`[R-ui][S${SCREEN}] admin 2명 학교에서 본인 admin → 교사: 라디
     const usersLinks = page.locator(`a[href="${USERS_HREF}"]`);
     await expect(page.locator(sel(USER_MANAGE)), `${USER_MANAGE} (R6)`).toHaveCount(0);
     await expect(usersLinks, `${USERS_HREF} 링크`).toHaveCount(0);
-    const labels = (await page.locator(`${sel("nav-pill")} nav a`).allTextContents()).map((t) => t.trim());
-    expect(labels, "교사 nav").not.toContain(NAV_LABEL);
-    expect(labels, "교사 nav").toContain(STAFF_NAV_LABEL);
+    // 셸 링크 (390 nav-pill / 1440 app-sidebar — rules 1.22 desktop_shell.menu)
+    const labels = await shellNavLabels(page, viewport);
+    expect(labels, "교사 nav").not.toContain(shellNavLabel(viewport, SCREEN, NAV_LABEL));
+    expect(labels, "교사 nav").toContain(shellNavLabel(viewport, 7, STAFF_NAV_LABEL));
 
     // 재접근 불가
     await page.goto(USERS_HREF);
@@ -548,11 +552,11 @@ test(`[R-ui][S${SCREEN}] 내보낸 사용자의 기존 세션: ${HOME} = "${NO_S
   test.setTimeout(240_000);
   const school = await sharedSchool(info);
   const x = await addMember(school, info, GROUP, "내보낸세션");
-  const { context, page } = await openTemp(browser, info, x, HOME);
+  const { context, page, viewport } = await openTemp(browser, info, x, HOME);
   try {
-    // 대조: 멤버일 때는 홈(화면 13)과 학교명이 보인다
+    // 대조: 멤버일 때는 홈(화면 13)과 학교명이 보인다 (셸: 390 nav-pill / 1440 app-sidebar)
     await expect(page.locator(sel("home-summary")).first(), "멤버일 때 홈").toBeVisible({ timeout: 30_000 });
-    await expect(page.locator(sel("nav-pill"))).toContainText(school.name);
+    await expect(shellSchoolScope(page, viewport)).toContainText(school.name);
 
     // 준비: 같은 학교 admin 이 내보낸다 (remove_member — 로그인 세션, 화면 8 "삭제" 와 같은 함수)
     const removed = await (await clientFor(school.admin)).rpc("remove_member", { p_user_id: x.id });

@@ -19,6 +19,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { browserClient, devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
 import { tempSchoolLike, exact, service, sweep, todayDots, type Residue } from "./screen-8-helpers";
 import { makeFixture, type S11Fixture } from "./screen-11-helpers";
+import { framePath } from "../frames";
+import { DESKTOP_SHELL, frameActiveLabel } from "../desktop-shell";
 
 export { boxOf, frameCounts, highlightSoft, hydrated, onTop, watchActions } from "./screen-11-helpers";
 export { exact };
@@ -54,7 +56,7 @@ export const REORDER_NAV = "재주문 알림";
 export const VENDORS_NAV = "판매처 설정";
 /** 재주문 기준 안내 박스 본문 = 시안 1.17 6-mobile manual-upload info-body (d7 §18 화면 6) */
 export const GUIDE_TEXT = (() => {
-  const j = JSON.parse(readFileSync(join(process.cwd(), "design", "frames", "6-mobile.json"), "utf8")) as {
+  const j = JSON.parse(readFileSync(framePath("6-mobile"), "utf8")) as {
     frames: { nodes: { name: string; path: string[]; text: { characters: string } | null }[] }[];
   };
   const t = j.frames[0].nodes.find((n) => n.name === "info-body" && n.path.includes("manual-upload"))?.text?.characters;
@@ -222,7 +224,23 @@ export const modal = (page: Page) => page.locator(sel(MODAL));
 export const toast = (page: Page) => page.locator(sel(TOAST));
 export const BUSY = 'main [aria-busy="true"]';
 export const linksTo = (page: Page, href: string) => page.locator(`a[href="${href}"], a[href^="${href}?"], a[href^="${href}/"]`);
-export const navLinks = (page: Page) => page.locator(`${sel("nav-pill")} nav a`);
+const isDesktopPage = (page: Page) => page.viewportSize()?.width === devRules.viewports.desktop[0];
+/**
+ * 셸의 화면 이동 링크: 폭 390 = nav-pill 의 nav 링크, 폭 1440 = app-sidebar 의 sidebar-item 링크
+ * (rules 1.22 desktop_shell — 데스크톱은 nav-pill 대신 사이드바, d7 §23)
+ */
+export const navLinks = (page: Page) =>
+  isDesktopPage(page) ? page.locator(`${sel(DESKTOP_SHELL.component)} a${sel(DESKTOP_SHELL.item)}`) : page.locator(`${sel("nav-pill")} nav a`);
+/**
+ * 셸 링크 글자: 폭 390 = nav-pill 문구(REORDER_NAV · VENDORS_NAV), 폭 1440 = 사이드바 메뉴 문구(rules desktop_shell.menu —
+ * 새 프레임 6-desktop · 9-desktop 의 활성 메뉴 "재주문 알림" · "판매처")
+ */
+export function navLabelFor(page: Page, label: string): string {
+  if (!isDesktopPage(page)) return label;
+  const desk: Record<string, string> = { [REORDER_NAV]: frameActiveLabel(6), [VENDORS_NAV]: frameActiveLabel(9) };
+  if (!desk[label]) throw new Error(`데스크톱 사이드바 문구 대응 없음: ${label}`);
+  return desk[label];
+}
 export async function navLabels(page: Page): Promise<string[]> {
   return (await navLinks(page).allTextContents()).map((t) => t.replace(/\s+/g, " ").trim());
 }

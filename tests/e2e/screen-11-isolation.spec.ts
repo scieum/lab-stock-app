@@ -9,7 +9,7 @@ import { ROLE_LABEL, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
 import { browserClient, browserSession, countComponent, routeOf, rules, sel } from "./screen-helpers";
 import { HAS_SERVICE, service } from "./screen-8-helpers";
-import { ALL_COMPONENTS, BUSY, componentCounts, expectShell, installNavGate, schoolNamesIn, waitHydrated } from "./shell-helpers";
+import { ALL_COMPONENTS, BUSY, componentCounts, expectShell, installNavGate, schoolNamesIn, shellLink, waitHydrated } from "./shell-helpers";
 import {
   CABINETS_HREF,
   DOUBLE,
@@ -319,8 +319,8 @@ test(`[N1-ui][S${SCREEN}] 학교A 학생 홈 → ${CABINETS_HREF} 응답 대기 
     const words = [...new Set([...db.cabinets.map((c) => c.label), ...db.reagentNames])];
     expect(words.length, "대조: 자기 학교 시약장 이름·시약명").toBeGreaterThan(0);
 
-    // 폭 1440 = nav-pill 의 "시약장 설정" 링크, 폭 390 = 홈 본문의 시약장 링크
-    const link = viewport === "desktop" ? page.locator(`${sel("nav-pill")} nav a[href="${CABINETS_HREF}"]`) : page.locator(`main a[href="${CABINETS_HREF}"]`);
+    // 폭 1440 = app-sidebar 의 "시약장" 메뉴 (rules 1.22 desktop_shell), 폭 390 = 홈 본문의 시약장 링크
+    const link = viewport === "desktop" ? shellLink(page, viewport, SCREEN) : page.locator(`main a[href="${CABINETS_HREF}"]`);
     await expect(link, `${CABINETS_HREF} 로 가는 링크`).toHaveCount(1);
     await link.scrollIntoViewIfNeeded();
     await waitHydrated(link);

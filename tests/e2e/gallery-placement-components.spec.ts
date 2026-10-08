@@ -12,6 +12,7 @@ import { join } from "node:path";
 import QRCode from "qrcode";
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { SAMPLE_ORIGIN, sampleCabinets } from "../../app/gallery/cabinets/sample";
+import { framePath } from "../frames";
 
 type FrameNode = { name: string; type: string; path: string[]; fills: string[]; strokes: string[]; width?: number; text: { characters: string } | null };
 type Frame = { frames: { name: string; width: number; nodes: FrameNode[] }[] };
@@ -44,7 +45,7 @@ const rules = JSON.parse(readFileSync(join(root, "design/rules.json"), "utf8")) 
 const dev = JSON.parse(readFileSync(join(root, "harness/dev-rules.json"), "utf8")) as Dev;
 const D7 = readFileSync(join(root, "harness/d7-data.md"), "utf8");
 const D7_14 = D7.slice(D7.indexOf("## 14."), D7.indexOf("\n## ", D7.indexOf("## 14.") + 1));
-const loadFrame = (name: string) => (JSON.parse(readFileSync(join(root, `design/frames/${name}.json`), "utf8")) as Frame).frames[0].nodes;
+const loadFrame = (name: string) => (JSON.parse(readFileSync(framePath(`${name}`), "utf8")) as Frame).frames[0].nodes;
 const F11 = loadFrame("11-mobile");
 const F11D = loadFrame("11-desktop");
 const F11S = loadFrame("11-slot-mobile");

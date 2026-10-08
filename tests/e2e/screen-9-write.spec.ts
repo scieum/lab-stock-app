@@ -4,7 +4,6 @@
 // 모든 쓰기는 일회용 학교의 일회용 admin 세션으로 한다 — 공용 학교 A·B·공통 목록에는 쓰지 않는다 (공용 admin 은 N1 대조 화면을 읽기만).
 // service role 은 준비·정리·대조 조회에만 쓴다. 판정 대상은 브라우저 화면과 그 화면이 보낸 요청의 결과(DB)다.
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { test, expect, type TestInfo } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { openAs } from "./auth-state";
@@ -102,6 +101,7 @@ import {
   type DbVendor,
   type Fx,
 } from "./screen-6-9-helpers";
+import { framePath } from "../frames";
 
 test.describe.configure({ mode: "default" });
 test.skip(!HAS_SERVICE, "SUPABASE_SERVICE_ROLE_KEY 가 없어 일회용 계정·학교를 만들 수 없음 (.env.local 에 키를 넣으면 실행된다)");
@@ -113,7 +113,7 @@ const BUTTON_MIN_HEIGHT = (rules as unknown as { button: { min_height: number } 
 
 /** 시안 1.17 9-mobile 등록 시트(ex-modal-card)의 아래 안쪽 여백 (padding = [위, 오른쪽, 아래, 왼쪽]) */
 const SHEET_PAD_BOTTOM = (() => {
-  const j = JSON.parse(readFileSync(join(process.cwd(), "design", "frames", "9-mobile.json"), "utf8")) as { frames: { nodes: { name: string; padding?: number[] | null }[] }[] };
+  const j = JSON.parse(readFileSync(framePath("9-mobile"), "utf8")) as { frames: { nodes: { name: string; padding?: number[] | null }[] }[] };
   const pad = j.frames[0].nodes.find((n) => n.name === "ex-modal-card")?.padding;
   if (!pad || pad.length !== 4) throw new Error("design/frames/9-mobile.json ex-modal-card padding 을 읽지 못했습니다");
   return pad[2];

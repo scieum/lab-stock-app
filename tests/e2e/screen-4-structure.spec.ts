@@ -9,12 +9,14 @@ import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
 import { PROFILE_ROLE, ROLE_NAME, browserSession, countComponent, devRules, roleChecks, rules, sel } from "./screen-helpers";
 import { CARD, SCREEN, TOAST, seedOwnReagents, usagePath, waitUsage } from "./screen-4-helpers";
+import { framePath } from "../frames";
+import { expectShell, isShellComponent } from "./shell-helpers";
 
 const ROLES: Role[] = [...SCHOOL_A_ROLES, "schoolB"];
 
 /** design/frames/{name}.json 의 노드 이름 (dev-rules components 에 있는 이름만) */
 function frameNames(name: string): Set<string> {
-  const j = JSON.parse(readFileSync(join(process.cwd(), "design", "frames", `${name}.json`), "utf8")) as { frames: { nodes: { name: string }[] }[] };
+  const j = JSON.parse(readFileSync(framePath(`${name}`), "utf8")) as { frames: { nodes: { name: string }[] }[] };
   return new Set(j.frames[0].nodes.map((n) => n.name).filter((n) => devRules.components[n]));
 }
 /** rules.json variants[4] (디자인 1.17: "past-date" = usage-date + past-date-note) */
@@ -48,10 +50,12 @@ for (const role of ROLES) {
 
     const { school, own } = seedOwnReagents(role);
     const pick = own[0];
-    const { context, page, response } = await openAs(browser, info, role, SCREEN, usagePath(pick.id));
+    const { context, page, response, viewport } = await openAs(browser, info, role, SCREEN, usagePath(pick.id));
     try {
       expect(response?.status(), "자기 학교 시약 사용 기록 화면 응답").toBe(200);
       await waitUsage(page, true);
+      // 셸(390 nav-pill·탭바 / 1440 app-sidebar·sidebar-item)은 폭별 기대값으로 (rules tab_bar · desktop_shell)
+      await expectShell(page, viewport, SCREEN, `${ROLE_LABEL[role]} 화면 ${SCREEN}`);
       const me = await browserSession(page);
       expect(me.role, "테스트 계정 역할").toBe(PROFILE_ROLE[role]);
       expect(me.schoolName, "테스트 계정 학교 = seed 학교").toBe(school.name);
@@ -62,8 +66,8 @@ for (const role of ROLES) {
         expect(await countComponent(page, name), `screens_required ${name}`).toBeGreaterThanOrEqual(1);
       }
       for (const name of fromDev) {
-        // 탭바는 C2 에서 폭별 기대값으로 본다
-        if (name === rules.tab_bar.component || name === rules.tab_bar.item) continue;
+        // 셸은 위 expectShell 에서 폭별 기대값으로 봤다
+        if (isShellComponent(name)) continue;
         if (forbidden.has(name)) {
           expect(await countComponent(page, name), `${name} (roles 상 ${ROLE_LABEL[role]} 0)`).toBe(0);
           continue;

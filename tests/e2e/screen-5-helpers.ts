@@ -17,6 +17,7 @@ import { expect, type BrowserContext, type Locator, type Page } from "@playwrigh
 import { devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
 import { service } from "./screen-8-helpers";
 import { exact, hydrated, type Fx } from "./screen-6-9-helpers";
+import { framePath } from "../frames";
 
 export const MANUAL_SCREEN = 5;
 export const REORDER_SCREEN = 6;
@@ -43,7 +44,7 @@ export const NAV = "nav-pill";
 type FrameNode = { name: string; path: string[]; padding?: number[] | null; text: { characters: string } | null };
 type Frame = { frames: { nodes: FrameNode[] }[] };
 const root = process.cwd();
-const loadFrame = (name: string) => (JSON.parse(readFileSync(join(root, "design", "frames", `${name}.json`), "utf8")) as Frame).frames[0].nodes;
+const loadFrame = (name: string) => (JSON.parse(readFileSync(framePath(`${name}`), "utf8")) as Frame).frames[0].nodes;
 const m5 = loadFrame(`${MANUAL_SCREEN}-mobile`);
 const under = (nodes: FrameNode[], ancestor: string) => nodes.filter((n) => n.path.slice(0, -1).includes(ancestor));
 const textOf = (nodes: FrameNode[], name: string) => nodes.filter((n) => n.name === name && n.text).map((n) => n.text!.characters);
@@ -316,8 +317,21 @@ export async function blockSaves(context: BrowserContext): Promise<{ count: () =
 // ---------- 화면 요소 ----------
 export const main = (page: Page) => page.locator("main");
 export const nav = (page: Page) => page.locator(sel(NAV));
-/** nav-pill 의 뒤로가기 (화면 6 으로) — 데스크톱 주 메뉴(nav)의 "재주문 알림" 링크는 뒤로가기가 아니다 */
-export const backLink = (page: Page) => nav(page).locator(`a[href="${REORDER_HREF}"]:not(nav a)`);
+/** 지금 폭이 데스크톱인가 (dev-rules viewports) */
+const isDesktopPage = (page: Page) => page.viewportSize()?.width === devRules.viewports.desktop[0];
+/**
+ * 제목·뒤로가기가 있는 곳: 폭 390 = nav-pill, 폭 1440 = 본문(main) 의 page-head
+ * (rules 1.22 desktop_shell — 데스크톱은 nav-pill 대신 app-sidebar, 제목·뒤로는 본문 page-head; d7 §23)
+ */
+export const titleScope = (page: Page) => (isDesktopPage(page) ? main(page) : nav(page));
+/**
+ * 뒤로가기 (화면 6 으로): 폭 390 = nav-pill 의 뒤로(데스크톱 주 메뉴 nav 링크 제외), 폭 1440 = 본문 page-head 의 "뒤로" 링크
+ * (사이드바 "재주문 알림" 메뉴는 뒤로가기가 아니다)
+ */
+export const backLink = (page: Page) =>
+  isDesktopPage(page)
+    ? main(page).getByRole("link", { name: "뒤로", exact: true }).and(page.locator(`a[href="${REORDER_HREF}"]`))
+    : nav(page).locator(`a[href="${REORDER_HREF}"]:not(nav a)`);
 /** 화면 5 의 업로드 영역 = 파일 입력을 가진 manual-upload */
 export const uploadArea = (page: Page) => main(page).locator(sel(UPLOAD)).filter({ has: page.locator('input[type="file"]') });
 export const fileInput = (page: Page) => uploadArea(page).locator('input[type="file"]');

@@ -27,6 +27,7 @@ import {
   rows,
   waitHistory,
 } from "./screen-10-helpers";
+import { framePath } from "../frames";
 
 test.describe.configure({ mode: "default" });
 
@@ -52,7 +53,7 @@ const hexToRgb = (hex: string) => {
 const COLORFUL = [COLORS.colors.accent.value, COLORS.colors.accent_soft.value, ...COLORS.colors.highlight.values].map((v) => hexToRgb(v.toLowerCase()));
 /** 10 시안 record-caption 글자색 (회색) */
 const CAPTION_FILL = (() => {
-  const nodes = (JSON.parse(readFileSync(join(process.cwd(), "design", "frames", "10-mobile.json"), "utf8")) as {
+  const nodes = (JSON.parse(readFileSync(framePath("10-mobile"), "utf8")) as {
     frames: { nodes: { name: string; fills: string[] }[] }[];
   }).frames[0].nodes;
   return nodes.find((n) => n.name === "record-caption")?.fills[0] ?? "";

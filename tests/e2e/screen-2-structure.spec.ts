@@ -19,6 +19,8 @@ import {
   rules,
   sel,
 } from "./screen-helpers";
+import { framePath } from "../frames";
+import { expectShell, isShellComponent } from "./shell-helpers";
 
 const SCREEN = 2;
 const ROLES: Role[] = [...SCHOOL_A_ROLES, "schoolB"];
@@ -26,7 +28,7 @@ const BADGE = "badge-low-stock";
 
 /** design/frames/{name}.json 의 노드 이름 (dev-rules components 에 있는 이름만) */
 function frameNames(name: string): Set<string> {
-  const j = JSON.parse(readFileSync(join(process.cwd(), "design", "frames", `${name}.json`), "utf8")) as { frames: { nodes: { name: string }[] }[] };
+  const j = JSON.parse(readFileSync(framePath(`${name}`), "utf8")) as { frames: { nodes: { name: string }[] }[] };
   return new Set(j.frames[0].nodes.map((n) => n.name).filter((n) => devRules.components[n]));
 }
 /** rules.json variants[2] (디자인 1.17: filter · filter-empty · msds-bulk) */
@@ -82,9 +84,11 @@ for (const role of ROLES) {
     expect(VARIANTS2["msds-bulk"] ?? [], "variants[2].msds-bulk 에 msds-bulk-banner").toContain(MSDS_BANNER);
     const staff = role !== "student";
 
-    const { context, page } = await openAs(browser, info, role, SCREEN);
+    const { context, page, viewport } = await openAs(browser, info, role, SCREEN);
     try {
       await waitList(page);
+      // 셸(390 nav-pill·tab-bar / 1440 app-sidebar·sidebar-item)은 폭별 기대값으로 (rules tab_bar · desktop_shell)
+      await expectShell(page, viewport, SCREEN, `${ROLE_LABEL[role]} 화면 ${SCREEN}`);
       for (const name of guestOnly) {
         expect(await countComponent(page, name), `로그인 화면에 둘러보기 전용 ${name} 0개`).toBe(0);
       }
@@ -93,8 +97,8 @@ for (const role of ROLES) {
       }
       const low = await lowStockCount(page);
       for (const name of fromDev) {
-        // 탭바는 C2 에서 폭별 기대값으로 본다
-        if (name === rules.tab_bar.component || name === rules.tab_bar.item) continue;
+        // 셸(탭바·nav-pill·사이드바)은 위 expectShell 에서 폭별 기대값으로 봤다
+        if (isShellComponent(name)) continue;
         if (name === BADGE) {
           // 재고 부족 배지는 데이터에 따라: 부족 시약이 있으면 ≥1, 없으면 0
           if (low > 0) expect(await countComponent(page, name), `${name} (부족 ${low}종)`).toBeGreaterThanOrEqual(1);

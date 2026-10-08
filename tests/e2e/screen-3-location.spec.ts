@@ -6,7 +6,6 @@
 //
 // 쓰기 흐름(위치 저장·칸 없음으로·기준 저장)은 일회용 학교·일회용 계정·임시 시약으로만 한다. 공용 학교 A 계정은 읽기·피커 열고 닫기만(쓰기 0건).
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { test, expect, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { openAs } from "./auth-state";
 import { ROLE_LABEL, SCHOOL_A_ROLES } from "./db-helpers";
@@ -44,6 +43,8 @@ import {
   type PrepReagent,
   type S11Fixture,
 } from "./screen-11-helpers";
+import { framePath } from "../frames";
+import { adjustPreDesktopShell } from "../desktop-shell";
 
 test.describe.configure({ mode: "default" });
 
@@ -163,10 +164,11 @@ async function thresholdText(page: Page): Promise<string> {
 }
 
 function frameCounts(name: string): Record<string, number> {
-  const j = JSON.parse(readFileSync(join(process.cwd(), "design", "frames", `${name}.json`), "utf8")) as { frames: { nodes: { name: string }[] }[] };
+  const j = JSON.parse(readFileSync(framePath(`${name}`), "utf8")) as { frames: { nodes: { name: string }[] }[] };
   const out: Record<string, number> = {};
   for (const n of j.frames[0].nodes) out[n.name] = (out[n.name] ?? 0) + 1;
-  return out;
+  // 예전 데스크톱 프레임의 nav-pill → 지금 셸 app-sidebar (rules 1.22 desktop_shell, d7 §23)
+  return adjustPreDesktopShell(name, out);
 }
 
 type DbReagent = {
@@ -569,7 +571,10 @@ test(`[C2][S${SCREEN}] 학교A 교사 시약 상세: 폭 390 = ${PICKER} 아래 
       await expect(page.locator(sel(tb.item)), "1440 tab-item").toHaveCount(0);
       const want = 720; // design/frames/3-desktop.json content/page-column
       expect(Math.abs(boxes[0].width - want), `데스크톱 한 열 폭 ≈ 시안 ${want}`).toBeLessThanOrEqual(24);
-      expect(Math.abs(boxes[0].left + boxes[0].width / 2 - vp.width / 2), "한 열은 가운데").toBeLessThanOrEqual(16);
+      // 가운데 = 본문 영역(사이드바 오른쪽 — rules 1.22 desktop_shell, d7 §23 "본문 = 사이드바 오른쪽") 기준
+      const sb = await boxOf(page.locator(sel(rules.desktop_shell.component)));
+      const bodyCenter = (sb.right + vp.width) / 2;
+      expect(Math.abs(boxes[0].left + boxes[0].width / 2 - bodyCenter), "한 열은 본문 영역 가운데").toBeLessThanOrEqual(16);
       await hydrated(locEditButton(page));
       await locEditButton(page).click();
       const p = picker(page);

@@ -33,7 +33,11 @@ export type IconName =
   | "caret-down"
   | "star"
   | "filter"
-  | "merge";
+  | "merge"
+  | "download"
+  | "book"
+  | "user"
+  | "store";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: (
@@ -190,6 +194,36 @@ const PATHS: Record<IconName, React.ReactNode> = {
   filter: <path d="M3.6 7h16.8M7.2 12h9.6M10.2 17h3.6" />,
   // 시안 1.17 5 merge-note icon-merge: 두 줄이 한 줄로 모이는 Y 모양 (행 합치기 안내)
   merge: <path d="M6 4v3.5c0 2.5 6 4 6 7.5V20M18 4v3.5c0 2.5-6 4-6 7.5" />,
+  // 시안 1.22 app-sidebar icon-intake (아래 화살표 + 받침 — 입고)
+  download: (
+    <>
+      <path d="M12 4v11M7 10.5l5 4.5 5-4.5" />
+      <path d="M4 15v4.5h16V15" />
+    </>
+  ),
+  // 시안 1.22 app-sidebar icon-manual (펼친 책 — 실험 매뉴얼)
+  book: (
+    <>
+      <path d="M3.5 5.5h5.5a3 3 0 0 1 3 3v11a2.5 2.5 0 0 0-2.5-2.5H3.5Z" />
+      <path d="M20.5 5.5H15a3 3 0 0 0-3 3v11a2.5 2.5 0 0 1 2.5-2.5h6Z" />
+    </>
+  ),
+  // 시안 1.22 app-sidebar icon-user (한 사람 — 사용자)
+  user: (
+    <>
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+    </>
+  ),
+  // 시안 1.22 app-sidebar icon-vendor (가게 — 판매처)
+  store: (
+    <>
+      <path d="M4 9.5 5.5 4h13L20 9.5" />
+      <path d="M4 9.5h16a2.7 2.7 0 0 1-5.3 0 2.7 2.7 0 0 1-5.4 0 2.7 2.7 0 0 1-5.3 0Z" />
+      <path d="M5.5 12.5V20h13v-7.5" />
+      <path d="M10 20v-4.5h4V20" />
+    </>
+  ),
   bell: (
     <>
       <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15Z" />

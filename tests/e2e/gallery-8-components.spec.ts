@@ -9,6 +9,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test, expect, type Locator, type Page } from "@playwright/test";
+import { framePath } from "../frames";
 
 const SCREEN = 8;
 const GALLERY_USERS = "/gallery/users";
@@ -22,7 +23,7 @@ type Dev = { components: Record<string, number[]> };
 const root = process.cwd();
 const rules = JSON.parse(readFileSync(join(root, "design/rules.json"), "utf8")) as Rules;
 const dev = JSON.parse(readFileSync(join(root, "harness/dev-rules.json"), "utf8")) as Dev;
-const frame = JSON.parse(readFileSync(join(root, `design/frames/${SCREEN}-mobile.json`), "utf8")) as Frame;
+const frame = JSON.parse(readFileSync(framePath(`${SCREEN}-mobile`), "utf8")) as Frame;
 const nodes = frame.frames[0].nodes;
 
 // ---------- 기대값: 프레임 ----------

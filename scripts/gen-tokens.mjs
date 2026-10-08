@@ -135,6 +135,14 @@ function build(rules) {
   section("layout (design/frames 측정값)");
   for (const [k, v] of LAYOUT) add(k, v);
 
+  if (rules.desktop_shell) {
+    section("desktop shell (rules.json desktop_shell)");
+    add("sidebar-width", px(rules.desktop_shell.width));
+    add("radius-sidebar", px(rules.desktop_shell.radius));
+    add("drawer-width", px(rules.desktop_shell.drawer_width));
+    add("form-width", px(rules.desktop_shell.form_width));
+  }
+
   return [
     "/* 자동 생성 파일 — 직접 고치지 않는다. */",
     "/* 원본: design/rules.json · 생성: node scripts/gen-tokens.mjs */",

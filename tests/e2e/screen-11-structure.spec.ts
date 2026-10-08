@@ -10,7 +10,7 @@ import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
 import { PROFILE_ROLE, ROLE_NAME, browserClient, browserSession, countComponent, devRules, roleChecks, routeOf, rules, sel } from "./screen-helpers";
 import { detailPath } from "./screen-3-helpers";
-import { anonContext, componentCounts } from "./shell-helpers";
+import { anonContext, componentCounts, expectShellHeader, shellNavLabel, shellSchoolScope } from "./shell-helpers";
 import {
   ADD,
   CAB,
@@ -251,15 +251,16 @@ for (const role of SCHOOL_A_ROLES) {
         await expect(legendChips(page).filter({ hasText: /선택/ }), "학생 범례에 '선택 칸' 없음").toHaveCount(0);
       }
 
-      // 셸: 데스크탑 현재 섹션 / 모바일 nav-pill 제목
-      const nav = page.locator(sel("nav-pill"));
+      // 셸: 데스크탑 = app-sidebar 현재 메뉴(시안 11-desktop "시약장") / 모바일 = nav-pill 제목 (rules 1.22 desktop_shell)
+      const nav = shellSchoolScope(page, viewport);
       await expect(nav).toHaveCount(1);
       if (viewport === "desktop") {
-        await expect(nav.locator('nav a[aria-current="page"]'), "현재 섹션 링크").toHaveText(new RegExp(`^\\s*${NAV_LABEL}\\s*$`));
+        await expect(nav.locator('a[aria-current="page"]'), "현재 메뉴 링크").toHaveText(exact(shellNavLabel(viewport, SCREEN, NAV_LABEL)));
+        await expectShellHeader(page, viewport, { schoolName: me.schoolName }, "화면 11");
       } else {
         await expect(nav.getByText(exact(NAV_LABEL)).first(), `nav-pill 제목 "${NAV_LABEL}"`).toBeVisible();
       }
-      await expect(nav, "nav-pill 학교명").toContainText(me.schoolName);
+      await expect(nav, "셸 학교명").toContainText(me.schoolName);
       expect(actions.count(), "쓰기 요청 0건").toBe(0);
     } finally {
       await context.close();

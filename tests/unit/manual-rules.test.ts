@@ -28,6 +28,7 @@ import {
   type ManualReagent,
 } from "../../lib/manual-rules";
 import { ROOT } from "./helpers";
+import { framePath } from "../frames";
 
 const D7 = readFileSync(join(ROOT, "harness/d7-data.md"), "utf8");
 const section = (() => {
@@ -50,7 +51,7 @@ const UNITS = (/추출 단위는 (\S+) 중 하나로 정리/.exec(line("단위")
 
 // ---------- 시안 5 (design/frames/5-mobile.json) 의 표 ----------
 type FrameNode = { name: string; path: string[]; text: { characters: string } | null };
-const frame = (JSON.parse(readFileSync(join(ROOT, "design/frames/5-mobile.json"), "utf8")) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes;
+const frame = (JSON.parse(readFileSync(framePath("5-mobile"), "utf8")) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes;
 // 시안 1.17: 조 수 = manual-upload/group-count/text-input/value, 행 = extraction-row 카드
 // (row-head: reagent-name·needed-amount "1반 1회 {필요량}", usage-line: text-input value 2개 = 사용량·단위,
 //  link-row: "우리 학교 시약" 선택 값).

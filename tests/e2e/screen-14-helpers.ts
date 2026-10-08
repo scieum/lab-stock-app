@@ -1,9 +1,9 @@
 // 화면 14 (회원가입) e2e 공용 도우미.
 // 기대값은 design/rules.json · harness/dev-rules.json 에서 읽는다.
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { expect, type Page, type Response } from "@playwright/test";
 import { routeOf, rules, sel } from "./screen-helpers";
+import { framePath } from "../frames";
 
 export const SCREEN = 14;
 export const NEIS_PREFIX = "/api/neis/";
@@ -62,7 +62,7 @@ type FrameFile = { frames: { name: string; nodes: FrameNode[] }[] };
 /** design/frames/{screen}-{viewport}.json 에서 이름이 name 인 노드 개수 */
 export function frameCount(screen: number, viewport: string, name: string): number {
   const file = JSON.parse(
-    readFileSync(join(process.cwd(), "design", "frames", `${screen}-${viewport}.json`), "utf8"),
+    readFileSync(framePath(`${screen}-${viewport}`), "utf8"),
   ) as FrameFile;
   const frame = file.frames.find((f) => f.name === `${screen}-${viewport}`);
   if (!frame) throw new Error(`design/frames/${screen}-${viewport}.json 에 프레임 ${screen}-${viewport} 없음`);

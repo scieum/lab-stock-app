@@ -31,6 +31,7 @@ import {
   type DocReagent,
 } from "../../lib/doc-intake-rules";
 import { ROOT } from "./helpers";
+import { framePath } from "../frames";
 
 const D7 = readFileSync(join(ROOT, "harness/d7-data.md"), "utf8");
 const S21 = D7.slice(D7.indexOf("## 21."), D7.indexOf("\n## ", D7.indexOf("## 21.") + 5));
@@ -40,7 +41,7 @@ const RULES = JSON.parse(readFileSync(join(ROOT, "design/rules.json"), "utf8")) 
 };
 const CLASSES = RULES.cabinet.storage_classes;
 type FrameNode = { name: string; path: string[]; text: { characters: string } | null };
-const REVIEW = (JSON.parse(readFileSync(join(ROOT, "design/frames/7-doc-review-mobile.json"), "utf8")) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes;
+const REVIEW = (JSON.parse(readFileSync(framePath("7-doc-review-mobile"), "utf8")) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes;
 const frameTexts = (name: string) => REVIEW.filter((n) => n.name === name && n.text).map((n) => n.text!.characters);
 
 const ITEMS_MAX = Number((/품목 최대 (\d+)/.exec(S21) ?? [])[1]);

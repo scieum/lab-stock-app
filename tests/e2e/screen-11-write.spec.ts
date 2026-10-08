@@ -9,6 +9,7 @@ import { test, expect, type Locator, type Page, type TestInfo } from "@playwrigh
 import { countComponent, rules, sel } from "./screen-helpers";
 import { detailPath } from "./screen-3-helpers";
 import { HAS_SERVICE, openTemp } from "./screen-8-helpers";
+import { shellSchoolScope } from "./shell-helpers";
 import {
   ADD,
   ADD_LABEL,
@@ -242,7 +243,7 @@ test(`[C1][S${SCREEN}] 일회용 교사 · 시약장 0개: "${EMPTY_HEADING}" + 
     await expect(card.getByText(exact(EMPTY_STAFF))).toBeVisible();
     await expect(card.locator(sel(ADD)), `${ADD} 는 카드 안`).toHaveCount(1);
     await expect(card.locator(sel(ADD))).toContainText(ADD_LABEL);
-    await expect(page.locator(sel("nav-pill")), "nav-pill 학교명").toContainText(f.school.name);
+    await expect(shellSchoolScope(page, viewport), "셸(390 nav-pill / 1440 app-sidebar) 학교명").toContainText(f.school.name);
     await expectTabBar(page, viewport, "빈 상태");
     expect(await dbViewByService(f.school.id)).toMatchObject({ cabinets: [] });
 

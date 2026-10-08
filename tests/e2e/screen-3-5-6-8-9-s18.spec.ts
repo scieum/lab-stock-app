@@ -83,6 +83,7 @@ import {
   MANUAL_BASIS_TEXT,
   type Fx,
 } from "./screen-6-9-helpers";
+import { framePath } from "../frames";
 import {
   BASIS_RE,
   MANUAL_HREF,
@@ -141,7 +142,7 @@ const APP_EXC = (rules as unknown as { app_exceptions: Record<string, string> })
 
 // ---------- 기대값: 시안 1.17 프레임 ----------
 type FNode = { name: string; path: string[]; fills: string[]; strokes: string[]; cornerRadius: unknown; padding?: number[] | null; text: { characters: string } | null };
-const frame = (name: string) => (JSON.parse(readFileSync(join(process.cwd(), "design", "frames", `${name}.json`), "utf8")) as { frames: { nodes: FNode[] }[] }).frames[0].nodes;
+const frame = (name: string) => (JSON.parse(readFileSync(framePath(`${name}`), "utf8")) as { frames: { nodes: FNode[] }[] }).frames[0].nodes;
 const node = (nodes: FNode[], pred: (n: FNode) => boolean, what: string): FNode => {
   const n = nodes.find(pred);
   if (!n) throw new Error(`design/frames 에서 ${what} 를 찾지 못했습니다`);
@@ -173,7 +174,7 @@ const S9_FIELDS = SHEET9.filter((n) => n.name === "field-label" && n.text).map((
 const S9_CANCEL = node(SHEET9, (n) => n.name === "label" && n.path.includes("button-outline"), "9 취소").text!.characters;
 const S9_SAVE = node(SHEET9, (n) => n.name === "label" && n.path.includes("button-primary"), "9 저장").text!.characters;
 const S9_SHEET_PAD = node(f9, (n) => n.name === "ex-modal-card", "9 ex-modal-card").padding!;
-const S9_DESKTOP_W = (JSON.parse(readFileSync(join(process.cwd(), "design", "frames", "9-desktop.json"), "utf8")) as { frames: { nodes: { name: string; width: number }[] }[] }).frames[0].nodes.find((n) => n.name === "ex-modal-card")!.width;
+const S9_DESKTOP_W = (JSON.parse(readFileSync(framePath("9-desktop"), "utf8")) as { frames: { nodes: { name: string; width: number }[] }[] }).frames[0].nodes.find((n) => n.name === "ex-modal-card")!.width;
 const MERGE5 = node(f5, (n) => n.name === "label" && n.path.includes("merge-note"), "5 merge-note label");
 const LINK_LABEL5 = node(f5, (n) => n.name === "field-label" && n.path.includes("link-row"), "5 link-row field-label").text!.characters;
 const DELETE5 = node(f5, (n) => n.name === "label" && n.path.includes("delete-link"), "5 delete-link").text!.characters;

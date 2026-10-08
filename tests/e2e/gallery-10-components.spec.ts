@@ -9,6 +9,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test, expect, type Locator, type Page } from "@playwright/test";
+import { framePath } from "../frames";
 
 const SCREEN = 10;
 const GALLERY = "/gallery";
@@ -24,9 +25,9 @@ const dev = JSON.parse(readFileSync(join(root, "harness/dev-rules.json"), "utf8"
 // 디자인 1.17(fadfee7): 10-mobile 시안에는 상세(ex-modal-card)가 없고 10-desktop 에만 있다(라벨 사용자·사용일·기록한 날·메모, d7 §15).
 // 기록 행은 날짜 열 대신 날짜 묶음 헤더 + "기록한 날" 캡션(record-caption) 시안이 됐다. 목록 묶음은 이번 run 에서 d7 §7·§15(월 묶음,
 // 행 = 날짜 · 시약명/사용자 · 사용량)를 따르므로 행의 글자는 시안에서 읽지 않고, 선택 행 색·캡션 모양만 시안에서 읽는다.
-const frame = JSON.parse(readFileSync(join(root, `design/frames/${SCREEN}-mobile.json`), "utf8")) as Frame;
+const frame = JSON.parse(readFileSync(framePath(`${SCREEN}-mobile`), "utf8")) as Frame;
 const nodes = frame.frames[0].nodes;
-const desktopNodes = (JSON.parse(readFileSync(join(root, `design/frames/${SCREEN}-desktop.json`), "utf8")) as Frame).frames[0].nodes;
+const desktopNodes = (JSON.parse(readFileSync(framePath(`${SCREEN}-desktop`), "utf8")) as Frame).frames[0].nodes;
 
 // ---------- 기대값: 프레임 ----------
 const underIn = (list: FrameNode[], ancestor: string) => list.filter((n) => n.path.slice(0, -1).includes(ancestor));

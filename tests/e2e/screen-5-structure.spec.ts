@@ -11,7 +11,7 @@ import { ROLE_LABEL } from "./db-helpers";
 import { openAs, type RolePage } from "./auth-state";
 import { PROFILE_ROLE, ROLE_NAME, browserClient, browserSession, countComponent, devRules, roleChecks, routeOf, rules, sel } from "./screen-helpers";
 import { HAS_SERVICE, anonContext } from "./screen-8-helpers";
-import { locationPath } from "./shell-helpers";
+import { expectShell, locationPath, shellSchoolScope } from "./shell-helpers";
 import {
   BUSY,
   MANUAL_BUTTON,
@@ -86,7 +86,7 @@ import {
   groupsInput,
   main,
   mockExtract,
-  nav,
+  titleScope,
   okReply,
   overlay,
   pdf,
@@ -174,7 +174,9 @@ test(`[C1][S${SCREEN}] 기대값 원본: 프레임 5 의 문구·4행·조 수�
   for (const q of D7_QUOTES) expect(D7_S13, `d7 §13 에 ${q}`).toContain(q);
   // 디자인 1.15: 공통 셸 예외 nav-account-menu (rules.json app_exceptions) 가 로그인 후 셸 화면 모두에 더해졌다 (dev-rules components_note)
   expect((rules as unknown as { app_exceptions: Record<string, string> }).app_exceptions, "rules app_exceptions nav-account-menu").toHaveProperty("nav-account-menu");
-  expect(screenComponents().sort(), "dev-rules 화면 5 컴포넌트").toEqual([OVERLAY, OUTLINE, PRIMARY, CELL, TOAST, TABLE, UPLOAD, "nav-pill", "nav-account-menu", "tab-bar", "tab-item", INPUT].sort());
+  // 1.22: 데스크톱 셸 app-sidebar · sidebar-item (rules desktop_shell, dev-rules 1.11) 도 로그인 후 셸 화면 모두에 더해졌다
+  const ds = (rules as unknown as { desktop_shell: { component: string; item: string } }).desktop_shell;
+  expect(screenComponents().sort(), "dev-rules 화면 5 컴포넌트").toEqual([OVERLAY, OUTLINE, PRIMARY, CELL, TOAST, TABLE, UPLOAD, "nav-pill", "nav-account-menu", "tab-bar", "tab-item", ds.component, ds.item, INPUT].sort());
   expect(BOTTOM_GAP, "시안 bottom-actions 아래 여백").toBeGreaterThan(0);
 });
 
@@ -250,7 +252,7 @@ test(`[R-ui][S${SCREEN}] 비로그인 ${MANUAL_HREF} → ${LOGIN_HREF} (HTTP 3xx
 
 test(`[R-ui][S${SCREEN}] 학교A 학생 화면 ${STUDENT_SCREENS.join("·")}: ${UPLOAD} 0 (R1) · ${MANUAL_HREF} 링크 0 · "${MANUAL_BUTTON}" 글자 없음`, async ({ browser }, info) => {
   test.setTimeout(240_000);
-  const { context, page } = await openAs(browser, info, "student", HOME_SCREEN);
+  const { context, page, viewport } = await openAs(browser, info, "student", HOME_SCREEN);
   try {
     expect((await browserSession(page)).role, "테스트 계정 역할").toBe(PROFILE_ROLE.student);
     for (const screen of STUDENT_SCREENS) {
@@ -259,7 +261,8 @@ test(`[R-ui][S${SCREEN}] 학교A 학생 화면 ${STUDENT_SCREENS.join("·")}: ${
       expect(res?.status(), `${path} 응답`).toBe(200);
       await page.waitForLoadState("load");
       expect(new URL(page.url()).pathname, `${path} 그대로`).toBe(path);
-      await expect(page.locator(sel("nav-pill")), "nav-pill").toHaveCount(1);
+      // 셸 (390 nav-pill / 1440 app-sidebar)
+      await expect(shellSchoolScope(page, viewport), "셸").toHaveCount(1);
       await expect(page.locator(BUSY), "자리 표시는 본문으로 바뀐다").toHaveCount(0, { timeout: 45_000 });
       expect((await main(page).innerText()).trim().length, `화면 ${screen} 본문이 그려졌다`).toBeGreaterThan(0);
       expect(await countComponent(page, UPLOAD), `학생 화면 ${screen} ${UPLOAD} ≤ ${R1.max}`).toBeLessThanOrEqual(R1.max!);
@@ -309,7 +312,7 @@ for (const role of STAFF) {
       }).toPass({ timeout: 45_000 });
       await waitManual(page);
       await expect(extractButton(page), `"${EXTRACT}"`).toHaveCount(1);
-      await expect(nav(page).getByText(exact(NAV_TITLE)).first(), `제목 "${NAV_TITLE}"`).toBeVisible();
+      await expect(titleScope(page).getByText(exact(NAV_TITLE)).first(), `제목 "${NAV_TITLE}"`).toBeVisible();
 
       const back = backLink(page);
       await expect(back, "뒤로가기 링크").toHaveCount(1);
@@ -331,16 +334,16 @@ for (const role of STAFF) {
   test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]} 1단계 구성: nav-pill 뒤로가기(→ ${REORDER_HREF}) + 제목 "${NAV_TITLE}" · ${UPLOAD} 1 + 안내 "${GUIDE}" · ${INPUT} "${GROUPS_LABEL}"(빈 값) · ${PRIMARY} "${EXTRACT}" 비활성 → 파일 + 조 수 ${GROUPS} → 활성 · 조 수 ${G_MIN - 1}·${G_MAX + 1}·문자는 비활성 · 파일 이름은 ${OVERLAY} · 화면 ${SCREEN} 밖 컴포넌트 0`, async ({ browser }, info) => {
     test.setTimeout(180_000);
     const o = await openManual(browser, info, role);
-    const { context, page } = o;
+    const { context, page, viewport } = o;
     try {
-      // nav-pill
-      await expect(nav(page), "nav-pill").toHaveCount(1);
+      // 셸 (390 nav-pill · tab-bar / 1440 app-sidebar) · 제목·뒤로가기 (390 nav-pill / 1440 본문 page-head)
+      await expectShell(page, viewport, SCREEN, "1단계");
       const back = backLink(page);
       await expect(back, `뒤로가기 → ${REORDER_HREF}`).toHaveCount(1);
       await expect(back).toBeVisible();
-      await expect(nav(page).getByText(exact(NAV_TITLE)).first(), `제목 "${NAV_TITLE}"`).toBeVisible();
+      await expect(titleScope(page).getByText(exact(NAV_TITLE)).first(), `제목 "${NAV_TITLE}"`).toBeVisible();
       const me = await browserSession(page);
-      await expect(nav(page), "nav-pill 에 자기 학교명").toContainText(me.schoolName);
+      await expect(shellSchoolScope(page, viewport), "셸에 자기 학교명").toContainText(me.schoolName);
 
       // 업로드 영역
       await expect(uploadArea(page), UPLOAD).toHaveCount(1);

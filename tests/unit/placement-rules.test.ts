@@ -21,6 +21,7 @@ import {
   type DoorType,
 } from "../../lib/cabinet-rules";
 import { ROOT, rules } from "./helpers";
+import { framePath } from "../frames";
 
 type Cabinet = {
   door_types: string[];
@@ -39,7 +40,7 @@ const D7_14 = D7.slice(D7.indexOf("## 14."), D7.indexOf("\n## ", D7.indexOf("## 
 // ---------- 프레임 문구 ----------
 type FrameNode = { name: string; path: string[]; text: { characters: string } | null };
 const nodesOf = (file: string) =>
-  (JSON.parse(readFileSync(join(ROOT, "design/frames", file), "utf8")) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes;
+  (JSON.parse(readFileSync(framePath(file), "utf8")) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes;
 const textsIn = (nodes: FrameNode[], name: string, under?: string) =>
   nodes.filter((n) => n.name === name && n.text && (!under || n.path.includes(under))).map((n) => n.text!.characters);
 const F3 = nodesOf("3-mobile.json");

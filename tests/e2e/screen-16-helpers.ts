@@ -6,6 +6,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type Locator, type Page, type Response } from "@playwright/test";
 import { devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
+import { framePath } from "../frames";
 
 export const SCREEN = 16;
 export const SUMMARY = "msds-summary";
@@ -52,7 +53,7 @@ export const rgbOf = (hex: string) => {
 export const GHS_RED = rgbOf(GHS_RED_HEX);
 
 type FrameNode = { name: string; type: string; path: string[]; fills: string[]; strokes: string[]; width?: number; height?: number; text: { characters: string } | null };
-export const F16: FrameNode[] = (JSON.parse(readFileSync(join(process.cwd(), "design", "frames", `${SCREEN}-mobile.json`), "utf8")) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes;
+export const F16: FrameNode[] = (JSON.parse(readFileSync(framePath(`${SCREEN}-mobile`), "utf8")) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes;
 const parentIs = (n: FrameNode, p: string) => n.path[n.path.length - 2] === p;
 const textOf = (pred: (n: FrameNode) => boolean, what: string) => {
   const n = F16.find((x) => x.text && pred(x));
