@@ -1,0 +1,18 @@
+{
+  "gate": "gate-D3-S4",
+  "pass": true,
+  "exit": 0,
+  "violations": [],
+  "logs": {},
+  "report": {
+    "V1": {
+      "screenshots": [
+        "test-results/v1-4-desktop.png",
+        "test-results/v1-4-mobile.png",
+        "test-results/v1-4-past-date-desktop.png",
+        "test-results/v1-4-past-date-mobile.png"
+      ],
+      "figma_page": "https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2"
+    }
+  }
+}
