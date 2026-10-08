@@ -1,9 +1,9 @@
 // 화면 15 (랜딩, 로그인 전 `/`) e2e 공용 도우미.
 // 기대값은 design/rules.json · harness/dev-rules.json · design/frames/15-*.json 에서 읽는다.
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { expect, type Page } from "@playwright/test";
 import { devRules, implementedGuestScreens, routeOf, rules, sel } from "./screen-helpers";
+import { framePath } from "../frames";
 
 export const SCREEN = 15;
 export const HOME = 13;
@@ -81,7 +81,7 @@ type FrameFile = { frames: { name: string; nodes: FrameNode[] }[] };
 /** design/frames/{screen}-{viewport}.json 에서 조상 이름이 ancestor 인 TEXT 노드의 문구들 */
 export function frameTextsUnder(screen: number, viewport: string, ancestor: string): string[] {
   const file = JSON.parse(
-    readFileSync(join(process.cwd(), "design", "frames", `${screen}-${viewport}.json`), "utf8"),
+    readFileSync(framePath(`${screen}-${viewport}`), "utf8"),
   ) as FrameFile;
   const frame = file.frames.find((f) => f.name === `${screen}-${viewport}`);
   if (!frame) throw new Error(`design/frames/${screen}-${viewport}.json 에 프레임 ${screen}-${viewport} 없음`);

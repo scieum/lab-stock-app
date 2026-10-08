@@ -37,6 +37,7 @@ import {
   schoolDataWords,
   schoolNamesIn,
   shellLink,
+  shellSchoolScope,
   waitContent,
   waitHydrated,
   watchAriaCurrent,
@@ -348,7 +349,8 @@ for (const { start, target } of TAB_MOVES) {
 
 // 본문 자리 표시가 없는 화면(시약 상세·사용 기록 입력)으로 가는 링크 — 응답 전에는 누른 링크의 표식만이 반응이다
 const DEEP_MOVES: { start: number; target: number; pick: (page: Page) => ReturnType<Page["locator"]>; done: string }[] = [
-  { start: HOME, target: USAGE_NEW, pick: (page) => page.locator(`main a[href="${routeOf(USAGE_NEW)}"]`).first(), done: "nav-pill" },
+  // 도착 표식 = 화면 4 본문 필수 컴포넌트 (rules screens_required[4]) — 데스크톱 셸에는 nav-pill 이 없다 (rules 1.22 desktop_shell)
+  { start: HOME, target: USAGE_NEW, pick: (page) => page.locator(`main a[href="${routeOf(USAGE_NEW)}"]`).first(), done: (rules.screens_required[String(USAGE_NEW)] as string[])[0] },
   { start: LIST, target: DETAIL, pick: (page) => page.locator(`main a${sel("reagent-row")}`).first(), done: "reagent-detail-card" },
 ];
 
@@ -403,13 +405,14 @@ const TOURS: { role: Role; path: number[] }[] = [
 
 for (const { role, path } of TOURS) {
   const start = path[0];
-  test(`[C2][S${start}] ${ROLE_LABEL[role]} 화면 ${path.join(" → ")} 탭 이동: nav-pill·tab-bar 가 같은 DOM 노드로 남고 화면마다 rules.json tab_bar 개수 · 학교명 유지`, async ({ browser }, info) => {
+  test(`[C2][S${start}] ${ROLE_LABEL[role]} 화면 ${path.join(" → ")} 탭 이동: 셸(390 nav-pill·tab-bar / 1440 app-sidebar)이 같은 DOM 노드로 남고 화면마다 rules.json tab_bar 개수 · 학교명 유지`, async ({ browser }, info) => {
     test.setTimeout(240_000);
     const tb = rules.tab_bar;
     const { context, page, viewport } = await openGated(browser, info, role, start);
     try {
       const me = await browserSession(page);
-      const shellParts = viewport === "mobile" ? ["nav-pill", tb.component] : ["nav-pill"];
+      // 데스크톱 셸 = app-sidebar (rules 1.22 desktop_shell, nav-pill 없음)
+      const shellParts = viewport === "mobile" ? ["nav-pill", tb.component] : [rules.desktop_shell.component];
       for (const name of shellParts) {
         await expect(page.locator(sel(name))).toHaveCount(1);
         await page.locator(sel(name)).evaluate((el, attr) => el.setAttribute(attr, "1"), KEEP);
@@ -431,7 +434,7 @@ for (const { role, path } of TOURS) {
         if (viewport === "mobile") {
           await expect(page.locator(`${sel(tb.item)}[${KEEP}]`), `화면 ${screen}: ${tb.item} 은 이동 전과 같은 노드`).toHaveCount(tb.items);
         }
-        await expect(page.locator(sel("nav-pill")), `화면 ${screen}: 학교명`).toContainText(me.schoolName);
+        await expect(shellSchoolScope(page, viewport), `화면 ${screen}: 학교명`).toContainText(me.schoolName);
         expect(await ariaCurrentHrefs(page), `화면 ${screen}: 현재 위치`).toEqual([routeOf(screen)]);
         const names = await schoolNamesIn(page.locator("body"));
         expect(names, `화면 ${screen}: 학교명 종류`).toHaveLength(N1.distinct_school_names);

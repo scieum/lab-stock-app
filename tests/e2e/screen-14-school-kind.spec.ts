@@ -29,6 +29,7 @@ import {
   waitNeis,
   waitSignupScreen,
 } from "./screen-14-helpers";
+import { framePath } from "../frames";
 
 const N1 = rules.never.N1;
 const DK = rules.neis.default_kind;
@@ -50,7 +51,7 @@ type NeisSchool = { name: string; sido: string; region: string; neis_code: strin
 type FrameNode = { name: string; path: string[]; text: { characters: string } | null };
 type FrameFile = { frames: { name: string; nodes: FrameNode[] }[] };
 function frameNodes(file: string): FrameNode[] {
-  const f = JSON.parse(readFileSync(join(process.cwd(), "design", "frames", `${file}.json`), "utf8")) as FrameFile;
+  const f = JSON.parse(readFileSync(framePath(`${file}`), "utf8")) as FrameFile;
   const frame = f.frames.find((x) => x.name === file);
   if (!frame) throw new Error(`design/frames/${file}.json 에 프레임 ${file} 없음`);
   return frame.nodes;

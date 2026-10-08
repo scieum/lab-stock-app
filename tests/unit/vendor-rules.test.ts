@@ -21,6 +21,7 @@ import {
   vendorNameKey,
 } from "../../lib/vendor-rules";
 import { ROOT, read } from "./helpers";
+import { framePath } from "../frames";
 
 // ---------- d7-data.md §12 에서 읽은 기대값 ----------
 const D7 = read(join(ROOT, "harness/d7-data.md"));
@@ -41,7 +42,7 @@ const SEED = [...seedLine.matchAll(/([^\s,():]+)\((https?:\/\/[^)\s]+)\)/g)].map
 // 시안 1.17 행 = vendor-name + vendor-site(웹사이트). 부가 정보 줄(vendor-info)은 시안에 없고, d7 §18 이 행의 부가 정보를
 // "연락처만"으로 정했다 — 부가 정보 문구 틀("연락처 · note")의 예시는 아래 D7_INFOS(d7 §12 틀).
 type FrameNode = { name: string; path: string[]; text: { characters: string } | null };
-const frame = JSON.parse(readFileSync(join(ROOT, "design/frames/9-mobile.json"), "utf8")) as { frames: { nodes: FrameNode[] }[] };
+const frame = JSON.parse(readFileSync(framePath("9-mobile"), "utf8")) as { frames: { nodes: FrameNode[] }[] };
 const frameText = (name: string) => frame.frames[0].nodes.filter((n) => n.name === name && n.text).map((n) => n.text!.characters);
 const FRAME_NAMES = frameText("vendor-name");
 const FRAME_SITES = frameText("vendor-site");

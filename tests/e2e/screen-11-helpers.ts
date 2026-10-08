@@ -27,6 +27,8 @@ import { tempSchoolLike,
   type TempSchool,
   type TempUser,
 } from "./screen-8-helpers";
+import { framePath } from "../frames";
+import { adjustPreDesktopShell } from "../desktop-shell";
 
 export const SCREEN = 11;
 export const HOME_SCREEN = 13;
@@ -147,12 +149,13 @@ export { exact };
 
 /** design/frames/{name}.json 의 노드 이름별 개수 (dev-rules.json components 에 있는 이름만) */
 export function frameCounts(name: string): Record<string, number> {
-  const j = JSON.parse(readFileSync(join(process.cwd(), "design", "frames", `${name}.json`), "utf8")) as {
+  const j = JSON.parse(readFileSync(framePath(`${name}`), "utf8")) as {
     frames: { nodes: { name: string }[] }[];
   };
   const out: Record<string, number> = {};
   for (const n of j.frames[0].nodes) if (devRules.components[n.name]) out[n.name] = (out[n.name] ?? 0) + 1;
-  return out;
+  // 예전 데스크톱 프레임의 nav-pill → 지금 셸 app-sidebar (rules 1.22 desktop_shell, d7 §23)
+  return adjustPreDesktopShell(name, out);
 }
 
 /** 화면 11 에 속하지 않는 컴포넌트 이름 (dev-rules.json components) — 화면 11 에서는 0 이어야 한다 */

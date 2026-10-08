@@ -7,13 +7,14 @@ import { describe, expect, it } from "vitest";
 import { join } from "node:path";
 import { checkUsedOn, pastDateNoteText, recordedOnCaption, seoulDate, usageDayLabel, usageRowSubtitle } from "../../lib/usage-history-rules";
 import { ROOT, read, rules } from "./helpers";
+import { framePath } from "../frames";
 
 const UD = rules.usage_date as Record<string, string>;
 const D7 = read(join(ROOT, "harness/d7-data.md"));
 const D7_15 = D7.slice(D7.indexOf("## 15."), D7.indexOf("\n## ", D7.indexOf("## 15.") + 1));
 type FrameNode = { name: string; text: { characters: string } | null };
 const frameTexts = (file: string, name: string) =>
-  (JSON.parse(read(join(ROOT, "design/frames", file))) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes
+  (JSON.parse(read(framePath(file))) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes
     .filter((n) => n.name === name && n.text)
     .map((n) => n.text!.characters);
 

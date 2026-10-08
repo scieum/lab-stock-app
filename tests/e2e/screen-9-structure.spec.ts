@@ -9,7 +9,7 @@ import { ROLE_LABEL } from "./db-helpers";
 import { openAs } from "./auth-state";
 import { PROFILE_ROLE, ROLE_NAME, browserClient, browserSession, countComponent, devRules, roleChecks, routeOf, rules, sel } from "./screen-helpers";
 import { anonContext } from "./screen-8-helpers";
-import { locationPath } from "./shell-helpers";
+import { locationPath, shellSchoolScope } from "./shell-helpers";
 import {
   BUSY,
   BUTTON_TAB_GAP,
@@ -45,6 +45,7 @@ import {
   hostOf,
   linksTo,
   main,
+  navLabelFor,
   navLabels,
   navLinks,
   onTop,
@@ -118,7 +119,7 @@ for (const role of ["student", "teacher"] as const) {
 
   test(`[R-ui][S${SCREEN}] ${ROLE_LABEL[role]} 화면 ${SCREENS_OF[role].join("·")}: ${REGISTER} 0 (R3) · ${VENDORS_HREF} 링크 0 · nav 에 "${VENDORS_NAV}" 없음`, async ({ browser }, info) => {
     test.setTimeout(300_000);
-    const { context, page } = await openAs(browser, info, role, HOME);
+    const { context, page, viewport } = await openAs(browser, info, role, HOME);
     try {
       expect((await browserSession(page)).role, "테스트 계정 역할").toBe(PROFILE_ROLE[role]);
       // 화면 3 (시약 상세) 도 본다 — 자기 학교 시약 1개
@@ -130,12 +131,13 @@ for (const role of ["student", "teacher"] as const) {
         expect(res?.status(), `${path} 응답`).toBe(200);
         await page.waitForLoadState("load");
         expect(new URL(page.url()).pathname, `${path} 그대로`).toBe(path);
-        await expect(page.locator(sel("nav-pill")), "nav-pill").toHaveCount(1);
+        // 셸 (390 nav-pill / 1440 app-sidebar — rules 1.22 desktop_shell)
+        await expect(shellSchoolScope(page, viewport), "셸").toHaveCount(1);
         await expect(page.locator(BUSY), "자리 표시는 본문으로 바뀐다").toHaveCount(0, { timeout: 45_000 });
         expect((await page.locator("main").innerText()).trim().length, `${path} 본문이 그려졌다`).toBeGreaterThan(0);
         expect(await countComponent(page, REGISTER), `${ROLE_LABEL[role]} ${path} ${REGISTER}`).toBe(0);
         await expect(linksTo(page, VENDORS_HREF), `${ROLE_LABEL[role]} ${path} ${VENDORS_HREF} 링크`).toHaveCount(0);
-        expect(await navLabels(page), `${ROLE_LABEL[role]} ${path} nav`).not.toContain(VENDORS_NAV);
+        expect(await navLabels(page), `${ROLE_LABEL[role]} ${path} nav`).not.toContain(navLabelFor(page, VENDORS_NAV));
         expect((await page.locator("body").innerText()).includes(REGISTER_BUTTON), `${ROLE_LABEL[role]} ${path} 에 "${REGISTER_BUTTON}"`).toBe(false);
       }
     } finally {
@@ -173,8 +175,8 @@ test(`[R-ui][S${SCREEN}] 학교A admin ${VENDORS_HREF} 렌더(200) · ${REGISTER
     expect((await browserSession(page)).role, "테스트 계정 역할").toBe(PROFILE_ROLE.admin);
     await expect(page.locator(sel(REGISTER)), REGISTER).toHaveCount(1);
     const labels = await navLabels(page);
-    expect(labels.filter((l) => l === VENDORS_NAV), `nav "${VENDORS_NAV}"`).toHaveLength(1);
-    const link = navLinks(page).filter({ hasText: exact(VENDORS_NAV) });
+    expect(labels.filter((l) => l === navLabelFor(page, VENDORS_NAV)), `nav "${VENDORS_NAV}"`).toHaveLength(1);
+    const link = navLinks(page).filter({ hasText: exact(navLabelFor(page, VENDORS_NAV)) });
     await expect(link).toHaveAttribute("href", VENDORS_HREF);
     if (viewport === "desktop") {
       await expect(link).toBeVisible();

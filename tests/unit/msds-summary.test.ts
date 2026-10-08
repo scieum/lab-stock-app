@@ -40,6 +40,7 @@ import {
   type ChemDetailItem,
 } from "../../lib/server/kosha-msds-detail-xml";
 import { msdsDetailUrl } from "../../lib/server/kosha-msds-xml";
+import { framePath } from "../frames";
 
 // ---------- 기대값 원본 ----------
 const D7 = readFileSync(join(ROOT, "harness/d7-data.md"), "utf8");
@@ -65,7 +66,7 @@ const D7_SECTION_NUMS = [...new Set([...row22("데이터").matchAll(/\b0(\d) = /
 const D7_DETAIL_URL = (/`(msds\.kosha\.or\.kr\/[^`]+)`/.exec(row22("요약 대상")) ?? [])[1] ?? "";
 
 type FrameNode = { name: string; path: string[]; fills?: string[]; text: { characters: string } | null };
-const F16 = (JSON.parse(readFileSync(join(ROOT, "design/frames/16-mobile.json"), "utf8")) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes;
+const F16 = (JSON.parse(readFileSync(framePath("16-mobile"), "utf8")) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes;
 const frameTexts = (name: string, parent?: string) =>
   F16.filter((n) => n.name === name && n.text && (!parent || n.path.includes(parent))).map((n) => n.text!.characters);
 const FRAME_TITLE = frameTexts("title", "nav-pill")[0] ?? "";

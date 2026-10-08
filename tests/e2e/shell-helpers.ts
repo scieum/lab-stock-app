@@ -6,7 +6,8 @@
 // 테스트가 직접 풀어 준다 — "응답 전" 상태를 원하는 만큼 유지한 채 단언한다.
 import { expect, type Browser, type BrowserContext, type Locator, type Page, type Request, type TestInfo } from "@playwright/test";
 import type { Role } from "./db-helpers";
-import { browserClient, devRules, routeOf, rules, sel, seedRows, type ViewportName } from "./screen-helpers";
+import { ROLE_NAME, browserClient, devRules, routeOf, rules, sel, seedRows, type ViewportName } from "./screen-helpers";
+import { frameActiveLabel } from "../desktop-shell";
 
 export const HOME = 13;
 export const LIST = 2;
@@ -20,6 +21,14 @@ export const LOGIN = 1;
 
 /** rules.json roles 의 역할 이름 (학교 B 계정은 교사) */
 export const RULE_ROLE: Record<Role, string> = { student: "학생", teacher: "교사", admin: "admin", schoolB: "교사" };
+
+/**
+ * 폭마다 바뀌는 셸 컴포넌트: 폭 390 = nav-pill · tab-bar · tab-item, 폭 1440 = app-sidebar · sidebar-item
+ * (rules.json tab_bar · 1.22 desktop_shell). 화면 본문·예전 프레임 대조에서는 빼고, 셸은 expectShell(C2·C3)로 폭별 개수를 본다.
+ * (nav-account-menu 는 두 셸 모두에 1개 — 본문 대조에 그대로 둔다)
+ */
+export const SHELL_COMPONENTS: string[] = ["nav-pill", rules.tab_bar.component, rules.tab_bar.item, rules.desktop_shell.component, rules.desktop_shell.item];
+export const isShellComponent = (name: string): boolean => SHELL_COMPONENTS.includes(name);
 
 /** dev-rules.json components 의 모든 컴포넌트 이름 */
 export const ALL_COMPONENTS = Object.keys(devRules.components);
@@ -144,13 +153,108 @@ export async function installNavGate(page: Page, info: TestInfo): Promise<NavGat
 
 // ---------- 화면 요소 ----------
 
-/** 셸의 화면 이동 링크: 폭 390 = tab-bar 의 tab-item, 폭 1440 = nav-pill 의 주 메뉴 링크 */
+/**
+ * 셸의 화면 이동 링크: 폭 390 = tab-bar 의 tab-item, 폭 1440 = app-sidebar 의 sidebar-item
+ * (design/rules.json 1.22 desktop_shell — 데스크톱은 nav-pill 대신 왼쪽 사이드바, d7 §23)
+ */
 export function shellLink(page: Page, viewport: ViewportName, screen: number): Locator {
   const href = routeOf(screen);
   const tb = rules.tab_bar;
+  const ds = rules.desktop_shell;
   return viewport === "mobile"
     ? page.locator(`${sel(tb.component)} a${sel(tb.item)}[href="${href}"]`)
-    : page.locator(`${sel("nav-pill")} nav a[href="${href}"]`);
+    : page.locator(`${sel(ds.component)} a${sel(ds.item)}[href="${href}"]`);
+}
+
+/**
+ * 셸에서 학교명·계정 메뉴가 있는 곳: 폭 390 = nav-pill, 폭 1440 = app-sidebar (rules 1.22 desktop_shell, d7 §23 —
+ * 위 학교명 · 아래 계정 ▾ → 로그아웃 = 예전 nav-pill 학교명 메뉴 역할)
+ */
+export function shellSchoolScope(page: Page, viewport: ViewportName): Locator {
+  return page.locator(sel(viewport === "mobile" ? "nav-pill" : rules.desktop_shell.component));
+}
+
+/** 셸의 화면 이동 링크 전부: 폭 390 = nav-pill nav 링크, 폭 1440 = app-sidebar 의 sidebar-item 링크 */
+export function shellNavLinks(page: Page, viewport: ViewportName): Locator {
+  const ds = rules.desktop_shell;
+  return viewport === "mobile" ? page.locator(`${sel("nav-pill")} nav a`) : page.locator(`${sel(ds.component)} a${sel(ds.item)}`);
+}
+
+/** 셸 이동 링크 글자들 (공백 정리) */
+export async function shellNavLabels(page: Page, viewport: ViewportName): Promise<string[]> {
+  return (await shellNavLinks(page, viewport).allTextContents()).map((t) => t.replace(/\s+/g, " ").trim());
+}
+
+/**
+ * 화면 N 으로 가는 셸 링크의 글자: 폭 390 = nav-pill 문구(mobileLabel, 예전 시안), 폭 1440 = 사이드바 메뉴 문구
+ * (새 프레임 {N}-desktop 의 활성 sidebar-item — rules desktop_shell.menu 안)
+ */
+export function shellNavLabel(viewport: ViewportName, screen: number, mobileLabel: string): string {
+  return viewport === "mobile" ? mobileLabel : frameActiveLabel(screen);
+}
+
+/** 셸 계정 메뉴 버튼 (aria-haspopup=menu): 폭 390 = nav-pill 학교명 버튼, 폭 1440 = app-sidebar 계정 줄 ("이름 · 역할" ▾) */
+export function shellAccountButton(page: Page, viewport: ViewportName): Locator {
+  return shellSchoolScope(page, viewport).locator('button[aria-haspopup="menu"]');
+}
+
+/**
+ * 셸 머리(예전 nav-pill "워드마크 · 제목 · 학교명")의 폭별 자리:
+ * - 폭 390: nav-pill 1개 안에 워드마크·제목·학교명 (그대로)
+ * - 폭 1440: app-sidebar 위에 워드마크·학교명, 제목은 본문(main)에 보이는 글자 (rules 1.22 desktop_shell — nav-pill 0, d7 §23)
+ */
+export async function expectShellHeader(
+  page: Page,
+  viewport: ViewportName,
+  want: { wordmark?: string; title?: string; schoolName?: string },
+  where: string,
+): Promise<void> {
+  if (viewport === "mobile") {
+    const nav = page.locator(sel("nav-pill"));
+    await expect(nav, `${where}: nav-pill 1개`).toHaveCount(1);
+    for (const t of [want.wordmark, want.title, want.schoolName]) if (t) await expect(nav, `${where}: nav-pill "${t}"`).toContainText(t);
+    return;
+  }
+  const sb = page.locator(sel(rules.desktop_shell.component));
+  await expect(sb, `${where}: ${rules.desktop_shell.component} 1개`).toHaveCount(1);
+  for (const f of rules.desktop_shell.forbidden_on_desktop) await expect(page.locator(sel(f)), `${where}: ${f} 0`).toHaveCount(0);
+  for (const t of [want.wordmark, want.schoolName]) if (t) await expect(sb, `${where}: 사이드바 "${t}"`).toContainText(t);
+  if (want.title) {
+    // 눈에 보이는 제목만 (화면 읽기 전용 h1 — 1px 잘라 숨김 — 은 세지 않는다)
+    const all = page.locator("main").getByText(want.title, { exact: true });
+    await expect
+      .poll(
+        () =>
+          all.evaluateAll((els) =>
+            els.filter((e) => {
+              const r = e.getBoundingClientRect();
+              return r.width > 2 && r.height > 2 && getComputedStyle(e).visibility !== "hidden";
+            }).length,
+          ),
+        { message: `${where}: 본문 제목 "${want.title}" 눈에 보임` },
+      )
+      .toBeGreaterThanOrEqual(1);
+  }
+}
+
+/**
+ * 셸 계정 버튼 글자의 기대값: 폭 390 = 자기 학교명(nav-pill), 폭 1440 = "이름 · 역할"(app-sidebar 계정 줄 — 시안 1.22 sidebar-account
+ * "김OO · 교사"; 역할 이름 = rules.json roles 의 역할 이름 학생·교사·admin). 이름·학교명은 로그인 세션(RLS)으로 읽은 자기 행.
+ */
+export async function shellAccountLabel(page: Page, viewport: ViewportName): Promise<string> {
+  const { client, userId } = await browserClient(page);
+  const prof = await client.from("profiles").select("display_name, role, school_id").eq("user_id", userId).single();
+  if (prof.error || !prof.data) throw new Error(`profiles 자기 행 없음: ${prof.error?.message}`);
+  if (viewport === "mobile") {
+    const sch = await client.from("schools").select("name").eq("id", prof.data.school_id as string).single();
+    if (sch.error || !sch.data) throw new Error(`schools 자기 학교 없음: ${sch.error?.message}`);
+    return sch.data.name as string;
+  }
+  const name = String(prof.data.display_name ?? "").trim();
+  expect(name, "계정 이름 있음 (사이드바 계정 줄)").not.toBe("");
+  const r = (ROLE_NAME as Record<string, string>)[prof.data.role as string];
+  expect(r, `profiles.role '${prof.data.role}' → rules roles 역할 이름`).toBeTruthy();
+  return `${name} · ${r}`;
 }
 
 /** 링크가 하이드레이션됐는지 (하이드레이션 전 누름은 문서 이동이 돼 버린다) */
@@ -179,13 +283,32 @@ export async function waitContent(page: Page, screen: number): Promise<void> {
   expect(new URL(page.url()).pathname, `화면 ${screen} 경로`).toBe(routeOf(screen));
 }
 
-/** rules.json tab_bar · nav-pill 이 그 폭의 기대 개수가 될 때까지 (하이드레이션 뒤 폭 판정) */
+/**
+ * 셸 개수가 그 폭의 기대값이 될 때까지 (하이드레이션 뒤 폭 판정 — 서버 HTML 에는 두 폭의 셸이 다 있고 하이드레이션 뒤 한쪽이 빠진다).
+ * - 폭 390: nav-pill 1 · rules.json tab_bar (mobile_screens 면 1 · items) · app-sidebar·sidebar-item 0
+ * - 폭 1440: desktop_shell.screens 면 app-sidebar 1 · sidebar-item ≥ min_items · forbidden_on_desktop(nav-pill) 0, tab-bar 0
+ *   (rules 1.22 desktop_shell, d5 C3)
+ */
 export async function expectShell(page: Page, viewport: ViewportName, screen: number, when: string): Promise<void> {
   const tb = rules.tab_bar;
-  const shown = viewport === "mobile" && tb.mobile_screens.includes(screen);
-  await expect(page.locator(sel("nav-pill")), `${when}: nav-pill`).toHaveCount(1);
-  await expect(page.locator(sel(tb.component)), `${when}: ${viewport} ${tb.component}`).toHaveCount(shown ? 1 : 0);
-  await expect(page.locator(sel(tb.item)), `${when}: ${viewport} ${tb.item}`).toHaveCount(shown ? tb.items : 0);
+  const ds = rules.desktop_shell;
+  if (viewport === "mobile") {
+    const shown = tb.mobile_screens.includes(screen);
+    await expect(page.locator(sel("nav-pill")), `${when}: nav-pill`).toHaveCount(1);
+    await expect(page.locator(sel(tb.component)), `${when}: ${viewport} ${tb.component}`).toHaveCount(shown ? 1 : 0);
+    await expect(page.locator(sel(tb.item)), `${when}: ${viewport} ${tb.item}`).toHaveCount(shown ? tb.items : 0);
+    await expect(page.locator(sel(ds.component)), `${when}: ${viewport} ${ds.component}`).toHaveCount(0);
+    await expect(page.locator(sel(ds.item)), `${when}: ${viewport} ${ds.item}`).toHaveCount(0);
+    return;
+  }
+  const sidebar = ds.screens.includes(screen);
+  await expect(page.locator(sel(ds.component)), `${when}: ${viewport} ${ds.component}`).toHaveCount(sidebar ? 1 : 0);
+  if (sidebar) {
+    for (const f of ds.forbidden_on_desktop) await expect(page.locator(sel(f)), `${when}: ${viewport} ${f} (forbidden_on_desktop)`).toHaveCount(0);
+    expect(await page.locator(`${sel(ds.component)} ${sel(ds.item)}`).count(), `${when}: ${ds.item} ≥ min_items`).toBeGreaterThanOrEqual(ds.min_items);
+  }
+  await expect(page.locator(sel(tb.component)), `${when}: ${viewport} ${tb.component}`).toHaveCount(0);
+  await expect(page.locator(sel(tb.item)), `${when}: ${viewport} ${tb.item}`).toHaveCount(0);
 }
 
 /** dev-rules.json components 이름별 DOM 개수 (scope 안) */

@@ -8,7 +8,6 @@
 // 공용 학교 A 계정 테스트는 읽기 · 시트 열고 닫기 · 저장 안 하는 편집만 하고 쓰기 요청 0건을 단언한다.
 // 실제 인쇄 대화상자는 띄우지 않는다 (window.print 를 가로챈다).
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import QRCode from "qrcode";
 import { test, expect, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { openAs } from "./auth-state";
@@ -90,6 +89,8 @@ import {
   type PrepReagent,
   type S11Fixture,
 } from "./screen-11-helpers";
+import { framePath } from "../frames";
+import { adjustPreDesktopShell } from "../desktop-shell";
 
 test.describe.configure({ mode: "default" });
 
@@ -217,10 +218,11 @@ const qrUrl = (info: TestInfo, id: string) => `${String(info.project.use.baseURL
 
 /** design/frames/{name}.json 의 이름별 개수 (dev-rules components 에 있는 이름만) */
 function frameCounts(name: string): Record<string, number> {
-  const j = JSON.parse(readFileSync(join(process.cwd(), "design", "frames", `${name}.json`), "utf8")) as { frames: { nodes: { name: string }[] }[] };
+  const j = JSON.parse(readFileSync(framePath(`${name}`), "utf8")) as { frames: { nodes: { name: string }[] }[] };
   const out: Record<string, number> = {};
   for (const n of j.frames[0].nodes) out[n.name] = (out[n.name] ?? 0) + 1;
-  return out;
+  // 예전 데스크톱 프레임의 nav-pill → 지금 셸 app-sidebar (rules 1.22 desktop_shell, d7 §23)
+  return adjustPreDesktopShell(name, out);
 }
 
 // =====================================================================
@@ -624,7 +626,7 @@ test.describe("일회용 학교", () => {
         const printed = squash(await printRoot.innerText());
         for (const c of all) expect(printed, `인쇄 사본에 ${c.label}`).toContain(c.label);
         expect(printed).toContain(QR_HELP);
-        for (const l of [page.locator("main"), page.locator(sel("nav-pill")), sheet, page.locator(sel(rules.tab_bar.component))]) {
+        for (const l of [page.locator("main"), page.locator(sel("nav-pill")), page.locator(sel(rules.desktop_shell.component)), sheet, page.locator(sel(rules.tab_bar.component))]) {
           if ((await l.count()) === 0) continue;
           await expect(l.first(), "인쇄 미디어: 화면 요소는 숨김").toBeHidden();
         }

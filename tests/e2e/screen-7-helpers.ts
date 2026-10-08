@@ -9,6 +9,8 @@ import { join } from "node:path";
 import { expect, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { S7_UI_TEMP_PREFIX, signIn, uniqueTag, type Role } from "./db-helpers";
 import { browserClient, devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
+import { framePath } from "../frames";
+import { adjustPreDesktopShell } from "../desktop-shell";
 
 export const SCREEN = 7;
 export const INTAKE = "stock-intake";
@@ -85,12 +87,13 @@ export function screenComponents(): string[] {
 
 /** design/frames/7-{viewport}.json 의 노드 이름별 개수 */
 export function frameCounts(viewport: ViewportName): Record<string, number> {
-  const j = JSON.parse(readFileSync(join(process.cwd(), "design", "frames", `${SCREEN}-${viewport}.json`), "utf8")) as {
+  const j = JSON.parse(readFileSync(framePath(`${SCREEN}-${viewport}`), "utf8")) as {
     frames: { nodes: { name: string }[] }[];
   };
   const out: Record<string, number> = {};
   for (const n of j.frames[0].nodes) out[n.name] = (out[n.name] ?? 0) + 1;
-  return out;
+  // 예전 데스크톱 프레임의 nav-pill → 지금 셸 app-sidebar (rules 1.22 desktop_shell, d7 §23)
+  return adjustPreDesktopShell(`${SCREEN}-${viewport}`, out);
 }
 
 /** 프로젝트(mobile/desktop)·스펙 파일(group)·테스트마다 고유한 임시 시약 이름 */

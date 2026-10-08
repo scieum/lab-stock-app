@@ -22,6 +22,18 @@ export type DesignRules = {
   roles: Record<string, RoleRule>;
   screens_required: Record<string, string[] | string>;
   tab_bar: { component: string; item: string; items: number; labels: string[]; mobile_screens: number[] };
+  /** 1.22 데스크톱 셸 (d7 §23, d5 C3) */
+  desktop_shell: {
+    component: string;
+    item: string;
+    min_items: number;
+    width: number;
+    radius: number;
+    screens: number[];
+    forbidden_on_desktop: string[];
+    desktop_required: Record<string, string[]>;
+    menu: { all: string[]; teacher_admin: string[]; admin: string[] };
+  };
   never: {
     N1: {
       school_name_pattern: string;

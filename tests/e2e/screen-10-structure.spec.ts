@@ -19,6 +19,11 @@ import {
   sel,
 } from "./screen-helpers";
 import { seedSchoolOf } from "./screen-3-helpers";
+import { expectShell, expectShellHeader, isShellComponent, shellSchoolScope } from "./shell-helpers";
+import { frameActiveLabel } from "../desktop-shell";
+
+/** 셸의 화면 10 메뉴 글자: 폭 1440 = 사이드바 메뉴(rules desktop_shell.menu — 새 프레임 10-desktop 활성 메뉴 "기록") */
+const SIDEBAR_LABEL = frameActiveLabel(10);
 import {
   ACTIVE_TAB_LABEL,
   CLOSE_LABEL,
@@ -128,14 +133,15 @@ for (const role of SCHOOL_A_ROLES) {
   const roleName = ROLE_NAME[role as keyof typeof ROLE_NAME];
   test(`[R-ui][S${SCREEN}] ${ROLE_LABEL[role]} ${routeOf(SCREEN)} 렌더(리다이렉트 없음) · 상세를 연 상태에서 roles R1~R7 개수(${MSDS} ≥ min_per_role) · 수정·삭제·"${ENTRY_LABEL}" 진입 0 (읽기 전용)`, async ({ browser }, info) => {
     test.setTimeout(150_000);
-    const { context, page, response } = await openAs(browser, info, role, SCREEN);
+    const { context, page, response, viewport } = await openAs(browser, info, role, SCREEN);
     try {
       expect(response?.status(), "화면 10 응답").toBe(200);
       await waitHistory(page);
       expect(new URL(page.url()).pathname, "모든 역할이 화면 10 에 머문다").toBe(routeOf(SCREEN));
       const me = await browserSession(page);
       expect(me.role, "테스트 계정 역할").toBe(PROFILE_ROLE[role]);
-      await expect(page.locator(sel("nav-pill")).first()).toContainText(NAV_LABEL);
+      // 제목: 390 = nav-pill / 1440 = 본문 (rules 1.22 desktop_shell — nav-pill 0)
+      await expectShellHeader(page, viewport, { title: NAV_LABEL }, `${ROLE_LABEL[role]} 화면 ${SCREEN}`);
       await expect(rows(page).first(), "기록 행이 있어야 상세를 열 수 있음").toBeVisible();
 
       // 상세를 열기 전: 역할 제한 컴포넌트(max 0)는 0
@@ -227,17 +233,17 @@ for (const role of ALL_ROLES) {
       const me = await browserSession(page);
       expect(me.schoolName, "테스트 계정 학교 = seed 학교").toBe(school.name);
 
-      // nav-pill: 워드마크 + 제목 + 학교명
-      const nav = page.locator(sel("nav-pill"));
-      await expect(nav, "nav-pill 1개").toHaveCount(1);
-      await expect(nav).toContainText("Lab_Stock");
-      await expect(nav.getByText(NAV_LABEL).locator("visible=true").first(), `nav-pill "${NAV_LABEL}" 보임`).toBeVisible();
-      await expect(nav).toContainText(me.schoolName);
+      // 셸: 390 = nav-pill(워드마크 + 제목 + 학교명) · tab-bar / 1440 = app-sidebar(워드마크 + 학교명) + 본문 제목 (rules 1.22 desktop_shell)
+      await expectShell(page, viewport, SCREEN, `${ROLE_LABEL[role]} 화면 ${SCREEN}`);
+      await expectShellHeader(page, viewport, { wordmark: "Lab_Stock", title: NAV_LABEL, schoolName: me.schoolName }, `${ROLE_LABEL[role]} 화면 ${SCREEN}`);
+      if (viewport === "mobile") {
+        await expect(page.locator(sel("nav-pill")).getByText(NAV_LABEL).locator("visible=true").first(), `nav-pill "${NAV_LABEL}" 보임`).toBeVisible();
+      }
       if (viewport === "desktop") {
-        // 데스크탑: 현재 섹션 링크 = "사용 기록 내역"
-        const link = nav.locator(`a[href="${routeOf(SCREEN)}"]`);
-        await expect(link, "데스크탑 nav-pill 섹션 링크").toHaveCount(1);
-        await expect(link).toHaveText(exact(NAV_LABEL));
+        // 데스크탑: 사이드바 현재 메뉴 = "기록" (시안 10-desktop)
+        const link = shellSchoolScope(page, viewport).locator(`a[href="${routeOf(SCREEN)}"]`);
+        await expect(link, "데스크탑 사이드바 메뉴 링크").toHaveCount(1);
+        await expect(link).toHaveText(exact(SIDEBAR_LABEL));
         await expect(link, "현재 섹션 표시").toHaveAttribute("aria-current", "page");
         // 화면 제목 (시안 screen-title)
         await expect(page.locator("main").getByRole("heading", { name: NAV_LABEL }).locator("visible=true"), "screen-title").toHaveCount(1);
@@ -319,7 +325,7 @@ test(`[C1][S${SCREEN}] 학교A 교사 목록 (시안 10 1.17 · d7 §15 정정):
   }
 });
 
-test(`[C1][S${SCREEN}] 진입점 (d7 §7): 탭바 "${ACTIVE_TAB_LABEL}"(390) · nav "${NAV_LABEL}"(1440) · 홈 "더 보기" → ${routeOf(SCREEN)}`, async ({ browser }, info) => {
+test(`[C1][S${SCREEN}] 진입점 (d7 §7): 탭바 "${ACTIVE_TAB_LABEL}"(390) · 사이드바 "${SIDEBAR_LABEL}"(1440) · 홈 "더 보기" → ${routeOf(SCREEN)}`, async ({ browser }, info) => {
   test.setTimeout(150_000);
   const { context, page, viewport } = await openAs(browser, info, "student", HOME_SCREEN);
   try {
@@ -331,8 +337,8 @@ test(`[C1][S${SCREEN}] 진입점 (d7 §7): 탭바 "${ACTIVE_TAB_LABEL}"(390) · 
     const entry =
       viewport === "mobile"
         ? page.locator(`${sel(rules.tab_bar.component)} ${sel(rules.tab_bar.item)}`).filter({ hasText: exact(ACTIVE_TAB_LABEL) })
-        : page.locator(sel("nav-pill")).locator("a").filter({ hasText: exact(NAV_LABEL) });
-    await expect(entry, viewport === "mobile" ? `탭바 "${ACTIVE_TAB_LABEL}"` : `nav "${NAV_LABEL}"`).toHaveCount(1);
+        : shellSchoolScope(page, viewport).locator("a").filter({ hasText: exact(SIDEBAR_LABEL) });
+    await expect(entry, viewport === "mobile" ? `탭바 "${ACTIVE_TAB_LABEL}"` : `사이드바 "${SIDEBAR_LABEL}"`).toHaveCount(1);
     await expect(entry).toHaveAttribute("href", routeOf(SCREEN));
     await entry.click();
     await page.waitForURL((u) => u.pathname === routeOf(SCREEN), { timeout: 30_000 });
@@ -365,10 +371,9 @@ test(`[C1][S${SCREEN}] 학교A 학생 시안과 같은 상태(390 = 목록, 1440
       await openRow(page, 0);
       await expectDetail(page, snap.shown[0]);
     }
-    const tb = rules.tab_bar;
     let checked = 0;
     for (const name of screenComponents()) {
-      if (name === tb.component || name === tb.item) continue; // C2
+      if (isShellComponent(name)) continue; // 셸(390 nav-pill·탭바 / 1440 app-sidebar)은 폭별 기대값 — C2 · C3
       const want = frame[name] ?? 0;
       // 공통 셸 예외(rules.json app_exceptions — 디자인 1.15 nav-account-menu)는 이 화면의 옛 시안 프레임에 없고 dev-rules 가 더한다:
       // 로그인 후 셸이 있는 화면마다 정확히 1개 (dev-rules components_note · route_auth.logout)
@@ -401,8 +406,10 @@ test(`[C1][S${SCREEN}] 학교A 학생 시안과 같은 상태(390 = 목록, 1440
     }
     // 프레임에 있는 화면 10 컴포넌트(탭바·셸 예외 제외)는 모두 비교했다
     const appEx = (rules as unknown as { app_exceptions: Record<string, string> }).app_exceptions;
-    const wantChecked = screenComponents().filter((n) => (frame[n] ?? 0) > 0 && n !== tb.component && n !== tb.item && !(n in appEx)).length;
-    expect(wantChecked, "프레임에 있는 화면 10 컴포넌트").toBeGreaterThanOrEqual(5);
+    const wantChecked = screenComponents().filter((n) => (frame[n] ?? 0) > 0 && !isShellComponent(n) && !(n in appEx)).length;
+    // 예전엔 nav-pill 을 여기서 셌다(≥ 5) — 셸은 이제 폭별 expectShell(아래)로 본다: 본문 컴포넌트 ≥ 4 + 셸
+    expect(wantChecked, "프레임에 있는 화면 10 본문 컴포넌트").toBeGreaterThanOrEqual(4);
+    await expectShell(page, viewport, SCREEN, "시안과 같은 상태");
     expect(checked, "프레임과 비교한 컴포넌트 수").toBe(wantChecked);
     if (detailOpen) {
       // 상세 안: 닫기 button-outline (시안 개수), MSDS 보기는 msds-entry 1개 안의 누를 수 있는 것 1개

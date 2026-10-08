@@ -17,6 +17,8 @@ import { expect, type Browser, type BrowserContext, type Locator, type Page, typ
 import { createClient, type Session as AuthSession, type SupabaseClient } from "@supabase/supabase-js";
 import { anonClient } from "./db-helpers";
 import { browserClient, devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
+import { framePath } from "../frames";
+import { adjustPreDesktopShell } from "../desktop-shell";
 
 export const SCREEN = 8;
 export const HOME_SCREEN = 13;
@@ -104,12 +106,13 @@ export function screenComponents(): string[] {
 
 /** design/frames/8-{viewport}.json 의 노드 이름별 개수 */
 export function frameCounts(viewport: ViewportName): Record<string, number> {
-  const j = JSON.parse(readFileSync(join(process.cwd(), "design", "frames", `${SCREEN}-${viewport}.json`), "utf8")) as {
+  const j = JSON.parse(readFileSync(framePath(`${SCREEN}-${viewport}`), "utf8")) as {
     frames: { nodes: { name: string }[] }[];
   };
   const out: Record<string, number> = {};
   for (const n of j.frames[0].nodes) out[n.name] = (out[n.name] ?? 0) + 1;
-  return out;
+  // 예전 데스크톱 프레임의 nav-pill → 지금 셸 app-sidebar (rules 1.22 desktop_shell, d7 §23)
+  return adjustPreDesktopShell(`${SCREEN}-${viewport}`, out);
 }
 
 // ---------- 화면 요소 ----------
@@ -642,18 +645,39 @@ export async function sweep(group: string, project: string): Promise<Residue> {
     await sb.from("profiles").delete().in("school_id", schoolIds);
   }
 
-  const leftUsers: string[] = [];
+  // 1) 이 실행 토큰의 계정을 먼저 모두 모은 뒤 2) 지운다 — 목록을 넘기면서 지우면 뒤 쪽 계정이 앞 쪽으로 밀려 건너뛰어진다.
+  // 지우기는 몇 번 다시 시도한다: Auth 관리 API 가 동시 부하에서 잠깐 실패(5xx·한도)하면 계정 1개가 남아 잔여물로 잡혔다
+  // (run 20261008-2117 screen-4-10-used-on · screen-8-isolation users:1 — 그 계정을 가리키는 행은 없었다).
+  const mine: string[] = [];
   for (let page = 1; page <= 20; page++) {
     const list = await sb.auth.admin.listUsers({ page, perPage: 200 });
     const users = list.data?.users ?? [];
-    for (const u of users) {
-      if (!u.email?.startsWith(ePrefix)) continue;
-      await sb.from("profiles").delete().eq("user_id", u.id);
-      const del = await sb.auth.admin.deleteUser(u.id);
-      if (del.error) leftUsers.push(u.id);
-      sessions.delete(u.id);
-    }
+    for (const u of users) if (u.email?.startsWith(ePrefix)) mine.push(u.id);
     if (users.length < 200) break;
+  }
+  const leftUsers: string[] = [];
+  for (const id of mine) {
+    await sb.from("profiles").delete().eq("user_id", id);
+    let lastError = "";
+    for (let attempt = 0; attempt < 4; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, 1_000 * attempt));
+      const del = await sb.auth.admin.deleteUser(id);
+      if (!del.error) {
+        lastError = "";
+        break;
+      }
+      lastError = del.error.message;
+      // 이미 지워졌으면(다른 시도가 성공) 끝
+      if (/not.?found/i.test(lastError)) {
+        lastError = "";
+        break;
+      }
+    }
+    if (lastError) {
+      console.warn(`[sweep ${group}/${project}] 일회용 계정 삭제 실패: ${lastError}`);
+      leftUsers.push(id);
+    }
+    sessions.delete(id);
   }
   if (schoolIds.length) await sb.from("schools").delete().in("id", schoolIds);
 

@@ -10,6 +10,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test, expect, type Locator, type Page } from "@playwright/test";
+import { framePath } from "../frames";
+import { DESKTOP_SHELL_NAMES } from "../desktop-shell";
 
 const S5 = 5;
 const GALLERY = "/gallery";
@@ -36,7 +38,7 @@ const root = process.cwd();
 const rules = JSON.parse(readFileSync(join(root, "design/rules.json"), "utf8")) as Rules;
 const dev = JSON.parse(readFileSync(join(root, "harness/dev-rules.json"), "utf8")) as Dev;
 const D7 = readFileSync(join(root, "harness/d7-data.md"), "utf8");
-const loadFrame = (name: string) => (JSON.parse(readFileSync(join(root, `design/frames/${name}.json`), "utf8")) as Frame).frames[0].nodes;
+const loadFrame = (name: string) => (JSON.parse(readFileSync(framePath(`${name}`), "utf8")) as Frame).frames[0].nodes;
 const m5 = loadFrame(`${S5}-mobile`);
 const d5 = loadFrame(`${S5}-desktop`);
 
@@ -116,7 +118,8 @@ const SAVE = actionNodes.find((n) => n.name === "label" && n.path.includes(PRIMA
 
 // 프레임의 컴포넌트 개수 (dev-rules components 이름만, nav-pill·tab-bar 는 갤러리 예시 구역 밖이라 뺀다)
 const componentNames = Object.keys(dev.components);
-const SHELL = ["nav-pill", rules.tab_bar.component, rules.tab_bar.item];
+// 데스크톱 셸(rules 1.22 desktop_shell app-sidebar · sidebar-item)은 dev-rules 가 화면마다 더하지만 /gallery/sidebar 에 있다
+const SHELL = ["nav-pill", rules.tab_bar.component, rules.tab_bar.item, ...DESKTOP_SHELL_NAMES];
 const countByName = (nodes: FrameNode[]) => {
   const out: Record<string, number> = {};
   for (const n of nodes) {

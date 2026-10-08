@@ -16,6 +16,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { browserClient, devRules, routeOf, sel, type ViewportName } from "./screen-helpers";
+import { framePath } from "../frames";
+import { adjustPreDesktopShell } from "../desktop-shell";
 
 export const SCREEN = 10;
 export const ROW = "ex-data-table-cell";
@@ -84,7 +86,7 @@ export function screenComponents(): string[] {
 type FrameNode = { name: string; text: { characters?: string } | null };
 
 function frameNodes(screen: number, viewport: ViewportName): FrameNode[] {
-  const j = JSON.parse(readFileSync(join(process.cwd(), "design", "frames", `${screen}-${viewport}.json`), "utf8")) as {
+  const j = JSON.parse(readFileSync(framePath(`${screen}-${viewport}`), "utf8")) as {
     frames: { nodes: FrameNode[] }[];
   };
   return j.frames[0].nodes;
@@ -94,7 +96,7 @@ function frameNodes(screen: number, viewport: ViewportName): FrameNode[] {
 export function frameCounts(viewport: ViewportName, screen: number = SCREEN): Record<string, number> {
   const out: Record<string, number> = {};
   for (const n of frameNodes(screen, viewport)) out[n.name] = (out[n.name] ?? 0) + 1;
-  return out;
+  return adjustPreDesktopShell(`${screen}-${viewport}`, out);
 }
 
 /** 시안 프레임의 글자 노드 (순서대로) */

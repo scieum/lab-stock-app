@@ -7,6 +7,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type Locator, type Page, type Route } from "@playwright/test";
 import { rules, sel } from "./screen-helpers";
+import { framePath } from "../frames";
 
 export const API = "/api/intake/extract";
 export const DOC_UPLOAD = "doc-upload";
@@ -16,7 +17,7 @@ export const NEW_FIELDS = "new-reagent-fields";
 
 type FrameNode = { name: string; path: string[]; text: { characters: string } | null };
 const frame = (name: string): FrameNode[] =>
-  (JSON.parse(readFileSync(join(process.cwd(), "design", "frames", `${name}.json`), "utf8")) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes;
+  (JSON.parse(readFileSync(framePath(`${name}`), "utf8")) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes;
 const texts = (nodes: FrameNode[], name: string, under?: string): string[] =>
   nodes.filter((n) => n.name === name && n.text && (!under || n.path.includes(under))).map((n) => n.text!.characters);
 const one = (nodes: FrameNode[], name: string, under?: string): string => {

@@ -7,7 +7,9 @@ import { openAs } from "./auth-state";
 import { ROLE_LABEL, SCHOOL_A_ROLES } from "./db-helpers";
 import { demoReagents, guestDetailPath } from "./guest-helpers";
 import { PROFILE_ROLE, browserClient, browserSession, devRules, routeOf, rules, sel } from "./screen-helpers";
-import { anonContext } from "./shell-helpers";
+import { anonContext, shellAccountButton, shellAccountLabel, shellSchoolScope } from "./shell-helpers";
+
+const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const SCREEN = 13;
 const MENU = "nav-account-menu";
@@ -42,36 +44,40 @@ test(`[C1][S${SCREEN}] 기대값 원본: rules.json app_exceptions["${MENU}"] = 
 
 for (const role of SCHOOL_A_ROLES as ("student" | "teacher" | "admin")[]) {
   const open = SCREENS.filter((s) => canOpen(role, s));
-  test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]}: 들어갈 수 있는 셸 화면(${open.join("·")})마다 ${MENU} 정확히 1개 · nav-pill 안 학교명 버튼(aria-haspopup=menu) 안 · 보임 · 홈에서 열면 role=menu 항목 "${LOGOUT}" 1개 (누르지 않음)`, async ({ browser }, info) => {
+  // 폭 390 = nav-pill 학교명 버튼(글자 = 학교명), 폭 1440 = app-sidebar 계정 줄(글자 = "이름 · 역할", 시안 1.22 sidebar-account, d7 §23)
+  test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]}: 들어갈 수 있는 셸 화면(${open.join("·")})마다 ${MENU} 정확히 1개 · 셸 계정 버튼(390 nav-pill 학교명 / 1440 app-sidebar "이름 · 역할", aria-haspopup=menu) 안 · 보임 · 홈에서 열면 role=menu 항목 "${LOGOUT}" 1개 (누르지 않음)`, async ({ browser }, info) => {
     test.setTimeout(360_000);
-    const { context, page } = await openAs(browser, info, role, SCREEN);
+    const { context, page, viewport } = await openAs(browser, info, role, SCREEN);
     try {
       await expect(page.locator(sel("home-summary")).first()).toBeVisible({ timeout: 45_000 });
       const me = await browserSession(page);
       expect(me.role, "테스트 계정 역할").toBe(PROFILE_ROLE[role]);
+      const shell = viewport === "mobile" ? "nav-pill" : rules.desktop_shell.component;
+      const buttonText = await shellAccountLabel(page, viewport);
       for (const screen of open) {
         const path = await pathOf(page, screen);
         const res = await page.goto(path);
         expect(res?.status(), `화면 ${screen} ${path} 응답`).toBe(200);
         await page.waitForLoadState("load");
         expect(new URL(page.url()).pathname, `화면 ${screen}: 리다이렉트 없음`).toBe(path);
-        await expect(page.locator(sel("nav-pill")), `화면 ${screen} nav-pill`).toHaveCount(1, { timeout: 45_000 });
+        await expect(shellSchoolScope(page, viewport), `화면 ${screen} ${shell}`).toHaveCount(1, { timeout: 45_000 });
         await expect(page.locator('main [aria-busy="true"]')).toHaveCount(0, { timeout: 45_000 });
         const menu = page.locator(sel(MENU));
         await expect(menu, `화면 ${screen}: ${MENU} 정확히 1개`).toHaveCount(1);
         await expect(menu, `화면 ${screen}: ${MENU} 보임`).toBeVisible();
-        await expect(page.locator(`${sel("nav-pill")} ${sel(MENU)}`), `화면 ${screen}: ${MENU} 는 nav-pill 안`).toHaveCount(1);
-        const button = page.locator(`${sel("nav-pill")} button[aria-haspopup="menu"]`);
-        await expect(button, `화면 ${screen}: 학교명 메뉴 버튼 1개`).toHaveCount(1);
-        await expect(button.locator(sel(MENU)), `화면 ${screen}: ▾ 는 학교명 버튼 안`).toHaveCount(1);
-        await expect(button, `화면 ${screen}: 버튼 글자 = 학교명`).toHaveText(new RegExp(`^\\s*${me.schoolName}\\s*$`));
+        await expect(page.locator(`${sel(shell)} ${sel(MENU)}`), `화면 ${screen}: ${MENU} 는 ${shell} 안`).toHaveCount(1);
+        const button = shellAccountButton(page, viewport);
+        await expect(button, `화면 ${screen}: 계정 메뉴 버튼 1개`).toHaveCount(1);
+        await expect(button.locator(sel(MENU)), `화면 ${screen}: ▾ 는 계정 버튼 안`).toHaveCount(1);
+        await expect(button, `화면 ${screen}: 버튼 글자 = "${buttonText}"`).toHaveText(new RegExp(`^\\s*${esc(buttonText)}\\s*$`));
+        // 응답 본문(서버 HTML)은 폭을 모르는 첫 그림이라 두 폭의 셸(nav-pill · app-sidebar)이 다 있다 — 개수는 하이드레이션 뒤 DOM(위 1개)으로 본다
         const html = await res!.text();
-        expect(html.split(`data-component="${MENU}"`).length - 1, `화면 ${screen}: 응답 본문 ${MENU} 1개`).toBe(1);
+        expect(html, `화면 ${screen}: 응답 본문에 ${MENU}`).toContain(`data-component="${MENU}"`);
       }
       // 홈에서 메뉴 열고 닫기 (로그아웃은 누르지 않는다)
       await page.goto(routeOf(SCREEN));
       await expect(page.locator(sel("home-summary")).first()).toBeVisible({ timeout: 45_000 });
-      const button = page.locator(`${sel("nav-pill")} button[aria-haspopup="menu"]`);
+      const button = shellAccountButton(page, viewport);
       await expect(async () => {
         await button.click();
         await expect(page.getByRole("menu"), "메뉴 열림").toBeVisible({ timeout: 2_000 });

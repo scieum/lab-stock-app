@@ -21,10 +21,12 @@ import {
 import { SCREEN, dbDetail, detailPath, seedReagents, seedSchoolOf, waitDetail } from "./screen-3-helpers";
 import { watchActions } from "./screen-11-helpers";
 import { expectedSuggestion, suggestRowsOf } from "./suggest-helpers";
+import { framePath } from "../frames";
+import { expectShell, isShellComponent } from "./shell-helpers";
 
 /** design/frames/{name}.json 의 노드 이름 (dev-rules components 에 있는 이름만) */
 function frameNames(name: string): Set<string> {
-  const j = JSON.parse(readFileSync(join(process.cwd(), "design", "frames", `${name}.json`), "utf8")) as { frames: { nodes: { name: string }[] }[] };
+  const j = JSON.parse(readFileSync(framePath(`${name}`), "utf8")) as { frames: { nodes: { name: string }[] }[] };
   return new Set(j.frames[0].nodes.map((n) => n.name).filter((n) => devRules.components[n]));
 }
 
@@ -68,8 +70,8 @@ for (const role of ROLES) {
       .filter(([, screens]) => screens.includes(SCREEN))
       .map(([n]) => n)
       .filter((n) => !guestOnly.has(n))
-      // 탭바는 폭별 기대값이 다르다 (C2 에서 본다)
-      .filter((n) => n !== rules.tab_bar.component && n !== rules.tab_bar.item);
+      // 셸(390 nav-pill·탭바 / 1440 app-sidebar·sidebar-item)은 폭별 기대값이 다르다 (아래 expectShell · C2 · C3)
+      .filter((n) => !isShellComponent(n));
     const stateOnly = fromDevAll.filter((n) => !baseFrame.has(n));
     // 1.17 variants["3"].location (suggest-badge 포함 — dev-rules 1.5 부터 components 안)
     const variant = (rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants[String(SCREEN)].location;
@@ -88,10 +90,11 @@ for (const role of ROLES) {
     expect(fromDev.length, `dev-rules components 에 화면 ${SCREEN} 컴포넌트가 있어야 함`).toBeGreaterThan(0);
 
     const { school, pick } = pickFor(role);
-    const { context, page } = await openAs(browser, info, role, SCREEN, detailPath(pick.id));
+    const { context, page, viewport } = await openAs(browser, info, role, SCREEN, detailPath(pick.id));
     const actions = watchActions(page);
     try {
       await waitDetail(page);
+      await expectShell(page, viewport, SCREEN, `${ROLE_LABEL[role]} 화면 ${SCREEN}`);
       for (const name of guestOnly) {
         expect(await countComponent(page, name), `로그인 화면에 둘러보기 전용 ${name} 0개`).toBe(0);
       }
@@ -110,8 +113,6 @@ for (const role of ROLES) {
       expect(m.error, `RLS 로 msds_url 읽기 (${m.error?.message})`).toBeNull();
       const missing = !String((m.data as { msds_url: string | null }).msds_url ?? "").trim();
       for (const name of fromDev) {
-        // 탭바는 C2 에서 폭별 기대값으로 본다
-        if (name === rules.tab_bar.component || name === rules.tab_bar.item) continue;
         if (forbidden.has(name)) {
           expect(await countComponent(page, name), `${name} (roles 상 ${ROLE_LABEL[role]} 0)`).toBe(0);
           continue;
@@ -135,7 +136,7 @@ for (const role of ROLES) {
         if (name === PILL_SOFT && missing && forbidden.has("location-edit")) {
           // 시안 3-msds: MSDS 없는 시약의 msds-entry 는 캡션(+ 교사·admin msds-search)만 — 옛 비활성 "MSDS 보기"(button-pill-soft) 없음.
           // 화면 3 의 다른 button-pill-soft 는 location-edit 안(학생 R7 0)뿐이라 학생 + MSDS 없음 = 0
-          const pillParents = (JSON.parse(readFileSync(join(process.cwd(), "design", "frames", `${SCREEN}-msds-${viewportName}.json`), "utf8")) as {
+          const pillParents = (JSON.parse(readFileSync(framePath(`${SCREEN}-msds-${viewportName}`), "utf8")) as {
             frames: { nodes: { name: string; path: string[] }[] }[];
           }).frames[0].nodes
             .filter((n) => n.name === name)

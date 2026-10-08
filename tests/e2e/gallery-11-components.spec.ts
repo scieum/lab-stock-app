@@ -13,6 +13,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test, expect, type Locator, type Page } from "@playwright/test";
+import { framePath } from "../frames";
+import { DESKTOP_SHELL_NAMES } from "../desktop-shell";
 
 const SCREEN = 11;
 const GALLERY_CABINETS = "/gallery/cabinets";
@@ -46,7 +48,7 @@ type Dev = { components: Record<string, number[]> };
 const root = process.cwd();
 const rules = JSON.parse(readFileSync(join(root, "design/rules.json"), "utf8")) as Rules;
 const dev = JSON.parse(readFileSync(join(root, "harness/dev-rules.json"), "utf8")) as Dev;
-const loadFrame = (name: string) => (JSON.parse(readFileSync(join(root, `design/frames/${name}.json`), "utf8")) as Frame).frames[0].nodes;
+const loadFrame = (name: string) => (JSON.parse(readFileSync(framePath(`${name}`), "utf8")) as Frame).frames[0].nodes;
 const mainNodes = loadFrame(`${SCREEN}-mobile`);
 const desktopNodes = loadFrame(`${SCREEN}-desktop`);
 const emptyNodes = loadFrame(`${SCREEN}-empty-mobile`);
@@ -509,7 +511,8 @@ test(`[K1][S${SCREEN}] /gallery DOM 에 화면 ${SCREEN} 전용 컴포넌트(화
 });
 
 test(`[K1][S${SCREEN}] /gallery/cabinets DOM 에 화면 ${SCREEN} 컴포넌트(dev-rules, tab-bar 제외)가 각각 1개 이상, 새 data-component 이름 없음`, async ({ page }) => {
-  const want = componentNames.filter((n) => dev.components[n].includes(SCREEN) && ![rules.tab_bar.component, rules.tab_bar.item].includes(n));
+  // 데스크톱 셸(rules 1.22 desktop_shell app-sidebar · sidebar-item)은 /gallery/sidebar 에 있다
+  const want = componentNames.filter((n) => dev.components[n].includes(SCREEN) && ![rules.tab_bar.component, rules.tab_bar.item, ...DESKTOP_SHELL_NAMES].includes(n));
   expect(want.length, "dev-rules 화면 11 컴포넌트").toBeGreaterThan(8);
   await open(page);
   for (const n of want) expect(await page.locator(sel(n)).count(), `/gallery/cabinets ${n}`).toBeGreaterThanOrEqual(1);

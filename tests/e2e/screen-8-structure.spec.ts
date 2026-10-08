@@ -9,6 +9,8 @@ import { test, expect, type Page } from "@playwright/test";
 import { ROLE_LABEL, SCHOOL_A_ROLES } from "./db-helpers";
 import { openAs } from "./auth-state";
 import { PROFILE_ROLE, ROLE_NAME, browserClient, browserSession, countComponent, devRules, roleChecks, routeOf, rules, sel } from "./screen-helpers";
+import { DESKTOP_SHELL, frameActiveLabel } from "../desktop-shell";
+import { expectShellHeader, shellSchoolScope } from "./shell-helpers";
 import {
   ACTIVE_TAB_LABEL,
   CHANGE_BUTTON,
@@ -83,7 +85,17 @@ const R6 = rules.roles.R6;
 const NAV_SCREENS = [HOME_SCREEN, 2, 10];
 const USERS_HREF = routeOf(SCREEN);
 
-const navLinks = (page: Page) => page.locator(`${sel("nav-pill")} nav a`);
+const isDesktopPage = (page: Page) => page.viewportSize()?.width === devRules.viewports.desktop[0];
+/** 셸 이동 링크: 폭 390 = nav-pill nav 링크, 폭 1440 = app-sidebar 의 sidebar-item 링크 (rules 1.22 desktop_shell) */
+const navLinks = (page: Page) =>
+  isDesktopPage(page) ? page.locator(`${sel(DESKTOP_SHELL.component)} a${sel(DESKTOP_SHELL.item)}`) : page.locator(`${sel("nav-pill")} nav a`);
+/** 셸 링크 글자: 폭 390 = nav-pill 문구, 폭 1440 = 사이드바 메뉴 문구(새 프레임 8-desktop · 7-desktop 활성 메뉴 "사용자" · "입고") */
+const navLabel = (page: Page, label: string): string => {
+  if (!isDesktopPage(page)) return label;
+  const desk: Record<string, string> = { [NAV_LABEL]: frameActiveLabel(SCREEN), [STAFF_NAV_LABEL]: frameActiveLabel(7) };
+  if (!desk[label]) throw new Error(`데스크톱 사이드바 문구 대응 없음: ${label}`);
+  return desk[label];
+};
 
 async function navLabels(page: Page): Promise<string[]> {
   return (await navLinks(page).allTextContents()).map((t) => t.replace(/\s+/g, " ").trim());
@@ -153,7 +165,10 @@ for (const role of ["student", "teacher"] as const) {
         expect(html, "응답 본문에 user-manage").not.toContain(`data-component="${USER_MANAGE}"`);
         expect(html, '응답 본문에 "초대 대기"').not.toContain("초대 대기");
         expect(html, '응답 본문에 "사용자 삭제"').not.toContain(DELETE_USER_BUTTON);
-        for (const m of members) expect(html, `응답 본문에 멤버 이름 ${m.display_name}`).not.toContain(m.display_name);
+        // 다른 사람 이름은 없다 — 본인 이름은 데스크톱 사이드바 계정 줄("이름 · 역할", rules 1.22 desktop_shell)로 셸에 있을 수 있다
+        const others = members.filter((m) => m.user_id !== userId);
+        expect(others.length, "대조: 본인 말고 다른 멤버").toBeGreaterThan(0);
+        for (const m of others) expect(html, `응답 본문에 다른 멤버 이름 ${m.display_name}`).not.toContain(m.display_name);
       }
       await page.goto(`${USERS_HREF}?role=admin`);
       await page.waitForURL((u) => u.pathname === routeOf(HOME_SCREEN), { timeout: 30_000 });
@@ -198,7 +213,7 @@ for (const role of SCHOOL_A_ROLES) {
         if (screen !== HOME_SCREEN) await page.goto(routeOf(screen));
         await page.waitForLoadState("load");
         expect(new URL(page.url()).pathname, `화면 ${screen}`).toBe(routeOf(screen));
-        await expect(page.locator(sel("nav-pill")).first()).toBeVisible();
+        await expect(shellSchoolScope(page, viewport).first(), "셸 (390 nav-pill / 1440 app-sidebar)").toBeVisible();
         if (screen === HOME_SCREEN) await expect(page.locator(sel("quick-action")).first()).toBeVisible();
         const labels = await navLabels(page);
         perScreen[screen] = labels;
@@ -206,13 +221,13 @@ for (const role of SCHOOL_A_ROLES) {
         if (!isAdmin) {
           await expect(entries, `화면 ${screen} ${USER_MANAGE} (R6)`).toHaveCount(0);
           await expect(usersLinks(page), `화면 ${screen} ${USERS_HREF} 링크`).toHaveCount(0);
-          expect(labels, `화면 ${screen} nav 에 "${NAV_LABEL}"`).not.toContain(NAV_LABEL);
+          expect(labels, `화면 ${screen} nav 에 "${navLabel(page, NAV_LABEL)}"`).not.toContain(navLabel(page, NAV_LABEL));
           expect(await page.locator("body").textContent(), `화면 ${screen} 글자에 "${NAV_LABEL}"`).not.toContain(NAV_LABEL);
         } else {
           // s2-spec 역할별 노출: user-manage = 화면 8 1 + 홈 quick-action 1 (admin 만)
           await expect(entries, `화면 ${screen} ${USER_MANAGE} 진입점`).toHaveCount(screen === HOME_SCREEN ? 1 : 0);
-          expect(labels.filter((l) => l === NAV_LABEL), `화면 ${screen} nav "${NAV_LABEL}" 링크`).toHaveLength(1);
-          const link = navLinks(page).filter({ hasText: exact(NAV_LABEL) });
+          expect(labels.filter((l) => l === navLabel(page, NAV_LABEL)), `화면 ${screen} nav "${navLabel(page, NAV_LABEL)}" 링크`).toHaveLength(1);
+          const link = navLinks(page).filter({ hasText: exact(navLabel(page, NAV_LABEL)) });
           await expect(link).toHaveAttribute("href", USERS_HREF);
           if (viewport === "desktop") await expect(link, "데스크탑 nav 진입점이 보임").toBeVisible();
           if (screen === HOME_SCREEN) {
@@ -224,8 +239,8 @@ for (const role of SCHOOL_A_ROLES) {
           }
         }
         // 교사·admin 에게는 입고 진입, 학생에게는 없음 (s2-spec 화면 7)
-        if (role === "student") expect(labels, `화면 ${screen} 학생 nav`).not.toContain(STAFF_NAV_LABEL);
-        else expect(labels, `화면 ${screen} ${roleName} nav`).toContain(STAFF_NAV_LABEL);
+        if (role === "student") expect(labels, `화면 ${screen} 학생 nav`).not.toContain(navLabel(page, STAFF_NAV_LABEL));
+        else expect(labels, `화면 ${screen} ${roleName} nav`).toContain(navLabel(page, STAFF_NAV_LABEL));
         if (viewport === "desktop") {
           for (const l of await navLinks(page).all()) await expect(l, "데스크탑 nav 링크가 보임").toBeVisible();
         }
@@ -276,7 +291,7 @@ test(`[R-ui][S${SCREEN}] 학교A admin ${USERS_HREF} 렌더(리다이렉트 없�
 
     const current = navLinks(page).and(page.locator('[aria-current="page"]'));
     await expect(current, "nav 현재 섹션 링크 1개").toHaveCount(1);
-    await expect(current).toHaveText(exact(NAV_LABEL));
+    await expect(current).toHaveText(exact(navLabel(page, NAV_LABEL)));
     if (viewport === "desktop") await expect(current).toBeVisible();
   } finally {
     await context.close();
@@ -293,11 +308,11 @@ test(`[C1][S${SCREEN}] 학교A admin 기본 상태: nav-pill(워드마크·"${NA
   try {
     await waitUsers(page);
     const me = await browserSession(page);
-    const nav = page.locator(sel("nav-pill"));
-    await expect(nav).toHaveCount(1);
-    await expect(nav).toContainText(WORDMARK);
-    await expect(nav).toContainText(me.schoolName);
-    await expect(nav.getByText(exact(NAV_LABEL)).locator("visible=true"), `nav-pill 에 "${NAV_LABEL}" 가 보임`).toHaveCount(1);
+    // 셸 머리: 390 = nav-pill(워드마크·제목·학교명) / 1440 = 사이드바(워드마크·학교명) + 본문 제목 (rules 1.22 desktop_shell)
+    await expectShellHeader(page, viewport, { wordmark: WORDMARK, title: NAV_LABEL, schoolName: me.schoolName }, "화면 8");
+    if (viewport === "mobile") {
+      await expect(page.locator(sel("nav-pill")).getByText(exact(NAV_LABEL)).locator("visible=true"), `nav-pill 에 "${NAV_LABEL}" 가 보임`).toHaveCount(1);
+    }
     if (viewport === "desktop") await expect(page.getByRole("heading", { level: 1, name: exact(NAV_LABEL) }), "데스크탑 screen-title").toBeVisible();
 
     await expect(page.locator(sel(USER_MANAGE))).toHaveCount(1);

@@ -20,6 +20,11 @@ import {
   sel,
 } from "./screen-helpers";
 import { detailPath, seedSchoolOf, waitDetail } from "./screen-3-helpers";
+import { expectShell, expectShellHeader, isShellComponent, shellSchoolScope } from "./shell-helpers";
+import { frameActiveLabel } from "../desktop-shell";
+
+/** 셸의 입고 메뉴 글자: 폭 390 = nav-pill "입고·시약 등록", 폭 1440 = 사이드바 메뉴(rules desktop_shell.menu — 새 프레임 7-desktop 활성 메뉴) */
+const shellIntakeLabel = (viewport: string) => (viewport === "desktop" ? frameActiveLabel(SCREEN) : NAV_LABEL);
 import { seedOwnReagents } from "./screen-4-helpers";
 import {
   ACTIVE_TAB_LABEL,
@@ -162,14 +167,16 @@ test(`[R-ui][S${SCREEN}] ${ROLE_LABEL[STUDENT]} 홈·시약 목록·시약 상�
     { screen: DETAIL_SCREEN, path: detailPath(own[0].id), ready: waitDetail },
   ];
   for (const t of pages) {
-    const { context, page } = await openAs(browser, info, STUDENT, t.screen, t.path);
+    const { context, page, viewport } = await openAs(browser, info, STUDENT, t.screen, t.path);
     try {
       await t.ready(page);
       await page.waitForLoadState("load");
       expect((await browserSession(page)).role, "테스트 계정 역할").toBe(PROFILE_ROLE[STUDENT]);
       await expect(intakeLinks(page), `학생 화면 ${t.screen}: ${routeOf(SCREEN)} 링크`).toHaveCount(0);
-      await expect(page.locator(sel("nav-pill")).getByText(NAV_LABEL), `학생 화면 ${t.screen}: nav "${NAV_LABEL}"`).toHaveCount(0);
-      await expect(page.locator(sel("nav-pill")).first(), "nav-pill 은 있음 (빈 화면에서 0 을 세지 않도록)").toBeVisible();
+      // 셸 (390 nav-pill / 1440 app-sidebar) 에 입고 메뉴 글자 0
+      const shell = shellSchoolScope(page, viewport);
+      await expect(shell.getByText(shellIntakeLabel(viewport), { exact: true }), `학생 화면 ${t.screen}: 셸 "${shellIntakeLabel(viewport)}"`).toHaveCount(0);
+      await expect(shell.first(), "셸은 있음 (빈 화면에서 0 을 세지 않도록)").toBeVisible();
     } finally {
       await context.close();
     }
@@ -224,11 +231,14 @@ test(`[R-ui][S${SCREEN}] ${ROLE_LABEL.teacher} 진입점(양성 대조): 시약 
     expect(await intakeLinks(page).count(), `교사 시약 상세의 ${routeOf(SCREEN)} 링크`).toBeGreaterThanOrEqual(1);
     await page.goto(DIRECT_PATH);
     await waitIntake(page, "intake");
-    await expect(page.locator(sel("nav-pill")).getByText(NAV_LABEL).locator("visible=true").first(), `nav-pill "${NAV_LABEL}" 보임`).toBeVisible();
+    const label = shellIntakeLabel(viewport);
+    await expect(shellSchoolScope(page, viewport).getByText(label, { exact: true }).locator("visible=true").first(), `셸 "${label}" 보임`).toBeVisible();
     if (viewport === "desktop") {
-      const link = page.locator(sel("nav-pill")).locator(`a[href="${routeOf(SCREEN)}"]`);
-      await expect(link, "데스크톱 nav-pill 섹션 링크").toHaveCount(1);
-      await expect(link).toHaveText(exact(NAV_LABEL));
+      // 데스크톱 = app-sidebar 의 sidebar-item "입고" (rules 1.22 desktop_shell.menu teacher_admin)
+      const link = shellSchoolScope(page, viewport).locator(`a[href="${routeOf(SCREEN)}"]`);
+      await expect(link, "데스크톱 사이드바 입고 링크").toHaveCount(1);
+      await expect(link).toHaveText(exact(label));
+      await expect(link, "현재 화면 활성").toHaveAttribute("aria-current", "page");
     }
   } finally {
     await context.close();
@@ -267,22 +277,20 @@ for (const role of [...STAFF, "schoolB"] as Role[]) {
       expect(comps, `dev-rules components 화면 ${SCREEN} 에 ${c}`).toContain(c);
     }
     const school = seedSchoolOf(role);
-    const { context, page, response } = await openAs(browser, info, role, SCREEN, DIRECT_PATH);
+    const { context, page, response, viewport } = await openAs(browser, info, role, SCREEN, DIRECT_PATH);
     try {
       expect(response?.status(), "화면 7 응답").toBe(200);
       await waitIntake(page, "intake");
       const me = await browserSession(page);
       expect(me.schoolName, "테스트 계정 학교 = seed 학교").toBe(school.name);
 
-      for (const c of ["nav-pill", SEGMENT, INTAKE, "text-input", "button-primary", "reagent-row"]) {
+      await expectShell(page, viewport, SCREEN, `${ROLE_LABEL[role]} 화면 ${SCREEN}`);
+      for (const c of [SEGMENT, INTAKE, "text-input", "button-primary", "reagent-row"]) {
         expect(await countComponent(page, c), c).toBeGreaterThanOrEqual(1);
         await expect(page.locator(sel(c)).first(), `${c} 보임`).toBeVisible();
       }
-      // nav-pill: 워드마크 + 제목 + 학교명
-      const nav = page.locator(sel("nav-pill")).first();
-      await expect(nav).toContainText("Lab_Stock");
-      await expect(nav).toContainText(NAV_LABEL);
-      await expect(nav).toContainText(me.schoolName);
+      // 셸 머리: 390 = nav-pill(워드마크 + 제목 + 학교명) / 1440 = 사이드바(워드마크 + 학교명) + 본문 제목
+      await expectShellHeader(page, viewport, { wordmark: "Lab_Stock", title: NAV_LABEL, schoolName: me.schoolName }, `${ROLE_LABEL[role]} 화면 ${SCREEN}`);
       // 맨 위 intake-mode(직접 입력 선택) + 직접 입력의 두 갈래, 각각 한 번에 하나만 선택
       await expect(modeControl(page), `${INTAKE_MODE} 1개`).toHaveCount(1);
       await expect(activeMode(page), `?mode=direct → "${MODE_DIRECT}"`).toHaveText(exact(MODE_DIRECT));
@@ -364,7 +372,8 @@ for (const role of STAFF) {
 
       // 시안 프레임에 있는 화면 7 컴포넌트는 프레임 개수 이상 (탭바는 C2)
       for (const name of screenComponents()) {
-        if (name === rules.tab_bar.component || name === rules.tab_bar.item) continue;
+        // 셸(390 nav-pill·탭바 / 1440 app-sidebar)은 폭별 기대값 — C2 · C3 (예전 프레임의 데스크톱 nav-pill 은 1.22 에서 사이드바로 바뀜)
+        if (isShellComponent(name)) continue;
         // 1.17 시안 7 은 "서류로 입고" 상태 — 서류 갈래에만 있는 컴포넌트(variants["7"] doc-*, intake-mode 제외)는 직접 입력 갈래에서 세지 않는다
         // (서류 갈래 개수는 screen-7-doc.spec.ts)
         const docOnly = Object.entries((rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants[String(SCREEN)])

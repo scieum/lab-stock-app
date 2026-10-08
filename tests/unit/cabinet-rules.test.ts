@@ -5,7 +5,6 @@
 //         요약은 모바일 "양문형 · 4단" / 데스크탑 "양문형 · 4단 · 8칸").
 //         구현에서 읽지 않는다 — 구현 상수는 rules.json 과 같은지 비교만 한다.
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   DOOR_TYPES,
@@ -28,7 +27,8 @@ import {
   type SlotClasses,
   type SlotSide,
 } from "../../lib/cabinet-rules";
-import { ROOT, rules } from "./helpers";
+import { rules } from "./helpers";
+import { framePath } from "../frames";
 
 type Cabinet = {
   door_types: string[];
@@ -43,7 +43,7 @@ const cab = rules.cabinet as Cabinet;
 // ---------- 시안 프레임 11-mobile 의 예시 문구 ----------
 type FrameNode = { name: string; path: string[]; text: { characters: string } | null };
 const loadFrame = (file: string) =>
-  (JSON.parse(readFileSync(join(ROOT, "design/frames", file), "utf8")) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes;
+  (JSON.parse(readFileSync(framePath(file), "utf8")) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes;
 const MOBILE = loadFrame("11-mobile.json");
 const DESKTOP = loadFrame("11-desktop.json");
 const textOf = (nodes: FrameNode[], name: string) => nodes.filter((n) => n.name === name && n.text).map((n) => n.text!.characters);
