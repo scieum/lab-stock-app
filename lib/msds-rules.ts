@@ -21,7 +21,18 @@ export type MsdsCandidate = {
   msdsUrl: string;
 };
 
-export type MsdsSearchResponse = { candidates: MsdsCandidate[] };
+/**
+ * GET /api/msds/search 응답. searchedAs = 실제로 결과가 나온 검색어(d7 §20 검색 보강): 이름 차례 = 그 이름,
+ * CAS 차례 = 첫 후보 물질명 + "(CAS 번호)"(예: "염화수소(CAS 7647-01-0)"). 0개면 원래 검색어.
+ */
+export type MsdsSearchResponse = { candidates: MsdsCandidate[]; searchedAs: string };
+
+/** 응답 본문의 searchedAs (문자열이 아니면 null) */
+export function readSearchedAs(body: unknown): string | null {
+  if (typeof body !== "object" || body === null) return null;
+  const v = (body as { searchedAs?: unknown }).searchedAs;
+  return typeof v === "string" && v.trim() !== "" && v.length <= 160 ? v.trim() : null;
+}
 
 export type MsdsSearchErrorCode =
   | "signed-out"

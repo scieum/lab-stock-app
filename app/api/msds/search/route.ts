@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createRateLimiter } from "@/lib/rate-limit";
-import { MSDS_TEXT, checkMsdsQuery, type MsdsSearchError, type MsdsSearchErrorCode, type MsdsSearchResponse } from "@/lib/msds-rules";
-import { cachedMsdsSearch, isMsdsConfigured, searchMsds } from "@/lib/server/kosha-msds";
+import { MSDS_TEXT, checkMsdsQuery, isCasQuery, type MsdsSearchError, type MsdsSearchErrorCode, type MsdsSearchResponse } from "@/lib/msds-rules";
+import { isMsdsConfigured } from "@/lib/server/kosha-msds";
+import { cachedCombinedMsdsSearch, combinedMsdsSearch } from "@/lib/server/msds-search";
 import { getMsdsAccess } from "@/lib/supabase/msds";
 
 export const runtime = "nodejs";
@@ -20,11 +21,12 @@ function fail(status: number, code: MsdsSearchErrorCode, error: string, headers:
 }
 
 /**
- * GET /api/msds/search?q= — MSDS 후보 찾기 (d7 §20, 화면 2·3·7)
+ * GET /api/msds/search?q=&cas= — MSDS 후보 찾기 (d7 §20, 화면 2·3·7)
  * 순서: 로그인(401) → 교사·admin·자기 학교(학생·데모·학교 없음 403) → 검색어 1~60자(400) → 키 설정(503)
- *       → 호출 제한(429, 캐시에 없을 때만) → 안전보건공단 목록 검색(시간 초과·오류 502).
- * q 가 CAS 번호 꼴(숫자-숫자-숫자)이면 CAS 로, 아니면 국문명으로 검색한다.
- * 응답: { candidates: [{ chemId, name, cas, msdsUrl }] } (최대 10개, 0개도 200) / { error, code }.
+ *       → 호출 제한(429, 캐시에 없을 때만 — 사용자 검색 한 번을 1회로 센다) → 안전보건공단 목록 검색(시간 초과·오류 502).
+ * 검색 보강(lib/server/msds-search): (1) cas(시약에 저장된 CAS, CAS 꼴이 아니면 무시) 또는 CAS 꼴 q → CAS
+ *   (2) 학교 상용 이름 표 CAS (3) 원래 이름 국문명 (4) 모두 0개면 정리한 이름 — KOSHA 호출 최대 4회, 각 하루 캐시.
+ * 응답: { candidates: [{ chemId, name, cas, msdsUrl }], searchedAs } (최대 10개, 0개도 200) / { error, code }.
  * 응답·로그에 키·외부 요청 주소를 넣지 않는다.
  */
 export async function GET(req: NextRequest) {
@@ -38,8 +40,11 @@ export async function GET(req: NextRequest) {
 
   if (!isMsdsConfigured()) return fail(503, "no-key", MSDS_TEXT.noKey);
 
-  const cached = cachedMsdsSearch(q.value);
-  if (cached) return NextResponse.json<MsdsSearchResponse>({ candidates: cached }, { headers: NO_STORE });
+  const rawCas = req.nextUrl.searchParams.get("cas")?.trim() ?? "";
+  const cas = rawCas.length <= 20 && isCasQuery(rawCas) ? rawCas : null;
+
+  const cached = cachedCombinedMsdsSearch(q.value, cas);
+  if (cached) return NextResponse.json<MsdsSearchResponse>(cached, { headers: NO_STORE });
 
   const allowed = limiter.take(access.userId);
   if (!allowed.ok) {
@@ -48,8 +53,10 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const result = await searchMsds(q.value);
-  if (result.ok) return NextResponse.json<MsdsSearchResponse>({ candidates: result.candidates }, { headers: NO_STORE });
+  const result = await combinedMsdsSearch(q.value, cas);
+  if (result.ok) {
+    return NextResponse.json<MsdsSearchResponse>({ candidates: result.candidates, searchedAs: result.searchedAs }, { headers: NO_STORE });
+  }
   if (result.code === "no-key") return fail(503, "no-key", MSDS_TEXT.noKey);
   return fail(502, "upstream", MSDS_TEXT.upstream);
 }

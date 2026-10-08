@@ -15,6 +15,16 @@
   line-height: var(--line-height-normal);
 }
 
+/* 검색 보강 안내 한 줄 (d7 §20): 무채색 회색 글자 */
+.searchedAs {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
 .searchForm,
 .directForm {
   display: flex;
