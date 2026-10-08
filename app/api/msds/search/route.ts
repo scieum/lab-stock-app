@@ -26,7 +26,9 @@ function fail(status: number, code: MsdsSearchErrorCode, error: string, headers:
  *       → 호출 제한(429, 캐시에 없을 때만 — 사용자 검색 한 번을 1회로 센다) → 안전보건공단 목록 검색(시간 초과·오류 502).
  * 검색 보강(lib/server/msds-search): (1) cas(시약에 저장된 CAS, CAS 꼴이 아니면 무시) 또는 CAS 꼴 q → CAS
  *   (2) 학교 상용 이름 표 CAS (3) 원래 이름 국문명 (4) 모두 0개면 정리한 이름 — KOSHA 호출 최대 4회, 각 하루 캐시.
- * 응답: { candidates: [{ chemId, name, cas, msdsUrl }], searchedAs } (최대 10개, 0개도 200) / { error, code }.
+ *   (5) AI 보조: 그래도 0개고 외부 실패가 없으면 Gemini 추정 이름·CAS 로 KOSHA 를 다시 (AI 1회 + KOSHA 최대 2회, 후보는 KOSHA 결과만).
+ *   호출 제한은 이 모두를 합쳐 사용자 검색 1회로 센다.
+ * 응답: { candidates: [{ chemId, name, cas, msdsUrl }], searchedAs, searchedVia?: "ai" } (최대 10개, 0개도 200) / { error, code }.
  * 응답·로그에 키·외부 요청 주소를 넣지 않는다.
  */
 export async function GET(req: NextRequest) {
@@ -55,7 +57,9 @@ export async function GET(req: NextRequest) {
 
   const result = await combinedMsdsSearch(q.value, cas);
   if (result.ok) {
-    return NextResponse.json<MsdsSearchResponse>({ candidates: result.candidates, searchedAs: result.searchedAs }, { headers: NO_STORE });
+    const body: MsdsSearchResponse = { candidates: result.candidates, searchedAs: result.searchedAs };
+    if (result.searchedVia) body.searchedVia = result.searchedVia;
+    return NextResponse.json<MsdsSearchResponse>(body, { headers: NO_STORE });
   }
   if (result.code === "no-key") return fail(503, "no-key", MSDS_TEXT.noKey);
   return fail(502, "upstream", MSDS_TEXT.upstream);

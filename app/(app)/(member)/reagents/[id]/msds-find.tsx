@@ -77,6 +77,7 @@ export function MsdsFind({ reagentId, reagentName, casNo = null }: Props) {
           status={state.status}
           candidates={state.status === "ready" ? state.candidates : undefined}
           searchedAs={state.status === "ready" ? state.searchedAs : null}
+          searchedVia={state.status === "ready" ? state.searchedVia : null}
           searchedQuery={state.status === "idle" ? undefined : state.query}
           message={state.status === "error" ? state.message : undefined}
           onRetry={searchQuery}

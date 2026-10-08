@@ -100,6 +100,7 @@ export function MsdsBulk({ targets }: Props) {
           status={state.status}
           candidates={state.status === "ready" ? state.candidates : undefined}
           searchedAs={state.status === "ready" ? state.searchedAs : null}
+          searchedVia={state.status === "ready" ? state.searchedVia : null}
           searchedQuery={state.status === "idle" ? current.name : state.query}
           message={state.status === "error" ? state.message : undefined}
           onRetry={() => void search(current.name, current.cas ?? null)}

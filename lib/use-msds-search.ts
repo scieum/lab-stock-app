@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MSDS_TEXT, checkMsdsQuery, isCasQuery, readCandidates, readSearchedAs, type MsdsCandidate } from "@/lib/msds-rules";
+import { MSDS_TEXT, checkMsdsQuery, isCasQuery, readCandidates, readSearchedAs, readSearchedVia, type MsdsCandidate, type MsdsSearchedVia } from "@/lib/msds-rules";
 
 export type MsdsSearchState =
   | { status: "idle" }
   | { status: "loading"; query: string }
-  | { status: "ready"; query: string; candidates: MsdsCandidate[]; searchedAs: string | null }
+  | { status: "ready"; query: string; candidates: MsdsCandidate[]; searchedAs: string | null; searchedVia: MsdsSearchedVia | null }
   | { status: "error"; query: string; message: string };
 
 /** 서버 오류 본문의 문구 (없으면 기본 문구). 키·주소는 서버가 이미 넣지 않는다 */
@@ -58,7 +58,7 @@ export function useMsdsSearch() {
         setState({ status: "error", query: q.value, message: MSDS_TEXT.upstream });
         return;
       }
-      setState({ status: "ready", query: q.value, candidates, searchedAs: readSearchedAs(body) });
+      setState({ status: "ready", query: q.value, candidates, searchedAs: readSearchedAs(body), searchedVia: readSearchedVia(body) });
     } catch {
       if (c.signal.aborted) return;
       setState({ status: "error", query: q.value, message: MSDS_TEXT.upstream });

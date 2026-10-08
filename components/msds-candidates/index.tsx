@@ -32,6 +32,8 @@ type Props = {
    * "{원래 이름} → {찾은 이름}으로 찾았어요" / "CAS 7647-01-0 으로 찾았어요" (d7 §20 검색 보강)
    */
   searchedAs?: string | null;
+  /** 응답 searchedVia — "ai" 면 안내 줄에 "AI가 찾은 이름" (d7 §20 AI 보조) */
+  searchedVia?: "ai" | null;
   searchedQuery?: string;
   /** status = error 일 때 문구 */
   message?: string;
@@ -74,6 +76,7 @@ export function MsdsCandidates({
   status,
   candidates = NO_CANDIDATES,
   searchedAs,
+  searchedVia,
   searchedQuery,
   message,
   onConfirm,
@@ -103,7 +106,7 @@ export function MsdsCandidates({
   const selected = candidates.find((c) => c.chemId === selectedId) ?? null;
   const ready = status === "ready";
   const empty = ready && candidates.length === 0;
-  const note = ready && candidates.length > 0 ? searchedAsNote(searchedQuery ?? query ?? "", searchedAs) : null;
+  const note = ready && candidates.length > 0 ? searchedAsNote(searchedQuery ?? query ?? "", searchedAs, searchedVia) : null;
   const checkedUrl = checkMsdsUrl(url);
   const urlError = touched && url.trim() !== "" && !checkedUrl.ok ? MSDS_TEXT.urlError : undefined;
 

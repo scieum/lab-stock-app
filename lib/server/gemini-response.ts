@@ -3,6 +3,8 @@
 // 서류로 입고(d7 §21)의 품목 응답도 여기서 읽는다(parseDocIntakeResponse).
 
 import { normalizeDocExtraction, type DocExtraction } from "../doc-intake-rules";
+import type { ChemicalGuess } from "../msds-aliases";
+import { MSDS_QUERY_MAX, isCasChecksumValid } from "../msds-rules";
 
 export const USAGE_ITEMS_MAX = 50;
 export const USAGE_NAME_MAX = 80;
@@ -147,4 +149,42 @@ export function parseDocIntakeResponse(body: unknown): DocIntakeParseResult {
   if (rawCount === 0) return { ok: false, code: "empty", reason: "no-items" };
   if (extraction.items.length === 0) return { ok: false, code: "parse", reason: "schema" };
   return { ok: true, extraction };
+}
+
+/* ───────── MSDS 찾기 AI 보조 (d7 §20) ───────── */
+
+/** AI 가 낸 국문 물질명 길이 한도 (MSDS 검색어 한도와 같다) */
+export const GUESS_NAME_MAX = MSDS_QUERY_MAX;
+
+export type ChemicalGuessParseResult =
+  | { ok: true; guess: ChemicalGuess }
+  | { ok: false; code: "blocked" | "upstream" | "parse"; reason: string };
+
+/** 국문 물질명: 공백 정리, 1~60자, 제어 문자 없음, 글자(한글·영문)가 하나는 있어야 — 아니면 null */
+function cleanGuessName(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const t = v.replace(/\s+/g, " ").trim();
+  if (t === "" || t.length > GUESS_NAME_MAX || /[\u0000-\u001f\u007f]/.test(t)) return null;
+  if (!/[가-힣A-Za-z]/.test(t)) return null;
+  if (/^(null|none|unknown|모름|알 수 없음)$/i.test(t)) return null;
+  return t;
+}
+
+/** CAS: 2~7 - 2 - 1 꼴 + 검사 숫자가 맞아야 — 아니면 null */
+function cleanGuessCas(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const t = v.trim();
+  return isCasChecksumValid(t) ? t : null;
+}
+
+/**
+ * generateContent 응답 → { nameKo, cas } (d7 §20 AI 보조). 모양이 다르면 parse 오류.
+ * nameKo 는 1~60자 글자만, cas 는 CAS 형식·검사 숫자가 맞을 때만 — 아니면 null. 둘 다 null 이어도 ok("모름").
+ */
+export function parseChemicalGuessResponse(body: unknown): ChemicalGuessParseResult {
+  const read = readCandidateJson(body);
+  if (!read.ok) return read;
+  const value = read.value;
+  if (!isRecord(value)) return { ok: false, code: "parse", reason: "schema" };
+  return { ok: true, guess: { nameKo: cleanGuessName(value.nameKo), cas: cleanGuessCas(value.cas) } };
 }

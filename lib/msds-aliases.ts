@@ -235,6 +235,43 @@ export function planMsdsSearch(q: string, cas?: string | null): { steps: MsdsSea
   return { steps: steps.slice(0, MSDS_SEARCH_STEPS_MAX - (fallback ? 1 : 0)), fallback };
 }
 
+/** AI 가 추정한 물질 (d7 §20 AI 보조) — nameKo = 안전보건공단식 국문 물질명, cas = CAS 번호. 모르면 null */
+export type ChemicalGuess = { nameKo: string | null; cas: string | null };
+
+/** AI 보조 (5) 에서 KOSHA 호출 추가 최대 (d7 §20) */
+export const MSDS_AI_STEPS_MAX = 2;
+
+/**
+ * AI 보조 (5) 차례 (d7 §20): first = AI cas 로 CAS 검색 (없거나 앞에서 이미 찾은 CAS 면 nameKo 국문명),
+ * second = first 가 CAS 이고 0개일 때만 nameKo 국문명. 앞 차례 (1)~(4) 에서 이미 한 검색은 다시 하지 않는다.
+ * q 가 CAS 꼴이면 AI 를 쓰지 않는다 (planAiSearch 를 부르기 전에 aiSearchAllowed 로 거른다).
+ */
+export function planAiSearch(
+  q: string,
+  cas: string | null | undefined,
+  guess: ChemicalGuess,
+): { first: MsdsSearchStep | null; second: MsdsSearchStep | null } {
+  const plan = planMsdsSearch(q, cas);
+  const done = new Set<string>();
+  const key = (st: MsdsSearchStep) => `${st.kind}:${st.kind === "name" ? aliasKey(st.value) : st.value}`;
+  for (const st of plan.steps) done.add(key(st));
+  if (plan.fallback) done.add(key(plan.fallback));
+
+  const casStep: MsdsSearchStep | null = guess.cas && isCasQuery(guess.cas) ? { kind: "cas", value: guess.cas.trim() } : null;
+  const nameKo = guess.nameKo?.trim().replace(/\s+/g, " ") ?? "";
+  const nameStep: MsdsSearchStep | null = nameKo ? { kind: "name", value: nameKo } : null;
+  const c = casStep && !done.has(key(casStep)) ? casStep : null;
+  const n = nameStep && !done.has(key(nameStep)) ? nameStep : null;
+  if (c) return { first: c, second: n };
+  return { first: n, second: null };
+}
+
+/** AI 보조를 쓸 수 있는 검색어인가 — CAS 꼴 검색어는 AI 에 묻지 않는다 */
+export function aiSearchAllowed(q: string): boolean {
+  const t = q.trim();
+  return t !== "" && !isCasQuery(t);
+}
+
 /**
  * 응답 searchedAs 글자: 이름 차례 = 그 이름. CAS 차례 = 그 차례 첫 후보의 KOSHA 물질명 + "(CAS 번호)"
  * (예: "염화수소(CAS 7647-01-0)") — 어떤 물질로 찾았는지 보이게. 첫 후보가 없으면 "CAS 7647-01-0".
@@ -263,25 +300,33 @@ function roParticle(word: string): string {
  * 후보 시트의 무채색 한 줄 (d7 §20): 찾은 검색어가 원래 검색어와 다를 때만.
  * 이름 → "{원래 이름} → {찾은 이름}으로 찾았어요",
  * CAS → "{원래 이름} → 염화수소(CAS 7647-01-0)로 찾았어요" (물질명 없으면 "{원래 이름} → CAS 7647-01-0으로 찾았어요"). 같으면 null.
+ * via = "ai" (AI 보조 (5) 결과, d7 §20) → 찾은 이름 앞에 "AI가 찾은 이름 ":
+ * "{원래 이름} → AI가 찾은 이름 염화수소(CAS 7647-01-0)로 찾았어요" / CAS 없으면 "… → AI가 찾은 이름 염화수소로 찾았어요".
+ * 같은 이름이면 없음 규칙은 그대로.
  */
-export function searchedAsNote(query: string, searchedAs: string | null | undefined): string | null {
+export function searchedAsNote(
+  query: string,
+  searchedAs: string | null | undefined,
+  via?: "ai" | null,
+): string | null {
   if (!searchedAs) return null;
   const q = query.trim().replace(/\s+/g, " ");
   const s = searchedAs.trim();
   if (!s || aliasKey(s) === aliasKey(q)) return null;
+  const lead = via === "ai" ? "AI가 찾은 이름 " : "";
   // CAS 차례: "물질명(CAS 번호)" — 원래 검색어가 그 CAS 거나 물질명이 원래 검색어와 같으면 없음.
   // 조사는 괄호 앞 물질명에 맞춘다 ("염화수소(CAS …)로", "염산(CAS …)으로")
   const named = /^(.+)\(CAS\s+(\S+)\)$/.exec(s);
   if (named) {
     const name = named[1].trim();
     if (named[2] === q || aliasKey(name) === aliasKey(q)) return null;
-    return `${q} → ${name}(CAS ${named[2]})${roParticle(name)} 찾았어요`;
+    return `${q} → ${lead}${name}(CAS ${named[2]})${roParticle(name)} 찾았어요`;
   }
   // 물질명 없는 CAS (예전 응답 꼴 "CAS 번호")
   const cas = /^CAS\s+(\S+)$/.exec(s);
   if (cas) {
     if (cas[1] === q) return null;
-    return `${q} → CAS ${cas[1]}${roParticle(cas[1])} 찾았어요`;
+    return `${q} → ${via === "ai" ? "AI가 찾은 " : ""}CAS ${cas[1]}${roParticle(cas[1])} 찾았어요`;
   }
-  return `${q} → ${s}${roParticle(s)} 찾았어요`;
+  return `${q} → ${lead}${s}${roParticle(s)} 찾았어요`;
 }

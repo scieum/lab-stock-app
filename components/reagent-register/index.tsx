@@ -215,6 +215,7 @@ export function ReagentRegister({
           status={msds.state.status}
           candidates={msds.state.status === "ready" ? msds.state.candidates : undefined}
           searchedAs={msds.state.status === "ready" ? msds.state.searchedAs : null}
+          searchedVia={msds.state.status === "ready" ? msds.state.searchedVia : null}
           searchedQuery={msds.state.status === "idle" ? undefined : msds.state.query}
           message={msds.state.status === "error" ? msds.state.message : undefined}
           onRetry={() => void msds.search(msdsQuery)}
