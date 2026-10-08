@@ -3,6 +3,9 @@
   position: relative;
   display: inline-flex;
   flex-shrink: 0;
+  /* 학교명이 너무 길면 말줄임 — nav 폭의 절반 아래 (하위 화면 제목과 겹치지 않게) */
+  max-width: 45%;
+  min-width: 0;
 }
 
 /* 누름 영역은 44 로 키우고, 바깥 여백으로 되돌려 nav 높이·글자 자리는 그대로 */
@@ -23,6 +26,15 @@
   line-height: var(--line-height-tight);
   white-space: nowrap;
   cursor: pointer;
+  /* 바깥 여백(좌우 -8)만큼 넓은 상자 — 감싼 칸을 넘지 않게 */
+  max-width: calc(100% + var(--space-16));
+  min-width: 0;
+}
+
+.schoolText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .schoolButton:focus-visible {
