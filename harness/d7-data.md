@@ -120,7 +120,7 @@
 |---|---|
 | 권한 | 교사·admin만. 학생은 화면(/reorder → /)·진입 링크 모두 없음 (R2: 학생의 reorder-alert-card·vendor-link = 0) |
 | 알림 대상 | 같은 학교 시약 중 `stock < min_stock` (홈의 재고 부족과 같은 기준). 부족한 정도가 큰 순 |
-| 재주문 기준 | `reagents.min_stock` = 필요량. 기준의 근거(1반 1회 실험량 × 조 수)는 `reagents.reorder_per_group`(1조 사용량)·`reorder_groups`(조 수)에 둔다(null 허용) — 화면 5(실험 매뉴얼)가 채운다. 값이 있으면 카드에 "1반 1회 실험량 {per_group} {unit} × {groups}조 기준", 없으면 "재주문 기준 {min_stock} {unit}" |
+| 재주문 기준 | `reagents.min_stock` = 필요량. 기준의 근거(1반 1회 실험량 × 조 수)는 `reagents.reorder_per_group`(1조 사용량)·`reorder_groups`(조 수)에 둔다(null 허용) — 화면 5(실험 매뉴얼)가 채운다. 값이 있으면 카드에 "1반 1회 실험량 {per_group} {unit} × {groups}조 기준", 없으면 "재주문 기준 {min_stock} {unit}". 2026-10-08: 카드 수량 줄이 "재주문 기준 N" 이 되어 같은 말이 두 번 보이므로, 직접 입력(source=manual) 카드의 기준 문구 줄은 "직접 입력"(화면 3 과 같은 말), 자동은 배지 + 캡션(§18), 근거(basis)는 "1반 1회 실험량 … 기준" 그대로 |
 | 알림 날짜 | `reagents.low_stock_since`(timestamptz, null 허용): 재고가 기준 아래로 내려간 시각. stock·min_stock 이 바뀔 때 DB 가 맞춘다(아래로 내려가면 그 시각, 다시 기준 이상이면 null, 이미 부족한 상태가 이어지면 유지). 카드에 "M월 D일 알림"(한국 시간, 올해가 아니면 "YYYY년 M월 D일 알림" — 2026-10-08 디자인 1.21 맞춤, 전에는 "YYYY.MM.DD 알림"). 이 열을 추가할 때 이미 부족한 기존 시약은 추가 시각으로 채운다 |
 | 카드 | reorder-alert-card: badge-low-stock "재고 부족" + 시약명 + "재주문 기준 {min_stock}{unit} / 현재 재고 {stock}{unit}"(2026-10-08 디자인 1.21 맞춤, 전에는 "필요량 …") + 기준 문구 + 알림 날짜 + vendor-link "판매처 연결" |
 | 판매처 연결 | vendor-link → ex-modal-card: 판매처 목록(우리 학교 판매처 먼저, 그다음 공통 목록; 행 = 판매처명 + 부가 정보) 중 하나를 고르고 "확인" → 그 판매처의 웹사이트를 새 창으로 연다(2026-10-05 사용자 결정). 아무것도 저장하지 않는다. 웹사이트가 없는 판매처를 고르면 "확인" 비활성 + 연락처 안내. 판매처가 하나도 없으면 안내 문구(admin 에게는 판매처 등록으로 가는 길) |
@@ -280,6 +280,17 @@
 | 저장 | "확인 후 입고" → DB 함수 `record_document_intake(p_intake_date date, p_items jsonb)` 하나로 **한 트랜잭션**: 연결 행 = `{reagent_id, amount}` → record_intake 와 같은 처리(intake_logs·stock·intake_date, §11-1 자동 기준 트리거), 새 시약 행 = `{name, storage_class, unit, stock, msds_url}` → register_reagent 와 같은 처리. 교사·admin·자기 학교·데모 거부, 항목 1~50, amount·stock > 0, 미래 날짜 거부, 하나라도 틀리면 전부 취소. 반환 = `{ intake_count, new_reagent_ids[] }` |
 | 저장 뒤 | ex-toast "{N}개 품목을 입고했어요" → 새 시약이 있으면 location-suggest(§17, 여러 개 + "모두 추천대로"), 없으면 화면 2 |
 | 테스트 | 실제 Gemini 호출은 자동 테스트에서 하지 않는다(§13 과 같음) — 추출 API 응답을 가로채 대체, 서버는 권한·형식·크기·키 없음까지. 실제 추출은 미리보기에서 사람이 확인 |
+
+## 22. MSDS 요약 — 화면 16 (2026-10-08 결정 — design/rules.json 1.21 msds_summary)
+
+| 항목 | 결정 |
+|---|---|
+| 경로 | `/msds/[reagent id]`(로그인, 모든 역할, 자기 학교 시약만 — 다른 학교·없는 id 는 404) · `/demo/msds/[reagent id]`(둘러보기, 데모 학교 시약만). 진입 = msds-entry "MSDS 보기"(화면 3 시약 상세, 화면 10 기록 상세; 화면 12 는 만들 때). 바깥 링크로 바로 가지 않는다. 뒤로 = 들어온 화면 |
+| 요약 대상 | 시약 msds_url 이 안전보건공단 상세 주소(`msds.kosha.or.kr/MSDSInfo/kcic/msdsdetail.do?chem_id=…`)이면 chem_id 로 요약, 아니면(직접 입력 다른 주소) 요약 없이 msds-original-link 만(16-no-summary). MSDS 가 없으면 화면 16 대신 화면 3 의 "MSDS가 아직 없어요"(진입 버튼 없음) |
+| 데이터 | 서버에서 공단 Open API 항목별 상세(getChemDetail02 = 2 유해성·위험성(신호어·그림문자·유해 문구), 04 = 응급조치, 07 = 취급·저장, 08 = 노출방지·보호구; `KOSHA_MSDS_API_KEY`, 키는 서버에서만 — N2). 응답 구조는 공식 명세로 구현하고 고정 XML 표본으로 단위 테스트(실호출은 미리보기에서 사람이 확인). chem_id 별 하루 캐시. 4개 항목 중 일부만 실패하면 그 항목만 "내용이 없어요", 전부 실패면 16-fail |
+| 표시 | 시안 16 대로: ‹ "MSDS · {시약명}", 출처 줄 "물질안전보건자료 · 한국산업안전보건공단", 신호어 pill("위험" = ink 채움 흰 글자, "경고" = canvas-soft 회색 ink 글자), ghs-pictogram(흰 마름모 + #ff0000 테두리(이 컴포넌트 안에서만) + 검정 그림, 아래 이름 — GHS01~GHS09 9종: 폭발성·인화성·산화성·고압가스·부식성·급성 독성·경고(자극성 등)·건강 유해성·환경 유해성. 그림은 앱 안 SVG), 항목 "2. 유해·위험성"·"4. 응급조치 요령"·"7. 취급 및 저장방법"·"8. 노출방지 및 개인보호구" 각 3줄 + "더 보기"(펼침), 비면 "내용이 없어요", 맨 아래 전폭 button-outline "원문 MSDS 보기 ↗"(새 창, noopener). 불러오는 중 = msds-skeleton(회색 줄), 실패 = ex-empty-state-card "요약을 불러오지 못했어요" + 원문 보기 |
+| 데스크톱 | 시안은 시약 목록 옆 detail-drawer 안 — 데스크톱 재구성 run 에서. 그 전까지 데스크톱도 같은 전용 화면(가운데 한 열) |
+| 둘러보기 | 데모 학교 시약도 같은 화면(쓰기 없음). 데모 seed 의 msds_url 이 공단 주소가 아니면 16-no-summary 로 보임 |
 
 ## 10. 로그아웃 (2026-10-05 결정)
 
