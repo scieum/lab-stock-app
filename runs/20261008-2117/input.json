@@ -1,0 +1,23 @@
+{
+    "stages":  [
+                   "D1",
+                   "D3",
+                   "G",
+                   "D4"
+               ],
+    "screens":  [
+                    2,
+                    3,
+                    4,
+                    5,
+                    6,
+                    7,
+                    8,
+                    9,
+                    10,
+                    11,
+                    13,
+                    16
+                ],
+    "reason":  "데스크톱 재구성 a: 셸 - 로그인 후 데스크톱 app-sidebar(역할별 메뉴, 계정 메뉴), nav-pill tab-bar 없음, C3 셸 검사. 프레임이 다시 그려져서 테스트를 화면별 이전 방식으로(아직 안 옮긴 화면은 tests/fixtures/frames-pre-desktop). 화면 본문은 run b c d (d7 23). DB 변경 없음"
+}
