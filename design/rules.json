@@ -1,5 +1,5 @@
 {
-  "version": "1.18",
+  "version": "1.21",
   "sources": [
     "docs/design.md",
     "docs/story-service.md",
@@ -18,7 +18,10 @@
     "2026-10-06 시약 칸 배치·시약장 번호·QR 인쇄·재주문 기준 직접 입력 (개발 세션 요청)",
     "2026-10-07 서류로 입고·MSDS 자동 찾기·위치 자동 추천·자동 재주문 기준 표시 (개발 세션 요청 2)",
     "2026-10-07 시약 목록 필터·정렬, 사용일 고르기 (개발 세션 요청 3)",
-    "2026-10-07 초·중·고 학교급 (개발 세션 요청 4)"
+    "2026-10-07 초·중·고 학교급 (개발 세션 요청 4)",
+    "2026-10-08 데스크톱 웹앱 재구성 — 왼쪽 사이드바·데이터 테이블·오른쪽 드로어 (refs/uibowl-desktop-web-20261008.md, 사용자 결정 A)",
+    "2026-10-08 화면 16 MSDS 요약 · GHS 표준 빨강 예외 · 개발 기준 맞춤 6건 (개발 세션 요청 5)",
+    "2026-10-08 데스크톱 2차 — 로그인 전 web-header·반 나눔, 둘러보기 사이드바"
   ],
   "colors": {
     "allowed": [
@@ -39,6 +42,11 @@
       {
         "value": "rgba(115,115,115,0.56)",
         "only_in": "badge-overlay"
+      },
+      {
+        "value": "#ff0000",
+        "only_in": "ghs-pictogram",
+        "source": "2026-10-08 사용자 결정: GHS 그림문자 표준 빨간 마름모 테두리 — ghs-pictogram 안에서만 (D1)"
       }
     ],
     "accent": {
@@ -150,7 +158,7 @@
       1440,
       900
     ],
-    "name_pattern": "^([1-9]|1[0-5])-(mobile|desktop)$",
+    "name_pattern": "^([1-9]|1[0-6])-(mobile|desktop)$",
     "keyscreens": {
       "default": [
         2,
@@ -177,11 +185,12 @@
       12,
       13,
       14,
-      15
+      15,
+      16
     ],
-    "guest_name_pattern": "^([1-9]|1[0-5])-guest-(mobile|desktop)$",
-    "variant_name_pattern": "^([1-9]|1[0-5])-(empty|delete|slot|print|unsaved|location|result|doc-upload|doc-review|doc-fail|suggest|msds|msds-bulk|filter|filter-empty|past-date|no-school)-(mobile|desktop)$",
-    "variant_note": "같은 화면의 다른 상태 프레임. input.json variants {\"11\": [\"empty\",\"delete\"]} 로 요청 (2026-10-04) · 2026-10-06 상태 추가: 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 상태 추가: 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk · 2026-10-07 상태 추가: 2-filter·2-filter-empty, 4-past-date · 2026-10-07 상태 추가: 14-no-school"
+    "guest_name_pattern": "^([1-9]|1[0-6])-guest-(mobile|desktop)$",
+    "variant_name_pattern": "^([1-9]|1[0-6])-(empty|delete|slot|print|unsaved|location|result|doc-upload|doc-review|doc-fail|suggest|msds|msds-bulk|filter|filter-empty|past-date|no-school|loading|fail|no-summary)-(mobile|desktop)$",
+    "variant_note": "같은 화면의 다른 상태 프레임. input.json variants {\"11\": [\"empty\",\"delete\"]} 로 요청 (2026-10-04) · 2026-10-06 상태 추가: 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 상태 추가: 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk · 2026-10-07 상태 추가: 2-filter·2-filter-empty, 4-past-date · 2026-10-07 상태 추가: 14-no-school · 2026-10-08 상태 추가: 16-loading·16-fail·16-no-summary"
   },
   "s1": {
     "refs_per_screen": [
@@ -266,7 +275,8 @@
         10,
         11,
         12,
-        13
+        13,
+        16
       ],
       "school_name_pattern": "[가-힣A-Za-z0-9]+(?:초등학교|중학교|고등학교)",
       "distinct_school_names": 1,
@@ -286,7 +296,8 @@
         10,
         11,
         12,
-        13
+        13,
+        16
       ],
       "school_name_scope_source": "2026-10-01 NEIS: 화면 1 학교 목록에는 여러 학교명이 정상",
       "school_select_levels": [
@@ -430,7 +441,12 @@
     "14": [
       "school-select-kind"
     ],
-    "source": "2026-10-02 story-service 결정 (화면별 필수 컴포넌트, 규칙 C1) · 15 랜딩 2026-10-03 · 2026-10-06 화면 3 보관 위치·재주문 기준, 화면 11 시약장 번호·QR 인쇄 · 2026-10-07 화면 7 intake-mode · 2026-10-07 화면 2 list-filter-button, 화면 4 usage-date · 2026-10-07 화면 14 school-select-kind"
+    "16": [
+      "msds-summary",
+      "ghs-pictogram",
+      "msds-original-link"
+    ],
+    "source": "2026-10-02 story-service 결정 (화면별 필수 컴포넌트, 규칙 C1) · 15 랜딩 2026-10-03 · 2026-10-06 화면 3 보관 위치·재주문 기준, 화면 11 시약장 번호·QR 인쇄 · 2026-10-07 화면 7 intake-mode · 2026-10-07 화면 2 list-filter-button, 화면 4 usage-date · 2026-10-07 화면 14 school-select-kind · 2026-10-08 화면 16 MSDS 요약"
   },
   "cabinet": {
     "door_types": [
@@ -531,7 +547,8 @@
       10,
       11,
       12,
-      13
+      13,
+      16
     ],
     "source": "2026-10-02 사용자 결정: 하단 탭바 (refs/uibowl-home-nav-20261002.md)",
     "radius": 0,
@@ -549,7 +566,8 @@
     "screens": [
       13,
       2,
-      3
+      3,
+      16
     ],
     "entry_screen": 15,
     "entry_component": "guest-entry",
@@ -588,7 +606,10 @@
       "msds-bulk-banner",
       "location-suggest"
     ],
-    "source": "2026-10-03 사용자 결정: 비회원 둘러보기 (데모 학교 읽기 전용)"
+    "source": "2026-10-03 사용자 결정: 비회원 둘러보기 (데모 학교 읽기 전용)",
+    "sidebar_locks": 2,
+    "desktop": "로그인 후와 같은 app-sidebar(위 '데모 학교'), sidebar-item = 홈·시약 활성 + 기록·QR 찾기 guest-lock(2), 관리 메뉴 숨김. 본문 위 guest-banner",
+    "desktop_source": "2026-10-08 사용자 결정"
   },
   "variants": {
     "11": {
@@ -681,22 +702,37 @@
         "school-select-school"
       ]
     },
-    "source": "2026-10-04 여러 시약장: 빈 상태(교사 기준)·삭제 확인 상태 필수 컴포넌트 (C1) · 2026-10-06 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk, 3-location + suggest-badge · 2026-10-07 2-filter·2-filter-empty, 4-past-date · 2026-10-07 14-no-school"
+    "16": {
+      "loading": [
+        "msds-summary",
+        "msds-skeleton"
+      ],
+      "fail": [
+        "msds-original-link",
+        "ex-empty-state-card"
+      ],
+      "no-summary": [
+        "msds-original-link"
+      ]
+    },
+    "source": "2026-10-04 여러 시약장: 빈 상태(교사 기준)·삭제 확인 상태 필수 컴포넌트 (C1) · 2026-10-06 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk, 3-location + suggest-badge · 2026-10-07 2-filter·2-filter-empty, 4-past-date · 2026-10-07 14-no-school · 2026-10-08 16-loading·16-fail·16-no-summary"
   },
   "reorder": {
     "threshold_edit": "화면 3 시약 상세에서 교사·admin이 재주문 기준(필요량)을 숫자로 직접 입력 (reorder-threshold 안 threshold-edit). 화면 5 AI 추출 값과 같은 칸을 덮어씀",
     "source": "2026-10-06 사용자 결정 (개발 세션 요청 3)",
-    "auto": "기준 없는 시약은 자동 기준(최근 4주 평균 주간 사용량 × 2주, 사용 기록 없으면 마지막 입고량의 20%). 매뉴얼·직접 입력 우선. 표시 = auto-threshold-badge '자동'(colors.canvas-soft 회색 pill, ink 글자) + 캡션 한 줄 '최근 사용량으로 계산했어요'. 핑크·하늘색 금지 (화면 3·6)",
-    "auto_source": "2026-10-07 개발 세션 요청 2-4"
+    "auto": "기준 없는 시약은 자동 기준(최근 4주 평균 주간 사용량 × 2주, 사용 기록 없으면 마지막 입고량의 20%). 매뉴얼·직접 입력 우선. 표시 = auto-threshold-badge '자동'(colors.canvas-soft 회색 pill, ink 글자) + 캡션 한 줄: 사용 기록 근거 '최근 사용량으로 계산했어요' / 입고량 근거 '마지막 입고량의 20%로 계산했어요'. 핑크·하늘색 금지 (화면 3·6)",
+    "auto_source": "2026-10-07 개발 세션 요청 2-4",
+    "card_text": "재주문 알림 카드 = '재주문 기준 N{단위}' · '10월 7일 알림' (화면 3 용어·사용일 안내와 같은 표기)"
   },
   "app_exceptions": {
     "nav-account-menu": "공통 nav-pill: 로그인 후 학교명 옆 작은 ▾ → 메뉴에 '로그아웃' 1개",
     "quick-action-cabinet": "13 홈: 교사 = 사용 기록 입력·입고·시약장 설정, admin = 입고·사용자 관리·시약장 설정 (모바일 2+1)",
     "extraction-link-row": "5 실험 매뉴얼: 추출 표 행마다 아래 줄에 '우리 학교 시약' 선택·삭제·'기존 기준 N · 그대로 둬요/바뀌어요'. 단위 = 선택 상자(병·mL·g). 조 수 기본값 빈 값",
-    "sheet-close": "8 사용자 관리 시트·9 판매처 등록 폼: 오른쪽 위 × 닫기. 8 삭제 확인 '{이름} · 사용·입고 기록은 남아요', 초대는 이메일만. 9 부가 정보 칸 없음",
+    "sheet-close": "8 사용자 관리 시트·9 판매처 등록 폼: 오른쪽 위 × 닫기. 8 삭제 확인 '{이름} · 사용·입고 기록은 남아요', 초대는 이메일 + 역할(학생·교사) 고르기, 이름 칸 없음. 9 부가 정보 칸 없음, 판매처 행은 이름 + 연락처만(웹사이트 주소 표시 안 함)",
     "vendor-new-window": "6 재주문 알림: 판매처 '확인' 뒤 '사이트를 새 창으로 열었어요. 열리지 않았다면 [직접 열기]' 안내 줄",
-    "source": "2026-10-06 사용자 결정 — 개발 세션 예외 1~6 시안에 반영 (7은 cabinet.unsaved_confirm으로 대체)",
-    "extraction-merge": "5 실험 매뉴얼: 같은 시약이 여러 번 나오면 한 줄로 합치고 무채색 안내 줄 '2개 행을 합쳤어요' (2026-10-07)"
+    "source": "2026-10-06 사용자 결정 — 개발 세션 예외 1~6 시안에 반영 (7은 cabinet.unsaved_confirm으로 대체) · 2026-10-08 요청 5-2 맞춤",
+    "extraction-merge": "5 실험 매뉴얼: 같은 시약이 여러 번 나오면 한 줄로 합치고 무채색 안내 줄 '2개 행을 합쳤어요' (2026-10-07)",
+    "user-count-line": "8 사용자 관리 머리: '학생 a · 교사 b · admin c' 역할별 인원 줄 (2026-10-08 개발 기준 유지)"
   },
   "intake": {
     "entry": "화면 7 맨 위 intake-mode(segmented-control '직접 입력 / 서류로 입고', 기본 = 서류로 입고). 홈 quick-action '입고'는 화면 7로",
@@ -754,7 +790,108 @@
     "component": "school-select-kind",
     "shape": "segmented-control 3칸 초등학교·중학교·고등학교, 지역 다음·학교 앞",
     "default": "없음 — 고르기 전 school-select-school 비활성 + '학교급을 먼저 골라 주세요'",
-    "no_school": "학교 0개 = school-select-school 자리에 무채색 '이 지역에 {학교급}이 없어요 — 지역을 다시 골라 주세요'",
+    "no_school": "학교 0개 = school-select-school 자리에 무채색 '이 지역에 {학교급}가 없어요 — 지역을 다시 골라 주세요'",
     "source": "2026-10-07 사용자 결정 (요청 4)"
+  },
+  "desktop_shell": {
+    "component": "app-sidebar",
+    "item": "sidebar-item",
+    "min_items": 3,
+    "width": 240,
+    "radius": 0,
+    "screens": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      16
+    ],
+    "forbidden_on_desktop": [
+      "nav-pill"
+    ],
+    "desktop_required": {
+      "2": [
+        "data-table"
+      ],
+      "3": [
+        "detail-drawer"
+      ],
+      "8": [
+        "data-table"
+      ],
+      "9": [
+        "data-table"
+      ],
+      "10": [
+        "data-table"
+      ],
+      "16": [
+        "detail-drawer",
+        "msds-summary"
+      ]
+    },
+    "menu": {
+      "all": [
+        "홈",
+        "시약",
+        "기록",
+        "시약장",
+        "QR 찾기"
+      ],
+      "teacher_admin": [
+        "입고",
+        "실험 매뉴얼",
+        "재주문 알림"
+      ],
+      "admin": [
+        "사용자",
+        "판매처"
+      ]
+    },
+    "drawer_width": 480,
+    "heavy_pages": [
+      5,
+      7,
+      11
+    ],
+    "form_width": 640,
+    "overlay": "모달 = 확인·짧은 입력만. 모바일 고르기용 바텀시트(필터·MSDS 후보·위치 등) → 데스크톱 드롭다운·팝오버. 한 건 보기 → detail-drawer",
+    "screens_note": "둘러보기 desktop은 GM4(사이드바 1·잠금 2), 로그인 전 1·14·15는 pre_login",
+    "source": "2026-10-08 사용자 결정 (A + 무거운 작업은 페이지, 모바일 그대로)",
+    "pre_login": {
+      "screens": [
+        1,
+        14,
+        15
+      ],
+      "component": "web-header",
+      "forbidden": [
+        "nav-pill",
+        "app-sidebar"
+      ],
+      "layout": "web-header = 전폭 상단 바(왼쪽 Lab_Stock / 오른쪽 로그인·회원가입, radius 0, canvas 바탕 + 아래 hairline-soft). 1·14 = 왼쪽 폼 / 오른쪽 서비스 소개 패널 반 나눔(14는 번호 붙은 섹션: 1 학교 선택 → 2 계정). 15 = 웹 랜딩(히어로 + feature-card 4열 + landing-cta)",
+      "source": "2026-10-08 사용자 결정 (상단 전폭 바 + 반 나눔)"
+    }
+  },
+  "msds_summary": {
+    "screen": 16,
+    "entry": "msds-entry 'MSDS 보기'(화면 3·10·12 등)가 바깥 링크 대신 화면 16을 연다. 모든 역할·둘러보기",
+    "mobile": "전용 화면: ‹ 'MSDS · {시약명}' + 출처 줄 '물질안전보건자료 · 한국산업안전보건공단' → 신호어 → 그림문자 → 항목 2·4·7·8 → msds-original-link",
+    "desktop": "시약 목록(data-table) 위 오른쪽 detail-drawer 안에 msds-summary",
+    "pictogram": "ghs-pictogram: 흰 바탕 마름모 + 표준 빨강 #ff0000 테두리 + 검정 그림, 아래 이름(예: 산화성·부식성·급성 독성). 9종",
+    "signal_word": "신호어: '위험' = ink 채움 pill(흰 글자), '경고' = canvas-soft 회색 pill(ink 글자). 핑크·빨강 쓰지 않음",
+    "sections": "2. 유해·위험성 · 4. 응급조치 요령 · 7. 취급 및 저장방법 · 8. 노출방지 및 개인보호구 — 제목은 번호 포함 원문 항목명, 요약 3줄 + '더 보기'(펼침)",
+    "original_link": "msds-original-link = 맨 아래 전폭 button-outline '원문 MSDS 보기 ↗'(새 창). 공단 MSDS가 아니면(직접 입력 주소) 요약 없이 이 버튼만 = 16-no-summary",
+    "states": "16-loading = 회색 줄 스켈레톤(msds-skeleton), 16-fail = ex-empty-state-card '요약을 불러오지 못했어요' + 원문 보기, 항목 내용 없음 = 그 항목에 무채색 '내용이 없어요'",
+    "key": "공단 API 키는 서버에서만 (N2)",
+    "source": "2026-10-08 사용자 결정 (요청 5-1: 새 화면 16, GHS 표준 빨강)"
   }
 }

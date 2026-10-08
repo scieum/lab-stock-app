@@ -1,8 +1,8 @@
 {
     "repo":  "https://github.com/scieum/harness",
-    "commit":  "15df45f",
+    "commit":  "2ab9c16",
     "path":  "harness/rules.json",
-    "sha256":  "683cf3f7f79bfd04813e228fff45fa2af6dbe0e0395dbb635913bec94058cf74",
+    "sha256":  "790591e17681392815ad6441a677ffb83700fc84d36842b2f3d022d191eacfc9",
     "figma_file":  "https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2",
     "figma_page":  "00 최신 시안",
     "frames_from_runs":  {
@@ -77,7 +77,9 @@
                              "14-desktop":  "runs/20261007-1305",
                              "14-mobile":  "runs/20261007-1305",
                              "14-no-school-desktop":  "runs/20261007-1305",
-                             "14-no-school-mobile":  "runs/20261007-1305"
+                             "14-no-school-mobile":  "runs/20261007-1305",
+                             "16-mobile":  "runs/20261008-0936",
+                             "16-desktop":  "runs/20261008-0936"
                          },
-    "copied":  "2026-10-07 (12차: rules.json 1.18 — 초·중·고 학교급(neis.school_kinds), 화면 14 학교급 고르기 school-select-kind·상태 14-no-school, N1 school_name_pattern 확대. Figma S4-screens-v14 node 350:2)"
+    "copied":  "2026-10-08 (13차: rules.json 1.21 - 화면 16 MSDS 요약, GHS 빨강 예외, 개발 기준 맞춤(요청 5), 데스크톱 웹앱 재구성 1차·2차 규칙. 프레임은 화면 16 만 가져옴(디자인 run 20261008-0936). 화면 2~13 의 새 프레임(같은 run, 모바일·데스크톱 모두 다시 그림)은 그 화면을 다루는 run 에서 화면별로 가져온다 - 한꺼번에 바꾸면 아직 안 고친 화면 테스트가 깨짐)"
 }

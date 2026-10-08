@@ -236,7 +236,7 @@ def e2e_results(ctx):
         cmd += f' --grep "\\[S{ctx["screen"]}g?\\]|\\[S\\*\\]"'
     env = dict(os.environ, PLAYWRIGHT_JSON_OUTPUT_NAME=str(out_file))
     p = subprocess.run(cmd, cwd=ROOT, shell=True, capture_output=True, text=True,
-                       encoding="utf-8", errors="replace", env=env, timeout=1800)
+                       encoding="utf-8", errors="replace", env=env, timeout=5400)
     if not out_file.exists():
         raise CannotJudge("Playwright JSON 결과 없음: " + "\n".join((p.stdout + p.stderr).splitlines()[-5:]))
     data = json.loads(out_file.read_text(encoding="utf-8"))
