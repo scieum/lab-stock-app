@@ -116,29 +116,32 @@ export function QrPrintSheet({ schoolName, origin, cabinets, defaultTarget, onCl
       ...cabinets.map((c) => ({ value: c.id, label: c.label })),
       ...(cabinets.length > 1 ? [{ value: QR_PRINT_ALL, label: "모두" }] : []),
     ];
+    // qr-print-sheet = 드로어 안 내용 전체(제목 줄 포함 — 시안 detail-drawer > qr-print-sheet > sheet-head). 묶음은 배치에 끼어들지 않는다
     return (
-      <DetailDrawer
-        title="QR 인쇄"
-        onClose={onClose}
-        inline={!sheet}
-        className={styles.drawer}
-        actions={
-          <ButtonPrimary fullWidth disabled={chosen.length === 0} onClick={print}>
-            인쇄
-          </ButtonPrimary>
-        }
-      >
-        <div data-component="qr-print-sheet" className={styles.drawerBody}>
-          <div data-name="print-target">
-            <SelectField label="시약장" tone="form" options={options} value={target} onChange={setTarget} />
+      <div data-component="qr-print-sheet" className={styles.drawerRoot}>
+        <DetailDrawer
+          title="QR 인쇄"
+          onClose={onClose}
+          inline={!sheet}
+          className={styles.drawer}
+          actions={
+            <ButtonPrimary fullWidth disabled={chosen.length === 0} onClick={print}>
+              인쇄
+            </ButtonPrimary>
+          }
+        >
+          <div className={styles.drawerBody}>
+            <div data-name="print-target">
+              <SelectField label="시약장" tone="form" options={options} value={target} onChange={setTarget} />
+            </div>
+            {preview}
+            <p className={styles.caption} role="status" data-name="print-caption">
+              {qrPrintCaption(chosen.length)}
+            </p>
           </div>
-          {preview}
-          <p className={styles.caption} role="status" data-name="print-caption">
-            {qrPrintCaption(chosen.length)}
-          </p>
-        </div>
-        {printCopy}
-      </DetailDrawer>
+          {printCopy}
+        </DetailDrawer>
+      </div>
     );
   }
 

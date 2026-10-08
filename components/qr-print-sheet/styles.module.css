@@ -94,3 +94,7 @@
 .drawer .a4 {
   max-width: calc(var(--space-64) * 5 + var(--space-48) - var(--space-8));
 }
+
+.drawerRoot {
+  display: contents;
+}
