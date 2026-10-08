@@ -43,6 +43,12 @@ import { MsdsBulkBanner } from "@/components/msds-bulk-banner";
 import { NewReagentFields } from "@/components/new-reagent-fields";
 import { MsdsCandidates } from "@/components/msds-candidates";
 import { MsdsEntry } from "@/components/msds-entry";
+import { GhsPictogram } from "@/components/ghs-pictogram";
+import { MsdsOriginalLink } from "@/components/msds-original-link";
+import { MsdsSkeleton } from "@/components/msds-skeleton";
+import { MsdsSummary } from "@/components/msds-summary";
+import { GHS_CODES, MSDS_SUMMARY_TEXT } from "@/lib/msds-summary";
+import { sampleMsdsSummary, sampleMsdsSummaryWarning } from "./msds/summary-sample";
 import { MsdsSearch } from "@/components/msds-search";
 import { MsdsQrTile } from "@/components/msds-qr-tile";
 import { NavAccountMenu } from "@/components/nav-account-menu";
@@ -357,6 +363,33 @@ export default function GalleryPage() {
           >
             <MsdsEntry variant="button" href="https://example.com/msds" />
           </ModalCard>
+        </Item>
+
+        <Item name="ghs-pictogram (GHS01~GHS09 9종)">
+          <div className={styles.row}>
+            {GHS_CODES.map((code) => (
+              <GhsPictogram key={code} code={code} />
+            ))}
+          </div>
+        </Item>
+
+        <Item name="msds-summary — 시안 16 (신호어 위험 · 그림문자 · 항목 4개, 4는 더 보기)">
+          <MsdsSummary summary={sampleMsdsSummary} />
+        </Item>
+
+        <Item name="msds-summary — 신호어 경고 · 항목 내용 없음(실패·빈 항목)">
+          <MsdsSummary summary={sampleMsdsSummaryWarning} />
+        </Item>
+
+        <Item name="msds-summary · msds-skeleton — 16-loading">
+          <MsdsSummary loading />
+          <MsdsSkeleton />
+        </Item>
+
+        <Item name="msds-original-link — 16-no-summary / 16-fail">
+          <MsdsOriginalLink href="https://msds.kosha.or.kr/MSDSInfo/kcic/msdsdetail.do?chem_id=000699&viewType=msds" />
+          <EmptyStateCard title={MSDS_SUMMARY_TEXT.fail} />
+          <MsdsOriginalLink href="https://example.com/msds" />
         </Item>
 
         <Item name="msds-entry · msds-qr-tile">

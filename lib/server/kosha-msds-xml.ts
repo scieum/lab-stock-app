@@ -61,7 +61,7 @@ export function tagText(xml: string, tag: string): string | null {
   return decodeEntities(raw).trim();
 }
 
-function blocks(xml: string, tag: string): string[] {
+export function blocks(xml: string, tag: string): string[] {
   const out: string[] = [];
   const re = new RegExp(`<${tag}(?:\\s[^>]*)?>([\\s\\S]*?)</${tag}>`, "g");
   for (let m = re.exec(xml); m; m = re.exec(xml)) out.push(m[1]);

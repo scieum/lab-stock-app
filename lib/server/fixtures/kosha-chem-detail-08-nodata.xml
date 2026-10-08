@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!-- getChemDetail081 데이터 없음 응답 표본 (공공데이터포털 공통 결과코드 03 NODATA_ERROR — 항목 8 "내용이 없어요"). 키 없음. -->
+<response>
+  <header>
+    <resultCode>03</resultCode>
+    <resultMsg>NODATA_ERROR</resultMsg>
+  </header>
+  <body>
+    <items/>
+  </body>
+</response>

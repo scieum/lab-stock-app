@@ -67,6 +67,7 @@ export default async function UsageHistoryPage({ searchParams }: Props) {
       unit: r.unit,
       amountLabel: formatStock(r.amount, r.unit),
       memo: r.memo && r.memo.trim() !== "" ? r.memo : null,
+      reagentId: r.reagentId,
       msdsUrl: safeUrl(r.msdsUrl),
     });
   }

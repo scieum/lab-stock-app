@@ -80,6 +80,7 @@ import {
   vendorsBySchool,
   waitReorder,
   waitVendors,
+  MANUAL_BASIS_TEXT,
   type Fx,
 } from "./screen-6-9-helpers";
 import {
@@ -466,8 +467,7 @@ test(`[C1][S6] 일회용 학교 교사 재주문 알림 카드 (d7 §18): 자동
     await expect(plain.locator(sel(AUTO_BADGE)), "직접 입력 카드: 배지 0").toHaveCount(0);
     for (const cap of [USAGE_CAPTION, INTAKE_CAPTION]) await expect(plain.getByText(exact(cap)), `직접 입력 카드: "${cap}" 없음`).toHaveCount(0);
     await expect(plain.getByText(exact(`${NEED} ${db.manual.min_stock}${db.manual.unit} / ${STOCK_WORD} ${db.manual.stock}${db.manual.unit}`)), "직접 입력 카드 수량 줄 그대로 (d7 §11 1.21)").toHaveCount(1);
-    await expect(plain.getByText(exact(`재주문 기준 ${db.manual.min_stock} ${db.manual.unit}`)), "직접 입력 카드 기준 문구 (d7 §11 두 번째 형태)").toHaveCount(1);
-    await expect(page.locator("main").getByText(/필요량 \d/), "옛 앞말 \"필요량 N\" 없음").toHaveCount(0);
+    await expect(plain.getByText(exact(MANUAL_BASIS_TEXT)), `직접 입력 카드 기준 문구 "${MANUAL_BASIS_TEXT}" (d7 §11 2026-10-08)`).toHaveCount(1);    await expect(page.locator("main").getByText(/필요량 \d/), "옛 앞말 \"필요량 N\" 없음").toHaveCount(0);
     // 핑크는 badge-low-stock 밖에 없다 (자동 배지 포함)
     const pinkOutside = await page.locator("main").evaluate((root, pink) => {
       const out: string[] = [];

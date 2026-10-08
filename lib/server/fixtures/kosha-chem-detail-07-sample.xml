@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!-- getChemDetail071(7. 취급 및 저장방법) 응답 표본 (chemId=000699 · 질산 은). 모양 = 15157612 명세, 글자 = 공단 MSDS 화면. 줄 구분은 줄바꿈(추정). 엔티티 포함. 키 없음. -->
+<response>
+  <header>
+    <resultCode>00</resultCode>
+    <resultMsg>NORMAL SERVICE.</resultMsg>
+  </header>
+  <body>
+    <items>
+      <item>
+        <itemDetail>피해야할 물질 및 조건에 유의하시오
+공학적 관리 및 개인보호구를 참조하여 작업하시오</itemDetail>
+        <lev>1</lev><msdsItemCode>71</msdsItemCode><upMsdsItemCode>70</upMsdsItemCode>
+        <msdsItemNameKor>가. 안전취급요령</msdsItemNameKor><msdsItemNo>A</msdsItemNo><ordrIdx>1</ordrIdx>
+      </item>
+      <item>
+        <itemDetail>의류 및 그 밖의 가연성 물질로부터 멀리하시오.&lt;br&gt;열,고온의 표면 &amp; 화염으로부터 멀리하시오.</itemDetail>
+        <lev>1</lev><msdsItemCode>72</msdsItemCode><upMsdsItemCode>70</upMsdsItemCode>
+        <msdsItemNameKor>나. 안전한 저장방법</msdsItemNameKor><msdsItemNo>B</msdsItemNo><ordrIdx>2</ordrIdx>
+      </item>
+    </items>
+  </body>
+</response>

@@ -409,10 +409,19 @@ export const CARD_AMOUNT = (() => {
 })();
 /** d7 §11 카드 문구 */
 export const amountText = (r: DbReagent) => `${CARD_AMOUNT.need} ${r.min_stock}${r.unit} / ${CARD_AMOUNT.stock} ${r.stock}${r.unit}`;
+/**
+ * d7 §11 "재주문 기준" 행 (2026-10-08): 카드 수량 줄이 이미 "재주문 기준 N" 이라 같은 말이 두 번 보이므로
+ * 직접 입력(근거 없음) 카드의 기준 문구 줄은 "직접 입력"(화면 3 과 같은 말).
+ */
+export const MANUAL_BASIS_TEXT = (() => {
+  const m = /기준 문구 줄은 "([^"]+)"/.exec(d7Line("| 재주문 기준 |", "§11"));
+  if (!m) throw new Error("harness/d7-data.md §11 '재주문 기준' 행에서 직접 입력 기준 문구를 읽지 못했습니다");
+  return m[1];
+})();
 export const basisText = (r: DbReagent) =>
   r.reorder_per_group !== null && r.reorder_groups !== null
     ? `1반 1회 실험량 ${r.reorder_per_group} ${r.unit} × ${r.reorder_groups}조 기준`
-    : `재주문 기준 ${r.min_stock} ${r.unit}`;
+    : MANUAL_BASIS_TEXT;
 /**
  * d7 §11 "알림 날짜" (2026-10-08 디자인 1.21 맞춤): "M월 D일 알림"(한국 시간), 올해(한국 시간)가 아니면 "YYYY년 M월 D일 알림".
  * now = 올해를 가르는 시각 (기본 지금).

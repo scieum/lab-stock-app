@@ -35,6 +35,13 @@
   white-space: nowrap;
 }
 
+/* 하위 화면 제목: 남은 폭에서 한 줄 말줄임 — 학교명과 겹치지 않는다 (시안 16-mobile nav-left · nav-account 나란히) */
+.title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* 워드마크 + 섹션 제목 (시안 7-mobile nav-left, 사이 12). 데스크톱에서는 제목을 숨긴다 */
 .sectionGroup {
   display: inline-flex;
@@ -62,8 +69,16 @@
   white-space: nowrap;
 }
 
+/* 뒤로가기: 누름 영역 44 × 44 (시안 nav-back), 바깥 여백으로 되돌려 nav 높이·제목 자리는 그대로
+ * (아이콘 20 기준: 위아래 -12, 왼쪽 -16 · 오른쪽 -8 — 오른쪽은 제목과의 사이 8 만큼만 써서 제목과 겹치지 않는다) */
 .back {
   display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--button-min-height);
+  min-height: var(--button-min-height);
+  margin: calc(var(--space-12) * -1) calc(var(--space-8) * -1) calc(var(--space-12) * -1) calc(var(--space-16) * -1);
   color: var(--color-highlight);
 }
 
@@ -77,11 +92,16 @@
   height: var(--icon-md);
 }
 
+/* 학교명: 너무 길면 말줄임 (nav 폭의 절반 아래) */
 .school {
   flex-shrink: 0;
+  max-width: 45%;
+  overflow: hidden;
   color: var(--color-text-muted);
   font-size: var(--font-size-12);
   line-height: var(--line-height-tight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .links {

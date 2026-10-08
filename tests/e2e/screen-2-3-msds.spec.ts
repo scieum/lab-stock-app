@@ -186,9 +186,9 @@ test.describe("일회용 학교", () => {
           msds_url: cands[1].msdsUrl,
           cas_no: cands[1].cas,
         });
-        // 다시 받은 화면: 찾기 없음 · MSDS 보기 = 저장한 주소
+        // 다시 받은 화면: 찾기 없음 · MSDS 보기 = 화면 16 (d7 §22 2026-10-08: 바깥 주소로 바로 가지 않는다 — 저장한 주소는 위 DB 대조)
         await expect(page.locator(sel(MSDS_SEARCH)), "저장 뒤 msds-search 0").toHaveCount(0, { timeout: SAVE_TIMEOUT });
-        await expect(entry(page).locator(`a[href="${cands[1].msdsUrl}"]`), `"${VIEW}" 링크 = 저장한 주소`).toHaveCount(1);
+        await expect(entry(page).locator(`a[href="${routeOf(16).replace(/\[[^\]]+\]/, a.id)}"]`), `"${VIEW}" 링크 = 화면 16 (/msds/{id})`).toHaveCount(1);
         await expect(entry(page).getByText(MISSING, { exact: true })).toHaveCount(0);
 
         // CAS 가 이미 있는 시약: 첫 후보(다른 CAS)를 골라도 CAS 그대로
@@ -210,7 +210,9 @@ test.describe("일회용 학교", () => {
         await page.goto(detailPath(c.id));
         await waitDetail(page);
         expect(await countComponent(page, MSDS_SEARCH), "MSDS 있음 → msds-search 0").toBe(0);
-        await expect(entry(page).locator(`a[href="${HAS_URL}"]`), `"${VIEW}" 링크`).toHaveCount(1);
+        // d7 §22 (2026-10-08): "MSDS 보기" = 화면 16 (/msds/{id}) — 바깥 주소로 바로 가지 않는다
+        await expect(entry(page).locator(`a[href="${routeOf(16).replace(/\[[^\]]+\]/, c.id)}"]`), `"${VIEW}" 링크 = 화면 16`).toHaveCount(1);
+        await expect(entry(page).locator(`a[href="${HAS_URL}"]`), `"${VIEW}" 가 바깥 주소로 바로 가지 않음`).toHaveCount(0);
         await expect(entry(page).getByText(MISSING, { exact: true })).toHaveCount(0);
         expect(calls.queries, "검색은 MSDS 없는 시약 2번만").toEqual([a.name, b.name]);
       } finally {

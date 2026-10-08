@@ -1,0 +1,133 @@
+/* 시안 16 msds-summary: 세로 사이 24 */
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  min-width: 0;
+}
+
+/* 신호어 줄: 캡션 12/400 회색 + pill, 사이 8 */
+.signalRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.signalCaption {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+/* pill 4/12, 12/600 — 위험 = ink 채움 흰 글자, 경고 = canvas-soft 회색 ink 글자 (핑크·빨강 없음) */
+.signal {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-4) var(--space-12);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.danger {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.warning {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+/* 그림문자 줄: 사이 16, 넘치면 다음 줄 */
+.pictograms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-16);
+}
+
+/* 항목 카드: 흰 바탕 + 테두리, radius 24, 안쪽 24, 사이 12 */
+.section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-12);
+  padding: var(--space-24);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.sectionTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.line {
+  display: flex;
+  gap: var(--space-8);
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.bullet {
+  flex-shrink: 0;
+}
+
+.lineText {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* 항목 내용 없음 — 무채색 */
+.empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+}
+
+/* 더 보기: 높이 44, 15/600 + 아래 화살표 20 하늘색, 사이 4 */
+.more {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--button-min-height);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+}
+
+.more:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: var(--space-4);
+}
+
+.moreIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  color: var(--color-highlight);
+}

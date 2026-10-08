@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  getChemDetail021(2. 유해성·위험성) 응답 표본 (chemId=000699 · 질산 은) — 단위 테스트용 (d7 §22).
+  2026-10-08: .env.local 에 KOSHA_MSDS_API_KEY 가 없어 실제 정상 응답을 받지 못했다. 모양은 공공데이터포털 15157612 명세
+  (swagger getChemDetail021_response: response > header{resultCode,resultMsg} · body > items > item{itemDetail, lev, msdsItemCode,
+  upMsdsItemCode, msdsItemNameKor, msdsItemNo, ordrIdx})를 따랐고, 글자는 안전보건공단 MSDS 상세 화면(chem_id=000699)에서 옮겼다.
+  명세에 없는 추정: 한 칸 안의 여러 줄을 "|" 로 구분, 그림문자 칸의 값 = "GHS03|GHS09" 같은 코드 (공단 화면은 ghs/GHS0N.gif 로 그린다).
+  키·개인정보 없음.
+-->
+<response>
+  <header>
+    <resultCode>00</resultCode>
+    <resultMsg>NORMAL SERVICE.</resultMsg>
+  </header>
+  <body>
+    <items>
+      <item>
+        <itemDetail>산화성 고체 : 구분2|급성 수생환경 유해성 : 구분1|만성 수생환경 유해성 : 구분1</itemDetail>
+        <lev>1</lev>
+        <msdsItemCode>11</msdsItemCode>
+        <upMsdsItemCode>10</upMsdsItemCode>
+        <msdsItemNameKor>가. 유해성·위험성 분류</msdsItemNameKor>
+        <msdsItemNo>A</msdsItemNo>
+        <ordrIdx>1</ordrIdx>
+      </item>
+      <item>
+        <itemDetail/>
+        <lev>1</lev>
+        <msdsItemCode>12</msdsItemCode>
+        <upMsdsItemCode>10</upMsdsItemCode>
+        <msdsItemNameKor>나. 예방조치문구를 포함한 경고표지 항목</msdsItemNameKor>
+        <msdsItemNo>B</msdsItemNo>
+        <ordrIdx>2</ordrIdx>
+      </item>
+      <item>
+        <itemDetail>GHS03|GHS09</itemDetail>
+        <lev>2</lev>
+        <msdsItemCode>13</msdsItemCode>
+        <upMsdsItemCode>12</upMsdsItemCode>
+        <msdsItemNameKor>그림문자</msdsItemNameKor>
+        <msdsItemNo>B1</msdsItemNo>
+        <ordrIdx>3</ordrIdx>
+      </item>
+      <item>
+        <itemDetail>위험</itemDetail>
+        <lev>2</lev>
+        <msdsItemCode>14</msdsItemCode>
+        <upMsdsItemCode>12</upMsdsItemCode>
+        <msdsItemNameKor>신호어</msdsItemNameKor>
+        <msdsItemNo>B2</msdsItemNo>
+        <ordrIdx>4</ordrIdx>
+      </item>
+      <item>
+        <itemDetail>H272 : 화재를 강렬하게 함:산화제|H400 : 수생생물에 매우 유독함|H410 : 장기적인 영향에 의해 수생생물에게 매우 유독함</itemDetail>
+        <lev>2</lev>
+        <msdsItemCode>15</msdsItemCode>
+        <upMsdsItemCode>12</upMsdsItemCode>
+        <msdsItemNameKor>유해·위험문구</msdsItemNameKor>
+        <msdsItemNo>B3</msdsItemNo>
+        <ordrIdx>5</ordrIdx>
+      </item>
+      <item>
+        <itemDetail>P210 : 열,고온의 표면,스파크,화염 및 그 밖의 점화원으로부터 멀리하시오.금연|P220 : 의류 및 그 밖의 가연성 물질로부터 멀리하시오.</itemDetail>
+        <lev>3</lev>
+        <msdsItemCode>17</msdsItemCode>
+        <upMsdsItemCode>16</upMsdsItemCode>
+        <msdsItemNameKor>예방</msdsItemNameKor>
+        <msdsItemNo>B4a</msdsItemNo>
+        <ordrIdx>6</ordrIdx>
+      </item>
+      <item>
+        <itemDetail>자료없음</itemDetail>
+        <lev>1</lev>
+        <msdsItemCode>20</msdsItemCode>
+        <upMsdsItemCode>10</upMsdsItemCode>
+        <msdsItemNameKor>다. 유해성·위험성 분류기준에 포함되지 않는 기타 유해성·위험성(예. 분진폭발 위험성)</msdsItemNameKor>
+        <msdsItemNo>C</msdsItemNo>
+        <ordrIdx>7</ordrIdx>
+      </item>
+    </items>
+  </body>
+</response>
