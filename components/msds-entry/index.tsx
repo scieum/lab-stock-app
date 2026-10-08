@@ -20,10 +20,15 @@ type Props = {
    * undefined 면 예전처럼 비활성 버튼 + notice (화면 10).
    */
   missingAction?: React.ReactNode;
+  /**
+   * 화면 16 MSDS 요약 주소 (d7 §22: "MSDS 보기"는 바깥 링크 대신 화면 16 을 연다). href 가 있을 때만 쓴다.
+   * 없으면 예전처럼 href 를 새 창으로 연다 (갤러리 예시).
+   */
+  summaryHref?: string;
 };
 
 /** MSDS 진입점 (QR 타일 + MSDS 보기 버튼). 모든 역할에 보인다(R4). */
-export function MsdsEntry({ href, qr, caption, notice, variant = "tile", missingAction }: Props) {
+export function MsdsEntry({ href, qr, caption, notice, variant = "tile", missingAction, summaryHref }: Props) {
   const noticeId = useId();
   const buttonOnly = variant === "button";
   return (
@@ -33,7 +38,11 @@ export function MsdsEntry({ href, qr, caption, notice, variant = "tile", missing
       aria-label="MSDS"
     >
       {buttonOnly ? null : <MsdsQrTile caption={caption}>{qr}</MsdsQrTile>}
-      {href ? (
+      {href && summaryHref ? (
+        <ButtonPillSoft href={summaryHref} icon="external">
+          MSDS 보기
+        </ButtonPillSoft>
+      ) : href ? (
         <ButtonPillSoft href={href} external icon="external">
           MSDS 보기
         </ButtonPillSoft>

@@ -1,0 +1,18 @@
+.wrap {
+  display: flex;
+  width: 100%;
+}
+
+/* 전폭 (시안 358 × 48) */
+.button {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ↗ 아이콘 20, 하늘색 선 (시안 icon-ext) */
+.icon {
+  flex-shrink: 0;
+  width: var(--icon-md);
+  height: var(--icon-md);
+  color: var(--color-highlight);
+}

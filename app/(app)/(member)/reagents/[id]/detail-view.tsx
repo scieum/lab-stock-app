@@ -5,6 +5,7 @@ import { GuestLockedButton } from "@/components/guest-lock/locked-button";
 import { Icon } from "@/components/icons";
 import { MsdsEntry } from "@/components/msds-entry";
 import { MSDS_TEXT } from "@/lib/msds-rules";
+import { msdsSummaryPath } from "@/lib/msds-summary";
 import { QrCodeSvg } from "@/components/msds-qr-tile";
 import { ReagentDetailCard } from "@/components/reagent-detail-card";
 import { locationText, slotLabel } from "@/lib/cabinet-rules";
@@ -60,6 +61,8 @@ export async function ReagentDetailView({ data, role, openPicker = false, selfPa
   const msds = (
     <MsdsEntry
       href={reagent.msdsUrl ?? undefined}
+      // d7 §22: "MSDS 보기" = 화면 16 (둘러보기는 /demo/msds)
+      summaryHref={msdsSummaryPath(reagent.id, { demo: guest })}
       caption={reagent.msdsUrl ? "QR로 MSDS 열기" : "QR로 이 시약 정보 열기"}
       notice={MSDS_TEXT.missing}
       // d7 §20: MSDS 없는 시약 — 교사·admin 은 "MSDS 찾기", 학생·둘러보기는 "MSDS가 아직 없어요"만 (R5 · guest 숨김)

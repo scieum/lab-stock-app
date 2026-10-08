@@ -6,6 +6,7 @@ import { DataRecordRow } from "@/components/ex-data-table-cell";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { ModalCard } from "@/components/ex-modal-card";
 import { MsdsEntry } from "@/components/msds-entry";
+import { msdsSummaryPath } from "@/lib/msds-summary";
 import { RecordGroup, RecordList } from "@/components/record-group";
 import { SegmentedControl } from "@/components/segmented-control";
 import { TextInput, TextInputSelect } from "@/components/text-input";
@@ -40,6 +41,8 @@ export type UsageHistoryItem = {
   /** "5 g" */
   amountLabel: string;
   memo: string | null;
+  /** 시약 id — "MSDS 보기" = 화면 16 /msds/[id] (d7 §22) */
+  reagentId: string;
   msdsUrl: string | null;
 };
 
@@ -299,6 +302,8 @@ export function UsageHistoryScreen({ filter, groups, truncated }: Props) {
               <MsdsEntry
                 variant="button"
                 href={selected.msdsUrl ?? undefined}
+                // d7 §22: "MSDS 보기" = 화면 16, 뒤로 = 이 화면(/usage)
+                summaryHref={msdsSummaryPath(selected.reagentId, { from: "usage" })}
                 notice="MSDS 링크가 아직 등록되지 않았어요"
               />
             </ModalCard>

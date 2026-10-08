@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!-- getChemDetail041(4. 응급조치요령) 응답 표본 (chemId=000699 · 질산 은). 모양 = 15157612 명세, 글자 = 공단 MSDS 화면. 줄 구분 "|" 는 추정. 키 없음. -->
+<response>
+  <header>
+    <resultCode>00</resultCode>
+    <resultMsg>NORMAL SERVICE.</resultMsg>
+  </header>
+  <body>
+    <items>
+      <item>
+        <itemDetail>긴급 의료조치를 받으시오|물질과 접촉시 즉시 20분 이상 흐르는 물에 피부와 눈을 씻어내시오</itemDetail>
+        <lev>1</lev><msdsItemCode>41</msdsItemCode><upMsdsItemCode>40</upMsdsItemCode>
+        <msdsItemNameKor>가. 눈에 들어갔을 때</msdsItemNameKor><msdsItemNo>A</msdsItemNo><ordrIdx>1</ordrIdx>
+      </item>
+      <item>
+        <itemDetail>오염된 옷과 신발을 제거하고 오염지역을 격리하시오|오염된 옷은 건조시 화재 위험이 있음</itemDetail>
+        <lev>1</lev><msdsItemCode>42</msdsItemCode><upMsdsItemCode>40</upMsdsItemCode>
+        <msdsItemNameKor>나. 피부에 접촉했을 때</msdsItemNameKor><msdsItemNo>B</msdsItemNo><ordrIdx>2</ordrIdx>
+      </item>
+      <item>
+        <itemDetail>신선한 공기가 있는 곳으로 옮기시오|호흡하지 않는 경우 인공호흡을 실시하시오</itemDetail>
+        <lev>1</lev><msdsItemCode>43</msdsItemCode><upMsdsItemCode>40</upMsdsItemCode>
+        <msdsItemNameKor>다. 흡입했을 때</msdsItemNameKor><msdsItemNo>C</msdsItemNo><ordrIdx>3</ordrIdx>
+      </item>
+      <item>
+        <itemDetail>긴급 의료조치를 받으시오</itemDetail>
+        <lev>1</lev><msdsItemCode>44</msdsItemCode><upMsdsItemCode>40</upMsdsItemCode>
+        <msdsItemNameKor>라. 먹었을 때</msdsItemNameKor><msdsItemNo>D</msdsItemNo><ordrIdx>4</ordrIdx>
+      </item>
+    </items>
+  </body>
+</response>

@@ -1,0 +1,69 @@
+/* 16-loading: 회색 면(surface-muted)만, 사이 24 — msds-summary 와 같은 배치 */
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.pill,
+.pictogram,
+.title,
+.line {
+  display: block;
+  background: var(--color-surface-muted);
+}
+
+.pill {
+  width: calc(var(--space-64) + var(--space-24));
+  height: var(--space-24);
+  border-radius: var(--radius-pill);
+}
+
+.pictograms {
+  display: flex;
+  gap: var(--space-16);
+}
+
+.pictogram {
+  width: calc(var(--space-64) + var(--space-16));
+  height: calc(var(--space-64) + var(--space-16));
+  border-radius: var(--radius-md);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-24);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.title {
+  width: 50%;
+  height: var(--space-24);
+  border-radius: var(--radius-pill);
+}
+
+.line {
+  width: 100%;
+  height: var(--space-16);
+  border-radius: var(--radius-pill);
+}
+
+.short {
+  width: 70%;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}

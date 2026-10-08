@@ -173,7 +173,7 @@ function positive(v: number | null | undefined): v is number {
  * 화면 6 알림 카드 기준 문구 (d7 §11 · §11-1):
  *   source = 'auto' → "최근 4주 사용량 기준" / "마지막 입고량의 20%" / "아직 없어요" (autoBasisText)
  *   그 밖(source 없음 포함) → 1조 사용량·조 수가 둘 다 있으면 "1반 1회 실험량 10 g × 6조 기준",
- *   하나라도 없으면 "재주문 기준 60 g".
+ *   하나라도 없으면(직접 입력) "직접 입력" (2026-10-08 d7 §11, 전에는 "재주문 기준 60 g").
  */
 export function reorderBasisText(r: {
   minStock: number;
@@ -187,7 +187,8 @@ export function reorderBasisText(r: {
   if (positive(r.perGroup) && positive(r.groups)) {
     return `1반 1회 실험량 ${formatStock(r.perGroup, r.unit)} × ${r.groups}조 기준`;
   }
-  return `재주문 기준 ${formatStock(r.minStock, r.unit)}`;
+  // 2026-10-08 (d7 §11): 수량 줄이 이미 "재주문 기준 N" 이라 직접 입력 기준은 "직접 입력"(화면 3 과 같은 말)
+  return MANUAL_SOURCE_TEXT;
 }
 
 /**

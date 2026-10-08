@@ -25,11 +25,18 @@ function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
 }
 
+/** 화면 16 /msds/[id] — nav 제목("MSDS · 시약명")을 페이지가 알기 때문에 nav-pill 은 페이지가 AppNav 로 그린다 */
+function isMsdsPath(pathname: string) {
+  return /^\/msds\/[^/]+\/?$/.test(pathname);
+}
+
 function activeTab(pathname: string): TabKey | undefined {
   if (pathname === "/") return "home";
   // s2-spec 화면 8: 모바일 활성 탭 = "홈" (홈 quick-action "사용자 관리"로 들어온다)
   if (isActive(pathname, "/users")) return "home";
   if (isActive(pathname, "/reagents")) return "reagents";
+  // 화면 16 MSDS 요약: 시약 섹션 (시안 16-mobile 활성 탭 = "시약")
+  if (isMsdsPath(pathname)) return "reagents";
   // s2-spec 화면 7: 모바일 활성 탭 = "시약"
   if (isActive(pathname, "/intake")) return "reagents";
   // s2-spec 화면 11 (run 20261004-2256): 모바일 활성 탭 = "시약" (11 · 11-empty · 11-delete 모두)
@@ -118,28 +125,49 @@ async function logout() {
   await new Promise<never>(() => {});
 }
 
-export function AppShell({ schoolName, staff = false, admin = false, children }: Props) {
+type AppNavProps = {
+  schoolName: string;
+  staff?: boolean;
+  admin?: boolean;
+  /**
+   * 페이지가 직접 그리는 하위 화면 nav (화면 16): 모바일 = 뒤로가기 + 제목, 데스크톱 = 워드마크 + 주 메뉴("시약 목록" 현재 섹션).
+   * 없으면 경로로 정한다 (AppShell).
+   */
+  page?: { title: string; backHref: string; activeHref: string };
+};
+
+/** 로그인 후 nav-pill (학교명 + ▾ 로그아웃 메뉴, 데스크톱 주 메뉴) */
+export function AppNav({ schoolName, staff = false, admin = false, page }: AppNavProps) {
   const pathname = usePathname();
-  const sub = subPage(pathname, staff);
+  const sub: SubPage | undefined = page
+    ? { title: page.title, backHref: page.backHref, mainNav: true }
+    : subPage(pathname, staff);
   const links: NavLinkItem[] | undefined = sub && !sub.mainNav
     ? sub.links
     : LINKS.filter((l) => (staff || !l.staffOnly) && (admin || !l.adminOnly)).map((l) => ({
         label: l.label,
         href: l.href,
-        active: isActive(pathname, l.href),
+        active: page ? l.href === page.activeHref : isActive(pathname, l.href),
       }));
+  return (
+    <NavPill
+      schoolName={schoolName}
+      links={links}
+      title={sub?.title}
+      backHref={sub?.backHref}
+      desktopWordmark={sub?.mainNav}
+      sectionTitle={sub ? undefined : sectionTitle(pathname)}
+      onLogout={logout}
+    />
+  );
+}
+
+export function AppShell({ schoolName, staff = false, admin = false, children }: Props) {
+  const pathname = usePathname();
   return (
     <div className={styles.shell}>
       <div className={styles.content}>
-        <NavPill
-          schoolName={schoolName}
-          links={links}
-          title={sub?.title}
-          backHref={sub?.backHref}
-          desktopWordmark={sub?.mainNav}
-          sectionTitle={sub ? undefined : sectionTitle(pathname)}
-          onLogout={logout}
-        />
+        {isMsdsPath(pathname) ? null : <AppNav schoolName={schoolName} staff={staff} admin={admin} />}
         <main className={styles.main}>{children}</main>
       </div>
       <TabBar active={activeTab(pathname)} />

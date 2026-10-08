@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!-- getChemDetail081(8. 노출방지 및 개인보호구) 응답 표본 (chemId=000699 · 질산 은). 모양 = 15157612 명세, 글자 = 공단 MSDS 화면. 3단계(lev) 항목, CDATA 포함. 키 없음. -->
+<response>
+  <header>
+    <resultCode>00</resultCode>
+    <resultMsg>NORMAL SERVICE.</resultMsg>
+  </header>
+  <body>
+    <items>
+      <item>
+        <itemDetail/>
+        <lev>1</lev><msdsItemCode>81</msdsItemCode><upMsdsItemCode>80</upMsdsItemCode>
+        <msdsItemNameKor>가. 화학물질의 노출기준, 생물학적 노출기준 등</msdsItemNameKor><msdsItemNo>A</msdsItemNo><ordrIdx>1</ordrIdx>
+      </item>
+      <item>
+        <itemDetail>TWA : 0.01mg/m3은(가용성 화합물)</itemDetail>
+        <lev>2</lev><msdsItemCode>82</msdsItemCode><upMsdsItemCode>81</upMsdsItemCode>
+        <msdsItemNameKor>국내규정</msdsItemNameKor><msdsItemNo>A1</msdsItemNo><ordrIdx>2</ordrIdx>
+      </item>
+      <item>
+        <itemDetail>자료없음</itemDetail>
+        <lev>1</lev><msdsItemCode>85</msdsItemCode><upMsdsItemCode>80</upMsdsItemCode>
+        <msdsItemNameKor>나. 적절한 공학적 관리</msdsItemNameKor><msdsItemNo>B</msdsItemNo><ordrIdx>3</ordrIdx>
+      </item>
+      <item>
+        <itemDetail><![CDATA[노출되는 물질의 물리화학적 특성에 맞는 한국산업안전보건공단의 인증을 필한 호흡용 보호구를 착용하시오]]></itemDetail>
+        <lev>2</lev><msdsItemCode>87</msdsItemCode><upMsdsItemCode>86</upMsdsItemCode>
+        <msdsItemNameKor>호흡기 보호</msdsItemNameKor><msdsItemNo>C1</msdsItemNo><ordrIdx>4</ordrIdx>
+      </item>
+      <item>
+        <itemDetail>화학물질의 물리적 및 화학적 특성을 고려하여 적절한 재질의 보호장갑을 착용하시오.</itemDetail>
+        <lev>2</lev><msdsItemCode>89</msdsItemCode><upMsdsItemCode>86</upMsdsItemCode>
+        <msdsItemNameKor>손 보호</msdsItemNameKor><msdsItemNo>C3</msdsItemNo><ordrIdx>5</ordrIdx>
+      </item>
+      <item>
+        <itemDetail>화학물질의 물리적 및 화학적 특성을 고려하여 적절한 재질의 보호의복을 착용하시오.</itemDetail>
+        <lev>2</lev><msdsItemCode>90</msdsItemCode><upMsdsItemCode>86</upMsdsItemCode>
+        <msdsItemNameKor>신체 보호</msdsItemNameKor><msdsItemNo>C4</msdsItemNo><ordrIdx>6</ordrIdx>
+      </item>
+    </items>
+  </body>
+</response>
