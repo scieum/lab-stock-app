@@ -1,0 +1,16 @@
+{
+    "passed":  [
+                   "D2",
+                   "D3",
+                   "G",
+                   "D4"
+               ],
+    "retries":  0,
+    "screens_passed":  [
+                           2,
+                           3,
+                           7
+                       ],
+    "stage":  "done",
+    "baseline_hash":  "e939a2c0c5d663fd7db930c6da2e14f9941a3b87b5a7efbd5a9eb3e5a0455cdb"
+}
