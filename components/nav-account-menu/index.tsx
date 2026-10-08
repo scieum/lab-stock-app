@@ -12,6 +12,14 @@ type Props = {
    * 없으면 메뉴만 열리고 닫힌다 (갤러리 정적 예시).
    */
   onLogout?: () => void | Promise<void>;
+  /**
+   * "nav"(기본) = nav-pill 학교명 옆 ▾, 메뉴는 아래로.
+   * "sidebar" = 데스크톱 app-sidebar 맨 아래 계정 줄(시안 1.22 sidebar-account: 글자 13 + 오른쪽 끝 ▾ 20) — 줄 전체가 버튼, 메뉴는 위로.
+   * 메뉴 내용·동작(로그아웃 1개, d7 §10)은 같다.
+   */
+  variant?: "nav" | "sidebar";
+  /** 버튼 글자 (sidebar: "김OO · 교사"). 없으면 schoolName */
+  label?: string;
 };
 
 /**
@@ -22,7 +30,8 @@ type Props = {
  * 닫힌 상태 프레임에도 1개 있다(늘 DOM 에 있는 요소). 누름 버튼(학교명 + ▾, aria-haspopup=menu)과 열린 메뉴(role=menu)는
  * 그 바깥 — 버튼의 가장 가까운 data-component 는 nav-pill 그대로다.
  */
-export function NavAccountMenu({ schoolName, onLogout }: Props) {
+export function NavAccountMenu({ schoolName, onLogout, variant = "nav", label }: Props) {
+  const sidebar = variant === "sidebar";
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -97,24 +106,24 @@ export function NavAccountMenu({ schoolName, onLogout }: Props) {
   };
 
   return (
-    <span ref={wrapRef} className={styles.schoolMenu} onKeyDown={onKeyDown}>
+    <span ref={wrapRef} className={sidebar ? styles.accountMenu : styles.schoolMenu} onKeyDown={onKeyDown}>
       <button
         ref={buttonRef}
         id={buttonId}
         type="button"
-        className={styles.schoolButton}
+        className={sidebar ? styles.accountButton : styles.schoolButton}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
         onClick={() => setOpen((v) => !v)}
       >
-        <span className={styles.schoolText}>{schoolName}</span>
-        <span data-component="nav-account-menu" className={styles.caret} aria-hidden="true">
+        <span className={styles.schoolText}>{label ?? schoolName}</span>
+        <span data-component="nav-account-menu" className={sidebar ? styles.accountCaret : styles.caret} aria-hidden="true">
           <Icon name="caret-down" className={styles.caretIcon} />
         </span>
       </button>
       {open ? (
-        <div id={menuId} role="menu" aria-labelledby={buttonId} className={styles.menu}>
+        <div id={menuId} role="menu" aria-labelledby={buttonId} className={sidebar ? styles.menuUp : styles.menu}>
           <button
             ref={itemRef}
             type="button"

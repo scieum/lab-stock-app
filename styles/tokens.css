@@ -1,6 +1,6 @@
 /* 자동 생성 파일 — 직접 고치지 않는다. */
 /* 원본: design/rules.json · 생성: node scripts/gen-tokens.mjs */
-/* rules.json version 1.21 */
+/* rules.json version 1.22 */
 
 :root {
   /* color (rules.json colors.allowed) */
@@ -99,4 +99,10 @@
   --status-bar-height: 8px;
   --qr-size: 126px;
   --side-column-width: 400px;
+
+  /* desktop shell (rules.json desktop_shell) */
+  --sidebar-width: 240px;
+  --radius-sidebar: 0;
+  --drawer-width: 480px;
+  --form-width: 640px;
 }

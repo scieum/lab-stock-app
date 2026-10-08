@@ -52,6 +52,9 @@ import { sampleMsdsSummary, sampleMsdsSummaryWarning } from "./msds/summary-samp
 import { MsdsSearch } from "@/components/msds-search";
 import { MsdsQrTile } from "@/components/msds-qr-tile";
 import { NavAccountMenu } from "@/components/nav-account-menu";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarItem } from "@/components/sidebar-item";
+import { sidebarAccountLabel, sidebarMenu } from "@/lib/sidebar-menu";
 import { NavPill } from "@/components/nav-pill";
 import { QrLabel } from "@/components/qr-label";
 import { QrPrint } from "@/components/qr-print";
@@ -803,6 +806,19 @@ export default function GalleryPage() {
           <div className={styles.row}>
             <NavAccountMenu schoolName={SAMPLE_SCHOOL} />
           </div>
+        </Item>
+
+        <Item name="app-sidebar · sidebar-item (데스크톱 로그인 후 셸 — 역할별 메뉴, 계정 ▾ 로그아웃)">
+          <AppSidebar
+            schoolName={SAMPLE_SCHOOL}
+            groups={sidebarMenu("teacher")}
+            active="reagents"
+            account={sidebarAccountLabel("김OO", "teacher")}
+          />
+          <SidebarItem label="QR 찾기" icon="qr" />
+          <Link href="/gallery/sidebar" className={styles.more}>
+            역할별 사이드바 보기 — 학생 · 교사 · admin (/gallery/sidebar)
+          </Link>
         </Item>
 
         <Item name="tab-bar · tab-item">

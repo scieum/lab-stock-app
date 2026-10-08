@@ -28,3 +28,44 @@
     padding: var(--space-24) var(--space-64) var(--space-32);
   }
 }
+
+/*
+ * 로그인 후 데스크톱 셸 (d7 §23, rules.json 1.22 desktop_shell): 왼쪽 app-sidebar 240 + 오른쪽 본문.
+ * 모바일: 사이드바 숨김(하이드레이션 뒤에는 DOM 에서도 빠진다), nav-pill 그대로.
+ * 데스크톱: 사이드바는 화면 높이로 고정(sticky, 길면 사이드바 안에서 스크롤), nav-pill 숨김.
+ * (둘러보기 셸은 .shell · .content 만 써서 이 규칙과 무관 — run d)
+ */
+.sidebar {
+  display: none;
+}
+
+.mobileOnly {
+  display: contents;
+}
+
+@media (min-width: 1024px) {
+  .withSidebar {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .withSidebar .sidebar {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-shrink: 0;
+    height: 100dvh;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* 본문 = 사이드바 오른쪽 남은 폭 (가로 스크롤 없이 줄어든다) */
+  .beside {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mobileOnly {
+    display: none;
+  }
+}

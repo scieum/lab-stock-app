@@ -1,0 +1,106 @@
+/* sidebar-item (시안 1.22): 215 × 44, padding 0/12, gap 12, radius 0. icon 20 회색, label 15/400 검정 */
+.item,
+.itemActive,
+.itemDisabled {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  width: 100%;
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-12);
+  border: 0;
+  border-radius: var(--radius-sidebar);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  text-align: left;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.icon {
+  flex-shrink: 0;
+  width: var(--icon-md);
+  height: var(--icon-md);
+  color: var(--color-text-muted);
+}
+
+.label {
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 활성: 하늘색 옅은 바탕 + 하늘색 아이콘 (글자색은 그대로 — 하늘색 글자 금지) */
+.itemActive {
+  background: var(--color-highlight-soft);
+}
+
+.itemActive .icon {
+  color: var(--color-highlight);
+}
+
+a.item:hover {
+  background: var(--color-surface-input);
+}
+
+/* 누른 즉시 반응 — 누르는 동안·이동 중(서버 응답 대기)인 항목은 활성 모양, 그동안 원래 활성 항목은 비활성 모양.
+ * aria-current 는 실제 경로가 바뀔 때만 옮겨 간다 */
+a.item:active,
+a.item:has([data-pending]) {
+  background: var(--color-highlight-soft);
+}
+
+a.item:active .icon,
+a.item:has([data-pending]) .icon {
+  color: var(--color-highlight);
+}
+
+[data-component="app-sidebar"]:has(a.item [data-pending]) .itemActive {
+  background: transparent;
+}
+
+[data-component="app-sidebar"]:has(a.item [data-pending]) .itemActive .icon {
+  color: var(--color-text-muted);
+}
+
+.item:focus-visible,
+.itemActive:focus-visible,
+.itemDisabled:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: calc(var(--space-4) * -1);
+}
+
+/* 비활성(아직 없는 화면): 회색 글자, 누름 없음, 올리거나 포커스하면 "준비 중" 툴팁 */
+.itemDisabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.tooltip {
+  position: absolute;
+  top: 50%;
+  right: var(--space-12);
+  z-index: 20;
+  padding: var(--space-4) var(--space-8);
+  border-radius: var(--radius-md);
+  background: var(--color-toast);
+  color: var(--color-on-primary);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+  transform: translateY(-50%);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.itemDisabled:hover .tooltip,
+.itemDisabled:focus-visible .tooltip {
+  visibility: visible;
+}

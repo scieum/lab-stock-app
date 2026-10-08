@@ -130,3 +130,68 @@
   line-height: var(--line-height-normal);
   white-space: nowrap;
 }
+
+/* sidebar 계정 줄 (시안 1.22 sidebar-account 215 × 44, padding 12): 글자 13/400 검정 + 오른쪽 끝 ▾ 20(회색). 메뉴는 위로 */
+.accountMenu {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+
+.accountButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  width: 100%;
+  min-width: 0;
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-12);
+  border: 0;
+  border-radius: var(--radius-sidebar);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.accountButton:hover {
+  background: var(--color-surface-input);
+}
+
+.accountButton:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: calc(var(--space-4) * -1);
+}
+
+.accountButton:active {
+  opacity: var(--pressed-opacity);
+}
+
+.accountCaret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--icon-md);
+  height: var(--icon-md);
+  color: var(--color-text-muted);
+}
+
+.accountButton[aria-expanded="true"] .accountCaret {
+  transform: rotate(180deg);
+}
+
+.menuUp {
+  composes: menu;
+  top: auto;
+  right: 0;
+  bottom: calc(100% + var(--space-8));
+  left: 0;
+}

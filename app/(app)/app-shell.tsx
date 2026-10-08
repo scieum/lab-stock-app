@@ -1,8 +1,11 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { AppSidebar } from "@/components/app-sidebar";
 import { NavPill, type NavLinkItem } from "@/components/nav-pill";
 import { TabBar, type TabKey } from "@/components/tab-bar";
+import { sidebarAccountLabel, sidebarActiveKey, sidebarMenu, type SidebarRole } from "@/lib/sidebar-menu";
+import { useIsDesktop } from "@/lib/use-viewport";
 import styles from "./shell.module.css";
 
 // 시안 13-desktop nav-links 순서
@@ -104,10 +107,10 @@ function sectionTitle(pathname: string): string | undefined {
 
 type Props = {
   schoolName: string;
-  /** 교사·admin 여부 — false 면 staffOnly 링크를 그리지 않는다 */
-  staff?: boolean;
-  /** admin 여부 — false 면 adminOnly 링크를 그리지 않는다 */
-  admin?: boolean;
+  /** 역할 — 모바일 nav-pill 링크(staff·admin)와 데스크톱 app-sidebar 메뉴(desktop_shell.menu)를 정한다 */
+  role: SidebarRole;
+  /** 사이드바 계정 줄 "이름 · 역할" */
+  displayName: string;
   children: React.ReactNode;
 };
 
@@ -136,8 +139,22 @@ type AppNavProps = {
   page?: { title: string; backHref: string; activeHref: string };
 };
 
-/** 로그인 후 nav-pill (학교명 + ▾ 로그아웃 메뉴, 데스크톱 주 메뉴) */
-export function AppNav({ schoolName, staff = false, admin = false, page }: AppNavProps) {
+/**
+ * 로그인 후 nav-pill (학교명 + ▾ 로그아웃 메뉴) — 모바일 폭에서만.
+ * 데스크톱(≥ 1024)은 nav-pill 없이 셸의 app-sidebar 가 맡는다 (rules.json 1.22 desktop_shell.forbidden_on_desktop, d7 §23).
+ * 서버 렌더·하이드레이션 첫 그림(폭 모름)에는 그려 두고 CSS 로 데스크톱에서 숨긴 뒤, 하이드레이션 뒤 데스크톱이면 DOM 에서 뺀다.
+ */
+export function AppNav(props: AppNavProps) {
+  const desktop = useIsDesktop();
+  if (desktop) return null;
+  return (
+    <div className={styles.mobileOnly}>
+      <MobileNav {...props} />
+    </div>
+  );
+}
+
+function MobileNav({ schoolName, staff = false, admin = false, page }: AppNavProps) {
   const pathname = usePathname();
   const sub: SubPage | undefined = page
     ? { title: page.title, backHref: page.backHref, mainNav: true }
@@ -162,11 +179,30 @@ export function AppNav({ schoolName, staff = false, admin = false, page }: AppNa
   );
 }
 
-export function AppShell({ schoolName, staff = false, admin = false, children }: Props) {
+/**
+ * 로그인 후 셸.
+ * - 모바일(< 1024): 맨 위 nav-pill + 본문 + 하단 tab-bar (그대로).
+ * - 데스크톱(≥ 1024): 왼쪽 app-sidebar(240, 화면 높이 고정) + 오른쪽 본문. nav-pill·tab-bar 없음 (d7 §23 셸 run a).
+ *   화면 16 은 nav-pill 을 페이지가 AppNav 로 그리지만(제목을 페이지가 안다) 사이드바는 셸이 그대로 그린다.
+ */
+export function AppShell({ schoolName, role, displayName, children }: Props) {
   const pathname = usePathname();
+  const desktop = useIsDesktop();
+  const staff = role !== "student";
+  const admin = role === "admin";
   return (
-    <div className={styles.shell}>
-      <div className={styles.content}>
+    <div className={[styles.shell, styles.withSidebar].join(" ")}>
+      {desktop === false ? null : (
+        <AppSidebar
+          className={styles.sidebar}
+          schoolName={schoolName}
+          groups={sidebarMenu(role)}
+          active={sidebarActiveKey(pathname)}
+          account={sidebarAccountLabel(displayName, role)}
+          onLogout={logout}
+        />
+      )}
+      <div className={[styles.content, styles.beside].join(" ")}>
         {isMsdsPath(pathname) ? null : <AppNav schoolName={schoolName} staff={staff} admin={admin} />}
         <main className={styles.main}>{children}</main>
       </div>
