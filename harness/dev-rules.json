@@ -1,5 +1,5 @@
 {
-  "version": "1.12",
+  "version": "1.13",
   "supabase_project": "kammofjdizvtvmbadmma",
   "github": "https://github.com/scieum/lab-stock-app",
   "vercel": "https://vercel.com/hayeonkeems-projects/lab-stock-app-o97y",
@@ -539,7 +539,7 @@
     ]
   },
   "desktop_shell_done": true,
-  "desktop_migrated_screens": [2, 3, 4, 8, 9, 10, 16],
+  "desktop_migrated_screens": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 16],
   "desktop_migrated_note": "데스크톱 재구성(design/rules.json 1.22 desktop_shell, d7 §23)이 끝난 화면 번호. C3 검사와 새 프레임(디자인 run 20261008-0936·1233·1610·1936) 대조는 여기 든 화면만 — 나머지 화면은 tests/fixtures/frames-pre-desktop/ 의 예전 프레임으로 본다. run 마다 늘려 마지막에 전부(1~16). 2026-10-08",
   "test_rules": [
     "N1-db",
