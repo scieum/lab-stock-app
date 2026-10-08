@@ -21,17 +21,27 @@ export type MsdsCandidate = {
   msdsUrl: string;
 };
 
+/** searchedAs 의 출처 — "ai" = AI 가 추정한 이름·CAS 로 KOSHA 를 다시 찾아 나온 결과 (d7 §20 AI 보조) */
+export type MsdsSearchedVia = "ai";
+
 /**
  * GET /api/msds/search 응답. searchedAs = 실제로 결과가 나온 검색어(d7 §20 검색 보강): 이름 차례 = 그 이름,
  * CAS 차례 = 첫 후보 물질명 + "(CAS 번호)"(예: "염화수소(CAS 7647-01-0)"). 0개면 원래 검색어.
+ * searchedVia = "ai" 는 AI 보조 (5) 차례에서 나온 결과일 때만 있다 (없으면 기존 차례).
  */
-export type MsdsSearchResponse = { candidates: MsdsCandidate[]; searchedAs: string };
+export type MsdsSearchResponse = { candidates: MsdsCandidate[]; searchedAs: string; searchedVia?: MsdsSearchedVia };
 
 /** 응답 본문의 searchedAs (문자열이 아니면 null) */
 export function readSearchedAs(body: unknown): string | null {
   if (typeof body !== "object" || body === null) return null;
   const v = (body as { searchedAs?: unknown }).searchedAs;
   return typeof v === "string" && v.trim() !== "" && v.length <= 160 ? v.trim() : null;
+}
+
+/** 응답 본문의 searchedVia ("ai" 만, 그 밖은 null) */
+export function readSearchedVia(body: unknown): MsdsSearchedVia | null {
+  if (typeof body !== "object" || body === null) return null;
+  return (body as { searchedVia?: unknown }).searchedVia === "ai" ? "ai" : null;
 }
 
 export type MsdsSearchErrorCode =
@@ -82,6 +92,20 @@ export function bulkDoneText(count: number): string {
 /** CAS 번호 꼴 (d7 §20 "숫자-숫자-숫자") — 이 꼴이면 CAS 로 검색한다 */
 export function isCasQuery(q: string): boolean {
   return /^\d+-\d+-\d+$/.test(q.trim());
+}
+
+/**
+ * CAS 번호 검사 숫자가 맞는가 (2~7 - 2 - 1 꼴 + 끝 숫자 = 앞 숫자들을 오른쪽부터 1·2·3… 곱해 더한 값 mod 10).
+ * AI 가 낸 CAS 를 KOSHA 에 넘기기 전에 거른다.
+ */
+export function isCasChecksumValid(cas: string | null | undefined): cas is string {
+  if (typeof cas !== "string") return false;
+  const m = /^(\d{2,7})-(\d{2})-(\d)$/.exec(cas.trim());
+  if (!m) return false;
+  const digits = `${m[1]}${m[2]}`;
+  let sum = 0;
+  for (let i = 0; i < digits.length; i++) sum += Number(digits[digits.length - 1 - i]) * (i + 1);
+  return sum % 10 === Number(m[3]);
 }
 
 /** 저장할 수 있는 CAS 번호 (set_reagent_msds 와 같은 규칙: 2~7 - 2 - 1) */
