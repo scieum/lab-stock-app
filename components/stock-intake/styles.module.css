@@ -1,6 +1,7 @@
 /* 화면 7 stock-intake
  * 모바일(7-mobile): 세로 한 줄, 사이 12. bottom-actions(12 + 48 + 16)는 tab-bar 바로 위에 고정
- * 데스크톱(7-desktop): search-column + intake-column 2열, 사이 32. intake-column 안 사이 16, 버튼 폭 240
+ * 데스크톱(d7 §23 run c): 가운데 열 640 안 세로 한 줄(사이 16). bottom-actions 는 본문 아래 고정 bottom-bar(components/page-frame),
+ *   버튼 폭 240
  */
 
 .root {
@@ -187,18 +188,12 @@
 
 @media (min-width: 1024px) {
   .root {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: var(--space-32);
+    gap: var(--space-16);
   }
 
+  /* 고정 bottom-bar(80) 만큼 비운다 */
   .sticky {
-    padding-bottom: var(--space-0);
-  }
-
-  .searchColumn,
-  .intakeColumn {
-    flex: 1;
+    padding-bottom: calc(var(--space-64) + var(--space-16));
   }
 
   .intakeColumn {
@@ -207,12 +202,6 @@
 
   .quantityInput {
     width: calc(var(--space-24) * 5);
-  }
-
-  .sticky .actions {
-    position: static;
-    padding: var(--space-0);
-    border-top: 0;
   }
 
   .primary {

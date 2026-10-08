@@ -1,0 +1,78 @@
+/* 화면 13 홈 데스크톱 (시안 13-desktop · 13-guest-desktop, d7 §23 run c)
+ * page-head → todo-section(제목 18/700 + tile-row 3칸 사이 16, 사이 12) → widget-grid(752 : 368, 사이 16), 블록 사이 24
+ * recent-usage-widget: 흰 카드 hairline, radius 24, 안쪽 24, 사이 16 (오른쪽 열 높이에 맞춰 늘어난다)
+ */
+
+.desk {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  min-width: 0;
+}
+
+.todo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+.sectionTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}
+
+/* 타일 3칸 (학생·둘러보기는 1칸 — 같은 폭) */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-16);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 47fr) minmax(0, 23fr);
+  align-items: stretch;
+  gap: var(--space-16);
+}
+
+.widget {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+  padding: var(--space-24);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-sizing: border-box;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-12);
+  padding: var(--space-24);
+}
+
+.emptyText {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.action {
+  display: flex;
+}

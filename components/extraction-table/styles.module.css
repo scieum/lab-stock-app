@@ -375,7 +375,8 @@
   }
 
   .table {
-    --extraction-columns: minmax(0, 200fr) minmax(0, 200fr) minmax(0, 120fr) minmax(0, 246fr);
+    /* 시안 5-desktop (page-column 640): 시약명 150 · 1조 사용량 150 · 단위 100 · 1반 1회 필요량 126 */
+    --extraction-columns: minmax(0, 150fr) minmax(0, 150fr) minmax(0, 100fr) minmax(0, 126fr);
   }
 
   .group {
@@ -416,7 +417,7 @@
     padding-bottom: var(--space-8);
   }
 
-  /* link-row: 선택 360 · 삭제 · 기존 기준 안내(오른쪽), 사이 16 */
+  /* link-row: 선택 240 · 삭제 · 기존 기준 안내(오른쪽), 사이 16 (시안 5-desktop) */
   .group > tr > .detail {
     flex-direction: row;
     align-items: center;
@@ -430,7 +431,7 @@
   }
 
   .linkSelect {
-    flex: 0 0 calc(var(--side-column-width) - var(--space-32) - var(--space-8));
+    flex: 0 0 calc(var(--space-48) * 5);
   }
 
   .notes {

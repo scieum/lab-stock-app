@@ -1,7 +1,7 @@
 /* 화면 6 재주문 알림
  * 모바일(6-mobile 1.17): manual-upload → 알림 목록 → (admin) vendor-register, 사이 12. 제목은 nav-pill 안(nav-title).
  *                   판매처 연결 카드(ex-modal-card)는 tab-bar 위쪽 선에 붙는 하단 시트 (컴포넌트가 고정 배치)
- * 데스크톱(6-desktop 1.17): screen-title → page-column(가운데 880: 안내 → 알림 → 등록, 사이 12).
+ * 데스크톱(6-desktop, d7 §23 run c): page-head("재주문 알림" + "N건") → page-column(가운데 640: 안내 → 알림 → 등록, 사이 12).
  *                     판매처 연결 카드는 화면 오른쪽 아래(오른쪽 64 · 아래 32, 폭 480)
  */
 
@@ -12,21 +12,6 @@
   min-width: 0;
   /* 판매처 연결 카드가 열려 있으면 그 높이만큼 비워 마지막 카드까지 그 위로 올릴 수 있다 (값은 화면이 잰다) */
   padding-bottom: var(--reorder-sheet-space, var(--space-0));
-}
-
-/* 모바일에서는 nav-pill 의 제목이 대신한다 (화면에는 안 보이고 읽기 도구에는 남긴다) */
-.title {
-  position: absolute;
-  width: var(--border-width);
-  height: var(--border-width);
-  margin: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  color: var(--color-text);
-  font-size: var(--font-size-28);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-normal);
-  white-space: nowrap;
 }
 
 .layout {
@@ -49,27 +34,6 @@
 @media (min-width: 1024px) {
   .page {
     gap: var(--space-24);
-  }
-
-  .title {
-    position: static;
-    width: auto;
-    height: auto;
-    overflow: visible;
-    clip-path: none;
-  }
-
-  /* 시안 1.17 page-column: 가운데 한 열 880 (안내 → 알림 → 등록, 사이 12) */
-  .layout {
-    width: 100%;
-    max-width: calc(var(--side-column-width) * 2 + var(--space-64) + var(--space-16));
-    margin: 0 auto;
-  }
-
-  .title {
-    width: 100%;
-    max-width: calc(var(--side-column-width) * 2 + var(--space-64) + var(--space-16));
-    margin: 0 auto;
   }
 
   /* 시안 6-desktop ex-modal-card: 화면 오른쪽 아래, 폭 480 */

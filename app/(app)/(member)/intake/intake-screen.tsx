@@ -10,10 +10,12 @@ import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { Toast } from "@/components/ex-toast";
 import { IntakeMode, type IntakeMode as IntakeModeValue } from "@/components/intake-mode";
 import { LocationSuggest } from "@/components/location-suggest";
+import { BottomBar, PageColumn, PageHead } from "@/components/page-frame";
 import { createManualUploadFile, releaseManualUploadFile, type ManualUploadFile } from "@/components/manual-upload/file";
 import { ReagentRegister, type ReagentRegisterValues } from "@/components/reagent-register";
 import { SegmentedControl } from "@/components/segmented-control";
 import { StockIntake, type IntakeReagent, type StockIntakeValues } from "@/components/stock-intake";
+import { DesktopOnly } from "@/components/viewport-only";
 import {
   DOC_TEXT,
   buildDocRows,
@@ -320,120 +322,142 @@ export function IntakeScreen({ reagents, today, initialMode = "doc", initialTab,
     });
   };
 
+  const head = <PageHead title="입고" mobileTitle="입고·시약 등록" />;
+
   if (suggest) {
     return (
       <div className={styles.page}>
-        <h1 className={styles.title}>입고·시약 등록</h1>
+        {head}
         {toast ? <Toast>{toast}</Toast> : null}
-        <LocationSuggest
-          items={suggest.items.map((i) => ({
-            id: i.id,
-            name: i.name,
-            storageClass: i.storageClass,
-            suggestion: i.suggestion ? { cabinetNumber: i.suggestion.cabinetNumber, text: i.suggestion.text } : null,
-            placed: i.placed,
-          }))}
-          otherHref={(id) => `/reagents/${id}?pick=location`}
-          onPlace={(id) => place([id], false)}
-          onPlaceAll={() => place(suggest.items.map((i) => i.id), true)}
-          onLater={() => router.push(AFTER_SAVE)}
-          pendingId={placing && !placing.all ? placing.id : null}
-          pendingAll={Boolean(placing?.all) || leaving}
-          error={placeError}
-        />
+        <PageColumn barSpace>
+          <LocationSuggest
+            items={suggest.items.map((i) => ({
+              id: i.id,
+              name: i.name,
+              storageClass: i.storageClass,
+              suggestion: i.suggestion ? { cabinetNumber: i.suggestion.cabinetNumber, text: i.suggestion.text } : null,
+              placed: i.placed,
+            }))}
+            otherHref={(id) => `/reagents/${id}?pick=location`}
+            onPlace={(id) => place([id], false)}
+            onPlaceAll={() => place(suggest.items.map((i) => i.id), true)}
+            onLater={() => router.push(AFTER_SAVE)}
+            pendingId={placing && !placing.all ? placing.id : null}
+            pendingAll={Boolean(placing?.all) || leaving}
+            error={placeError}
+            bar
+          />
+        </PageColumn>
       </div>
     );
   }
 
+  const reviewing = mode === "doc" && docStep === "review";
+
   return (
     <div className={styles.page} data-mode={mode}>
-      <h1 className={styles.title}>입고·시약 등록</h1>
-      <IntakeMode className={styles.mode} value={mode} onChange={changeMode} disabled={busy || docStep === "processing"} />
-      {mode === "doc" ? (
-        <div className={[styles.docColumn, docStep === "review" ? styles.reviewing : ""].filter(Boolean).join(" ")}>
-          {docStep === "review" ? (
-            <>
-              <DocIntakeTable
-                rows={docRows}
-                reagents={reagents}
-                intakeDate={docDate}
-                today={today}
-                onDateChange={(d) => {
-                  setDocSaveError(null);
-                  setDocDate(d);
-                }}
-                onRowChange={changeDocRow}
-                onRestart={restartDoc}
-                disabled={busy}
-              />
-              <div className={styles.docActions} data-name="bottom-actions">
-                {docSaveError ? (
-                  <p role="alert" className={styles.docError}>
-                    {docSaveError}
-                  </p>
-                ) : docPlan.blockReason ? (
-                  <p role="status" className={styles.docReason}>
-                    {docPlan.blockReason}
-                  </p>
+      {head}
+      <PageColumn wide={reviewing} barSpace={mode === "doc"}>
+        <IntakeMode className={styles.mode} value={mode} onChange={changeMode} disabled={busy || docStep === "processing"} />
+        {mode === "doc" ? (
+          <div className={[styles.docColumn, reviewing ? styles.reviewing : ""].filter(Boolean).join(" ")}>
+            {reviewing ? (
+              <>
+                <DocIntakeTable
+                  rows={docRows}
+                  reagents={reagents}
+                  intakeDate={docDate}
+                  today={today}
+                  onDateChange={(d) => {
+                    setDocSaveError(null);
+                    setDocDate(d);
+                  }}
+                  onRowChange={changeDocRow}
+                  onRestart={restartDoc}
+                  disabled={busy}
+                />
+                <BottomBar
+                  className={styles.docActions}
+                  note={
+                    docSaveError ? (
+                      <p role="alert" className={styles.docError}>
+                        {docSaveError}
+                      </p>
+                    ) : docPlan.blockReason ? (
+                      <p role="status" className={styles.docReason}>
+                        {docPlan.blockReason}
+                      </p>
+                    ) : null
+                  }
+                >
+                  <ButtonPrimary className={styles.docSubmit} disabled={!docPlan.canSave || busy} onClick={submitDoc}>
+                    {pending ? "저장 중…" : DOC_TEXT.submit}
+                  </ButtonPrimary>
+                </BottomBar>
+              </>
+            ) : (
+              <>
+                {docStep === "empty" ? (
+                  <EmptyStateCard variant="outlined" icon="upload" title={DOC_TEXT.emptyTitle} description={DOC_TEXT.emptyBody}>
+                    <ButtonOutline onClick={() => changeMode("direct")}>{DOC_TEXT.modeDirect}</ButtonOutline>
+                  </EmptyStateCard>
                 ) : null}
-                <ButtonPrimary className={styles.docSubmit} disabled={!docPlan.canSave || busy} onClick={submitDoc}>
-                  {pending ? "저장 중…" : DOC_TEXT.submit}
-                </ButtonPrimary>
-              </div>
-            </>
-          ) : (
-            <>
-              {docStep === "empty" ? (
-                <EmptyStateCard variant="outlined" icon="upload" title={DOC_TEXT.emptyTitle} description={DOC_TEXT.emptyBody}>
-                  <ButtonOutline onClick={() => changeMode("direct")}>{DOC_TEXT.modeDirect}</ButtonOutline>
-                </EmptyStateCard>
-              ) : null}
-              <DocUpload
-                file={picked?.view ?? null}
-                heading={docStep === "empty" ? DOC_TEXT.uploadAgainHeading : DOC_TEXT.uploadHeading}
-                processing={docStep === "processing"}
-                error={docError}
-                disabled={busy}
-                onFileChange={onDocFile}
-                onRead={() => void readDoc()}
-                onCancel={cancelRead}
-              />
-            </>
-          )}
-        </div>
-      ) : (
-        <>
-          <div className={styles.segment}>
-            <SegmentedControl
-              label="직접 입력 갈래"
-              options={TABS}
-              value={tab}
-              onChange={(v) => changeTab(v === "register" ? "register" : "intake")}
-            />
+                <DocUpload
+                  file={picked?.view ?? null}
+                  heading={docStep === "empty" ? DOC_TEXT.uploadAgainHeading : DOC_TEXT.uploadHeading}
+                  processing={docStep === "processing"}
+                  error={docError}
+                  disabled={busy}
+                  desktopBar
+                  onFileChange={onDocFile}
+                  onRead={() => void readDoc()}
+                  onCancel={cancelRead}
+                />
+                {/* 데스크톱: "AI로 읽기"는 아래 고정 bottom-bar (시안 7-desktop · 7-doc-upload · 7-doc-fail). 모바일은 카드 안 그대로 */}
+                <DesktopOnly>
+                  <BottomBar>
+                    <ButtonPrimary disabled={!picked || busy || docStep === "processing"} onClick={() => void readDoc()}>
+                      {DOC_TEXT.read}
+                    </ButtonPrimary>
+                  </BottomBar>
+                </DesktopOnly>
+              </>
+            )}
           </div>
-          {tab === "intake" ? (
-            <StockIntake
-              reagents={reagents}
-              defaultIntakeDate={today}
-              defaultSelectedId={initialReagentId}
-              onSubmit={submitIntake}
-              pending={busy}
-              error={error}
-              onRegisterNew={() => changeTab("register")}
-            />
-          ) : (
-            <ReagentRegister
-              storageClasses={STORAGE_CLASS_OPTIONS}
-              units={UNIT_OPTIONS}
-              defaultIntakeDate={today}
-              onSubmit={submitRegister}
-              pending={busy}
-              error={error}
-              findMsds
-            />
-          )}
-        </>
-      )}
+        ) : (
+          <>
+            <div className={styles.segment}>
+              <SegmentedControl
+                label="직접 입력 갈래"
+                options={TABS}
+                value={tab}
+                onChange={(v) => changeTab(v === "register" ? "register" : "intake")}
+              />
+            </div>
+            {tab === "intake" ? (
+              <StockIntake
+                reagents={reagents}
+                defaultIntakeDate={today}
+                defaultSelectedId={initialReagentId}
+                onSubmit={submitIntake}
+                pending={busy}
+                error={error}
+                onRegisterNew={() => changeTab("register")}
+              />
+            ) : (
+              <ReagentRegister
+                storageClasses={STORAGE_CLASS_OPTIONS}
+                units={UNIT_OPTIONS}
+                defaultIntakeDate={today}
+                onSubmit={submitRegister}
+                pending={busy}
+                error={error}
+                findMsds
+              />
+            )}
+          </>
+        )}
+      </PageColumn>
       {toast ? <Toast floating>{toast}</Toast> : null}
     </div>
   );

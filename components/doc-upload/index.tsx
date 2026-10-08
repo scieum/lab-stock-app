@@ -8,6 +8,7 @@ import { ButtonPrimary } from "@/components/button-primary";
 import { Icon } from "@/components/icons";
 import type { ManualUploadFile } from "@/components/manual-upload/file";
 import { DOC_TEXT } from "@/lib/doc-intake-rules";
+import { useIsDesktop } from "@/lib/use-viewport";
 import { MANUAL_FILE_ACCEPT } from "@/lib/manual-rules";
 import styles from "./styles.module.css";
 
@@ -30,6 +31,11 @@ type Props = {
   heading?: string;
   /** 저장 중 등 잠금 */
   disabled?: boolean;
+  /**
+   * true = 데스크톱(≥ 1024)에서 시안 7-desktop 모양 (d7 §23 run c): 위 icon-upload · 가운데 정렬 · "파일 선택" 1개(촬영하기 없음) ·
+   * 아래 drop-hint "여기에 끌어다 놓아도 돼요". "AI로 읽기"는 카드 안에 두지 않고 부르는 쪽이 bottom-bar 에 둔다. 모바일은 그대로.
+   */
+  desktopBar?: boolean;
   className?: string;
 };
 
@@ -52,8 +58,12 @@ export function DocUpload({
   error,
   heading = DOC_TEXT.uploadHeading,
   disabled = false,
+  desktopBar = false,
   className,
 }: Props) {
+  const desktop = useIsDesktop();
+  // 데스크톱 bottom-bar 모양: 하이드레이션 뒤 데스크톱이면 촬영하기 · 카드 안 "AI로 읽기"를 DOM 에서 뺀다 (첫 그림은 CSS 로 숨김)
+  const barMode = desktopBar && desktop === true;
   const headingId = useId();
   const errorId = useId();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -72,6 +82,7 @@ export function DocUpload({
       data-component="doc-upload"
       data-state={state}
       data-dragging={dragging ? "" : undefined}
+      data-desktop-bar={desktopBar ? "" : undefined}
       className={[styles.root, className ?? ""].filter(Boolean).join(" ")}
       aria-labelledby={headingId}
       aria-busy={processing ? true : undefined}
@@ -115,6 +126,10 @@ export function DocUpload({
           e.target.value = "";
         }}
       />
+
+      {desktopBar && !processing && !file ? (
+        <Icon name="upload" className={styles.topIcon} aria-hidden="true" data-name="icon-upload" />
+      ) : null}
 
       {processing ? null : (
         <div className={styles.text} data-name="upload-text">
@@ -161,20 +176,28 @@ export function DocUpload({
         </>
       ) : (
         <div className={styles.actions} data-name="upload-actions">
-          <ButtonPillSoft fullWidth className={styles.pick} disabled={locked} onClick={() => cameraRef.current?.click()}>
-            <span className={styles.pickLabel}>
-              <Icon name="qr" className={styles.pickIcon} />
-              {DOC_TEXT.camera}
-            </span>
-          </ButtonPillSoft>
+          {barMode ? null : (
+            <ButtonPillSoft fullWidth className={[styles.pick, styles.camera].join(" ")} disabled={locked} onClick={() => cameraRef.current?.click()}>
+              <span className={styles.pickLabel}>
+                <Icon name="qr" className={styles.pickIcon} />
+                {DOC_TEXT.camera}
+              </span>
+            </ButtonPillSoft>
+          )}
           <ButtonPillSoft fullWidth className={styles.pick} disabled={locked} onClick={() => fileRef.current?.click()}>
             <span className={styles.pickLabel}>
-              <Icon name="upload" className={styles.pickIcon} />
+              <Icon name={desktopBar ? "file" : "upload"} className={styles.pickIcon} />
               {file ? "다른 파일 선택" : DOC_TEXT.pickFile}
             </span>
           </ButtonPillSoft>
         </div>
       )}
+
+      {desktopBar && !processing ? (
+        <p className={styles.dropHint} data-name="drop-hint">
+          여기에 끌어다 놓아도 돼요
+        </p>
+      ) : null}
 
       {error ? (
         <p id={errorId} role="alert" className={styles.error}>
@@ -183,9 +206,17 @@ export function DocUpload({
         </p>
       ) : null}
 
-      <ButtonPrimary fullWidth disabled={!file || locked} onClick={onRead} aria-describedby={error ? errorId : undefined}>
-        {DOC_TEXT.read}
-      </ButtonPrimary>
+      {barMode ? null : (
+        <ButtonPrimary
+          fullWidth
+          className={styles.read}
+          disabled={!file || locked}
+          onClick={onRead}
+          aria-describedby={error ? errorId : undefined}
+        >
+          {DOC_TEXT.read}
+        </ButtonPrimary>
+      )}
     </section>
   );
 }

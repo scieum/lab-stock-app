@@ -3,7 +3,9 @@
 import { useRef, useState } from "react";
 import { ButtonPillSoft } from "@/components/button-pill-soft";
 import { ButtonPrimary } from "@/components/button-primary";
+import { BottomBar } from "@/components/page-frame";
 import { MsdsCandidates } from "@/components/msds-candidates";
+import { SheetAnchor } from "@/components/sheet-panel";
 import { MsdsSearch } from "@/components/msds-search";
 import { SelectField } from "@/components/select-field";
 import { TextInput } from "@/components/text-input";
@@ -207,25 +209,31 @@ export function ReagentRegister({
       </div>
 
       {findMsds && finding ? (
-        <MsdsCandidates
-          caption={name.trim()}
-          query={msdsQuery}
-          onQueryChange={setMsdsQuery}
-          onSearch={() => void msds.search(msdsQuery)}
-          status={msds.state.status}
-          candidates={msds.state.status === "ready" ? msds.state.candidates : undefined}
-          searchedAs={msds.state.status === "ready" ? msds.state.searchedAs : null}
-          searchedVia={msds.state.status === "ready" ? msds.state.searchedVia : null}
-          searchedQuery={msds.state.status === "idle" ? undefined : msds.state.query}
-          message={msds.state.status === "error" ? msds.state.message : undefined}
-          onRetry={() => void msds.search(msdsQuery)}
-          onConfirm={(c) => {
-            setMsdsUrl(c.msdsUrl);
-            closeFinder();
-          }}
-          onDirect={directEntry}
-          onClose={closeFinder}
-        />
+        <SheetAnchor
+          placement="above"
+          avoidBottomBar
+          anchor={() => msdsFieldRef.current?.querySelector<HTMLElement>('[data-component="msds-search"]') ?? msdsFieldRef.current}
+        >
+          <MsdsCandidates
+            caption={name.trim()}
+            query={msdsQuery}
+            onQueryChange={setMsdsQuery}
+            onSearch={() => void msds.search(msdsQuery)}
+            status={msds.state.status}
+            candidates={msds.state.status === "ready" ? msds.state.candidates : undefined}
+            searchedAs={msds.state.status === "ready" ? msds.state.searchedAs : null}
+            searchedVia={msds.state.status === "ready" ? msds.state.searchedVia : null}
+            searchedQuery={msds.state.status === "idle" ? undefined : msds.state.query}
+            message={msds.state.status === "error" ? msds.state.message : undefined}
+            onRetry={() => void msds.search(msdsQuery)}
+            onConfirm={(c) => {
+              setMsdsUrl(c.msdsUrl);
+              closeFinder();
+            }}
+            onDirect={directEntry}
+            onClose={closeFinder}
+          />
+        </SheetAnchor>
       ) : null}
 
       {error ? (
@@ -234,11 +242,11 @@ export function ReagentRegister({
         </p>
       ) : null}
 
-      <div className={styles.actions} data-name="bottom-actions">
+      <BottomBar className={styles.actions} inline={!stickyActions}>
         <ButtonPrimary type="submit" className={styles.primary} disabled={!canSubmit}>
           {pending ? "저장 중…" : "시약 등록"}
         </ButtonPrimary>
-      </div>
+      </BottomBar>
     </form>
   );
 }

@@ -40,7 +40,8 @@ export type IconName =
   | "store"
   | "arrow-up"
   | "arrow-down"
-  | "sort";
+  | "sort"
+  | "file";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: (
@@ -244,6 +245,12 @@ const PATHS: Record<IconName, React.ReactNode> = {
     <>
       <path d="m8.5 9.5 3.5-3.5 3.5 3.5" />
       <path d="m8.5 14.5 3.5 3.5 3.5-3.5" />
+    </>
+  ),
+  file: (
+    <>
+      <path d="M14 3.5H7.5A1.5 1.5 0 0 0 6 5v14a1.5 1.5 0 0 0 1.5 1.5h9A1.5 1.5 0 0 0 18 19V7.5Z" />
+      <path d="M14 3.5v4h4" />
     </>
   ),
   bell: (

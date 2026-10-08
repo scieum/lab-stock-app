@@ -6,7 +6,9 @@ import { CabinetSummaryCard, HomeSummary, StockSummaryCard, SummaryEmptyCard } f
 import { QuickAction, type QuickActionItem } from "@/components/quick-action";
 import { ReagentRow } from "@/components/reagent-row";
 import { ReorderAlertCard } from "@/components/reorder-alert-card";
+import { DesktopOnly, MobileOnly } from "@/components/viewport-only";
 import { getHomeData, type HomeData, type Role } from "@/lib/supabase/home-data";
+import { HomeDesk } from "./home-desk";
 import styles from "./home.module.css";
 
 // 시안 13 quick-action — 역할별 2칸 (탭과 겹치는 QR·시약 목록·사용 기록 내역은 두지 않는다)
@@ -36,8 +38,26 @@ type HomeViewProps = {
   role?: Role;
 };
 
-/** 화면 13 홈 본문 — 로그인(역할별) / 둘러보기(role 없음) 공용 */
+/**
+ * 화면 13 홈 본문 — 로그인(역할별) / 둘러보기(role 없음) 공용.
+ * 모바일 = 아래 HomeMobile(지금 그대로), 데스크톱 = HomeDesk(숫자 타일 + 위젯 격자, d7 §23 run c).
+ * 첫 그림(폭 모름)에는 둘 다 그리고 CSS 로 한쪽만 보이며, 하이드레이션 뒤 맞지 않는 쪽은 DOM 에서 빠진다 (components/viewport-only).
+ */
 export function HomeView({ data, role }: HomeViewProps) {
+  return (
+    <>
+      <MobileOnly>
+        <HomeMobile data={data} role={role} />
+      </MobileOnly>
+      <DesktopOnly>
+        <HomeDesk data={data} role={role} />
+      </DesktopOnly>
+    </>
+  );
+}
+
+/** 화면 13 홈 — 모바일 (시안 13-mobile · 13-guest-mobile) */
+function HomeMobile({ data, role }: HomeViewProps) {
   const guest = !role;
   const staff = !guest && role !== "student";
   const reagentHref = (id: string) => (guest ? `/demo/reagents/${id}` : `/reagents/${id}`);

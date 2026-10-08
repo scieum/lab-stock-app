@@ -22,9 +22,10 @@ import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { Toast } from "@/components/ex-toast";
 import { MixWarning } from "@/components/mix-warning";
 import { QrPrint } from "@/components/qr-print";
+import { PageColumn, PageHead } from "@/components/page-frame";
 import { QrPrintSheet } from "@/components/qr-print-sheet";
 import { ReagentRow } from "@/components/reagent-row";
-import { SheetNote } from "@/components/sheet-panel";
+import { SheetAnchor, SheetNote } from "@/components/sheet-panel";
 import { SlotAssign } from "@/components/slot-assign";
 import { SlotSheet } from "@/components/slot-sheet";
 import { StorageClassPicker } from "@/components/storage-class-chip";
@@ -46,6 +47,7 @@ import {
   type StorageClass,
 } from "@/lib/cabinet-rules";
 import { useUnsavedGuard } from "@/lib/use-unsaved-guard";
+import { useIsDesktop } from "@/lib/use-viewport";
 import { addCabinetAction, deleteCabinetAction, placeReagentAction, renameCabinetAction, saveCabinetLayoutAction } from "./actions";
 import { isSuggestedSlot } from "@/lib/location-suggest";
 import styles from "./cabinets.module.css";
@@ -129,6 +131,9 @@ export function CabinetsScreen({ canManage, schoolName, origin, cabinets, active
   const [assignRound, setAssignRound] = useState(0);
   const [pending, startTransition] = useTransition();
   const inFlight = useRef(false);
+  const desktop = useIsDesktop();
+  /** 마지막으로 누른 칸 — 데스크톱 칸 시트(팝오버)를 그 옆에 띄운다 (시안 11-slot-desktop) */
+  const pressedSlot = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!toast) return;
@@ -234,29 +239,33 @@ export function CabinetsScreen({ canManage, schoolName, origin, cabinets, active
     </Toast>
   ) : null;
 
-  // 시약장 0개 (시안 11-empty): 제목 줄 + 빈 상태 카드만
+  const head = <PageHead title="시약장" mobileTitle="시약장 설정" count={`${cabinets.length}개`} />;
+
+  // 시약장 0개 (시안 11-empty): 제목 줄 + 빈 상태 카드만 (데스크톱: page-head "시약장 0개" 아래 가운데 열 640 카드)
   if (!active || !edit) {
     return (
       <div className={styles.page}>
-        <h1 className={styles.title}>시약장 설정</h1>
+        {head}
         <h2 className={styles.pageTitle}>시약장 0개</h2>
-        <div className={styles.emptyArea}>
-          <div className={styles.emptyCard}>
-            <EmptyStateCard
-              variant="outlined"
-              icon="cabinet"
-              title="아직 시약장이 없어요"
-              description={canManage ? "'+ 시약장 추가'를 눌러 첫 시약장을 만들어 주세요" : "교사가 시약장을 추가하면 여기에 보여요"}
-            >
-              {canManage ? <CabinetAdd pending={pending && op === "add"} disabled={pending} onClick={add} /> : null}
-            </EmptyStateCard>
+        <PageColumn>
+          <div className={styles.emptyArea}>
+            <div className={styles.emptyCard}>
+              <EmptyStateCard
+                variant="outlined"
+                icon="cabinet"
+                title="아직 시약장이 없어요"
+                description={canManage ? "'+ 시약장 추가'를 눌러 첫 시약장을 만들어 주세요" : "교사가 시약장을 추가하면 여기에 보여요"}
+              >
+                {canManage ? <CabinetAdd pending={pending && op === "add"} disabled={pending} onClick={add} /> : null}
+              </EmptyStateCard>
+            </div>
+            {addError ? (
+              <p className={styles.error} role="alert">
+                {addError}
+              </p>
+            ) : null}
           </div>
-          {addError ? (
-            <p className={styles.error} role="alert">
-              {addError}
-            </p>
-          ) : null}
-        </div>
+        </PageColumn>
         {toastNode}
       </div>
     );
@@ -440,7 +449,13 @@ export function CabinetsScreen({ canManage, schoolName, origin, cabinets, active
   );
 
   const board = (
-    <>
+    <div
+      className={styles.boardBox}
+      onClickCapture={(e) => {
+        const slot = (e.target as Element).closest<HTMLElement>('[data-component="cabinet-slot"]');
+        if (slot) pressedSlot.current = slot;
+      }}
+    >
       <CabinetLayout
         doorType={edit.doorType}
         shelves={edit.shelves}
@@ -451,7 +466,7 @@ export function CabinetsScreen({ canManage, schoolName, origin, cabinets, active
         disabled={canManage ? locked : undefined}
       />
       <CabinetLegend showSelected={canManage} />
-    </>
+    </div>
   );
 
   const editPanel = canManage ? (
@@ -488,69 +503,92 @@ export function CabinetsScreen({ canManage, schoolName, origin, cabinets, active
     />
   ) : undefined;
 
-  const pageClass = [styles.page, canManage ? (notice ? styles.withNotice : styles.withSave) : ""].filter(Boolean).join(" ");
+  const pageClass = [
+    styles.page,
+    canManage ? (notice ? styles.withNotice : styles.withSave) : "",
+    canManage && shown?.kind === "print" && desktop ? styles.printing : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div className={pageClass}>
-      <h1 className={styles.title}>시약장 설정</h1>
+      {head}
 
-      <CabinetScreen
-        top={top}
-        board={board}
-        bottom={unassignedList}
-        edit={editPanel}
-        aside={canManage ? undefined : <MixWarning lines={warnings} />}
-      />
+      <PageColumn barSpace={canManage}>
+        <CabinetScreen
+          top={top}
+          board={board}
+          bottom={unassignedList}
+          edit={editPanel}
+          aside={canManage ? undefined : <MixWarning lines={warnings} />}
+        />
+      </PageColumn>
 
       {slotKey ? (
-        <SlotSheet
-          key={`${active.id}-${slotId(slotKey)}`}
-          title={slotLabel}
-          classes={slotSaved?.classes ?? []}
-          reagents={slotSaved?.reagents ?? []}
-          hrefOf={(id) => `/reagents/${id}`}
-          canEdit={canManage}
-          pendingId={placingId}
-          onRemove={(id) => {
-            const r = slotSaved?.reagents.find((x) => x.id === id);
-            if (r) place(r, null);
-          }}
-          onClose={closeSheet}
+        <SheetAnchor
+          placement="side"
+          avoidBottomBar
+          positionKey={`${active.id}-${slotId(slotKey)}`}
+          anchor={() => pressedSlot.current}
         >
-          {slotSaved?.slotId ? (
-            <SlotAssign
-              key={`${active.id}-${slotId(slotKey)}-${assignRound}`}
-              candidates={unassigned.map((u) => ({
-                id: u.id,
-                name: u.name,
-                amount: u.amount,
-                storageClass: u.storageClass,
-                // 이 칸이 이 시약의 추천 칸이면 suggest-badge + 목록 위로 (d7 §17)
-                suggested: isSuggestedSlot(u.suggestion, active.id, slotKey),
-              }))}
-              slotClasses={slotSaved.classes}
-              slotReagentClasses={slotSaved.reagents.map((r) => r.storageClass)}
-              pending={pending && op === "place"}
-              error={slotError}
-              onAssign={(id) => {
-                const r = unassigned.find((u) => u.id === id);
-                if (r && slotSaved.slotId) place(r, slotSaved.slotId);
-              }}
-            />
-          ) : (
-            <SheetNote>시약장 설정을 저장하면 이 칸에 시약을 넣을 수 있어요</SheetNote>
-          )}
-        </SlotSheet>
+          <SlotSheet
+            key={`${active.id}-${slotId(slotKey)}`}
+            title={slotLabel}
+            classes={slotSaved?.classes ?? []}
+            reagents={slotSaved?.reagents ?? []}
+            hrefOf={(id) => `/reagents/${id}`}
+            canEdit={canManage}
+            pendingId={placingId}
+            onRemove={(id) => {
+              const r = slotSaved?.reagents.find((x) => x.id === id);
+              if (r) place(r, null);
+            }}
+            onClose={closeSheet}
+          >
+            {slotSaved?.slotId ? (
+              <SlotAssign
+                key={`${active.id}-${slotId(slotKey)}-${assignRound}`}
+                candidates={unassigned.map((u) => ({
+                  id: u.id,
+                  name: u.name,
+                  amount: u.amount,
+                  storageClass: u.storageClass,
+                  // 이 칸이 이 시약의 추천 칸이면 suggest-badge + 목록 위로 (d7 §17)
+                  suggested: isSuggestedSlot(u.suggestion, active.id, slotKey),
+                }))}
+                slotClasses={slotSaved.classes}
+                slotReagentClasses={slotSaved.reagents.map((r) => r.storageClass)}
+                pending={pending && op === "place"}
+                error={slotError}
+                onAssign={(id) => {
+                  const r = unassigned.find((u) => u.id === id);
+                  if (r && slotSaved.slotId) place(r, slotSaved.slotId);
+                }}
+              />
+            ) : (
+              <SheetNote>시약장 설정을 저장하면 이 칸에 시약을 넣을 수 있어요</SheetNote>
+            )}
+          </SlotSheet>
+        </SheetAnchor>
       ) : null}
 
       {canManage && shown?.kind === "print" ? (
-        <QrPrintSheet
-          schoolName={schoolName}
-          origin={origin}
-          cabinets={cabinets}
-          defaultTarget={active.id}
-          onClose={closeSheet}
-        />
+        desktop ? (
+          // 데스크톱: 오른쪽 detail-drawer (시안 11-print-desktop) — 본문을 밀어낸다 (pageClass printing)
+          <div className={styles.printDrawer}>
+            <QrPrintSheet
+              variant="drawer"
+              schoolName={schoolName}
+              origin={origin}
+              cabinets={cabinets}
+              defaultTarget={active.id}
+              onClose={closeSheet}
+            />
+          </div>
+        ) : (
+          <QrPrintSheet schoolName={schoolName} origin={origin} cabinets={cabinets} defaultTarget={active.id} onClose={closeSheet} />
+        )
       ) : null}
 
       {canManage && shown && (shown.kind === "rename" || shown.kind === "delete" || shown.kind === "unsaved") ? (
@@ -559,6 +597,7 @@ export function CabinetsScreen({ canManage, schoolName, origin, cabinets, active
             <CabinetRenameSheet
               key={active.id}
               modal={false}
+              closeIcon={desktop === true}
               defaultName={active.label}
               cabinetNumber={active.number}
               pending={pending}
@@ -570,6 +609,7 @@ export function CabinetsScreen({ canManage, schoolName, origin, cabinets, active
             <CabinetDeleteConfirm
               key={active.id}
               modal={false}
+              closeIcon={desktop === true}
               reagentCount={active.placedCount}
               pending={pending}
               error={sheetError}
@@ -577,7 +617,13 @@ export function CabinetsScreen({ canManage, schoolName, origin, cabinets, active
               onCancel={closeSheet}
             />
           ) : (
-            <CabinetUnsavedConfirm modal={false} cabinetLabel={active.label} onDiscard={discardAndGo} onContinue={() => setOpen(null)} />
+            <CabinetUnsavedConfirm
+              modal={false}
+              closeIcon={desktop === true}
+              cabinetLabel={active.label}
+              onDiscard={discardAndGo}
+              onContinue={() => setOpen(null)}
+            />
           )}
         </div>
       ) : null}

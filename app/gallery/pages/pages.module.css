@@ -1,0 +1,46 @@
+/* 갤러리 — 데스크톱 본문 페이지 · 홈 위젯 예시 */
+.frame {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+.placeholder {
+  margin: 0;
+  padding: var(--space-24);
+  border: var(--border-width) dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+}
+
+.note {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-16);
+}
+
+.widgets {
+  display: grid;
+  grid-template-columns: minmax(0, 47fr) minmax(0, 23fr);
+  align-items: start;
+  gap: var(--space-16);
+}
+
+.widgetColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+/* 드로어 예시는 실제 폭(480)으로 */
+.drawerStage {
+  display: flex;
+  justify-content: flex-end;
+}

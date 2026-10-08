@@ -23,6 +23,28 @@ export function ReorderAlertCard({ count, href }: { count: number; href?: string
   );
 }
 
+/**
+ * 데스크톱 홈 "지금 처리할 것" 타일 (시안 13-desktop reorder-alert-card — 회색 카드 radius 24, 안쪽 24, 사이 8, 교사·admin 전용):
+ * caption "재주문 알림" → tile-value(숫자 32/700 + 배지 · 오른쪽 "N건" pill → 화면 6) → note.
+ */
+export function ReorderAlertTile({ count, href }: { count: number; href?: string }) {
+  return (
+    <section data-component="reorder-alert-card" className={[styles.card, styles.tile].join(" ")} aria-label="재주문 알림">
+      <p className={styles.tileCaption}>재주문 알림</p>
+      <div className={styles.tileValue} data-name="tile-value">
+        <div className={styles.titleGroup}>
+          <span className={styles.display}>{count}</span>
+          {count > 0 ? <BadgeLowStock /> : null}
+        </div>
+        <ButtonPillSoft tone="white" icon="chevron-right" href={href}>
+          {count}건
+        </ButtonPillSoft>
+      </div>
+      <p className={styles.tileNote}>{count > 0 ? `필요량보다 적은 시약이 ${count}종 있어요` : "재주문이 필요한 시약이 없어요"}</p>
+    </section>
+  );
+}
+
 type ItemProps = {
   /** 시약명 (heading-4, 한 줄) */
   name: string;

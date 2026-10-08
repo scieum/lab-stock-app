@@ -1,9 +1,9 @@
 import "server-only";
 import { createAnonClient } from "./anon";
-import { formatAmount, formatDateDots, formatStock, formatUsedAt } from "@/lib/format";
+import { formatAmount, formatDateDots, formatKoreanDate, formatStock } from "@/lib/format";
 import { isStorageClass } from "@/lib/cabinet-rules";
 import { isLowStock } from "@/lib/types";
-import type { HomeData } from "./home-data";
+import { toHomeRecent, type HomeData } from "./home-data";
 import type { FilterCabinet } from "@/lib/reagent-list-filter";
 import {
   CABINET_LIST_COLUMNS,
@@ -55,31 +55,32 @@ export type DemoHomeData = Omit<HomeData, "role">;
 
 export async function getDemoHomeData(): Promise<DemoHomeData> {
   const supabase = createAnonClient();
-  const [reagents, cabinets, slots, recent] = await Promise.all([
-    supabase.from("reagents").select("id, name, unit, stock, min_stock").eq("school_id", DEMO_SCHOOL_ID).order("name"),
+  const [reagents, cabinets, slots, recent, usedOn, school] = await Promise.all([
+    supabase.from("reagents").select("id, name, unit, stock, min_stock, msds_url").eq("school_id", DEMO_SCHOOL_ID).order("name"),
     supabase.from("cabinets").select("id, door_type, shelves").eq("school_id", DEMO_SCHOOL_ID),
     supabase.from("cabinet_slots").select("id", { count: "exact", head: true }).not("storage_class", "is", null).eq("school_id", DEMO_SCHOOL_ID),
     supabase.rpc("demo_recent_usage", { p_limit: 3 }),
+    // 같은 순서의 사용일 — 데스크톱 표 "사용일" 칸
+    supabase.from("usage_logs").select("id, used_on").eq("school_id", DEMO_SCHOOL_ID).order("used_at", { ascending: false }).limit(3),
+    getDemoSchool(),
   ]);
   const rows = reagents.data ?? [];
   const cabs = cabinets.data ?? [];
   const now = new Date();
+  const usedOnById = new Map((usedOn.data ?? []).map((u) => [u.id, u.used_on]));
 
   return {
+    schoolName: school?.name ?? "데모 학교",
+    today: formatKoreanDate(now, now),
     totalReagents: rows.length,
     lowStock: rows
       .filter((r) => isLowStock(r))
       .map((r) => ({ id: r.id, name: r.name, amount: formatAmount(Number(r.stock), r.unit) })),
+    msdsMissing: rows.filter((r) => !r.msds_url || r.msds_url.trim() === "").length,
     cabinetCount: cabs.length,
     totalSlots: cabs.reduce((n, c) => n + slotCapacity(c.door_type, c.shelves), 0),
     assignedSlots: slots.count ?? 0,
-    recent: (recent.data ?? []).map((u) => ({
-      id: u.id,
-      reagentId: u.reagent_id,
-      reagentName: u.reagent_name,
-      body: [u.user_name, formatAmount(Number(u.amount), u.unit)].filter(Boolean).join(" · "),
-      caption: formatUsedAt(new Date(u.used_at), now),
-    })),
+    recent: (recent.data ?? []).map((u) => toHomeRecent(u, u.user_name ?? "", usedOnById, now)),
   };
 }
 

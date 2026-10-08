@@ -3,6 +3,7 @@ import { ButtonPillSoft } from "@/components/button-pill-soft";
 import { ButtonPrimary } from "@/components/button-primary";
 import { CabinetNumber } from "@/components/cabinet-number";
 import { Icon } from "@/components/icons";
+import { BottomBar } from "@/components/page-frame";
 import { SuggestBadge } from "@/components/suggest-badge";
 import styles from "./styles.module.css";
 
@@ -44,6 +45,11 @@ type Props = {
   pendingAll?: boolean;
   /** 넣기 실패 안내 (서버 문구) */
   error?: string | null;
+  /**
+   * true = 아래 버튼 줄("모두 추천대로" · "나중에")을 bottom-bar 로 (시안 7-suggest-desktop, d7 §23 run c):
+   * 데스크톱에서 본문 아래 고정 줄 — 왼쪽 "나중에" · 오른쪽 "모두 추천대로"(200). 모바일은 그대로(카드 아래).
+   */
+  bar?: boolean;
   className?: string;
 };
 
@@ -65,11 +71,24 @@ export function LocationSuggest({
   pendingId = null,
   pendingAll = false,
   error,
+  bar = false,
   className,
 }: Props) {
   const suggested = items.filter((i) => i.suggestion);
   const remaining = suggested.filter((i) => !i.placed);
   const busy = pendingAll || pendingId !== null;
+  const footer = (
+    <>
+      {items.length > 1 && remaining.length > 0 ? (
+        <ButtonPrimary fullWidth className={styles.placeAll} disabled={busy} aria-busy={pendingAll || undefined} onClick={onPlaceAll}>
+          모두 추천대로
+        </ButtonPrimary>
+      ) : null}
+      <button type="button" className={styles.later} disabled={pendingAll} onClick={onLater}>
+        나중에
+      </button>
+    </>
+  );
   const caption =
     suggested.length > 0 ? `새 시약 ${items.length}개의 칸을 추천했어요` : `새 시약 ${items.length}개에 맞는 칸이 없어요`;
 
@@ -149,16 +168,11 @@ export function LocationSuggest({
         </p>
       ) : null}
 
-      <div className={styles.footer}>
-        {items.length > 1 && remaining.length > 0 ? (
-          <ButtonPrimary fullWidth disabled={busy} aria-busy={pendingAll || undefined} onClick={onPlaceAll}>
-            모두 추천대로
-          </ButtonPrimary>
-        ) : null}
-        <button type="button" className={styles.later} disabled={pendingAll} onClick={onLater}>
-          나중에
-        </button>
-      </div>
+      {bar ? (
+        <BottomBar className={[styles.footer, styles.footerBar].join(" ")}>{footer}</BottomBar>
+      ) : (
+        <div className={styles.footer}>{footer}</div>
+      )}
     </section>
   );
 }

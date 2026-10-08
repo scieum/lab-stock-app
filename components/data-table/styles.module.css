@@ -373,3 +373,10 @@ tbody > .row:last-child > * {
 .row:has([data-pending]) {
   background: var(--color-surface-muted);
 }
+
+/* 정렬을 바꿀 수 없는 표의 정렬 표시 (글자 + 화살표, 사이 4) */
+.sortStatic {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+}

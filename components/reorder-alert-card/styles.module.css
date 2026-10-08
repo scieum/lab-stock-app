@@ -120,24 +120,40 @@
 }
 
 @media (min-width: 1024px) {
-  /* 시안 1.17 6-desktop: 한 열 목록(사이 12), 카드 = 정보 칸 + 동작 칸(오른쪽, 폭 400) */
+  /* 시안 6-desktop (d7 §23 run c): 가운데 열(640) 한 줄 목록, 사이 12. 카드는 모바일처럼 위아래 —
+   * 정보(배지 → 시약명 → 수량 줄 → 캡션 → 알림 날짜) 아래 동작 칸(vendor-link 오른쪽 버튼 · 새 창 안내 줄), 사이 8 */
   .list {
     gap: var(--space-12);
   }
+}
 
-  .item {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-24);
-  }
+/* 데스크톱 홈 타일 (시안 13-desktop reorder-alert-card) */
+.tileCaption,
+.tileNote {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
 
-  .info {
-    flex: 1 1 auto;
-  }
+.tileCaption {
+  font-size: var(--font-size-12);
+}
 
-  /* 좁으면 동작 칸이 먼저 줄어든다 (정보 칸 글자가 접히지 않게) */
-  .actions {
-    flex: 0 10 var(--side-column-width);
-  }
+.tileNote {
+  font-size: var(--font-size-13);
+}
+
+.tileValue {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.display {
+  color: var(--color-text);
+  font-size: var(--font-size-32);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
 }

@@ -214,3 +214,73 @@
   margin-top: calc((var(--font-size-13) * var(--line-height-normal) - var(--icon-sm)) / 2);
   color: var(--color-text-muted);
 }
+
+/* 데스크톱 bottom-bar 모양 전용 조각 (모바일에서는 없음) */
+.topIcon,
+.dropHint {
+  display: none;
+}
+
+/*
+ * 시안 7-desktop · 7-doc-fail-desktop doc-upload (d7 §23 run c, desktopBar): 가운데 정렬 — icon-upload 24(하늘색) →
+ * upload-text(가운데) → "파일 선택" pill 1개(내용 폭, 촬영하기 없음) → drop-hint 12 회색. "AI로 읽기"는 bottom-bar.
+ * 하이드레이션 전 첫 그림에서는 촬영하기 · 카드 안 "AI로 읽기"를 CSS 로 숨긴다 (뒤에는 DOM 에서 빠진다).
+ */
+@media (min-width: 1024px) {
+  .root[data-desktop-bar] {
+    align-items: center;
+    text-align: center;
+  }
+
+  .root[data-desktop-bar] .text,
+  .root[data-desktop-bar] .reading {
+    align-self: stretch;
+  }
+
+  .root[data-desktop-bar] .preview {
+    align-self: center;
+    width: calc(var(--space-48) * 5);
+  }
+
+  .root[data-desktop-bar] .track {
+    align-self: stretch;
+  }
+
+  .root[data-desktop-bar] .cancel {
+    justify-content: center;
+  }
+
+  .root[data-desktop-bar] .topIcon {
+    display: block;
+    width: var(--icon-lg);
+    height: var(--icon-lg);
+    color: var(--color-highlight);
+  }
+
+  .root[data-desktop-bar] .dropHint {
+    display: block;
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-12);
+    line-height: var(--line-height-normal);
+  }
+
+  .root[data-desktop-bar] .actions {
+    justify-content: center;
+  }
+
+  .root[data-desktop-bar] .pick {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  .root[data-desktop-bar] .camera,
+  .root[data-desktop-bar] .read {
+    display: none;
+  }
+
+  .root[data-desktop-bar] .error {
+    align-self: stretch;
+    justify-content: center;
+  }
+}

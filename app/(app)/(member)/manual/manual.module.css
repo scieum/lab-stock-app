@@ -1,6 +1,7 @@
 /* 화면 5 실험 매뉴얼
  * 모바일(5-mobile): manual-upload → text-input(조 수) → extraction-table, 사이 16. bottom-actions 는 tab-bar 바로 위 고정
- * 데스크톱(5-desktop extract-layout): upload-column 480 + result-column, 사이 32. bottom-actions 는 열 안(고정 아님)
+ * 데스크톱(5-desktop, d7 §23 run c): page-head("실험 매뉴얼") → 가운데 page-column 640(업로드 · 조 수 → 추출 결과 표, 사이 24)
+ *   → 아래 고정 bottom-bar(오른쪽 "다시 추출" 160 + "확인 후 저장" 320 / 1단계 "AI 추출" 200) — 모양은 components/page-frame
  */
 
 .page {
@@ -10,17 +11,6 @@
   min-width: 0;
   /* 고정된 하단 버튼 줄(안내 문구 2줄 + 버튼)에 마지막 요소가 가려지지 않게 */
   padding-bottom: calc(var(--control-height) * 3 + var(--space-16));
-}
-
-/* 제목은 nav-pill 안(nav-title)에 있다 (화면에는 안 보이고 읽기 도구에는 남긴다) */
-.title {
-  position: absolute;
-  width: var(--border-width);
-  height: var(--border-width);
-  margin: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
 }
 
 .layout {
@@ -75,27 +65,30 @@
 
 @media (min-width: 1024px) {
   .page {
+    gap: var(--space-24);
     padding-bottom: var(--space-0);
   }
 
-  .layout {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: var(--space-32);
-  }
-
-  .uploadColumn {
-    flex: 0 0 calc(var(--side-column-width) + var(--space-48) + var(--space-32));
-  }
-
+  .layout,
+  .uploadColumn,
   .resultColumn {
-    flex: 1;
     gap: var(--space-24);
   }
 
-  .bottom {
-    position: static;
-    padding: var(--space-0);
-    border-top: none;
+  /* bottom-bar 안 버튼 (시안 5-desktop: 다시 추출 160 · 확인 후 저장 320) */
+  .actions {
+    flex: 0 0 auto;
+  }
+
+  .actions > :first-child {
+    width: calc(var(--space-32) * 5);
+  }
+
+  .actions > :last-child {
+    width: calc(var(--space-64) * 5);
+  }
+
+  .single > :only-child {
+    width: calc(var(--space-48) * 4 + var(--space-8));
   }
 }

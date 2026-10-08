@@ -110,6 +110,7 @@ export function DocIntakeTable({
         <span>품명</span>
         <span>규격</span>
         <span>수량</span>
+        <span>단위 환산</span>
       </div>
 
       <div className={styles.rows} role="list" aria-label="서류 품목">

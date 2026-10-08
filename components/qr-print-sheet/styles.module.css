@@ -82,3 +82,15 @@
     max-width: calc(var(--space-64) * 5 - var(--space-16) - var(--space-4));
   }
 }
+
+/* 데스크톱 오른쪽 드로어 (시안 11-print-desktop qr-print-sheet: 사이 16 — print-target → preview-area → print-caption) */
+.drawerBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.drawer .a4 {
+  max-width: calc(var(--space-64) * 5 + var(--space-48) - var(--space-8));
+}

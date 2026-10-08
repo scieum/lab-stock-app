@@ -12,6 +12,7 @@ import {
   releaseManualUploadFile,
   type ManualUploadFile,
 } from "@/components/manual-upload";
+import { BottomBar, PageColumn, PageHead } from "@/components/page-frame";
 import { TextInput } from "@/components/text-input";
 import {
   MANUAL_FILE_ERRORS,
@@ -211,78 +212,85 @@ export function ManualScreen({ reagents }: Props) {
 
   return (
     <div className={styles.page} data-step={step}>
-      <h1 className={styles.title}>실험 매뉴얼</h1>
-      <div className={styles.layout}>
-        <div className={styles.uploadColumn}>
-          <ManualUpload
-            variant="upload"
-            file={picked?.view ?? null}
-            error={fileError}
-            processing={processing}
-            // 2단계에서는 파일을 잠근다 — 바꾸려면 "닫기"로 1단계에 돌아간다 (실수로 추출 결과를 버리지 않게)
-            disabled={step === "result"}
-            onFileChange={onFileChange}
-          />
-          <TextInput
-            label="조 수"
-            unit="조"
-            unitTone="plain"
-            type="text"
-            inputMode="numeric"
-            autoComplete="off"
-            maxLength={3}
-            value={groupsText}
-            disabled={processing || saving}
-            error={groupsError}
-            onChange={(e) => {
-              setSaveError(null);
-              setGroupsText(e.target.value);
-            }}
-          />
-          {step !== "result" ? (
-            <div className={styles.bottom} data-bottom-actions>
-              <div className={styles.actions}>
-                <ButtonPrimary fullWidth onClick={() => void extract()} disabled={!picked || !groups.ok || processing}>
-                  AI 추출
-                </ButtonPrimary>
-              </div>
+      <PageHead title="실험 매뉴얼" />
+      <PageColumn barSpace>
+        <div className={styles.layout}>
+          <div className={styles.uploadColumn}>
+            <ManualUpload
+              variant="upload"
+              file={picked?.view ?? null}
+              error={fileError}
+              processing={processing}
+              // 2단계에서는 파일을 잠근다 — 바꾸려면 "닫기"로 1단계에 돌아간다 (실수로 추출 결과를 버리지 않게)
+              disabled={step === "result"}
+              onFileChange={onFileChange}
+            />
+            <TextInput
+              label="조 수"
+              unit="조"
+              unitTone="plain"
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={3}
+              value={groupsText}
+              disabled={processing || saving}
+              error={groupsError}
+              onChange={(e) => {
+                setSaveError(null);
+                setGroupsText(e.target.value);
+              }}
+            />
+            {step !== "result" ? (
+              <BottomBar className={styles.bottom} dataAttrs={{ "data-bottom-actions": "" }}>
+                <div className={[styles.actions, styles.single].join(" ")}>
+                  <ButtonPrimary fullWidth onClick={() => void extract()} disabled={!picked || !groups.ok || processing}>
+                    AI 추출
+                  </ButtonPrimary>
+                </div>
+              </BottomBar>
+            ) : null}
+          </div>
+          {step === "result" ? (
+            <div className={styles.resultColumn}>
+              <ExtractionTable
+                rows={rows}
+                groups={groupsValue}
+                reagents={reagents}
+                disabled={saving}
+                emptyText={EMPTY_TEXT}
+                onClose={close}
+                onRowChange={changeRow}
+                onRowRemove={removeRow}
+              />
+              <BottomBar
+                className={styles.bottom}
+                dataAttrs={{ "data-bottom-actions": "" }}
+                note={
+                  saveError ? (
+                    <p className={styles.error} role="alert" data-save-error>
+                      {saveError}
+                    </p>
+                  ) : plan.blockReason ? (
+                    <p className={styles.reason} role="status" data-save-block>
+                      {plan.blockReason}
+                    </p>
+                  ) : null
+                }
+              >
+                <div className={styles.actions}>
+                  <ButtonOutline onClick={retry} disabled={saving || !groups.ok}>
+                    다시 추출
+                  </ButtonOutline>
+                  <ButtonPrimary fullWidth onClick={save} disabled={saving || !plan.canSave}>
+                    확인 후 저장
+                  </ButtonPrimary>
+                </div>
+              </BottomBar>
             </div>
           ) : null}
         </div>
-        {step === "result" ? (
-          <div className={styles.resultColumn}>
-            <ExtractionTable
-              rows={rows}
-              groups={groupsValue}
-              reagents={reagents}
-              disabled={saving}
-              emptyText={EMPTY_TEXT}
-              onClose={close}
-              onRowChange={changeRow}
-              onRowRemove={removeRow}
-            />
-            <div className={styles.bottom} data-bottom-actions>
-              {saveError ? (
-                <p className={styles.error} role="alert" data-save-error>
-                  {saveError}
-                </p>
-              ) : plan.blockReason ? (
-                <p className={styles.reason} role="status" data-save-block>
-                  {plan.blockReason}
-                </p>
-              ) : null}
-              <div className={styles.actions}>
-                <ButtonOutline onClick={retry} disabled={saving || !groups.ok}>
-                  다시 추출
-                </ButtonOutline>
-                <ButtonPrimary fullWidth onClick={save} disabled={saving || !plan.canSave}>
-                  확인 후 저장
-                </ButtonPrimary>
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </div>
+      </PageColumn>
       {toast ? <Toast floating>{toast}</Toast> : null}
     </div>
   );

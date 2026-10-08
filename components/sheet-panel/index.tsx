@@ -4,6 +4,8 @@ import { useEffect, useId, useRef } from "react";
 import { Icon } from "@/components/icons";
 import styles from "./styles.module.css";
 
+export { SheetAnchor } from "./anchor";
+
 type Props = {
   /**
    * 시안 컴포넌트 이름 (slot-sheet · location-picker · qr-print-sheet). 시트 틀 자체는 시안 이름이 아니라

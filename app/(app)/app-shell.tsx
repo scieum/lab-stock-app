@@ -1,13 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
-import { Icon } from "@/components/icons";
 import { NavPill, type NavLinkItem } from "@/components/nav-pill";
 import { TabBar, type TabKey } from "@/components/tab-bar";
 import { sidebarAccountLabel, sidebarActiveKey, sidebarMenu, type SidebarRole } from "@/lib/sidebar-menu";
-import { linkPrefetch } from "@/lib/link-prefetch";
 import { useIsDesktop } from "@/lib/use-viewport";
 import styles from "./shell.module.css";
 
@@ -182,44 +179,6 @@ function MobileNav({ schoolName, staff = false, admin = false, page }: AppNavPro
   );
 }
 
-type DesktopHead = {
-  title: string;
-  backHref?: string;
-  /** 페이지에 이미 (숨은) h1 이 있으면 false — 보이는 제목은 글자만 (제목이 두 번 읽히지 않게) */
-  heading: boolean;
-};
-
-/**
- * 데스크톱 사이드바 셸에서 nav-pill 이 맡던 제목·뒤로가기가 본문에 없는 화면의 page-head (run a 최소 보완 —
- * 본문 재구성 run b·c 에서 각 화면 page-head 로 옮긴다). 뒤로 대상 = 모바일 nav-pill 과 같다,
- * 제목 문구 = 새 *-desktop 프레임 page-title / drawer-title.
- * (화면 4 /usage/new 는 run b 에서 시약 목록 + 드로어로 옮겨 드로어 제목·뒤로가 대신한다)
- * - 화면 5 /manual: "실험 매뉴얼"(5-desktop page-title), 뒤로 → /reorder (페이지에 숨은 h1 있음)
- * - 화면 11 /cabinets: "시약장"(11-desktop page-title), 뒤로 없음(최상위 메뉴) (페이지에 숨은 h1 있음)
- * 그 밖(2·3·4·6·7·8·9·10·13·16)은 본문이 이미 제목(·뒤로)을 그린다.
- */
-function desktopHead(pathname: string): DesktopHead | undefined {
-  if (/^\/manual\/?$/.test(pathname)) return { title: "실험 매뉴얼", backHref: "/reorder", heading: false };
-  if (/^\/cabinets\/?$/.test(pathname)) return { title: "시약장", heading: false };
-  return undefined;
-}
-
-function DesktopPageHead({ head }: { head: DesktopHead }) {
-  const Title = head.heading ? "h1" : "p";
-  return (
-    <div className={styles.pageHead}>
-      {head.backHref ? (
-        <Link href={head.backHref} prefetch={linkPrefetch(head.backHref)} className={styles.back} aria-label="뒤로">
-          <Icon name="back" className={styles.backIcon} />
-        </Link>
-      ) : null}
-      <Title className={styles.pageTitle} aria-hidden={head.heading ? undefined : true}>
-        {head.title}
-      </Title>
-    </div>
-  );
-}
-
 /**
  * 데스크톱 재구성 run b(d7 §23): 목록 data-table + 오른쪽 detail-drawer 화면 — 본문 여백을 페이지가 직접 둔다
  * (시안 main 안쪽 32, 드로어는 본문 오른쪽 끝에 붙는다). 모바일 여백은 그대로.
@@ -227,6 +186,15 @@ function DesktopPageHead({ head }: { head: DesktopHead }) {
  */
 function isDeskPath(pathname: string): boolean {
   return /^\/(reagents(\/[^/]+)?|msds\/[^/]+|usage(\/new)?|users|vendors)\/?$/.test(pathname);
+}
+
+/**
+ * 데스크톱 재구성 run c(d7 §23): 본문 페이지 — 시안 main 안쪽 32 · 블록 사이 24 (page-head → page-column, 아래 고정 bottom-bar).
+ * 13 / · 5 /manual · 6 /reorder · 7 /intake · 11 /cabinets. 제목은 각 페이지의 page-head 가 그린다 (run a 의 셸 page-head 대신).
+ * 오른쪽 detail-drawer(11 QR 인쇄)가 열리면 본문 + 드로어 가로 배치.
+ */
+function isPagePath(pathname: string): boolean {
+  return /^\/(manual|reorder|intake|cabinets)?\/?$/.test(pathname);
 }
 
 /**
@@ -240,7 +208,6 @@ export function AppShell({ schoolName, role, displayName, children }: Props) {
   const desktop = useIsDesktop();
   const staff = role !== "student";
   const admin = role === "admin";
-  const head = desktopHead(pathname);
   return (
     <div className={[styles.shell, styles.withSidebar].join(" ")}>
       {desktop === false ? null : (
@@ -253,10 +220,13 @@ export function AppShell({ schoolName, role, displayName, children }: Props) {
           onLogout={logout}
         />
       )}
-      <div className={[styles.content, styles.beside, isDeskPath(pathname) ? styles.flush : ""].filter(Boolean).join(" ")}>
+      <div
+        className={[styles.content, styles.beside, isDeskPath(pathname) ? styles.flush : "", isPagePath(pathname) ? styles.page : ""]
+          .filter(Boolean)
+          .join(" ")}
+      >
         {isMsdsPath(pathname) ? null : <AppNav schoolName={schoolName} staff={staff} admin={admin} />}
         <main className={styles.main}>
-          {desktop !== false && head ? <DesktopPageHead head={head} /> : null}
           {children}
         </main>
       </div>

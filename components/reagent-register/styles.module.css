@@ -82,14 +82,9 @@
     max-width: calc(var(--side-column-width) * 1.6);
   }
 
+  /* 고정 bottom-bar(80, components/page-frame) 만큼 비운다 */
   .sticky {
-    padding-bottom: var(--space-0);
-  }
-
-  .sticky .actions {
-    position: static;
-    padding: var(--space-0);
-    border-top: 0;
+    padding-bottom: calc(var(--space-64) + var(--space-16));
   }
 
   .primary {

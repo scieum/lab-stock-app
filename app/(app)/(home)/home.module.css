@@ -1,7 +1,6 @@
-/* 화면 13 홈
- * 모바일: 한 줄 세로 스택 — quick-action → 재고 요약 → (교사·admin) 재주문 알림 → 시약장 요약 → 최근 사용 기록, 카드 사이 24
- * 데스크톱: 화면 제목 + 2열(왼쪽 quick-action·home-summary / 오른쪽 재주문 알림·최근 사용 기록), 열 사이 32
- * DOM 은 데스크톱 열 구조 하나만 두고, 모바일에서는 열·요약 묶음을 display: contents 로 풀어 order 로 섞는다.
+/* 화면 13 홈 — 모바일 (데스크톱은 home-desk.module.css, d7 §23 run c)
+ * 한 줄 세로 스택 — quick-action → 재고 요약 → (교사·admin) 재주문 알림 → 시약장 요약 → 최근 사용 기록, 카드 사이 24
+ * DOM 은 예전 데스크톱 열 구조를 그대로 두고, 열·요약 묶음을 display: contents 로 풀어 order 로 섞는다.
  */
 
 .title {
@@ -96,35 +95,4 @@
 
 .action {
   display: flex;
-}
-
-@media (min-width: 1024px) {
-  .title {
-    display: block;
-  }
-
-  .dashboard {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: start;
-    gap: var(--space-32);
-  }
-
-  .column {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-24);
-  }
-
-  .dashboard .summary {
-    display: flex;
-  }
-
-  .quick,
-  .stock,
-  .reorder,
-  .cabinet,
-  .recent {
-    order: 0;
-  }
 }

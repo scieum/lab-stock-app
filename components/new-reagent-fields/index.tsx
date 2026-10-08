@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState } from "react";
 import { MsdsCandidates } from "@/components/msds-candidates";
+import { SheetAnchor } from "@/components/sheet-panel";
 import { MsdsSearch } from "@/components/msds-search";
 import { StorageClassChip } from "@/components/storage-class-chip";
 import { SuggestBadge } from "@/components/suggest-badge";
@@ -171,25 +172,31 @@ export function NewReagentFields({ itemName, value, onChange, error, disabled = 
       ) : null}
 
       {findMsds && finding ? (
-        <MsdsCandidates
-          caption={name}
-          query={query}
-          onQueryChange={setQuery}
-          onSearch={() => void msds.search(query)}
-          status={msds.state.status}
-          candidates={msds.state.status === "ready" ? msds.state.candidates : undefined}
-          searchedAs={msds.state.status === "ready" ? msds.state.searchedAs : null}
-          searchedVia={msds.state.status === "ready" ? msds.state.searchedVia : null}
-          searchedQuery={msds.state.status === "idle" ? undefined : msds.state.query}
-          message={msds.state.status === "error" ? msds.state.message : undefined}
-          onRetry={() => void msds.search(query)}
-          onConfirm={(c) => {
-            onChange?.({ msdsUrl: c.msdsUrl });
-            closeFinder();
-          }}
-          onDirect={openDirect}
-          onClose={closeFinder}
-        />
+        <SheetAnchor
+          placement="above"
+          avoidBottomBar
+          anchor={() => msdsRef.current?.querySelector<HTMLElement>('[data-component="msds-search"]') ?? msdsRef.current}
+        >
+          <MsdsCandidates
+            caption={name}
+            query={query}
+            onQueryChange={setQuery}
+            onSearch={() => void msds.search(query)}
+            status={msds.state.status}
+            candidates={msds.state.status === "ready" ? msds.state.candidates : undefined}
+            searchedAs={msds.state.status === "ready" ? msds.state.searchedAs : null}
+            searchedVia={msds.state.status === "ready" ? msds.state.searchedVia : null}
+            searchedQuery={msds.state.status === "idle" ? undefined : msds.state.query}
+            message={msds.state.status === "error" ? msds.state.message : undefined}
+            onRetry={() => void msds.search(query)}
+            onConfirm={(c) => {
+              onChange?.({ msdsUrl: c.msdsUrl });
+              closeFinder();
+            }}
+            onDirect={openDirect}
+            onClose={closeFinder}
+          />
+        </SheetAnchor>
       ) : null}
     </div>
   );
