@@ -1,8 +1,8 @@
 {
     "repo":  "https://github.com/scieum/harness",
-    "commit":  "ff1d25f",
+    "commit":  "275846d",
     "path":  "harness/rules.json",
-    "sha256":  "aca098072609d21be014693243b094727b7ea582b234c941d26937a385ded9d6",
+    "sha256":  "1755606a5a07bec43da334115abe2991328585df26ccbecb7d1cc8e5f19025b9",
     "figma_file":  "https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2",
     "figma_page":  "00 최신 시안",
     "frames_from_runs":  {
@@ -86,8 +86,8 @@
                              "7-msds-mobile":  "runs/20261008-1610",
                              "7-suggest-desktop":  "runs/20261008-1610",
                              "7-suggest-mobile":  "runs/20261008-1610",
-                             "15-desktop":  "runs/20261008-1936",
-                             "15-mobile":  "runs/20261008-1936"
+                             "15-desktop":  "runs/20261008-2144",
+                             "15-mobile":  "runs/20261008-2144"
                          },
-    "copied":  "2026-10-08 (14차: rules.json 1.22 - 데스크톱 재구성 1차 2차(desktop_shell, pre_login, 둘러보기 사이드바), 랜딩 긴 페이지. 프레임 = 디자인 run 20261008-0936(화면 2~13 16) 1233(로그인 전 1 14 15, 둘러보기, 14-no-school) 1610(상태 20종, 16) 1936(15 긴 랜딩). 데스크톱 재구성 run 이 화면별로 옮겨 가며 대조 - 아직 안 옮긴 화면은 tests/fixtures/frames-pre-desktop 의 예전 프레임 (d7 23))"
+    "copied":  "2026-10-09 (15차: rules.json 1.24 - 랜딩 푸터 한 줄(footer), 섹션 리듬(landing_rhythm), 반전 버튼, 스크롤 동작. 프레임 15-* = 디자인 run 20261008-2144. 그 밖 프레임은 14차 그대로 (d7 23 화면별 이전))"
 }
