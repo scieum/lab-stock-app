@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test, expect, type Browser, type Page, type TestInfo } from "@playwright/test";
 import { routeOf, rules, sel } from "./screen-helpers";
-import { HAS_SERVICE, clientFor, openTemp, service, type TempUser } from "./screen-8-helpers";
+import { tempSchoolLike, HAS_SERVICE, clientFor, openTemp, service, type TempUser } from "./screen-8-helpers";
 import { NO_S11_RESIDUE, cleanup, makeFixture, sharedCabinetSnapshot, type S11Fixture } from "./screen-11-helpers";
 import { CARD, TOAST, amountInput, submitButton, usagePath, waitUsage } from "./screen-4-helpers";
 import {
@@ -116,7 +116,7 @@ test.afterAll(async ({}, info) => {
   if (!HAS_SERVICE) return;
   prepCache = null;
   const sb = service();
-  const schools = await sb.from("schools").select("id").like("neis_code", `S8UI-${GROUP}-${info.project.name}-%`);
+  const schools = await sb.from("schools").select("id").like("neis_code", tempSchoolLike(GROUP, info.project.name));
   const ids = (schools.data ?? []).map((s) => s.id as string);
   if (ids.length) await sb.from("usage_logs").delete().in("school_id", ids);
   const left = await cleanup(GROUP, info.project.name);

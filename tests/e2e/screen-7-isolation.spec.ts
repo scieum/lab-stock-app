@@ -42,7 +42,7 @@ test.describe.configure({ mode: "default" });
 
 const N1 = rules.never.N1;
 const ROLES: Role[] = ["teacher", "admin", "schoolB"];
-const GROUP = "iso";
+const GROUP = "s7iso"; // screen-8-isolation("iso")과 겹치지 않게
 
 test.afterAll(async ({}, info) => {
   expect(await sweepTemp(info, GROUP, ["teacher", "schoolB"]), "임시 시약 잔여").toBe(0);

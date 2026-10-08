@@ -1,6 +1,7 @@
 // DB 권한 테스트 도우미 (N1-db · R-db).
 // - 공개 URL·publishable(anon) 키 + 각 테스트 계정 로그인으로 실제 RLS를 통과/거부하는지 본다.
-// - service role 키는 쓰지 않는다 (RLS를 우회하므로).
+// - 판정에 service role 키를 쓰지 않는다 (RLS를 우회하므로). 키가 있으면 로그인 토큰을 만드는 데만 쓴다(아래 signIn) —
+//   결과는 그 계정의 authenticated 세션이고 모든 판정 호출은 그 세션(publishable 키)으로 한다.
 // - 계정·키 값은 .env.local / 환경변수에서만 읽는다. 파일에 값을 쓰지 않는다.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -68,17 +69,57 @@ export function anonClient(): SupabaseClient {
 
 const cache = new Map<Role, Promise<Session>>();
 
+type AuthErr = { status?: number; code?: string; message?: string } | null;
+const isRateLimited = (e: AuthErr): boolean =>
+  Boolean(e) && (e?.status === 429 || e?.code === "over_request_rate_limit" || /rate limit/i.test(e?.message ?? ""));
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const LOGIN_RETRY_WAIT_MS = 11_000;
+const LOGIN_RETRY_TOTAL_MS = 300_000;
+
+/**
+ * 공용 계정 로그인 세션 (screen-8-helpers sessionFor 와 같은 관례).
+ * 전체 실행에서는 워커·스펙마다 공용 계정 비밀번호 로그인이 겹쳐 Supabase Auth 로그인 한도(IP 당)를 넘길 수 있다. 그래서
+ * 1) service role 키가 있으면 일회용 로그인 토큰(generateLink — 메일 없음)을 verifyOtp 로 바꿔 세션을 얻고(로그인 한도와 따로 센다),
+ * 2) 안 되면 비밀번호 로그인, 한도에 걸리면 기다렸다 다시 한다.
+ */
+async function loginClient(role: Role): Promise<{ client: SupabaseClient; userId: string }> {
+  const email = need(`${ENV_PREFIX[role]}_EMAIL`);
+  const password = need(`${ENV_PREFIX[role]}_PASSWORD`);
+  const url = need("NEXT_PUBLIC_SUPABASE_URL");
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const deadline = Date.now() + LOGIN_RETRY_TOTAL_MS;
+  for (;;) {
+    let last: AuthErr = null;
+    if (serviceKey) {
+      const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+      const link = await admin.auth.admin.generateLink({ type: "magiclink", email });
+      const tokenHash = link.data?.properties?.hashed_token;
+      if (!link.error && tokenHash) {
+        const client = newClient();
+        const v = await client.auth.verifyOtp({ token_hash: tokenHash, type: "magiclink" });
+        if (!v.error && v.data.user) return { client, userId: v.data.user.id };
+        last = v.error;
+      } else {
+        last = link.error;
+      }
+    }
+    const client = newClient();
+    const { data, error } = await client.auth.signInWithPassword({ email, password });
+    if (!error && data.user) return { client, userId: data.user.id };
+    if (!(isRateLimited(error) || isRateLimited(last)) || Date.now() > deadline) {
+      throw new Error(`${ROLE_LABEL[role]} 로그인 실패: 토큰 확인 = ${last?.message ?? "-"}, 비밀번호 = ${error?.message ?? "-"}`);
+    }
+    await sleep(LOGIN_RETRY_WAIT_MS);
+  }
+}
+
 /** 역할 계정으로 로그인 (워커당 1회). profiles 자기 행에서 school_id·role 확인. */
 export function signIn(role: Role): Promise<Session> {
   let p = cache.get(role);
   if (!p) {
     p = (async () => {
-      const client = newClient();
-      const { data, error } = await client.auth.signInWithPassword({
-        email: need(`${ENV_PREFIX[role]}_EMAIL`),
-        password: need(`${ENV_PREFIX[role]}_PASSWORD`),
-      });
-      if (error || !data.user) throw new Error(`${ROLE_LABEL[role]} 로그인 실패: ${error?.message}`);
+      const { client, userId } = await loginClient(role);
+      const data = { user: { id: userId } };
       const prof = await client
         .from("profiles")
         .select("school_id, role")

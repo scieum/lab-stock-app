@@ -17,7 +17,7 @@ import { join } from "node:path";
 import { expect, type BrowserContext, type Locator, type Page, type TestInfo } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { browserClient, devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
-import { exact, service, sweep, todayDots, type Residue } from "./screen-8-helpers";
+import { tempSchoolLike, exact, service, sweep, todayDots, type Residue } from "./screen-8-helpers";
 import { makeFixture, type S11Fixture } from "./screen-11-helpers";
 
 export { boxOf, frameCounts, highlightSoft, hydrated, onTop, watchActions } from "./screen-11-helpers";
@@ -658,7 +658,7 @@ export const NO_RESIDUE_69: Residue69 = {
 /** 이 묶음(group)·프로젝트의 일회용 학교·계정과 그 학교의 기록·시약·판매처·시약장을 지우고 남은 수를 돌려준다 */
 export async function cleanup(group: string, project: string): Promise<Residue69> {
   const sb = service();
-  const schools = await sb.from("schools").select("id").like("neis_code", `S8UI-${group}-${project}-%`);
+  const schools = await sb.from("schools").select("id").like("neis_code", tempSchoolLike(group, project));
   const ids = (schools.data ?? []).map((s) => s.id as string);
   if (ids.length) {
     for (const table of ["vendor_favorites", "usage_logs", "reagents", "vendors", "cabinets"]) await sb.from(table).delete().in("school_id", ids);

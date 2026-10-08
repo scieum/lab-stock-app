@@ -31,8 +31,17 @@ const INVITE_MAX = 50;
 /** 공용 계정의 기대 역할 (seed-test-users.mjs) — 비상 복구·불변 확인용 */
 const SHARED_ROLE: Record<Role, string> = { student: "student", teacher: "teacher", admin: "admin", schoolB: "teacher" };
 
-const EMAIL_PREFIX = "s8-test-";
-const SCHOOL_PREFIX = "S8-TEST-";
+/**
+ * 이 실행(worker 프로세스) 고유 토큰을 접두사에 넣는다 — sweep·잔여물 검사가 이 실행이 만든 것만 세고 지운다
+ * (같은 프로젝트를 동시에 도는 다른 worker 의 일회용 계정·학교를 세거나 지우지 않게).
+ */
+const RUN = `${Date.now().toString(36)}${randomBytes(3).toString("hex")}`;
+const BASE_EMAIL_PREFIX = "s8-test-";
+const BASE_SCHOOL_PREFIX = "S8-TEST-";
+const EMAIL_PREFIX = `${BASE_EMAIL_PREFIX}${RUN}-`;
+const SCHOOL_PREFIX = `${BASE_SCHOOL_PREFIX}${RUN}-`;
+/** 지난 실행 잔여물로 보는 나이 (이보다 오래된 다른 토큰 데이터만 지운다 — 세지 않는다) */
+const STALE_MS = 3 * 60 * 60 * 1000;
 const PROFILE_COLS = "user_id, school_id, role, display_name";
 
 /** 데모 학교 고정 id — lib/supabase/demo-data.ts (server-only 모듈이라 소스 텍스트에서 읽는다) */
@@ -314,7 +323,26 @@ async function invitesByService(schoolId: string): Promise<Row[]> {
 }
 
 /** 이 프로젝트 접두사의 잔여물(초대·시약·프로필·계정·학교)을 지우고, 남은 수를 돌려준다 */
+async function sweepStale(): Promise<void> {
+  const sb = service();
+  const cutoff = new Date(Date.now() - STALE_MS).toISOString();
+  const schools = await sb.from("schools").select("id").like("neis_code", `${BASE_SCHOOL_PREFIX}%`).lt("created_at", cutoff);
+  const ids = (schools.data ?? []).map((s) => s.id as string);
+  if (ids.length) for (const t of ["invites", "reagents", "profiles"]) await sb.from(t).delete().in("school_id", ids);
+  for (let page = 1; page <= 20; page++) {
+    const users = (await sb.auth.admin.listUsers({ page, perPage: 200 })).data?.users ?? [];
+    for (const u of users) {
+      if (!u.email?.startsWith(BASE_EMAIL_PREFIX) || u.email.startsWith(EMAIL_PREFIX) || !u.created_at || u.created_at >= cutoff) continue;
+      await sb.from("profiles").delete().eq("user_id", u.id);
+      await sb.auth.admin.deleteUser(u.id);
+    }
+    if (users.length < 200) break;
+  }
+  if (ids.length) await sb.from("schools").delete().in("id", ids);
+}
+
 async function sweep(project: string): Promise<{ users: number; schools: number; invites: number; profiles: number }> {
+  await sweepStale().catch(() => undefined);
   const sb = service();
   const emailLike = `${EMAIL_PREFIX}${project}-%`;
   const schools = await sb.from("schools").select("id").like("neis_code", `${SCHOOL_PREFIX}${project}-%`);
