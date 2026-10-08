@@ -159,3 +159,21 @@
   font-size: var(--font-size-15);
   line-height: var(--line-height-normal);
 }
+
+/*
+ * 목록 화면 전환 자리 표시 (reagents/(list)/loading) — 데스크톱:
+ * 다른 화면에서 들어오는 중이면 자리 표시가 본문 폭을 차지하고 목록(미리 받은 것)은 숨긴다 — 자리 표시 하나, 학교 데이터 0.
+ * 목록이 한 번 보인 뒤(data-shown — 드로어를 닫아 /reagents 로)는 자리 표시를 숨기고 목록을 그대로 둔다 (DeskListGate).
+ */
+@media (min-width: 1024px) {
+  .loading {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: var(--space-32);
+  }
+
+  .frame:has(.loading) .list:not([data-shown]),
+  .frame:has(.list[data-shown]) .loading {
+    display: none;
+  }
+}

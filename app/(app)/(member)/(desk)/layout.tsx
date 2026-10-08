@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { DesktopOnly } from "@/components/viewport-only";
 import { DeskList, DeskListSkeleton } from "./_desk/desk-list";
+import { DeskListGate } from "./_desk/desk-list-gate";
 import styles from "./_desk/desk.module.css";
 
 /**
@@ -12,13 +13,13 @@ import styles from "./_desk/desk.module.css";
  */
 export default function DeskLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className={styles.frame}>
+    <div className={styles.frame} data-desk-frame="">
       <DesktopOnly>
-        <div className={styles.list}>
+        <DeskListGate>
           <Suspense fallback={<DeskListSkeleton />}>
             <DeskList />
           </Suspense>
-        </div>
+        </DeskListGate>
       </DesktopOnly>
       {children}
     </div>

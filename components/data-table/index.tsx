@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Icon } from "@/components/icons";
+import { LinkPending } from "@/components/link-pending";
 import { linkPrefetch } from "@/lib/link-prefetch";
 import styles from "./styles.module.css";
 
@@ -118,8 +119,9 @@ export function DataTableRow({ children, selected = false, clickable = false, ta
           ? (e) => {
               const target = e.target as Element;
               if (target.closest(INTERACTIVE)) return;
-              const link = e.currentTarget.querySelector<HTMLAnchorElement>("a[data-row-link]");
-              link?.click();
+              // 대표 칸이 링크(a)든 버튼(화면 10 기록 행)이든 같은 동작
+              const target2 = e.currentTarget.querySelector<HTMLElement>("[data-row-link]");
+              target2?.click();
             }
           : undefined
       }
@@ -182,6 +184,7 @@ export function DataTableLinkCell({ href, children, current = false, caption, sc
       >
         <span className={styles.rowLinkText}>{children}</span>
         {caption ? <span className={styles.caption}>{caption}</span> : null}
+        <LinkPending />
       </Link>
     </td>
   );

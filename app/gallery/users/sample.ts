@@ -12,6 +12,6 @@ export const sampleMembers: UserManageMember[] = [
 export const sampleMemberCounts = { student: 3, teacher: 1, admin: 1 };
 
 export const sampleInvites: UserManageInvite[] = [
-  { id: "i-1", email: "lee.teacher@example.com", invitedAt: "10월 6일" },
-  { id: "i-2", email: "kim.student@example.com", invitedAt: "10월 5일" },
+  { id: "i-1", email: "lee.teacher@example.com", invitedAt: "10월 6일", role: "teacher" },
+  { id: "i-2", email: "kim.student@example.com", invitedAt: "10월 5일", role: "student" },
 ];

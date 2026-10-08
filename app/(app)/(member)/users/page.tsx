@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { formatDateTimeDashes, formatDateTimeDots } from "@/lib/format";
+import { formatDateTimeDashes } from "@/lib/format";
+import { monthDayLabel } from "@/lib/usage-history-rules";
 import { getUserManage } from "@/lib/supabase/users";
 import { UsersScreen } from "./users-screen";
 
@@ -38,8 +39,8 @@ export default async function UsersPage() {
         id: v.id,
         email: v.email,
         role: v.role,
-        // "2026.09.28 14:20" → "2026.09.28"
-        invitedAt: formatDateTimeDots(new Date(v.invitedAt)).slice(0, 10),
+        // 한국 날짜 "2026-10-06" → "10월 6일" (시안 1.24 8-mobile · 8-desktop 초대일)
+        invitedAt: monthDayLabel(formatDateTimeDashes(new Date(v.invitedAt)).slice(0, 10)),
       }))}
     />
   );

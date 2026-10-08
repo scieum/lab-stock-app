@@ -18,7 +18,7 @@ export async function DeskList() {
 /** 목록을 받는 동안 (머리 줄 · 표 자리) */
 export function DeskListSkeleton() {
   return (
-    <div className={styles.skeleton} aria-busy="true" aria-label="시약 목록을 불러오는 중">
+    <div className={styles.skeleton} aria-hidden="true">
       <div className={styles.skeletonBar} />
       <div className={styles.skeletonBar} />
       <div className={styles.skeletonTable} />

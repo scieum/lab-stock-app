@@ -83,11 +83,18 @@ export function DetailDrawer({
   useEffect(
     () => () => {
       const from = opener.current;
-      window.requestAnimationFrame(() => {
+      // 주소 이동 뒤 목록이 다시 보일 때까지 몇 프레임 기다리며 시도한다 (포커스가 갈 곳을 잃었을 때만)
+      let tries = 0;
+      const attempt = () => {
         const now = document.activeElement;
         if (now && now !== document.body) return;
-        if (from && from.isConnected) from.focus({ preventScroll: true });
-      });
+        if (from && from.isConnected) {
+          from.focus({ preventScroll: true });
+          if (document.activeElement === from) return;
+        }
+        if (++tries < 60) window.requestAnimationFrame(attempt);
+      };
+      window.requestAnimationFrame(attempt);
     },
     [],
   );

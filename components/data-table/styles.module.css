@@ -368,3 +368,8 @@ tbody > .row:last-child > * {
   overflow: visible;
   text-overflow: clip;
 }
+
+/* 행 링크를 누른 뒤 응답 전 (LinkPending — data-pending) = 눌린 모양 */
+.row:has([data-pending]) {
+  background: var(--color-surface-muted);
+}

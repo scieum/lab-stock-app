@@ -63,7 +63,7 @@ const W = { name: "18%", cls: "10.5%", loc: "23.5%", stock: "11%", status: "12.5
 /**
  * 데스크톱 시약 목록 (디자인 1.24 2-desktop, d7 §23 run b) — /reagents · /reagents/[id] · /msds/[id] · /usage/new 공통 왼쪽 본문.
  * page-head(제목 "시약" + "N종" · "재고 부족 n · MSDS 없음 n" / 검색 + list-filter-button 드롭다운) →
- * (교사·admin, MSDS 없는 시약이 있으면) msds-bulk-banner → toolbar(segmented-control 전체/재고 부족 + filter-chip-row) →
+ * (교사·admin 이 "MSDS 없는 시약만"을 켰으면) msds-bulk-banner → toolbar(segmented-control 전체/재고 부족 + filter-chip-row) →
  * data-table(시약명↑ · 보관 분류 · 보관 위치 · 재고 · 상태 · 최근 입고일 · MSDS, 10행씩) → pagination.
  * 행을 누르면 오른쪽 드로어(시약 상세)가 열린다 — 주소 /reagents/[id]?{목록 쿼리}. 목록 상태는 모두 주소창에 둔다.
  */
@@ -105,12 +105,11 @@ export function ReagentDeskTable({ items, cabinets, canFindMsds }: Props) {
 
   const lowCount = items.filter((r) => r.lowStock).length;
   const noMsdsCount = items.filter((r) => !r.hasMsds).length;
-  // d7 §20 + 시안 2-desktop: 교사·admin 에게 MSDS 없는 시약 띠 — "MSDS 없는 시약만"을 켰으면 지금 목록에서, 아니면 학교 전체에서
-  const msdsTargets = useMemo(() => {
-    if (!canFindMsds) return [];
-    const from = applied.noMsds ? visible : items;
-    return from.filter((r) => !r.hasMsds).map((r) => ({ id: r.id, name: r.name, cas: r.casNo }));
-  }, [canFindMsds, applied.noMsds, visible, items]);
+  // d7 §20: 교사·admin 이 "MSDS 없는 시약만"을 켰을 때만 띠 (모바일과 같다) — 지금 목록(다른 조건과 함께 거른 것)이 대상
+  const msdsTargets = useMemo(
+    () => (canFindMsds && applied.noMsds ? visible.filter((r) => !r.hasMsds).map((r) => ({ id: r.id, name: r.name, cas: r.casNo })) : []),
+    [canFindMsds, applied.noMsds, visible],
+  );
 
   const cabinetById = useMemo(() => new Map(cabinets.map((c) => [c.id, c])), [cabinets]);
 
@@ -218,7 +217,7 @@ export function ReagentDeskTable({ items, cabinets, canFindMsds }: Props) {
         </div>
       </div>
 
-      {canFindMsds && msdsTargets.length > 0 ? (
+      {canFindMsds && applied.noMsds ? (
         <div data-sheet-placement="top-end">
           <MsdsBulk targets={msdsTargets} />
         </div>

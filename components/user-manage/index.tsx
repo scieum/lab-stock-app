@@ -53,6 +53,11 @@ type Props = {
   onSelectMember?: (member: UserManageMember) => void;
 };
 
+/** 초대 대기 행 보조줄 — 시안 1.24 8-mobile "교사 · 10월 6일 초대" (역할 · 초대일) */
+function inviteCaption(v: UserManageInvite): string {
+  return v.role ? `${ROLE_LABEL[v.role]} · ${v.invitedAt} 초대` : `${v.invitedAt} 초대`;
+}
+
 function memberNote(m: UserManageMember): string | undefined {
   const parts = [m.isSelf ? "본인" : "", m.isLastAdmin ? "마지막 admin" : ""].filter(Boolean);
   return parts.length > 0 ? parts.join(" · ") : undefined;
@@ -158,7 +163,7 @@ export function UserManage({
             <ul className={styles.rows} aria-labelledby={invitesId}>
               {invites.map((v) => (
                 <li key={v.id} className={styles.item}>
-                  <DataInviteRow email={v.email} caption={`${v.invitedAt} 초대`} status="대기" />
+                  <DataInviteRow email={v.email} caption={inviteCaption(v)} status="대기" />
                 </li>
               ))}
             </ul>
