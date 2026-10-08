@@ -1,10 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
+import { Icon } from "@/components/icons";
 import { NavPill, type NavLinkItem } from "@/components/nav-pill";
 import { TabBar, type TabKey } from "@/components/tab-bar";
 import { sidebarAccountLabel, sidebarActiveKey, sidebarMenu, type SidebarRole } from "@/lib/sidebar-menu";
+import { linkPrefetch } from "@/lib/link-prefetch";
 import { useIsDesktop } from "@/lib/use-viewport";
 import styles from "./shell.module.css";
 
@@ -179,6 +182,45 @@ function MobileNav({ schoolName, staff = false, admin = false, page }: AppNavPro
   );
 }
 
+type DesktopHead = {
+  title: string;
+  backHref?: string;
+  /** 페이지에 이미 (숨은) h1 이 있으면 false — 보이는 제목은 글자만 (제목이 두 번 읽히지 않게) */
+  heading: boolean;
+};
+
+/**
+ * 데스크톱 사이드바 셸에서 nav-pill 이 맡던 제목·뒤로가기가 본문에 없는 화면의 page-head (run a 최소 보완 —
+ * 본문 재구성 run b·c 에서 각 화면 page-head 로 옮긴다). 뒤로 대상 = 모바일 nav-pill 과 같다,
+ * 제목 문구 = 새 *-desktop 프레임 page-title / drawer-title.
+ * - 화면 4 /usage/new: "사용 기록"(4-desktop drawer-title), 뒤로 → /reagents
+ * - 화면 5 /manual: "실험 매뉴얼"(5-desktop page-title), 뒤로 → /reorder (페이지에 숨은 h1 있음)
+ * - 화면 11 /cabinets: "시약장"(11-desktop page-title), 뒤로 없음(최상위 메뉴) (페이지에 숨은 h1 있음)
+ * 그 밖(2·3·6·7·8·9·10·13·16)은 본문이 이미 제목(·뒤로)을 그린다.
+ */
+function desktopHead(pathname: string): DesktopHead | undefined {
+  if (/^\/usage\/new\/?$/.test(pathname)) return { title: "사용 기록", backHref: "/reagents", heading: true };
+  if (/^\/manual\/?$/.test(pathname)) return { title: "실험 매뉴얼", backHref: "/reorder", heading: false };
+  if (/^\/cabinets\/?$/.test(pathname)) return { title: "시약장", heading: false };
+  return undefined;
+}
+
+function DesktopPageHead({ head }: { head: DesktopHead }) {
+  const Title = head.heading ? "h1" : "p";
+  return (
+    <div className={styles.pageHead}>
+      {head.backHref ? (
+        <Link href={head.backHref} prefetch={linkPrefetch(head.backHref)} className={styles.back} aria-label="뒤로">
+          <Icon name="back" className={styles.backIcon} />
+        </Link>
+      ) : null}
+      <Title className={styles.pageTitle} aria-hidden={head.heading ? undefined : true}>
+        {head.title}
+      </Title>
+    </div>
+  );
+}
+
 /**
  * 로그인 후 셸.
  * - 모바일(< 1024): 맨 위 nav-pill + 본문 + 하단 tab-bar (그대로).
@@ -190,6 +232,7 @@ export function AppShell({ schoolName, role, displayName, children }: Props) {
   const desktop = useIsDesktop();
   const staff = role !== "student";
   const admin = role === "admin";
+  const head = desktopHead(pathname);
   return (
     <div className={[styles.shell, styles.withSidebar].join(" ")}>
       {desktop === false ? null : (
@@ -204,7 +247,10 @@ export function AppShell({ schoolName, role, displayName, children }: Props) {
       )}
       <div className={[styles.content, styles.beside].join(" ")}>
         {isMsdsPath(pathname) ? null : <AppNav schoolName={schoolName} staff={staff} admin={admin} />}
-        <main className={styles.main}>{children}</main>
+        <main className={styles.main}>
+          {desktop !== false && head ? <DesktopPageHead head={head} /> : null}
+          {children}
+        </main>
       </div>
       <TabBar active={activeTab(pathname)} />
     </div>

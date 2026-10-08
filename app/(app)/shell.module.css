@@ -69,3 +69,56 @@
     display: none;
   }
 }
+
+/*
+ * 데스크톱 page-head (사이드바 셸 최소 보완): 뒤로 44 × 44(하늘색 아이콘 20) + 제목 24/700.
+ * 모바일은 nav-pill 이 맡으므로 숨김(하이드레이션 뒤에는 DOM 에서도 빠진다).
+ */
+.pageHead {
+  display: none;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.back {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--button-min-height);
+  min-height: var(--button-min-height);
+  margin-left: calc(var(--space-12) * -1);
+  color: var(--color-highlight);
+}
+
+.back:active {
+  opacity: var(--pressed-opacity);
+}
+
+.back:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.backIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+}
+
+.pageTitle {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--font-size-24);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 1024px) {
+  .pageHead {
+    display: flex;
+  }
+}
