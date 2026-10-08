@@ -272,7 +272,7 @@ export function DataTablePagination({ page, pageCount, hrefOf, onPage, label = "
         if (hrefOf) {
           const href = hrefOf(p);
           return (
-            <Link key={p} href={href} scroll={false} className={cls} aria-current={p === page ? "page" : undefined}>
+            <Link key={p} href={href} scroll={false} className={cls} aria-current={p === page ? "true" : undefined}>
               {p}
             </Link>
           );
@@ -282,7 +282,7 @@ export function DataTablePagination({ page, pageCount, hrefOf, onPage, label = "
             key={p}
             type="button"
             className={cls}
-            aria-current={p === page ? "page" : undefined}
+            aria-current={p === page ? "true" : undefined}
             onClick={() => onPage?.(p)}
           >
             {p}
