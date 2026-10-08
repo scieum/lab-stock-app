@@ -238,7 +238,7 @@ for (const role of ["teacher", "admin"] as const) {
 // =====================================================================
 
 for (const role of ["teacher", "admin"] as const) {
-  test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]}: 기본 구성 (${MANUAL} 안내 "${GUIDE_TEXT}" + ${PILL_SOFT} "${MANUAL_BUTTON}" → ${MANUAL_HREF}) · 화면 ${SCREEN} 밖 컴포넌트 0 · 알림 목록 = DB 의 stock < min_stock (부족 비율 큰 순) · 카드 = ${BADGE} + 시약명 + 필요량/현재 재고 + 기준 문구 + 알림 날짜 + ${LINK}`, async ({ browser }, info) => {
+  test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]}: 기본 구성 (${MANUAL} 안내 "${GUIDE_TEXT}" + ${PILL_SOFT} "${MANUAL_BUTTON}" → ${MANUAL_HREF}) · 화면 ${SCREEN} 밖 컴포넌트 0 · 알림 목록 = DB 의 stock < min_stock (부족 비율 큰 순) · 카드 = ${BADGE} + 시약명 + 재주문 기준/현재 재고(d7 §11 1.21) + 기준 문구 + 알림 날짜("M월 D일 알림") + ${LINK}`, async ({ browser }, info) => {
     test.setTimeout(240_000);
     const { context, page, response } = await openAs(browser, info, role, SCREEN);
     const actions = watchActions(page);
