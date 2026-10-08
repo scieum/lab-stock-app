@@ -16,10 +16,15 @@ type Props = {
   label?: string;
   /** true = 아직 고를 수 없는 단계 (화면 14 학교급: 지역을 고르기 전) */
   disabled?: boolean;
+  /**
+   * sm = 데스크톱 목록 머리 줄 (시안 1.24 2·8·9·10-desktop toolbar: 트랙 44 · 항목 높이 36 · 좌우 16 · 글자 13, 줄바꿈 없음).
+   * 기본은 지금 크기 (항목 44 · 글자 15)
+   */
+  size?: "default" | "sm";
 };
 
 /** 세그먼트 컨트롤 (회색 stadium 트랙 + 흰 선택 항목) */
-export function SegmentedControl({ options, value, defaultValue, onChange, variant = "outline", label, disabled }: Props) {
+export function SegmentedControl({ options, value, defaultValue, onChange, variant = "outline", label, disabled, size = "default" }: Props) {
   const [inner, setInner] = useState(defaultValue ?? options[0]?.value ?? "");
   const current = value ?? inner;
   const select = (v: string) => {
@@ -27,7 +32,7 @@ export function SegmentedControl({ options, value, defaultValue, onChange, varia
     onChange?.(v);
   };
   return (
-    <div data-component="segmented-control" role="tablist" aria-label={label} className={styles.track}>
+    <div data-component="segmented-control" role="tablist" aria-label={label} className={[styles.track, size === "sm" ? styles.sm : ""].filter(Boolean).join(" ")}>
       {options.map((o) =>
         o.value === current ? (
           <SegmentedControlActive key={o.value} variant={variant} disabled={disabled}>

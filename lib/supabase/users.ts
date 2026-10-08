@@ -26,6 +26,8 @@ export type ManagedMember = {
   isSelf: boolean;
   /** 이 학교의 유일한 admin — 역할 변경·삭제 불가 */
   isLastAdmin: boolean;
+  /** 가입 시각 (profiles.created_at, ISO) — 데스크톱 표 "가입일" */
+  joinedAt: string | null;
 };
 
 export type PendingInvite = {
@@ -110,6 +112,7 @@ export async function getUserManage(): Promise<UserManageResult> {
           role,
           isSelf: m.user_id === uid,
           isLastAdmin: role === "admin" && counts.admin <= 1,
+          joinedAt: typeof m.created_at === "string" ? m.created_at : null,
         };
       }),
       invites: (invites.data ?? []).map((i) => ({

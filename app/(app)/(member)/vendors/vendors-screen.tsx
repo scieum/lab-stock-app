@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { Toast } from "@/components/ex-toast";
+import { DesktopOnly, MobileOnly } from "@/components/viewport-only";
 import { SegmentedControl } from "@/components/segmented-control";
 import { TextInput } from "@/components/text-input";
 import {
@@ -15,6 +16,7 @@ import {
 } from "@/components/vendor-register";
 import { filterVendors, type VendorField, type VendorValue } from "@/lib/vendor-rules";
 import { deleteVendorAction, saveVendorAction, toggleVendorFavoriteAction } from "./actions";
+import { VendorsDesk } from "./vendors-desk";
 import styles from "./vendors.module.css";
 
 type Props = {
@@ -116,7 +118,7 @@ export function VendorsScreen({ vendors: serverVendors, common: serverCommon }: 
     setForm(next);
   };
 
-  const save = (value: Omit<VendorValue, "note">, editingId: string | null) => {
+  const save = (value: Omit<VendorValue, "note">, editingId: string | null, after?: () => void) => {
     if (pending || sending.current) return;
     sending.current = true;
     setFormError(null);
@@ -141,6 +143,7 @@ export function VendorsScreen({ vendors: serverVendors, common: serverCommon }: 
         // 방금 저장한 행이 검색에 걸러져 안 보이면 검색을 푼다
         if (filterVendors([saved], query).length === 0) setQuery("");
         setToast({ key: Date.now(), text: "판매처를 저장했어요" });
+        after?.();
       } finally {
         sending.current = false;
       }
@@ -159,7 +162,7 @@ export function VendorsScreen({ vendors: serverVendors, common: serverCommon }: 
     setDeleteError(null);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = (after?: () => void) => {
     if (pending || sending.current || !deleting) return;
     const id = deleting.id;
     sending.current = true;
@@ -176,6 +179,7 @@ export function VendorsScreen({ vendors: serverVendors, common: serverCommon }: 
         setFormError(null);
         setHighlightId(null);
         setToast({ key: Date.now(), text: "판매처를 삭제했어요" });
+        after?.();
       } finally {
         sending.current = false;
       }
@@ -206,6 +210,8 @@ export function VendorsScreen({ vendors: serverVendors, common: serverCommon }: 
   const shownCommon = filterVendors(common, query);
 
   return (
+    <>
+    <MobileOnly>
     <div ref={pageRef} className={styles.page}>
       <h1 className={styles.title}>판매처 설정</h1>
 
@@ -260,7 +266,7 @@ export function VendorsScreen({ vendors: serverVendors, common: serverCommon }: 
             pending={pending}
             error={deleteError}
             onCancel={cancelDelete}
-            onConfirm={confirmDelete}
+            onConfirm={() => confirmDelete()}
           />
         ) : null}
       </div>
@@ -271,5 +277,32 @@ export function VendorsScreen({ vendors: serverVendors, common: serverCommon }: 
         </Toast>
       ) : null}
     </div>
+    </MobileOnly>
+    {/* 데스크톱 (d7 §23 run b): data-table + 등록·수정 오른쪽 드로어 (?form= 주소창) */}
+    <DesktopOnly>
+      <VendorsDesk
+        tab={tab}
+        onTabChange={changeTab}
+        query={query}
+        onQueryChange={setQuery}
+        vendors={filterVendors(vendors, query)}
+        allVendors={vendors}
+        common={shownCommon}
+        searching={searching}
+        highlightId={highlightId}
+        pending={pending}
+        formError={formError}
+        onClearFormError={() => setFormError(null)}
+        onSave={save}
+        deleting={deleting && tab === "school" ? deleting : null}
+        deleteError={deleteError}
+        onAskDelete={askDelete}
+        onCancelDelete={cancelDelete}
+        onConfirmDelete={confirmDelete}
+        onToggleFavorite={toggleFavorite}
+        toast={toast}
+      />
+    </DesktopOnly>
+    </>
   );
 }

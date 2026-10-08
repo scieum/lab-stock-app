@@ -58,3 +58,20 @@
     flex: 0 0 var(--space-64);
   }
 }
+
+/* 데스크톱 detail-drawer 정보 줄 (시안 3-desktop reagent-location: 위아래 12 · 아래 hairline, 라벨 104 · 사이 16) */
+.rowLayout {
+  padding: var(--space-12) var(--space-0);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.rowLayout .field {
+  flex: 1 1 auto;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-16);
+}
+
+.rowLayout .label {
+  flex: 0 0 calc(var(--space-64) + var(--space-32) + var(--space-8));
+}

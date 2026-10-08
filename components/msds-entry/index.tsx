@@ -25,21 +25,39 @@ type Props = {
    * 없으면 예전처럼 href 를 새 창으로 연다 (갤러리 예시).
    */
   summaryHref?: string;
+  /** summaryHref 버튼 아이콘 — 기본 external, 데스크톱 드로어 안은 chevron-right (시안 3·10-desktop icon-right — 같은 화면 안 이동) */
+  summaryIcon?: "external" | "chevron-right";
+  /**
+   * stack = QR 타일 위 · 버튼 아래(기본, 모바일) · row = 데스크톱 detail-drawer (시안 3-desktop msds-entry: QR 타일 112 + 버튼 가로, 사이 16;
+   * MSDS 없는 시약은 타일 없이 캡션 + MSDS 찾기 — 시안 3-msds-desktop)
+   */
+  layout?: "stack" | "row";
 };
 
 /** MSDS 진입점 (QR 타일 + MSDS 보기 버튼). 모든 역할에 보인다(R4). */
-export function MsdsEntry({ href, qr, caption, notice, variant = "tile", missingAction, summaryHref }: Props) {
+export function MsdsEntry({
+  href,
+  qr,
+  caption,
+  notice,
+  variant = "tile",
+  missingAction,
+  summaryHref,
+  summaryIcon = "external",
+  layout = "stack",
+}: Props) {
   const noticeId = useId();
   const buttonOnly = variant === "button";
+  const row = layout === "row";
   return (
     <section
       data-component="msds-entry"
-      className={[styles.entry, buttonOnly ? styles.buttonOnly : ""].join(" ").trim()}
+      className={[styles.entry, buttonOnly ? styles.buttonOnly : "", row ? styles.row : ""].filter(Boolean).join(" ")}
       aria-label="MSDS"
     >
-      {buttonOnly ? null : <MsdsQrTile caption={caption}>{qr}</MsdsQrTile>}
+      {buttonOnly || (row && !href && missingAction !== undefined) ? null : <MsdsQrTile caption={caption}>{qr}</MsdsQrTile>}
       {href && summaryHref ? (
-        <ButtonPillSoft href={summaryHref} icon="external">
+        <ButtonPillSoft href={summaryHref} icon={summaryIcon}>
           MSDS 보기
         </ButtonPillSoft>
       ) : href ? (

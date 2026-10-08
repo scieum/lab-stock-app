@@ -34,3 +34,17 @@
 .option:focus-visible {
   outline: var(--border-width) solid var(--color-highlight);
 }
+
+/* sm: 데스크톱 목록 머리 줄 (시안 1.24 toolbar segmented-control — 항목 36 · 좌우 16 · 13, 줄바꿈 없음) */
+.sm {
+  flex-shrink: 0;
+  width: max-content;
+}
+
+.track.sm > * {
+  flex: 0 0 auto;
+  min-height: calc(var(--space-32) + var(--space-4));
+  padding: var(--space-0) var(--space-16);
+  font-size: var(--font-size-13);
+  white-space: nowrap;
+}

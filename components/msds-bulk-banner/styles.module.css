@@ -33,4 +33,9 @@
   .bleed {
     margin-inline: var(--space-0);
   }
+
+  /* 시안 1.24 2-desktop: 목록 머리 아래 띠 = radius 16 */
+  .banner {
+    border-radius: var(--radius-md);
+  }
 }

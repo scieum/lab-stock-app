@@ -68,6 +68,15 @@
   .mobileOnly {
     display: none;
   }
+
+  /* 목록 + 드로어 화면 (run b): 여백은 페이지가 둔다 (시안 main 안쪽 32 · 드로어는 오른쪽 끝) */
+  .flush {
+    padding: var(--space-0);
+  }
+
+  .flush .main {
+    gap: var(--space-0);
+  }
 }
 
 /*

@@ -22,6 +22,8 @@ export type UserManageMember = {
   isSelf?: boolean;
   /** 학교의 마지막 admin (다른 역할로 못 바꾸고 삭제도 못 한다) */
   isLastAdmin?: boolean;
+  /** 가입일 "2026-03-02" (데스크톱 표) */
+  joinedOn?: string | null;
 };
 
 export type UserManageInvite = {
@@ -29,6 +31,8 @@ export type UserManageInvite = {
   email: string;
   /** 표시용 초대일 (예: "2026.09.28") */
   invitedAt: string;
+  /** 초대 역할 (데스크톱 표) */
+  role?: "student" | "teacher";
 };
 
 type Props = {

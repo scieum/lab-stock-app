@@ -1,5 +1,5 @@
-import { ReagentBrowser, type ReagentFilter } from "@/app/(app)/(member)/reagents/(list)/reagent-browser";
-import styles from "@/app/(app)/(member)/reagents/(list)/reagents.module.css";
+import { ReagentBrowser, type ReagentFilter } from "@/app/(app)/(member)/(desk)/reagents/(list)/reagent-browser";
+import styles from "@/app/(app)/(member)/(desk)/reagents/(list)/reagents.module.css";
 import { parseListFilter } from "@/lib/reagent-list-filter";
 import { getDemoReagentList } from "@/lib/supabase/demo-data";
 

@@ -54,6 +54,8 @@ import { MsdsQrTile } from "@/components/msds-qr-tile";
 import { NavAccountMenu } from "@/components/nav-account-menu";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarItem } from "@/components/sidebar-item";
+import { DataTable as DeskTable, DataTableCell as DeskCell, DataTableRow as DeskRow } from "@/components/data-table";
+import { DetailDrawer, DrawerRow, DrawerRows } from "@/components/detail-drawer";
 import { sidebarAccountLabel, sidebarMenu } from "@/lib/sidebar-menu";
 import { NavPill } from "@/components/nav-pill";
 import { QrLabel } from "@/components/qr-label";
@@ -819,6 +821,42 @@ export default function GalleryPage() {
           <Link href="/gallery/sidebar" className={styles.more}>
             역할별 사이드바 보기 — 학생 · 교사 · admin (/gallery/sidebar)
           </Link>
+        </Item>
+
+        <Item name="data-table (데스크톱 목록 표 — 머리행 · 정렬 표시 · 선택 행)">
+          <DeskTable
+            label="시약 목록 (예시)"
+            columns={[
+              { key: "name", label: "시약명", width: "40%" },
+              { key: "stock", label: "재고", width: "30%" },
+              { key: "msds", label: "MSDS", width: "30%" },
+            ]}
+          >
+            <DeskRow>
+              <DeskCell>과망가니즈산칼륨</DeskCell>
+              <DeskCell>25 g</DeskCell>
+              <DeskCell>있음</DeskCell>
+            </DeskRow>
+            <DeskRow selected>
+              <DeskCell strong>과산화수소</DeskCell>
+              <DeskCell>2병</DeskCell>
+              <DeskCell tone="muted">없음</DeskCell>
+            </DeskRow>
+          </DeskTable>
+          <Link href="/gallery/desk" className={styles.more}>
+            목록 표 · 드로어 더 보기 — 정렬 · 묶음 머리 · 더보기 · 빈 상태 · 쪽 번호 · 입력 드로어 (/gallery/desk)
+          </Link>
+        </Item>
+
+        <Item name="detail-drawer (데스크톱 오른쪽 드로어 — 폭 480, 제목 + ×, 정보 줄)">
+          <DetailDrawer inline title="과산화수소" closeHref="/gallery">
+            <DrawerRows label="시약 정보 (예시)">
+              <DrawerRow label="현재 재고" display unit="병">
+                2
+              </DrawerRow>
+              <DrawerRow label="입고일">2026-09-14</DrawerRow>
+            </DrawerRows>
+          </DetailDrawer>
         </Item>
 
         <Item name="tab-bar · tab-item">

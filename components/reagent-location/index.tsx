@@ -23,6 +23,8 @@ type Props = {
   /** 피커가 열려 있는지 */
   editing?: boolean;
   editDisabled?: boolean;
+  /** card = reagent-detail-card 안 줄(기본) · row = 데스크톱 detail-drawer 정보 줄 (라벨 104 칸 + 값, 위아래 12 · 아래 hairline — 시안 3-desktop) */
+  layout?: "card" | "row";
 };
 
 /**
@@ -30,10 +32,10 @@ type Props = {
  * caption "보관 위치" + 값 "(1) 1번 시약장 · 우 1단"(cabinet-number + body) 또는 "칸 없음"(회색).
  * 교사·admin 은 오른쪽에 location-edit. 학생은 값만 본다.
  */
-export function ReagentLocation({ cabinet, slot, canEdit = false, onEdit, editing, editDisabled }: Props) {
+export function ReagentLocation({ cabinet, slot, canEdit = false, onEdit, editing, editDisabled, layout = "card" }: Props) {
   const placed = Boolean(cabinet && slot);
   return (
-    <div data-component="reagent-location" className={styles.row}>
+    <div data-component="reagent-location" className={[styles.row, layout === "row" ? styles.rowLayout : ""].filter(Boolean).join(" ")}>
       <div className={styles.field}>
         <span className={styles.label}>보관 위치</span>
         <span className={styles.value}>

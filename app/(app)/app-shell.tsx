@@ -193,13 +193,12 @@ type DesktopHead = {
  * 데스크톱 사이드바 셸에서 nav-pill 이 맡던 제목·뒤로가기가 본문에 없는 화면의 page-head (run a 최소 보완 —
  * 본문 재구성 run b·c 에서 각 화면 page-head 로 옮긴다). 뒤로 대상 = 모바일 nav-pill 과 같다,
  * 제목 문구 = 새 *-desktop 프레임 page-title / drawer-title.
- * - 화면 4 /usage/new: "사용 기록"(4-desktop drawer-title), 뒤로 → /reagents
+ * (화면 4 /usage/new 는 run b 에서 시약 목록 + 드로어로 옮겨 드로어 제목·뒤로가 대신한다)
  * - 화면 5 /manual: "실험 매뉴얼"(5-desktop page-title), 뒤로 → /reorder (페이지에 숨은 h1 있음)
  * - 화면 11 /cabinets: "시약장"(11-desktop page-title), 뒤로 없음(최상위 메뉴) (페이지에 숨은 h1 있음)
- * 그 밖(2·3·6·7·8·9·10·13·16)은 본문이 이미 제목(·뒤로)을 그린다.
+ * 그 밖(2·3·4·6·7·8·9·10·13·16)은 본문이 이미 제목(·뒤로)을 그린다.
  */
 function desktopHead(pathname: string): DesktopHead | undefined {
-  if (/^\/usage\/new\/?$/.test(pathname)) return { title: "사용 기록", backHref: "/reagents", heading: true };
   if (/^\/manual\/?$/.test(pathname)) return { title: "실험 매뉴얼", backHref: "/reorder", heading: false };
   if (/^\/cabinets\/?$/.test(pathname)) return { title: "시약장", heading: false };
   return undefined;
@@ -219,6 +218,15 @@ function DesktopPageHead({ head }: { head: DesktopHead }) {
       </Title>
     </div>
   );
+}
+
+/**
+ * 데스크톱 재구성 run b(d7 §23): 목록 data-table + 오른쪽 detail-drawer 화면 — 본문 여백을 페이지가 직접 둔다
+ * (시안 main 안쪽 32, 드로어는 본문 오른쪽 끝에 붙는다). 모바일 여백은 그대로.
+ * 2 /reagents · 3 /reagents/[id] · 16 /msds/[id] · 4 /usage/new · 10 /usage · 8 /users · 9 /vendors
+ */
+function isDeskPath(pathname: string): boolean {
+  return /^\/(reagents(\/[^/]+)?|msds\/[^/]+|usage(\/new)?|users|vendors)\/?$/.test(pathname);
 }
 
 /**
@@ -245,7 +253,7 @@ export function AppShell({ schoolName, role, displayName, children }: Props) {
           onLogout={logout}
         />
       )}
-      <div className={[styles.content, styles.beside].join(" ")}>
+      <div className={[styles.content, styles.beside, isDeskPath(pathname) ? styles.flush : ""].filter(Boolean).join(" ")}>
         {isMsdsPath(pathname) ? null : <AppNav schoolName={schoolName} staff={staff} admin={admin} />}
         <main className={styles.main}>
           {desktop !== false && head ? <DesktopPageHead head={head} /> : null}

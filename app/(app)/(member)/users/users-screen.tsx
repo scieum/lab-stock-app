@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Toast } from "@/components/ex-toast";
+import { DesktopOnly, MobileOnly } from "@/components/viewport-only";
 import {
   DeleteConfirm,
   InviteSheet,
@@ -14,6 +15,7 @@ import {
 } from "@/components/user-manage";
 import type { Role } from "@/lib/types";
 import { changeMemberRoleAction, inviteMembersAction, removeMemberAction } from "./actions";
+import { UsersDesk } from "./users-desk";
 import styles from "./users.module.css";
 
 type Props = {
@@ -231,7 +233,20 @@ export function UsersScreen({ schoolName, members, counts, invites }: Props) {
     });
   };
 
+  /** 데스크톱 page-head 의 "초대 링크 복사" — 결과 문구를 돌려준다 */
+  const copyLinkText = async (): Promise<string> => {
+    const url = `${window.location.origin}${SIGNUP_PATH}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      return "링크를 복사했어요";
+    } catch {
+      return copyWithSelection(url) ? "링크를 복사했어요" : `복사하지 못했어요. 이 주소를 전달하세요: ${url}`;
+    }
+  };
+
   return (
+    <>
+    <MobileOnly>
     <div ref={pageRef} className={styles.page}>
       <h1 className={styles.title}>사용자 관리</h1>
 
@@ -299,5 +314,11 @@ export function UsersScreen({ schoolName, members, counts, invites }: Props) {
         </Toast>
       ) : null}
     </div>
+    </MobileOnly>
+    {/* 데스크톱 (d7 §23 run b): data-table 2개 + 초대는 page-head, 역할 바꾸기 · 삭제 확인은 가운데 ex-modal-card */}
+    <DesktopOnly>
+      <UsersDesk schoolName={schoolName} members={members} counts={counts} invites={invites} onCopyLink={copyLinkText} />
+    </DesktopOnly>
+    </>
   );
 }
