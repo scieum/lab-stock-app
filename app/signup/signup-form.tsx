@@ -114,6 +114,7 @@ export function SignupForm() {
         title="메일을 확인하세요"
         subtitle={`${done.email} 로 보낸 확인 메일의 링크를 누르면 가입이 끝나요`}
         aria-label="가입 확인 안내"
+        variant="split"
         onSubmit={(e) => e.preventDefault()}
       >
         <p className={styles.note} role="status">
@@ -133,11 +134,15 @@ export function SignupForm() {
       onSubmit={onSubmit}
       noValidate
       aria-label="회원가입"
+      variant="split"
       className={styles.card}
     >
       <section className={styles.schoolBlock} aria-labelledby="signup-school-title">
+        {/* 모바일 "학교" (14-mobile) / 데스크톱 번호 섹션 "1 학교 선택" (14-desktop section-head) */}
         <h2 id="signup-school-title" className={styles.sectionTitle}>
-          학교
+          <span className={styles.sectionNumber}>1</span>
+          <span className={styles.titleMobile}>학교</span>
+          <span className={styles.titleDesktop}>학교 선택</span>
         </h2>
         <p className={styles.infoBox}>
           <Icon name="info" className={styles.infoIcon} aria-hidden="true" />
@@ -188,8 +193,11 @@ export function SignupForm() {
         </div>
       </section>
 
+      <hr className={styles.sectionDivider} />
+
       <section className={styles.accountBlock} aria-labelledby="signup-account-title">
         <h2 id="signup-account-title" className={styles.sectionTitle}>
+          <span className={styles.sectionNumber}>2</span>
           계정
         </h2>
         <TextInput

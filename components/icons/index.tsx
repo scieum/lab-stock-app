@@ -41,9 +41,31 @@ export type IconName =
   | "arrow-up"
   | "arrow-down"
   | "sort"
-  | "file";
+  | "file"
+  | "quote"
+  | "lock"
+  | "shield";
 
 const PATHS: Record<IconName, React.ReactNode> = {
+  // 랜딩 15-desktop 문제 공감 카드 (icon-quote) · 안심 격자 (icon-lock · icon-shield)
+  quote: (
+    <>
+      <path d="M5 11h4v6H5v-6Zm0 0c0-3 1.5-5 4-6" />
+      <path d="M14 11h4v6h-4v-6Zm0 0c0-3 1.5-5 4-6" />
+    </>
+  ),
+  lock: (
+    <>
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </>
+  ),
+  shield: (
+    <>
+      <path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Z" />
+      <path d="m9 12 2 2 4-4" />
+    </>
+  ),
   home: (
     <>
       <path d="M3.5 10.5 12 3.5l8.5 7" />

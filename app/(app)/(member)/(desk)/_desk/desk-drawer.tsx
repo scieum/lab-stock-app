@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { ButtonOutline } from "@/components/button-outline";
 import { DetailDrawer } from "@/components/detail-drawer";
 import { msdsDrawerHref, reagentDetailHref, reagentListHref, usageNewHref } from "@/lib/reagent-desk";
+import { useDeskBase } from "./desk-base";
 import styles from "./desk.module.css";
 
 /**
@@ -12,11 +13,14 @@ import styles from "./desk.module.css";
  */
 export function useDeskHrefs(reagentId?: string | null) {
   const sp = useSearchParams();
+  // 둘러보기(/demo) 데스크톱이면 같은 규칙을 /demo 앞머리로 (사용 기록 입력은 둘러보기에 없다 — 부르는 쪽이 잠금으로 바꾼다)
+  const base = useDeskBase();
+  const list = reagentListHref(sp, base);
   return {
-    list: reagentListHref(sp),
-    detail: reagentId ? reagentDetailHref(reagentId, sp) : reagentListHref(sp),
-    usage: reagentId ? usageNewHref(reagentId, sp) : reagentListHref(sp),
-    msds: reagentId ? msdsDrawerHref(reagentId, sp) : reagentListHref(sp),
+    list,
+    detail: reagentId ? reagentDetailHref(reagentId, sp, base) : list,
+    usage: reagentId && !base ? usageNewHref(reagentId, sp) : list,
+    msds: reagentId ? msdsDrawerHref(reagentId, sp, base) : list,
   };
 }
 

@@ -161,7 +161,8 @@ function guestThresholdText(t: ReagentDetail["threshold"]): string {
 
 type DeskProps = {
   data: Omit<ReagentDetail, "role">;
-  role: Role;
+  /** 없으면 둘러보기 데스크톱(3g, d7 §23 run d) — 학생과 같은 읽기 화면 + 사용 기록은 guest-lock, CAS·칸 분류 줄 없음(시안 3-guest-desktop) */
+  role?: Role;
   openPicker?: boolean;
   /** 이 상세 화면의 경로 (QR 대체 주소) */
   selfPath: string;
@@ -169,11 +170,12 @@ type DeskProps = {
 
 /**
  * 화면 3 데스크톱 (d7 §23 run b): 시약 목록 옆 오른쪽 detail-drawer. QR(서버에서 만든 SVG)과 MSDS 찾기를 만들어
- * 드로어(클라이언트 — 목록 쿼리를 따라가는 주소)에 넘긴다. 로그인 전용 (둘러보기 데스크톱은 run d).
+ * 드로어(클라이언트 — 목록 쿼리를 따라가는 주소)에 넘긴다. 둘러보기(role 없음)는 /demo 목록 옆 같은 드로어 (run d).
  */
 export async function ReagentDetailDesk({ data, role, openPicker = false, selfPath }: DeskProps) {
   const { reagent, placement } = data;
-  const staff = role !== "student";
+  const guest = !role;
+  const staff = !guest && role !== "student";
   const qrTarget = reagent.msdsUrl ?? (await absoluteUrl(selfPath));
   const qr = qrPath(qrTarget);
   return (
@@ -181,13 +183,18 @@ export async function ReagentDetailDesk({ data, role, openPicker = false, selfPa
       <ReagentDetailDrawer
         data={data}
         staff={staff}
+        guest={guest}
         openPicker={openPicker}
         qr={<QrCodeSvg size={qr.size} d={qr.d} label={reagent.msdsUrl ? `${reagent.name} MSDS QR 코드` : `${reagent.name} 상세 QR 코드`} />}
         missingAction={staff ? <MsdsFind reagentId={reagent.id} reagentName={reagent.name} casNo={reagent.casNo} /> : null}
-        extraRows={[
-          { label: "CAS 번호", value: reagent.casNo ?? "-" },
-          { label: "칸 보관 분류", value: placement ? slotLabel(placement.classes) : "-" },
-        ]}
+        extraRows={
+          guest
+            ? []
+            : [
+                { label: "CAS 번호", value: reagent.casNo ?? "-" },
+                { label: "칸 보관 분류", value: placement ? slotLabel(placement.classes) : "-" },
+              ]
+        }
       />
       {staff ? <MsdsSavedToast /> : null}
     </>

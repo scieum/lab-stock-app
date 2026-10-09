@@ -79,3 +79,23 @@
   display: flex;
   min-width: 0;
 }
+
+/* 둘러보기 sidebar-account (시안 13-guest-desktop): padding 0/12 · 사이 8, "둘러보는 중" 13/400 회색 + 로그인 button-outline 전폭 44 */
+.guestAccount {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+  padding: 0 var(--space-12);
+}
+
+.guestStatus {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.guestLogin {
+  width: 100%;
+  height: var(--button-min-height);
+}

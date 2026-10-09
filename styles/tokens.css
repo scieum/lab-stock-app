@@ -56,6 +56,8 @@
   --font-size-24: 24px;
   --font-size-28: 28px;
   --font-size-32: 32px;
+  --display-font-40: 40px;
+  --display-font-48: 48px;
   --letter-spacing: 0;
   --line-height-tight: 1.3;
   --line-height-normal: 1.5;
@@ -99,6 +101,15 @@
   --status-bar-height: 8px;
   --qr-size: 126px;
   --side-column-width: 400px;
+  --web-header-height: 64px;
+  --auth-form-width: 440px;
+  --landing-content-width: 1200px;
+  --landing-hero-copy-width: 560px;
+  --landing-copy-width: 480px;
+
+  /* motion (rules.json landing_rhythm) */
+  --motion-reveal-distance: 16px;
+  --motion-reveal-duration: 0.4s;
 
   /* desktop shell (rules.json desktop_shell) */
   --sidebar-width: 240px;

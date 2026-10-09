@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ButtonOutline } from "@/components/button-outline";
 import { NavAccountMenu } from "@/components/nav-account-menu";
 import { SidebarItem } from "@/components/sidebar-item";
 import type { SidebarGroup, SidebarKey } from "@/lib/sidebar-menu";
@@ -19,6 +20,11 @@ type Props = {
   onLogout?: () => void | Promise<void>;
   /** 셸 배치용 바깥 class (sticky·높이) */
   className?: string;
+  /**
+   * 둘러보기 데스크톱 (rules.json 1.24 guest.desktop, 시안 13-guest-desktop sidebar-account): 계정 줄 대신
+   * "둘러보는 중" + 로그인(button-outline 전폭). 잠긴 메뉴(locked)는 guest-lock.
+   */
+  guest?: { loginHref: string };
 };
 
 /**
@@ -26,7 +32,7 @@ type Props = {
  * 위 = 워드마크 Lab_Stock + 학교명, 그 아래 sidebar-item 목록(역할별 묶음, 묶음 제목 12 회색),
  * 맨 아래 = 계정 줄 "이름 · 역할" ▾ → 로그아웃.
  */
-export function AppSidebar({ schoolName, groups, active, account, onLogout, className }: Props) {
+export function AppSidebar({ schoolName, groups, active, account, onLogout, className, guest }: Props) {
   return (
     <aside data-component="app-sidebar" className={[styles.sidebar, className].filter(Boolean).join(" ")}>
       <div className={styles.top}>
@@ -45,13 +51,27 @@ export function AppSidebar({ schoolName, groups, active, account, onLogout, clas
                 </p>
               ) : null}
               {g.items.map((it) => (
-                <SidebarItem key={it.key} label={it.label} icon={it.icon} href={it.href} active={it.key === active} />
+                <SidebarItem
+                  key={it.key}
+                  label={it.label}
+                  icon={it.icon}
+                  href={it.href}
+                  active={!it.locked && it.key === active}
+                  locked={it.locked}
+                />
               ))}
             </div>
           ))}
         </nav>
       </div>
-      {account ? (
+      {guest ? (
+        <div className={styles.guestAccount}>
+          <span className={styles.guestStatus}>둘러보는 중</span>
+          <ButtonOutline href={guest.loginHref} className={styles.guestLogin}>
+            로그인
+          </ButtonOutline>
+        </div>
+      ) : account ? (
         <div className={styles.account}>
           <NavAccountMenu schoolName={schoolName} label={account} variant="sidebar" onLogout={onLogout} />
         </div>

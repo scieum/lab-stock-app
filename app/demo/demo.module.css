@@ -1,15 +1,47 @@
 /* 둘러보기 셸 — 공통 틀은 app/(app)/shell.module.css 를 그대로 쓴다.
  * guest-banner: 모바일(시안 13-guest-mobile)은 390 전폭(x=0) — content padding 16 을 음수 여백으로 상쇄.
- * 데스크톱(13-guest-desktop)은 content 안 1312 폭 그대로.
+ * 데스크톱(13·2·3·16-guest-desktop, d7 §23 run d): 사이드바 오른쪽 본문 맨 위 전폭 guest-banner(padding 8/32, 높이 60) →
+ *   page-body(안쪽 32 · 사이 24 — 홈) 또는 목록 + 드로어 틀(2g · 3g · 16g, 여백은 틀이 둔다).
  */
 .banner {
   width: auto;
   margin: 0 calc(var(--space-16) * -1);
 }
 
+.desktopOnly {
+  display: none;
+}
+
 @media (min-width: 1024px) {
-  .banner {
-    width: 100%;
-    margin: 0;
+  .desktopOnly {
+    display: contents;
+  }
+
+  /* shell.content 의 데스크톱 여백(24/64/32)·사이 24 를 없앤다 — 배너가 본문 맨 위 전폭 */
+  .shell .content {
+    gap: 0;
+    padding: 0;
+  }
+
+  .deskBanner {
+    padding: var(--space-8) var(--space-32);
+  }
+
+  .shell .pageBody {
+    gap: var(--space-24);
+    padding: var(--space-32);
+  }
+
+  .shell .flush {
+    gap: 0;
+  }
+
+  /* 드로어 = 배너 아래 화면 높이 (시안 3·16-guest-desktop detail-drawer 480 × 840) */
+  .shell .flush [data-component="detail-drawer"] {
+    height: calc(100dvh - var(--button-min-height) - var(--space-16));
+  }
+
+  .shell .flush [data-desk-frame] {
+    min-height: calc(100dvh - var(--button-min-height) - var(--space-16));
   }
 }

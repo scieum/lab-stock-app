@@ -12,8 +12,9 @@
   flex-direction: column;
 }
 
-.intro {
-  display: none;
+.formPane {
+  display: flex;
+  flex-direction: column;
 }
 
 .formColumn {
@@ -33,22 +34,6 @@
 .signupPrompt {
   color: var(--color-text-muted);
   font-size: var(--font-size-13);
-  line-height: var(--line-height-normal);
-}
-
-.introTitle {
-  margin: 0;
-  color: var(--color-text);
-  font-size: var(--font-size-32);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-normal);
-}
-
-.introBody {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-17);
-  font-weight: var(--font-weight-light);
   line-height: var(--line-height-normal);
 }
 
@@ -112,24 +97,32 @@
   height: var(--icon-md);
 }
 
-/* 데스크톱: content padding 24/64/32/64 · gap 24, 소개(768) + 카드(480) · gap 64 */
+/*
+ * 데스크톱 (시안 1-desktop, d7 §23 run d): web-header(64) 아래 반 나눔 — 왼쪽 form-pane(흰, 폼 열 440 가운데 · 위아래 64) /
+ * 오른쪽 intro-panel(회색, AuthIntro). nav-pill 없음.
+ */
 @media (min-width: 1024px) {
   .page {
-    gap: var(--space-24);
-    padding: var(--space-24) var(--space-64) var(--space-32);
+    gap: 0;
+    padding: 0;
   }
 
   .layout {
     display: grid;
-    grid-template-columns: 8fr 5fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
-    gap: var(--space-64);
+    flex: 1;
+    min-height: calc(100dvh - var(--web-header-height));
+    background: linear-gradient(to right, var(--color-surface) 50%, var(--color-surface-muted) 50%);
   }
 
-  .intro {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-16);
-    padding-top: var(--space-64);
+  .formPane {
+    align-items: center;
+    padding: var(--space-64) var(--space-32);
+  }
+
+  .formColumn {
+    width: 100%;
+    max-width: var(--auth-form-width);
   }
 }

@@ -1,0 +1,28 @@
+import { DeskNotFoundDrawer } from "@/app/(app)/(member)/(desk)/_desk/desk-drawer";
+import styles from "@/app/(app)/(member)/(desk)/msds/[id]/msds.module.css";
+import { DemoNav } from "@/app/demo/demo-shell";
+import { ButtonOutline } from "@/components/button-outline";
+import { DesktopOnly, MobileOnly } from "@/components/viewport-only";
+
+/**
+ * 데모 학교가 아닌 id·없는 id — 모바일은 셸이 이 경로에서 nav-pill 을 그리지 않아 여기서 그린다.
+ * 데스크톱은 목록 옆 드로어 자리 (화면 3g 와 같은 안내).
+ */
+export default function DemoMsdsNotFound() {
+  return (
+    <>
+      <MobileOnly>
+        <div className={styles.page}>
+          <DemoNav schoolName="데모 학교" />
+          <div className={styles.column}>
+            <p className={styles.source}>시약을 찾을 수 없어요</p>
+            <ButtonOutline href="/demo/reagents">시약 목록으로</ButtonOutline>
+          </div>
+        </div>
+      </MobileOnly>
+      <DesktopOnly>
+        <DeskNotFoundDrawer />
+      </DesktopOnly>
+    </>
+  );
+}

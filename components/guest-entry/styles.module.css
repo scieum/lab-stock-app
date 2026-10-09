@@ -18,3 +18,41 @@
     width: auto;
   }
 }
+
+/* link — 시안 15-desktop guest-entry/guest-link 74 × 44: 바탕·테두리 없음, 15/600 + 하늘색 chevron 16 (사이 4) */
+.entryLink {
+  display: flex;
+  align-items: center;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--button-min-height);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.link:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: var(--space-4);
+}
+
+.link:has([data-pending]) {
+  opacity: var(--pressed-opacity);
+}
+
+.linkIcon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  color: var(--color-highlight);
+}

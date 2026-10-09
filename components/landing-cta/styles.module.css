@@ -41,3 +41,21 @@
     width: var(--cta-button-width);
   }
 }
+
+/* inline — 시안 15-desktop 히어로 landing-cta: 한 줄 사이 12, 버튼 높이 48 · 좌우 24 (폭은 글자만큼) */
+.inline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.inline .buttons {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-12);
+}
+
+.inline .button {
+  width: auto;
+  padding: 0 var(--space-24);
+}

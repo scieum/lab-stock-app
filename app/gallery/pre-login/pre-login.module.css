@@ -1,0 +1,20 @@
+/* run d 갤러리 — 전폭 띠 컴포넌트는 무대 안쪽 여백 없이 */
+.flush {
+  padding: 0;
+  overflow: hidden;
+}
+
+.heroActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-16);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-16);
+  padding: var(--space-16);
+  background: var(--color-surface-muted);
+}

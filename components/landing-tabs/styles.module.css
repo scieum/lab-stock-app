@@ -1,0 +1,65 @@
+/* 시안 15-desktop landing-tabs: 1440 × 64, 흰 바탕 + hairline(gray-100), tab-row 가운데 · 사이 32 */
+.bar {
+  position: sticky;
+  top: var(--web-header-height);
+  z-index: 20;
+  display: flex;
+  justify-content: center;
+  height: var(--web-header-height);
+  border-top: var(--border-width) solid var(--color-border);
+  border-bottom: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-none);
+  background: var(--color-surface);
+  box-sizing: border-box;
+}
+
+.row {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-32);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row li {
+  display: flex;
+}
+
+/* landing-tab: 15/600 회색, 높이 64 / 활성: 검정 글자 + 아래 하늘색 밑줄 2 (하늘색은 선만 — 글자색 아님) */
+.tab,
+.tabActive {
+  position: relative;
+  display: flex;
+  align-items: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tabActive {
+  color: var(--color-text);
+}
+
+.tabActive::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: var(--nav-indicator-height);
+  background: var(--color-highlight);
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+.tab:focus-visible,
+.tabActive:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: calc(var(--space-4) * -1);
+}
