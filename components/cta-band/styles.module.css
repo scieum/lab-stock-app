@@ -1,0 +1,68 @@
+/* 시안 15-desktop cta-band: 1440 × 310, gray-950 · padding 64/0 · gap 32, 가운데 */
+.band {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-32);
+  padding: var(--space-64) var(--space-32);
+  border-radius: var(--radius-none);
+  background: var(--color-gray-950);
+  text-align: center;
+}
+
+/* cta-text: 사이 16 */
+.text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-16);
+}
+
+/* cta-title 40/700 흰 글자 (display 크기 — cta-band 안에서만) */
+.title {
+  margin: 0;
+  color: var(--color-white);
+  font-size: var(--display-font-40);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}
+
+/* cta-desc 17/300 gray-400 */
+.desc {
+  margin: 0;
+  color: var(--color-gray-400);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-light);
+  line-height: var(--line-height-normal);
+}
+
+/* cta-actions: 사이 12, 버튼 높이 48 · 좌우 24 */
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+}
+
+/* 반전 버튼 (landing_rhythm.inverted_button) — 버튼 컴포넌트의 기본 색보다 앞서도록 두 단계 선택자 */
+.actions .primary {
+  padding: 0 var(--space-24);
+  background: var(--color-white);
+  color: var(--color-gray-950);
+}
+
+.actions .primary:focus-visible {
+  outline-color: var(--color-white);
+}
+
+.actions .secondary {
+  padding: 0 var(--space-24);
+  border-color: var(--color-white);
+  background: transparent;
+  color: var(--color-white);
+}
+
+.actions .secondary:focus-visible {
+  outline-color: var(--color-white);
+}

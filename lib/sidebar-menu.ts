@@ -22,7 +22,14 @@ export type SidebarKey =
   | "users"
   | "vendors";
 
-export type SidebarEntry = { key: SidebarKey; label: string; icon: IconName; href?: string };
+export type SidebarEntry = {
+  key: SidebarKey;
+  label: string;
+  icon: IconName;
+  href?: string;
+  /** 둘러보기 잠금 — 누르면 ex-toast "가입하면 쓸 수 있어요" (guest-lock), 이동 없음 */
+  locked?: boolean;
+};
 export type SidebarGroup = { title?: string; items: SidebarEntry[] };
 
 const ALL: SidebarEntry[] = [
@@ -71,6 +78,30 @@ export function sidebarActiveKey(pathname: string): SidebarKey | undefined {
   if (under(pathname, "/reorder")) return "reorder";
   if (under(pathname, "/users")) return "users";
   if (under(pathname, "/vendors")) return "vendors";
+  return undefined;
+}
+
+/**
+ * 둘러보기 데스크톱 사이드바 (rules.json 1.24 guest.desktop · sidebar_locks 2, 시안 13·2·3·16-guest-desktop):
+ * 홈 · 시약 = 둘러보기 화면으로, 기록 · QR 찾기 = guest-lock (둘러보기 범위 밖). 시약장·관리 메뉴는 없다.
+ */
+export function guestSidebarMenu(): SidebarGroup[] {
+  return [
+    {
+      items: [
+        { key: "home", label: "홈", icon: "home", href: "/demo" },
+        { key: "reagents", label: "시약", icon: "flask", href: "/demo/reagents" },
+        { key: "records", label: "기록", icon: "record", locked: true },
+        { key: "scan", label: "QR 찾기", icon: "qr", locked: true },
+      ],
+    },
+  ];
+}
+
+/** 둘러보기 활성 메뉴: /demo = 홈, /demo/reagents · /demo/msds = 시약 */
+export function guestSidebarActiveKey(pathname: string): SidebarKey | undefined {
+  if (pathname === "/demo" || pathname === "/demo/") return "home";
+  if (under(pathname, "/demo/reagents") || under(pathname, "/demo/msds")) return "reagents";
   return undefined;
 }
 

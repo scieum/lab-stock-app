@@ -104,3 +104,17 @@ a.item:has([data-pending]) .icon {
 .itemDisabled:focus-visible .tooltip {
   visibility: visible;
 }
+
+/* 둘러보기 잠금 (guest-lock 16, 글자 바로 뒤) */
+button.item {
+  cursor: pointer;
+}
+
+button.item:hover {
+  background: var(--color-surface-input);
+}
+
+.lock {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}

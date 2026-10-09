@@ -1,0 +1,193 @@
+/*
+ * 화면 15 데스크톱 긴 랜딩 (시안 15-desktop 1440 × 5626, rules.json 1.24 landing_rhythm).
+ * 띠: 히어로 흰 → 문제 공감 gray-50 → landing-section 흰/회/흰/회 → step-flow gray-950 → 대상 흰 → 안심 gray-50 → cta-band gray-950 → 푸터 흰.
+ * 띠 안쪽 = 1200 가운데, 위아래 64.
+ */
+.page {
+  min-height: 100dvh;
+  background: var(--color-surface);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 히어로 hero-actions: landing-cta 줄 → guest-entry (사이 16) */
+.heroActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-16);
+}
+
+/* hero-points 13/400 회색 */
+.heroPoints {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.bandMuted,
+.bandWhite {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-64) var(--space-32);
+  scroll-margin-top: calc(var(--web-header-height) * 2);
+}
+
+.bandMuted {
+  background: var(--color-surface-muted);
+}
+
+.bandWhite {
+  background: var(--color-surface);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-48);
+  width: 100%;
+  max-width: var(--landing-content-width);
+}
+
+/* section-title 32/700 가운데 */
+.sectionTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-32);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+  text-align: center;
+}
+
+/* ---------- 문제 공감 (section-band-1) ---------- */
+.problemBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-32);
+  width: 100%;
+}
+
+.problemRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-24);
+  width: 100%;
+}
+
+.problemItem {
+  display: flex;
+}
+
+.problemItem > * {
+  flex: 1;
+}
+
+/* closing 17/300 회색 */
+.closing {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-light);
+  line-height: var(--line-height-normal);
+  text-align: center;
+}
+
+/* ---------- 대상 (section-band-7) ---------- */
+.bandWhite .section {
+  gap: var(--space-32);
+}
+
+.audienceTabs {
+  width: calc(var(--space-64) * 5.75);
+}
+
+.audienceBody {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-48);
+  width: 100%;
+}
+
+.audienceCards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  flex-shrink: 0;
+  width: calc(var(--space-48) * 7.5);
+}
+
+/* audience-card: 흰 바탕 · gray-200 테두리 · radius 24 · padding 24 · 사이 12 */
+.audienceCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-24);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.cardIcon {
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+  color: var(--color-highlight);
+}
+
+.cardTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.cardDesc {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+  word-break: keep-all;
+}
+
+/* shot-13-teacher 792 × 360 */
+.audienceShot {
+  flex: 1;
+  min-width: 0;
+  height: calc(var(--space-48) * 7.5);
+}
+
+.audienceShot > * {
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------- 안심 2×2 (section-band-8): 격자선 gray-200, 운영 숫자 없음 ---------- */
+.trustGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trustItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-32);
+}
+
+.trustItem:nth-child(odd) {
+  border-right: var(--border-width) solid var(--color-border-strong);
+}
+
+.trustItem:nth-child(-n + 2) {
+  border-bottom: var(--border-width) solid var(--color-border-strong);
+}

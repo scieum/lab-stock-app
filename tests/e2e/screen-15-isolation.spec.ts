@@ -7,6 +7,8 @@ import { test, expect } from "@playwright/test";
 import { ROLE_LABEL, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
 import { isDeskPage, newFrame, waitWidthSettled } from "./desk-helpers";
+import { realSchoolNames } from "./guest-helpers";
+import { landingSampleNames } from "./pre-login-helpers";
 
 /**
  * 1440 홈 = 새 프레임 13-desktop (데스크톱 재구성 run c): home-summary = "지금 처리할 것" 타일 + 위젯.
@@ -108,21 +110,32 @@ test(`[N1-ui][S${SCREEN}] dev-rules routes 의 둘러보기 경로(-guest) = gue
   expect(protectedList.length, "보호 경로가 1개 이상 남아야 N1-ui 보호 검사가 의미 있음").toBeGreaterThan(0);
 });
 
-test(`[N1-ui][S${SCREEN}] 로그인 전 랜딩: 학교명 패턴 0 · seed 학교명 미노출 · 학교 선택 단계 0`, async ({ page }, info) => {
+test(`[N1-ui][S${SCREEN}] 로그인 전 랜딩: 학교명 패턴 0(시안 product-shot 샘플 표기만 허용) · seed 학교명 미노출(화면·응답) · 학교 선택 단계 0`, async ({ page }, info) => {
   const schools = seedRows("schools");
   expect(schools.length, "seed 학교가 2개 이상이어야 검사가 의미 있음").toBeGreaterThan(1);
   expect(N1.screens_require_school_name, `화면 ${SCREEN} 은 학교명 표시 대상이 아님`).not.toContain(SCREEN);
   expect(N1.school_select_only_on, `화면 ${SCREEN} 은 학교 선택 화면이 아님`).not.toContain(SCREEN);
 
-  await useProjectViewport(page, info);
+  const vp = await useProjectViewport(page, info);
   await page.goto(routeOf(SCREEN));
   await waitLanding(page);
   expect(new URL(page.url()).pathname, "로그인 전 `/` 는 랜딩에 머무름").toBe(routeOf(SCREEN));
 
+  // 시안 샘플 표기: 새 프레임 15-{폭} 의 product-shot 그림 안 학교명(브라우저 주소줄 "샘플고등학교")은 rules/시안의 샘플이라
+  // 랜딩 그림(앱 화면 조각)에서 허용. 단 seed·실제 학교명이 아니어야 하고, 그 밖의 학교명 패턴은 0.
+  const re = new RegExp(N1.school_name_pattern, "g");
+  const sampleNames = landingSampleNames(SCREEN, vp);
+  for (const n of sampleNames) {
+    expect(schools.map((s) => s.name), `시안 샘플 학교명 ${n} 은 seed 학교명이 아님`).not.toContain(n);
+    expect(realSchoolNames(), `시안 샘플 학교명 ${n} 은 실제 학교명이 아님`).not.toContain(n);
+  }
   const text = await page.locator("body").innerText();
-  const names = [...new Set(text.match(new RegExp(N1.school_name_pattern, "g")) ?? [])];
-  expect(names, "랜딩에 학교명 없음").toHaveLength(0);
+  const names = [...new Set(text.match(re) ?? [])];
+  for (const n of names) expect(sampleNames, `랜딩의 학교명 ${n} 은 시안 product-shot 샘플 표기만`).toContain(n);
   for (const s of schools) expect(text, `seed 학교명 ${s.name}`).not.toContain(s.name);
+  // 응답 본문에도 seed 학교명 없음
+  const html = await (await page.request.get(routeOf(SCREEN))).text();
+  for (const s of schools) expect(html, `응답 본문 seed 학교명 ${s.name}`).not.toContain(s.name);
   for (const level of N1.school_select_levels) expect(await countComponent(page, level), level).toBe(0);
   expect(await countComponent(page, "home-summary"), "로그인 후 홈 컴포넌트 없음").toBe(0);
 });

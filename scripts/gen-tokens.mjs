@@ -37,6 +37,18 @@ const LAYOUT = [
   ["status-bar-height", "8px"],
   ["qr-size", "126px"],
   ["side-column-width", "400px"],
+  // 로그인 전 화면 (design/frames 1·14·15-desktop, rules.json 1.24 desktop_shell.pre_login)
+  ["web-header-height", "64px"],
+  ["auth-form-width", "440px"],
+  ["landing-content-width", "1200px"],
+  ["landing-hero-copy-width", "560px"],
+  ["landing-copy-width", "480px"],
+];
+
+// 랜딩 스크롤 동작 (rules.json landing_rhythm.motion: "16px 아래에서 0.4초 떠오르며 나타남")
+const MOTION = [
+  ["motion-reveal-distance", "16px"],
+  ["motion-reveal-duration", "0.4s"],
 ];
 
 // 줄 높이 (시안 텍스트 노드 높이 / 글자 크기)
@@ -108,6 +120,10 @@ function build(rules) {
   for (const s of rules.typography.sizes) {
     add(`font-size-${s}`, px(s));
   }
+  // 큰 글자 40·48 — landing-hero · landing-section · cta-band 안에서만 (typography.display_sizes.only_within)
+  for (const s of rules.typography.display_sizes?.sizes ?? []) {
+    add(`display-font-${s}`, px(s));
+  }
   add("letter-spacing", px(rules.typography.letter_spacing));
   for (const [k, v] of LINE_HEIGHTS) add(`line-height-${k}`, v);
 
@@ -134,6 +150,11 @@ function build(rules) {
 
   section("layout (design/frames 측정값)");
   for (const [k, v] of LAYOUT) add(k, v);
+
+  if (rules.landing_rhythm) {
+    section("motion (rules.json landing_rhythm)");
+    for (const [k, v] of MOTION) add(k, v);
+  }
 
   if (rules.desktop_shell) {
     section("desktop shell (rules.json desktop_shell)");

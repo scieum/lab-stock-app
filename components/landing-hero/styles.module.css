@@ -51,3 +51,64 @@
     font-size: var(--font-size-32);
   }
 }
+
+/*
+ * split — 시안 15-desktop landing-hero (1440 × 732): 위 48 · 아래 24, 왼쪽 hero-copy x 80 · 560 (세로 가운데) /
+ * 오른쪽 product-shot 800 × 660 (x 640 ~ 화면 끝, 잘림). hero-copy = hero-text(사이 24) → 행동(사이 32).
+ */
+.split {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow: hidden;
+  padding: var(--space-48) 0 var(--space-24) calc(var(--space-64) + var(--space-16));
+  background: var(--color-surface);
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-32);
+  flex-shrink: 0;
+  width: min(var(--landing-hero-copy-width), 40%);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+/* hero-eyebrow 13/600 회색 */
+.eyebrow {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+/* hero-title 48/700 두 줄 (display — landing-hero 안에서만) */
+.display {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--display-font-48);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  word-break: keep-all;
+}
+
+.split .subtitle {
+  font-size: var(--font-size-17);
+}
+
+.aside {
+  flex: 1;
+  min-width: 0;
+}

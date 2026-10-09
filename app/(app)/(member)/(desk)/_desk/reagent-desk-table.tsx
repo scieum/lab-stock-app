@@ -35,6 +35,7 @@ import {
 } from "@/lib/reagent-list-filter";
 import type { ReagentListItem } from "@/lib/supabase/reagents-data";
 import { MsdsBulk } from "../reagents/(list)/msds-bulk";
+import { useDeskBase } from "./desk-base";
 import styles from "./desk.module.css";
 
 const SCOPES: SegmentOption[] = [
@@ -71,6 +72,9 @@ export function ReagentDeskTable({ items, cabinets, canFindMsds }: Props) {
   const pathname = usePathname();
   const sp = useSearchParams();
   const selectedId = deskSelectedId(pathname, sp);
+  // 둘러보기(/demo) 데스크톱: 행 주소 앞머리 /demo, 머리 줄 요약은 "재고 부족 n" 만 (시안 2-guest-desktop)
+  const hrefBase = useDeskBase();
+  const guest = hrefBase === "/demo";
 
   const scope = sp.get("filter") === "low-stock" ? "low-stock" : "all";
   const urlQuery = sp.get("q") ?? "";
@@ -174,7 +178,7 @@ export function ReagentDeskTable({ items, cabinets, canFindMsds }: Props) {
             <span className={styles.count}>{visible.length}종</span>
           </div>
           <p className={styles.summary}>
-            재고 부족 {lowCount} · MSDS 없음 {noMsdsCount}
+            {guest ? `재고 부족 ${lowCount}` : `재고 부족 ${lowCount} · MSDS 없음 ${noMsdsCount}`}
           </p>
         </div>
         <div className={styles.pageActions}>
@@ -251,7 +255,7 @@ export function ReagentDeskTable({ items, cabinets, canFindMsds }: Props) {
               const placed = Boolean(cab && r.slot);
               return (
                 <DataTableRow key={r.id} selected={current} clickable>
-                  <DataTableLinkCell href={reagentDetailHref(r.id, listQueryOf(page))} current={current}>
+                  <DataTableLinkCell href={reagentDetailHref(r.id, listQueryOf(page), hrefBase)} current={current}>
                     {r.name}
                   </DataTableLinkCell>
                   <DataTableCell tone={r.storageClass ? "default" : "muted"}>{r.storageClass ?? "-"}</DataTableCell>

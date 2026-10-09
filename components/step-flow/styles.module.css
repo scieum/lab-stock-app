@@ -1,0 +1,191 @@
+/* 시안 15-desktop section-band-6 / step-flow: 전폭 gray-950 띠 · 위아래 64, 안쪽 1200 · 제목 → 본문 사이 48 */
+.band {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-64) var(--space-32);
+  border-radius: var(--radius-none);
+  background: var(--color-gray-950);
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-48);
+  width: 100%;
+  max-width: var(--landing-content-width);
+}
+
+/* section-title 32/700 흰 글자 가운데 */
+.title {
+  margin: 0;
+  color: var(--color-white);
+  font-size: var(--font-size-32);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+  text-align: center;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-32);
+}
+
+/* stepper: 다섯 칸 같은 폭, 점 가운데 — 사이 선(gray-600, 1)은 첫 점 ~ 끝 점 중심 */
+.stepper {
+  position: relative;
+}
+
+.line {
+  position: absolute;
+  top: calc(var(--button-min-height) / 2);
+  right: 10%;
+  left: 10%;
+  height: var(--border-width);
+  background: var(--color-gray-600);
+}
+
+.steps {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stepItem {
+  display: flex;
+  justify-content: center;
+}
+
+.stepButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-12);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.stepButton:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: var(--space-4);
+  border-radius: var(--radius-md);
+}
+
+/* step-dot 44: gray-900 채움 + 회색 숫자 15/600 / 지금 단계: gray-950 채움 + 하늘색 링 + 흰 숫자 */
+.dot,
+.dotCurrent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--color-gray-900);
+  color: var(--color-gray-600);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  box-sizing: border-box;
+}
+
+.dotCurrent {
+  border: var(--nav-indicator-height) solid var(--color-highlight);
+  background: var(--color-gray-950);
+  color: var(--color-white);
+}
+
+.stepButton:hover .dot {
+  color: var(--color-white);
+}
+
+/* step-label 13/600 흰 글자 */
+.stepLabel {
+  color: var(--color-white);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
+/* step-card: gray-900 · radius 24 · padding 32 · 사이 48, 글 600 + 조각 488 */
+.card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-48);
+  padding: var(--space-32);
+  border-radius: var(--radius-lg);
+  background: var(--color-gray-900);
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  flex: 1;
+  min-width: 0;
+}
+
+.caption {
+  color: var(--color-gray-400);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.stepTitle {
+  margin: 0;
+  color: var(--color-white);
+  font-size: var(--font-size-24);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}
+
+.desc {
+  margin: 0;
+  color: var(--color-gray-400);
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+}
+
+.checks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  color: var(--color-white);
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+}
+
+.checkIcon {
+  flex-shrink: 0;
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+  color: var(--color-highlight);
+}
+
+/* shot-14 488 × 360 */
+.shot {
+  flex-shrink: 0;
+  width: calc(var(--landing-copy-width) + var(--space-8));
+  height: calc(var(--space-48) * 7.5);
+}
+
+.shot > * {
+  width: 100%;
+  height: 100%;
+}

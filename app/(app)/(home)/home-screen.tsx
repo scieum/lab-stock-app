@@ -61,6 +61,20 @@ function HomeMobile({ data, role }: HomeViewProps) {
   const guest = !role;
   const staff = !guest && role !== "student";
   const reagentHref = (id: string) => (guest ? `/demo/reagents/${id}` : `/reagents/${id}`);
+  // 둘러보기 카드 (쓰기 진입 없음 — 시약장이 없으면 학생과 같은 안내)
+  const stockCard = (
+    <StockSummaryCard
+      lowStockCount={data.lowStock.length}
+      totalCount={data.totalReagents}
+      items={data.lowStock.map((r) => ({ name: r.name, amount: r.amount, href: reagentHref(r.id) }))}
+    />
+  );
+  const cabinetCard =
+    data.cabinetCount > 0 ? (
+      <CabinetSummaryCard cabinetCount={data.cabinetCount} assigned={data.assignedSlots} totalSlots={data.totalSlots} />
+    ) : (
+      <SummaryEmptyCard title="시약장 요약" message="등록된 시약장이 없어요" hint="선생님이 시약장을 등록하면 보여요" />
+    );
 
   return (
     <>
@@ -68,8 +82,28 @@ function HomeMobile({ data, role }: HomeViewProps) {
       <div className={styles.dashboard}>
         <div className={styles.column}>
           <div className={styles.quick}>
-            <QuickAction items={role ? QUICK_ACTIONS[role] : GUEST_QUICK_ACTIONS} />
+            {guest ? (
+              // 시안 13-guest-mobile (새 프레임, d7 §23 run d): 잠긴 칸 2개가 각각 quick-action (사용 기록 입력 · 시약장 보기)
+              <div className={styles.quickRow}>
+                {GUEST_QUICK_ACTIONS.map((it) => (
+                  <QuickAction key={it.href} items={[it]} />
+                ))}
+              </div>
+            ) : (
+              <QuickAction items={QUICK_ACTIONS[role ?? "student"]} />
+            )}
           </div>
+          {guest ? (
+            // 시안 13-guest-mobile: 재고 부족 카드 · 시약장 요약 카드가 각각 home-summary
+            <>
+              <HomeSummary className={styles.summary}>
+                <div className={styles.stock}>{stockCard}</div>
+              </HomeSummary>
+              <HomeSummary className={styles.summary}>
+                <div className={styles.cabinet}>{cabinetCard}</div>
+              </HomeSummary>
+            </>
+          ) : (
           <HomeSummary className={styles.summary}>
             <div className={styles.stock}>
               <StockSummaryCard
@@ -101,6 +135,7 @@ function HomeMobile({ data, role }: HomeViewProps) {
               )}
             </div>
           </HomeSummary>
+          )}
         </div>
         <div className={styles.column}>
           {staff ? (

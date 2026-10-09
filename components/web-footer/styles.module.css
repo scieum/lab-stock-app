@@ -1,0 +1,20 @@
+/* 시안 15-desktop web-footer: 1440 × 84, padding 32/0, 흰 바탕 + 위 hairline(gray-100) */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-32) var(--space-16);
+  border-top: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-none);
+  background: var(--color-surface);
+}
+
+/* copyright: caption 12/400 text-muted */
+.copyright {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  text-align: center;
+}

@@ -46,3 +46,51 @@
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-normal);
 }
+
+/* row — 시안 1·14-desktop intro-panel feature-card: 흰 바탕 · radius 24 · padding 24 · 가로 사이 16 */
+.rowCard {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-16);
+  min-width: 0;
+  padding: var(--space-24);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-none);
+}
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+/* quote — 시안 15-desktop problem feature-card: 흰 바탕 · radius 24 · padding 32 · 사이 16 */
+.quoteCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-16);
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-32);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-none);
+}
+
+.quote {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  word-break: keep-all;
+}
+
+.caption {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}

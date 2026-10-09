@@ -17,7 +17,12 @@ const TABS: SegmentOption[] = [
   { value: "usage", label: "사용 기록" },
 ];
 
-type Props = { info: InfoRow[]; usage: ReagentUsageRow[] };
+type Props = {
+  info: InfoRow[];
+  usage: ReagentUsageRow[];
+  /** 처음 열린 탭 (기본 "사용 기록" — 둘러보기 3-guest-mobile 시안은 "정보") */
+  initialTab?: Tab;
+};
 
 /** 시약 상세 탭 — 정보 표 / 최근 사용 기록 표 */
 export function DetailTabs({ info, usage }: Props) {

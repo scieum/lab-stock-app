@@ -5,6 +5,7 @@ import { BadgeLowStock } from "@/components/badge-low-stock";
 import { ButtonOutline } from "@/components/button-outline";
 import { ButtonPrimary } from "@/components/button-primary";
 import { DrawerActionRow } from "@/components/detail-drawer";
+import { GuestLockedButton } from "@/components/guest-lock/locked-button";
 import { MsdsEntry } from "@/components/msds-entry";
 import { SegmentedControl, type SegmentOption } from "@/components/segmented-control";
 import { StorageClassChip } from "@/components/storage-class-chip";
@@ -24,6 +25,8 @@ type Props = {
   data: Omit<ReagentDetail, "role">;
   /** 교사·admin — 위치 바꾸기 · 기준 입력 · 입고 · MSDS 찾기 (R5·R7) */
   staff: boolean;
+  /** 둘러보기(/demo) — "사용 기록"은 guest-lock 버튼(누르면 ex-toast), 주소 앞머리는 DeskBaseProvider 가 /demo 로 */
+  guest?: boolean;
   /** 위치 피커를 연 채로 시작 (?pick=location) */
   openPicker: boolean;
   /** MSDS QR (서버가 만든 SVG) */
@@ -41,7 +44,7 @@ type Props = {
  * msds-entry(QR + "MSDS 보기" = 같은 목록 옆 MSDS 드로어) → drawer-actions("사용 기록" + "입고"(교사·admin)).
  * 위치 바꾸기 · MSDS 찾기는 드로어 왼쪽 팝오버(3-location · 3-msds). × · Esc = 목록 주소(목록 쿼리 유지).
  */
-export function ReagentDetailDrawer({ data, staff, openPicker, qr, missingAction, extraRows }: Props) {
+export function ReagentDetailDrawer({ data, staff, guest = false, openPicker, qr, missingAction, extraRows }: Props) {
   const { reagent, placement, threshold, picker, suggestion, usage } = data;
   const hrefs = useDeskHrefs(reagent.id);
   const [tab, setTab] = useState<"info" | "usage">("info");
@@ -53,7 +56,11 @@ export function ReagentDetailDrawer({ data, staff, openPicker, qr, missingAction
       focusKey={reagent.id}
       actions={
         <DrawerActionRow>
-          <ButtonPrimary href={hrefs.usage}>사용 기록</ButtonPrimary>
+          {guest ? (
+            <GuestLockedButton variant="primary">사용 기록</GuestLockedButton>
+          ) : (
+            <ButtonPrimary href={hrefs.usage}>사용 기록</ButtonPrimary>
+          )}
           {/* 입고(stock-intake)는 교사·admin만 (rules.json R5) */}
           {staff ? (
             <span data-component="stock-intake" className={styles.drawerIntake}>

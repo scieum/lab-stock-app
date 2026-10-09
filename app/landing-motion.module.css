@@ -1,0 +1,24 @@
+/* 랜딩 떠오름 (rules.json landing_rhythm.motion: 16 아래에서 0.4초, 한 번) — data-motion="on" 일 때만 숨긴다 */
+.root {
+  display: flex;
+  flex-direction: column;
+}
+
+.root[data-motion="on"] [data-reveal] {
+  transition:
+    opacity var(--motion-reveal-duration) ease-out,
+    transform var(--motion-reveal-duration) ease-out;
+}
+
+.root[data-motion="on"] [data-reveal]:not([data-revealed]) {
+  opacity: 0;
+  transform: translateY(var(--motion-reveal-distance));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}

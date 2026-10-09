@@ -426,7 +426,8 @@ test(`[GM-ui][S3g] 둘러보기 시약 상세: msds-search·msds-candidates 0 (g
     try {
       const calls = await interceptSearch(page);
       await waitGuestShell(page);
-      await expect(page.locator(`main ${sel("reagent-detail-card")}`).first()).toBeVisible();
+      // 1440 = 시약 목록 옆 드로어 (run d, 시안 3-guest-desktop) / 390 = reagent-detail-card
+      await expect(page.locator(isDeskPage(page) ? `main ${sel("detail-drawer")}` : `main ${sel("reagent-detail-card")}`).first()).toBeVisible({ timeout: 30_000 });
       for (const c of [MSDS_SEARCH, MSDS_CANDIDATES]) expect(await countComponent(page, c), `${r.name}: ${c} 0`).toBe(0);
       const missing = await page.getByText(MISSING, { exact: true }).count();
       const link = await entry(page).locator("a[href]").count();

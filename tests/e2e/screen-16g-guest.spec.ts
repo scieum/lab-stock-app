@@ -20,7 +20,9 @@ import {
   SUMMARY,
   VARIANTS,
   allowedComponents,
+  DESK_BACK,
   entryLink,
+  exact,
   expectHeader,
   expectNoN2,
   expectOriginal,
@@ -30,6 +32,7 @@ import {
   koshaUrl,
   originalLink,
   redPaint,
+  visibleBack,
   visibleText,
   waitMsds,
 } from "./screen-16-helpers";
@@ -129,7 +132,7 @@ test(`[GM-ui][C2][${TAG}] 둘러보기 MSDS 요약 탭바 = rules.json tab_bar +
 test(`[C1][${TAG}] 화면 3g "MSDS 보기" → ${devRules.routes[`${SCREEN}-guest`]} (같은 창) → 뒤로 = 3g`, async ({ browser }, info) => {
   test.setTimeout(120_000);
   const r = await pick();
-  const { context, page } = await openGuest(browser, info, guestReagentPath(r.id));
+  const { context, page, viewport } = await openGuest(browser, info, guestReagentPath(r.id));
   try {
     await waitGuestShell(page);
     const link = entryLink(page);
@@ -144,7 +147,9 @@ test(`[C1][${TAG}] 화면 3g "MSDS 보기" → ${devRules.routes[`${SCREEN}-gues
     await waitMsds(page);
     expect(context.pages(), "새 창 없음").toHaveLength(1);
     await expect(originalLink(page)).toHaveAttribute("href", r.msds_url!);
-    await page.getByRole("link", { name: "뒤로", exact: true }).filter({ visible: true }).click();
+    // 뒤로: 390 = nav-pill "뒤로" / 1440 = 드로어 drawer-nav back-link (시안 16-guest-desktop "‹ 시약 상세")
+    if (viewport === "desktop") await expect(visibleBack(page), `1440 뒤로 = "${DESK_BACK}"`).toHaveText(exact(DESK_BACK));
+    await visibleBack(page).click();
     await page.waitForURL((u) => u.pathname === guestReagentPath(r.id), { timeout: 30_000 });
   } finally {
     await context.close();

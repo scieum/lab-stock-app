@@ -1,0 +1,696 @@
+/*
+ * 랜딩 화면 조각 (정적 그림). 값은 앱 화면과 같은 토큰 — 시안 15-desktop 의 shot-* 노드 모양.
+ * 조각 카드 = 흰 바탕 · hairline(gray-100) · radius 16, 넘치는 부분은 잘린다.
+ */
+.shot {
+  position: relative;
+  overflow: hidden;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-none);
+  box-sizing: border-box;
+}
+
+.bleedLeft {
+  border-left: 0;
+  border-radius: var(--radius-none) var(--radius-md) var(--radius-md) var(--radius-none);
+}
+
+.bleedRight {
+  border-right: 0;
+  border-radius: var(--radius-md) var(--radius-none) var(--radius-none) var(--radius-md);
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ---------- 글자 ---------- */
+.caption {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
+.note {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
+.body {
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.rowTitle {
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.display {
+  color: var(--color-text);
+  font-size: var(--font-size-32);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.unit {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+}
+
+.pageTitle {
+  color: var(--color-text);
+  font-size: var(--font-size-24);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  white-space: nowrap;
+}
+
+.sectionTitle {
+  color: var(--color-text);
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  white-space: nowrap;
+}
+
+.panelTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  color: var(--color-text);
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  white-space: nowrap;
+}
+
+.number {
+  font-weight: var(--font-weight-bold);
+}
+
+.required {
+  margin-left: var(--space-4);
+  color: var(--color-text-placeholder);
+  font-size: var(--font-size-12);
+}
+
+/* ---------- 13 홈 ---------- */
+.app {
+  display: flex;
+  min-height: 100%;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  flex-shrink: 0;
+  width: var(--sidebar-width);
+  padding: var(--space-24) var(--space-12);
+  border-right: var(--border-width) solid var(--color-border);
+  background: var(--color-surface-muted);
+  box-sizing: border-box;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: 0 var(--space-12) var(--space-8);
+}
+
+.wordmark {
+  color: var(--color-text);
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.school {
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.menuTitle {
+  padding: var(--space-8) var(--space-12) 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.menuItem,
+.menuItemOn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-12);
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
+.menuItemOn {
+  background: var(--color-highlight-soft);
+}
+
+.menuIcon {
+  flex-shrink: 0;
+  width: var(--icon-md);
+  height: var(--icon-md);
+  color: var(--color-text-muted);
+}
+
+.menuItemOn .menuIcon {
+  color: var(--color-highlight);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-32);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.tiles {
+  display: flex;
+  gap: var(--space-16);
+  margin-top: calc(var(--space-12) * -1);
+}
+
+.tile,
+.tileMuted {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  flex-shrink: 0;
+  min-width: calc(var(--side-column-width) - var(--space-32));
+  padding: var(--space-24);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-sizing: border-box;
+}
+
+.tileMuted {
+  border-color: transparent;
+  background: var(--color-surface-muted);
+}
+
+.tileValue {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.widget,
+.recent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  padding: var(--space-24);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.recent {
+  height: 100%;
+  border: 0;
+  border-radius: var(--radius-none);
+  box-sizing: border-box;
+}
+
+/* ---------- 표 ---------- */
+.table,
+.list,
+.listCompact {
+  display: flex;
+  flex-direction: column;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.list {
+  margin: var(--space-24) 0 0 var(--space-24);
+}
+
+.tr {
+  display: flex;
+  align-items: center;
+  gap: var(--space-16);
+  min-height: var(--control-height);
+  padding: 0 var(--space-16);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.tr:first-child {
+  min-height: calc(var(--space-32) + var(--space-8));
+}
+
+.tr:last-child {
+  border-bottom: 0;
+}
+
+.th,
+.td,
+.thWide,
+.tdWide {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.thWide,
+.tdWide {
+  flex-grow: 1.6;
+}
+
+.th,
+.thWide {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.td,
+.tdWide {
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.sortIcon,
+.sortIconMuted {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  color: var(--color-highlight);
+}
+
+.sortIconMuted {
+  color: var(--color-text-muted);
+}
+
+.cabNo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--icon-md);
+  height: var(--icon-md);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  box-sizing: border-box;
+}
+
+/* ---------- 패널 (드롭다운 · 드로어 조각) ---------- */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  height: 100%;
+  padding: var(--space-24);
+  box-sizing: border-box;
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: var(--button-min-height);
+}
+
+.closeIcon,
+.closeIconBlue {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  color: var(--color-text);
+}
+
+.closeIconBlue {
+  color: var(--color-highlight);
+}
+
+.groupTitle {
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}
+
+.groupRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.chip,
+.chipOn {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-16);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.chipOn {
+  border-color: var(--color-highlight);
+  background: var(--color-highlight-soft);
+}
+
+.formRow,
+.infoRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-16);
+  padding: var(--space-12) 0;
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.infoRow {
+  align-items: center;
+}
+
+.rowLabel {
+  flex-shrink: 0;
+  width: calc(var(--space-64) * 2 - var(--space-8));
+  padding-top: var(--space-12);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.infoRow .rowLabel {
+  padding-top: 0;
+}
+
+.rowValue,
+.rowStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  flex: 1;
+  min-width: 0;
+}
+
+.rowStack {
+  gap: var(--space-4);
+}
+
+.input,
+.inputIcon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--control-height);
+  padding: 0 var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-input);
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  box-sizing: border-box;
+}
+
+.inputIconSvg {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  color: var(--color-highlight);
+}
+
+.fakeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-height);
+  margin-top: auto;
+  border-radius: var(--radius-button);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+}
+
+.autoBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-4) var(--space-8);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+}
+
+.penIcon {
+  flex-shrink: 0;
+  width: var(--icon-md);
+  height: var(--icon-md);
+  color: var(--color-highlight);
+}
+
+/* ---------- 6 재주문 알림 ---------- */
+.alertWrap {
+  display: flex;
+  height: 100%;
+  padding: var(--space-24) 0 0 var(--space-24);
+  box-sizing: border-box;
+}
+
+.alert {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-8);
+  flex: 1;
+  padding: var(--space-24);
+  border-radius: var(--radius-lg) var(--radius-none) var(--radius-none) var(--radius-none);
+  background: var(--color-surface-muted);
+}
+
+/* ---------- 11 시약장 ---------- */
+.cabinet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  height: 100%;
+  padding: var(--space-32) var(--space-16) var(--space-16);
+  box-sizing: border-box;
+}
+
+.cabHead {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.doorLabel {
+  align-self: center;
+  max-width: 50%;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+}
+
+.shelfRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-24);
+}
+
+.slot,
+.slotOn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex: 1;
+  min-height: var(--control-height);
+  padding: 0 var(--space-12);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  box-sizing: border-box;
+}
+
+.slotOn {
+  border-color: var(--color-highlight);
+  background: var(--color-highlight-soft);
+}
+
+.slotLabel {
+  flex: 1;
+  color: var(--color-text);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.warnIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  color: var(--color-text);
+}
+
+.slotCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--icon-lg);
+  height: var(--icon-lg);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ---------- 14 학교 선택 ---------- */
+.info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--color-highlight-soft);
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  white-space: nowrap;
+}
+
+.infoIcon,
+.checkIcon {
+  flex-shrink: 0;
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  color: var(--color-highlight);
+}
+
+.progress {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.bar,
+.barOn {
+  flex: 1;
+  height: var(--progress-height);
+  border-radius: var(--radius-pill);
+  background: var(--color-border-strong);
+}
+
+.barOn {
+  background: var(--color-highlight);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.fieldLabel {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.selectOn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--control-height);
+  padding: 0 var(--space-16);
+  border: var(--border-width) solid var(--color-highlight);
+  border-radius: var(--radius-md);
+  background: var(--color-highlight-soft);
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  box-sizing: border-box;
+}
+
+.segments {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+}
+
+.segment,
+.segmentOn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: var(--button-min-height);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-15);
+  box-sizing: border-box;
+}
+
+.segmentOn {
+  border-color: var(--color-highlight);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+}

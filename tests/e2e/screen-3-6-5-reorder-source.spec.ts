@@ -462,6 +462,22 @@ test(`[C1][S3] 일회용 학교 교사 "${RESET_LABEL}"(d7 §11-1): 직접 입�
 
 /** 둘러보기 정보 표의 재주문 기준 값 칸 글자 */
 async function guestThresholdCell(page: Page): Promise<string> {
+  // 1440 = 시약 목록 옆 드로어 (d7 §23 run d 세부, 시안 3-guest-desktop: 정보 줄 info-row · reorder-threshold "재주문 기준 | 값 | 출처")
+  if (isDeskPage(page)) {
+    const d = drawer(page);
+    await expect(d, "detail-drawer 1").toHaveCount(1, { timeout: 45_000 });
+    const dtab = d.locator(`${sel("segmented-control")} [role="tab"]`, { hasText: "정보" }).first();
+    await expect(dtab, `드로어 "정보" 탭`).toBeVisible({ timeout: 45_000 });
+    await expect(async () => {
+      if ((await dtab.getAttribute("aria-selected")) !== "true") await dtab.click();
+      await expect(dtab).toHaveAttribute("aria-selected", "true", { timeout: 1_000 });
+    }).toPass({ timeout: 15_000 });
+    const row = d.getByRole("tabpanel", { name: "정보" }).locator(sel("reorder-threshold"));
+    await expect(row, `드로어 정보 "${THRESH_CAPTION}" 줄`).toHaveCount(1, { timeout: 45_000 });
+    const text = (await row.innerText()).replace(/s+/g, " ").trim();
+    expect(text.startsWith(THRESH_CAPTION), `줄 이름 "${THRESH_CAPTION}"`).toBe(true);
+    return text.slice(THRESH_CAPTION.length).trim();
+  }
   // 정보 탭으로 (하이드레이션 전 클릭 무시 방지: 선택될 때까지)
   const tab = page.locator(`main ${sel("segmented-control")} [role="tab"]`, { hasText: "정보" }).first();
   await expect(tab, `"정보" 탭`).toBeVisible({ timeout: 45_000 });

@@ -2,8 +2,8 @@
  * 화면 14 — 회원가입 (시안 1.18)
  * 모바일(14-mobile): content padding 16/16/64/16 · gap 16, 카드 padding 24 · gap 24
  *   순서 = 제목 → 학교 → 계정 → 약관, 카드 아래 login-row, 가입하기는 bottom-action-bar(하단 고정, padding 12/16/32/16)
- * 데스크톱(14-desktop): content padding 24/64/64/64 · gap 24, 가운데 한 열 카드(폭 640, padding 32)
- *   순서 = 제목 → 학교 → 계정 → 약관 → 가입하기, 카드 아래 login-row
+ * 데스크톱(14-desktop, d7 §23 run d): web-header 아래 반 나눔 — 왼쪽 form-pane(폼 열 440 가운데 · 위아래 64, 카드 테두리 없음) /
+ *   오른쪽 intro-panel. 순서 = 제목 → "1 학교 선택" → 구분선 → "2 계정" → 약관 → 가입하기, 폼 아래 login-row
  * 학교 묶음: 제목 → info-box → step-progress(4칸) → 시/도 · 지역 · 학교급 · 학교 (사이 12)
  */
 .page {
@@ -49,6 +49,9 @@ form.card {
 }
 
 .sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
   margin: 0;
   color: var(--color-text);
   font-size: var(--font-size-18);
@@ -291,21 +294,61 @@ form.card {
   background: var(--color-surface);
 }
 
+/* 번호 · 데스크톱 제목 · 구분선은 데스크톱(14-desktop)에서만 */
+.sectionNumber,
+.titleDesktop,
+.sectionDivider {
+  display: none;
+}
+
 @media (min-width: 1024px) {
   .page {
-    gap: var(--space-24);
-    padding: var(--space-24) var(--space-64) var(--space-64);
+    gap: 0;
+    padding: 0;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    flex: 1;
+    min-height: calc(100dvh - var(--web-header-height));
+    background: linear-gradient(to right, var(--color-surface) 50%, var(--color-surface-muted) 50%);
   }
 
   .main {
     gap: var(--space-24);
     width: 100%;
-    max-width: calc(var(--space-64) * 10);
+    max-width: calc(var(--auth-form-width) + var(--space-64));
     margin: 0 auto;
+    padding: var(--space-64) var(--space-32);
+    box-sizing: border-box;
   }
 
   form.card {
-    padding: var(--space-32);
+    padding: 0;
+  }
+
+  form.card > :first-child {
+    margin-bottom: 0;
+  }
+
+  .sectionNumber,
+  .titleDesktop {
+    display: inline;
+  }
+
+  .titleMobile {
+    display: none;
+  }
+
+  .sectionDivider {
+    display: block;
+    width: 100%;
+    height: var(--border-width);
+    margin: 0;
+    border: 0;
+    background: var(--color-border);
   }
 
   .actionBar {

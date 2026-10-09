@@ -3,6 +3,7 @@
 //         · design/frames/15-{mobile|desktop}.json (컴포넌트 노드 개수)
 import { join } from "node:path";
 import { test, expect } from "@playwright/test";
+import { expectPreLoginShell, frameOf, preLoginZero, scrollThrough } from "./pre-login-helpers";
 import { countComponent, devRules, roleChecks, routeOf, rules, sel, useProjectViewport } from "./screen-helpers";
 import { frameCount } from "./screen-14-helpers";
 import {
@@ -46,16 +47,22 @@ test(`[C1][S${SCREEN}] 화면 ${SCREEN} 시안 컴포넌트(dev-rules components
     .filter(([, screens]) => screens.includes(SCREEN))
     .map(([n]) => n);
   expect(names.length, `dev-rules components 에 화면 ${SCREEN} 컴포넌트가 있어야 함`).toBeGreaterThan(0);
+  await expectPreLoginShell(page, SCREEN, vp);
   for (const name of names) {
     // 탭바는 C2 에서 화면별 기대값으로 본다
     if (name === rules.tab_bar.component || name === rules.tab_bar.item) continue;
+    // 데스크톱 재구성 run d (d7 §23, rules desktop_shell.pre_login): 1440 = nav-pill·app-sidebar 0, 390 = web-header·데스크톱 랜딩 전용 0
+    if (preLoginZero(SCREEN, vp, name)) {
+      await expect(page.locator(sel(name)), `${name} — 폭 ${vp} 에서 0 (pre_login)`).toHaveCount(0);
+      continue;
+    }
     const want = Math.max(1, frameCount(SCREEN, vp, name));
     expect(await countComponent(page, name), `${name} (시안 ${SCREEN}-${vp} 노드 수)`).toBeGreaterThanOrEqual(want);
   }
 });
 
-test(`[C1][S${SCREEN}] landing-cta 링크 href = routes["${SIGNUP}"]·routes["${LOGIN}"] · 클릭 시 실제 이동`, async ({ page }, info) => {
-  await useProjectViewport(page, info);
+test(`[C1][S${SCREEN}] landing-cta 링크 href = routes["${SIGNUP}"]·routes["${LOGIN}"] · 라벨 = 시안 · 클릭 시 실제 이동`, async ({ page }, info) => {
+  const vp = await useProjectViewport(page, info);
   await page.goto(routeOf(SCREEN));
   await waitLanding(page);
   const cta = page.locator(sel("landing-cta"));
@@ -67,8 +74,13 @@ test(`[C1][S${SCREEN}] landing-cta 링크 href = routes["${SIGNUP}"]·routes["${
   await expect(login, "로그인 버튼(button-outline) 링크").toHaveCount(1);
   await expect(signup, "회원가입 href").toHaveAttribute("href", routeOf(SIGNUP));
   await expect(login, "로그인 href").toHaveAttribute("href", routeOf(LOGIN));
-  expect((await signup.innerText()).trim(), "회원가입 라벨").toBe("회원가입");
-  expect((await login.innerText()).trim(), "로그인 라벨").toBe("로그인");
+  // 라벨 = 시안 landing-cta 안 button-primary · button-outline 글자 (15-desktop 히어로 = "회원가입하고 시작하기", 15-mobile = "회원가입")
+  const ctaLabels = ["button-primary", "button-outline"].flatMap((b) =>
+    frameOf(`${SCREEN}-${vp}`).nodes.filter((n) => n.type === "TEXT" && n.text && n.path.includes("landing-cta") && n.path.includes(b) && !n.path.includes(rules.guest.entry_component)).map((n) => n.text!.characters.trim()),
+  );
+  expect(ctaLabels.length, `시안 ${SCREEN}-${vp} landing-cta 문구 2개`).toBe(2);
+  expect((await signup.innerText()).trim(), "회원가입 라벨 = 시안").toBe(ctaLabels[0]);
+  expect((await login.innerText()).trim(), "로그인 라벨 = 시안").toBe(ctaLabels[1]);
 
   await signup.click();
   await page.waitForURL((u) => u.pathname === routeOf(SIGNUP), { timeout: 30_000 });
@@ -143,7 +155,10 @@ test(`[R-ui][S${SCREEN}] 로그인 전 화면 ${SCREEN}: roles R1~R7 역할 제�
 // ---------- V1 (보고용 스크린샷, 실패 조건 아님) ----------
 test(`[V1][S${SCREEN}] 화면 ${SCREEN} 스크린샷 저장`, async ({ page }, info) => {
   const vp = await useProjectViewport(page, info);
+  // 15-desktop 은 스크롤 떠오름([data-reveal]) — 동작 줄이기를 켜고 끝까지 스크롤해 모두 보인 상태로 찍는다
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto(routeOf(SCREEN));
   await waitLanding(page).catch(() => undefined);
+  await scrollThrough(page).catch(() => undefined);
   await page.screenshot({ path: join(process.cwd(), "test-results", `v1-${SCREEN}-${vp}.png`), fullPage: true });
 });

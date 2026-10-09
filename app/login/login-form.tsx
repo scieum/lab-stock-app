@@ -50,7 +50,14 @@ export function LoginForm({ redirectTo, notice }: Props) {
   };
 
   return (
-    <AuthFormCard title="로그인" subtitle="개인 이메일로 로그인하세요" onSubmit={onSubmit} noValidate aria-label="로그인">
+    <AuthFormCard
+      title="로그인"
+      subtitle="개인 이메일로 로그인하세요"
+      variant="split"
+      onSubmit={onSubmit}
+      noValidate
+      aria-label="로그인"
+    >
       {notice ? (
         <p className={styles.message} role="status">
           {notice}

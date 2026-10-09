@@ -3,6 +3,7 @@
 //         · design/frames/1-{mobile|desktop}.json (컴포넌트 노드 개수)
 import { join } from "node:path";
 import { test, expect, type Page } from "@playwright/test";
+import { expectPreLoginShell, preLoginZero } from "./pre-login-helpers";
 import { ROLE_LABEL, SCHOOL_A_ROLES } from "./db-helpers";
 import { openAs } from "./auth-state";
 import {
@@ -63,9 +64,15 @@ test(`[C1][S${SCREEN}] 화면 ${SCREEN} 시안 컴포넌트(dev-rules components
     .filter(([, screens]) => screens.includes(SCREEN))
     .map(([n]) => n);
   expect(names.length, `dev-rules components 에 화면 ${SCREEN} 컴포넌트가 있어야 함`).toBeGreaterThan(0);
+  await expectPreLoginShell(page, SCREEN, vp);
   for (const name of names) {
     // 탭바는 C2 에서 화면별 기대값으로 본다
     if (name === rules.tab_bar.component || name === rules.tab_bar.item) continue;
+    // 데스크톱 재구성 run d (d7 §23, rules desktop_shell.pre_login): 1440 = nav-pill·app-sidebar 0, 390 = web-header·데스크톱 랜딩 전용 0
+    if (preLoginZero(SCREEN, vp, name)) {
+      await expect(page.locator(sel(name)), `${name} — 폭 ${vp} 에서 0 (pre_login)`).toHaveCount(0);
+      continue;
+    }
     const want = Math.max(1, frameCount(SCREEN, vp, name));
     expect(await countComponent(page, name), `${name} (시안 ${SCREEN}-${vp} 노드 수)`).toBeGreaterThanOrEqual(want);
   }

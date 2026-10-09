@@ -10,6 +10,7 @@
 //  5) 아직 없는 화면(dev-rules routes 에 없는 경로)으로의 요청(404)이 저절로 나가지 않는다.
 // 느린 응답은 화면 전환 요청을 붙잡았다 풀어 흉내 낸다 (shell-helpers.ts installNavGate, 고정 대기 없음).
 import { isDeskPage, newFrame } from "./desk-helpers";
+import { landingSampleNames } from "./pre-login-helpers";
 import { test, expect, type Browser, type BrowserContext, type Page, type TestInfo } from "@playwright/test";
 import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
@@ -115,7 +116,9 @@ test(`[R-ui][S${LANDING}] 비로그인 ${routeOf(LANDING)}: 로그인 전 화면
   const tb = rules.tab_bar;
   expect(tb.mobile_screens, `화면 ${LANDING} 은 tab-bar 대상이 아님`).not.toContain(LANDING);
   // 로그인 전 화면(15·14·1) 어디에도 없는 컴포넌트 = 로그인 후(학교 소속) 화면 전용
-  const allowed = new Set([LANDING, 14, 1].flatMap((n) => componentsOf(n)));
+  // + 새 프레임 1·14·15-{mobile|desktop} 노드 이름 (run d: 15-desktop 대상 탭 = segmented-control, 랜딩 그림 등 — 시안에 있는 것은 로그인 전 화면 것)
+  const preFrames = [LANDING, 14, 1].flatMap((n) => ["mobile", "desktop"].flatMap((w) => newFrame(`${n}-${w}`).map((x) => x.name)));
+  const allowed = new Set([...[LANDING, 14, 1].flatMap((n) => componentsOf(n)), ...preFrames]);
   const forbidden = ALL_COMPONENTS.filter((n) => !allowed.has(n));
   expect(forbidden, "대조: 로그인 후 전용 컴포넌트").toEqual(expect.arrayContaining([tb.component, tb.item, ...requiredOf(HOME)]));
   const context = await anonContext(browser, info);
@@ -134,7 +137,9 @@ test(`[R-ui][S${LANDING}] 비로그인 ${routeOf(LANDING)}: 로그인 전 화면
       expect(await countComponent(page, c.component), `${c.rule} ${c.component} ≤ ${c.value}`).toBeLessThanOrEqual(c.value);
     }
     await expect(page.locator("[aria-busy]"), "자리 표시").toHaveCount(0);
-    expect(await schoolNamesIn(page.locator("body")), "로그인 전 화면에 학교명").toEqual([]);
+    // 15-desktop 랜딩 그림의 시안 샘플 학교명(product-shot "샘플고등학교")만 허용 — pre-login-helpers landingSampleNames
+    const samples = landingSampleNames(LANDING, info.project.name as ViewportName);
+    expect((await schoolNamesIn(page.locator("body"))).filter((n) => !samples.includes(n)), "로그인 전 화면에 학교명 (시안 샘플 표기 제외)").toEqual([]);
   } finally {
     await context.close();
   }

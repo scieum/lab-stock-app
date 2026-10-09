@@ -9,6 +9,7 @@ import { anonClient, signIn } from "./db-helpers";
 import { openAs } from "./auth-state";
 import { countComponent, routeOf, rules, seedRows, sel } from "./screen-helpers";
 import { seedReagents, seedSchoolOf, textAcrossTabs } from "./screen-3-helpers";
+import { DRAWER, drawer, drawerTitle, isDeskPage, newFrame, waitDrawer, waitWidthSettled } from "./desk-helpers";
 import {
   GUEST,
   checkBanner,
@@ -33,10 +34,26 @@ const BADGE = "badge-low-stock";
 const CARD = "reagent-detail-card";
 const MSDS = rules.roles.R4.component!;
 
+/**
+ * 상세가 그려질 때까지: 390 = reagent-detail-card / 1440 = 시약 목록 옆 detail-drawer (d7 §23 run d 세부, 시안 3-guest-desktop)
+ */
 async function waitDetail(page: Page): Promise<void> {
   await waitGuestShell(page);
+  if (isDeskPage(page)) {
+    await waitDrawer(page);
+    await waitWidthSettled(page);
+    return;
+  }
   await expect(page.locator(sel(CARD)).first()).toBeVisible({ timeout: 30_000 });
 }
+
+/** 상세 본문: 390 = reagent-detail-card / 1440 = 드로어 (뒤 시약 목록은 화면 2g 몫) */
+const detailOf = (page: Page) => (isDeskPage(page) ? drawer(page) : page.locator(sel(CARD)));
+
+/** 시안 3-guest-desktop 드로어 정보 줄 이름 (row-label, 문서 순서) */
+const DESK_INFO_LABELS = newFrame("3-guest-desktop")
+  .filter((n) => n.type === "TEXT" && n.name === "row-label" && n.path.includes(DRAWER))
+  .map((n) => n.text!.characters.trim());
 
 /** 데모 시약 중 재고 부족 1건 · 충분 1건 (둘 다 있어야 배지 있음·없음을 실제로 검사) */
 async function picks() {
@@ -124,21 +141,45 @@ for (const kind of ["low", "ok"] as const) {
     const { context, page } = await openGuest(browser, info, guestDetailPath(pick.id));
     try {
       await waitDetail(page);
-      const card = page.locator(sel(CARD));
-      await expect(card, `${CARD} 1개`).toHaveCount(1);
+      const desk = isDeskPage(page);
+      const card = detailOf(page);
+      await expect(card, `${desk ? DRAWER : CARD} 1개`).toHaveCount(1);
+      if (desk) await expect(page.locator(sel(CARD)), `1440 ${CARD} 0 (드로어)`).toHaveCount(0);
       const cardText = await card.innerText();
-      expect(cardText, `카드에 시약명 ${db!.name}`).toContain(db!.name);
-      expect(squash(cardText), `카드에 재고 ${db!.stock}${db!.unit}`).toContain(squash(`${db!.stock}${db!.unit}`));
+      expect(cardText, `${desk ? "드로어" : "카드"}에 시약명 ${db!.name}`).toContain(db!.name);
+      if (desk) expect((await drawerTitle(page).innerText()).trim(), "드로어 제목 = 시약명").toBe(db!.name);
+      expect(squash(cardText), `재고 ${db!.stock}${db!.unit}`).toContain(squash(`${db!.stock}${db!.unit}`));
       const text = await textAcrossTabs(page);
       expect(db!.cas_no, "데모 시약은 CAS 번호가 있음").toBeTruthy();
-      expect(text, `CAS ${db!.cas_no}`).toContain(db!.cas_no!);
+      if (desk) {
+        // 시안 3-guest-desktop 정보 줄 = 현재 재고·입고일·보관 위치·재주문 기준 (CAS 줄 없음) — 시안 그대로. 정보 탭으로 돌아가 읽는다
+        const infoTab = drawer(page).locator(`${sel("segmented-control")} [role="tab"]`, { hasText: "정보" }).first();
+        await expect(async () => {
+          if ((await infoTab.getAttribute("aria-selected")) !== "true") await infoTab.click();
+          await expect(infoTab).toHaveAttribute("aria-selected", "true", { timeout: 1_000 });
+        }).toPass({ timeout: 15_000 });
+        const labels = await drawer(page).locator(`[role="tabpanel"] [data-name="info-row"] > span:first-child, [role="tabpanel"] [data-component="reagent-location"] > div > span:first-child, [role="tabpanel"] [data-component="reorder-threshold"] > div > span:first-child`).allInnerTexts();
+        expect(DESK_INFO_LABELS.length, "시안 정보 줄").toBeGreaterThan(0);
+        expect(labels.map((l) => l.trim()), "1440 드로어 정보 줄 이름 = 시안 3-guest-desktop").toEqual(DESK_INFO_LABELS);
+        expect(DESK_INFO_LABELS.some((l) => /CAS/i.test(l)), "시안 3-guest-desktop 에 CAS 줄 없음").toBe(false);
+        expect(text, `1440 드로어에 CAS ${db!.cas_no} 없음 (시안)`).not.toContain(db!.cas_no!);
+      } else expect(text, `CAS ${db!.cas_no}`).toContain(db!.cas_no!);
       expect(db!.cabinet, "데모 시약은 보관 칸이 지정돼 있음 (d7 §5)").toBeTruthy();
       expect(text, `보관 위치 시약장 ${db!.cabinet}`).toContain(db!.cabinet!);
       const locLine = text.split(/\r?\n/).find((l) => l.includes(db!.cabinet!)) ?? "";
       expect(locLine, `보관 위치 줄에 ${db!.shelf}단`).toMatch(new RegExp(`(^|\\D)${db!.shelf}(\\D|$)`));
-      expect(text, `보관 분류 ${db!.storage_class}`).toContain(db!.storage_class!);
-      expect(await card.locator(sel(BADGE)).count(), `카드 안 ${BADGE}`).toBe(db!.low ? 1 : 0);
-      expect(await countComponent(page, BADGE), `화면 전체 ${BADGE}`).toBe(db!.low ? 1 : 0);
+      if (desk) {
+        // 1440 (시안 3-guest-desktop): 보관 위치 줄 = "시약장 · 단" 만, 분류는 status-chips 의 storage-class-chip = 시약 자신의 보관 분류(reagents.storage_class)
+        const own = await anonClient().from("reagents").select("storage_class").eq("id", pick.id).single();
+        expect(own.error, "anon 시약 보관 분류").toBeNull();
+        const cls = (own.data?.storage_class as string | null) ?? null;
+        const chip = drawer(page).locator(sel("storage-class-chip"));
+        if (cls) await expect(chip, `storage-class-chip = ${cls}`).toHaveText(new RegExp(cls));
+        else await expect(chip, "시약 보관 분류 없음 → storage-class-chip 0").toHaveCount(0);
+      } else expect(text, `보관 분류 ${db!.storage_class}`).toContain(db!.storage_class!);
+      expect(await card.locator(sel(BADGE)).count(), `${desk ? "드로어" : "카드"} 안 ${BADGE}`).toBe(db!.low ? 1 : 0);
+      // 1440 뒤 목록 행의 배지는 화면 2g 몫 — 상세 범위(드로어)만 / 390 = 화면 전체
+      if (!desk) expect(await countComponent(page, BADGE), `화면 전체 ${BADGE}`).toBe(db!.low ? 1 : 0);
     } finally {
       await context.close();
     }
@@ -160,8 +201,15 @@ test(`[C1][${TAG}] 둘러보기 시약 상세: 사용 기록 표 = anon demo_rea
     await waitDetail(page);
     const text = await textAcrossTabs(page);
     for (const u of rows) expect(text, `사용자 ${u.user_name}`).toContain(u.user_name);
-    const cells = page.locator(sel("ex-data-table-cell"));
-    expect(await cells.count(), "사용 기록 표 셀").toBeGreaterThan(0);
+    // 1440 뒤 목록 data-table 의 행은 화면 2g 몫 — 상세 범위(드로어) 안 사용 기록 표만
+    const usageTab = isDeskPage(page) ? drawer(page) : page.locator("body");
+    const tab = usageTab.locator(`${sel("segmented-control")} [role="tab"]`, { hasText: "사용 기록" }).first();
+    await expect(async () => {
+      if ((await tab.getAttribute("aria-selected")) !== "true") await tab.click();
+      await expect(tab).toHaveAttribute("aria-selected", "true", { timeout: 1_000 });
+    }).toPass({ timeout: 15_000 });
+    const rowsText = await usageTab.locator("table").last().innerText();
+    for (const u of rows) expect(rowsText, `사용 기록 표에 사용자 ${u.user_name}`).toContain(u.user_name);
   } finally {
     await context.close();
   }

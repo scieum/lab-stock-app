@@ -1,0 +1,222 @@
+/*
+ * 시안 15-desktop landing-section (section-band-2~5): 1440 × 480 전폭 띠, 글 묶음 480(왼쪽 x 120 또는 오른쪽 x 840),
+ * 반대쪽 화면 조각은 띠 밖(화면 끝)에서 잘린다. 띠 바탕은 흰 ↔ gray-50 번갈아 (rules.json landing_rhythm.bands).
+ */
+.band {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: calc(var(--space-48) * 10);
+  overflow: hidden;
+  scroll-margin-top: calc(var(--web-header-height) * 2);
+}
+
+.white {
+  background: var(--color-surface);
+}
+
+.muted {
+  background: var(--color-surface-muted);
+}
+
+/* 1200 + 좌우 32 — 1440 에서 글 묶음이 x 120 / 840 */
+.container {
+  width: 100%;
+  max-width: calc(var(--landing-content-width) + var(--space-64));
+  margin: 0 auto;
+  padding: 0 var(--space-32);
+  box-sizing: border-box;
+}
+
+.copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  width: min(var(--landing-copy-width), calc(50% - var(--space-64)));
+}
+
+.copyRight .copy {
+  margin-left: auto;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-24);
+}
+
+/* section-tag: 13/600 · padding 4/12 · pill — 흰 띠는 gray-50, 회 띠는 흰 바탕 */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-4) var(--space-12);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.muted .tag {
+  background: var(--color-surface);
+}
+
+/* section-title 40/700 (display — landing-section 안에서만) */
+.title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--display-font-40);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+  word-break: keep-all;
+}
+
+/* point-list: 사이 12, 점 8 하늘색 + 사이 12 + 15/400 */
+.points {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.point {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+}
+
+.dot {
+  flex-shrink: 0;
+  width: var(--space-8);
+  height: var(--space-8);
+  border-radius: var(--radius-pill);
+  background: var(--color-highlight);
+}
+
+/* section-link: 15/600 + 하늘색 chevron 16, 높이 44 */
+.link {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--space-4);
+  min-height: var(--button-min-height);
+  margin-top: var(--space-8);
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.link:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: var(--space-4);
+  border-radius: var(--radius-md);
+}
+
+.linkIcon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  color: var(--color-highlight);
+}
+
+/* ---------- 화면 조각 자리 ---------- */
+.stage {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+/* 글 왼쪽: 조각은 x 664 ~ 화면 끝 */
+.copyLeft .stage {
+  left: calc(50% - var(--space-48) - var(--space-8));
+  right: 0;
+}
+
+/* 글 오른쪽: 조각은 화면 왼쪽 끝 ~ x 736 (cabinet 은 688) */
+.copyRight .stage {
+  left: 0;
+  right: calc(50% - var(--space-16));
+}
+
+.copyRight[data-shape="cabinet"] .stage {
+  right: calc(50% + var(--space-32));
+}
+
+.back,
+.front {
+  position: absolute;
+}
+
+.back > *,
+.front > * {
+  width: 100%;
+  height: 100%;
+}
+
+.back {
+  top: var(--space-64);
+  right: 0;
+  left: 0;
+}
+
+/* 2 시약 목록: 뒤 776 × 352, 앞 필터 400 × 264 (x -40, y 200) */
+[data-shape="list"] .back {
+  height: calc(var(--space-64) * 5.5);
+}
+
+[data-shape="list"] .front {
+  top: calc(var(--space-64) * 3 + var(--space-8));
+  left: calc((var(--space-32) + var(--space-8)) * -1);
+  width: var(--side-column-width);
+  height: calc(var(--space-64) * 4 + var(--space-8));
+}
+
+/* 4 사용 기록: 뒤 736 × 320, 앞 입력 480 × 360 (x 296, y 104) */
+[data-shape="usage"] .back {
+  height: calc(var(--space-64) * 5);
+}
+
+[data-shape="usage"] .front {
+  top: calc(var(--space-64) + var(--space-32) + var(--space-8));
+  left: calc(var(--space-64) * 4.5 + var(--space-8));
+  width: var(--landing-copy-width);
+  height: calc(var(--space-48) * 7.5);
+}
+
+/* 6 재주문: 뒤 776 × 168, 앞 드로어 480 × 232 (x -64, y 240) */
+[data-shape="reorder"] .back {
+  height: calc(var(--space-48) * 3.5);
+}
+
+[data-shape="reorder"] .front {
+  top: calc(var(--space-48) * 5);
+  left: calc(var(--space-64) * -1);
+  width: var(--landing-copy-width);
+  height: calc(var(--space-64) * 3.5 + var(--space-8));
+}
+
+/* 11·12 시약장 QR: 뒤 688 × 284, 앞 결과 480 × 364 (x 320, y 100) */
+[data-shape="cabinet"] .back {
+  height: calc(var(--space-64) * 4.5 - var(--space-4));
+}
+
+[data-shape="cabinet"] .front {
+  top: calc(var(--space-48) * 2 + var(--space-4));
+  left: calc(var(--space-64) * 5);
+  width: var(--landing-copy-width);
+  height: calc(var(--space-48) * 7.5 + var(--space-4));
+}

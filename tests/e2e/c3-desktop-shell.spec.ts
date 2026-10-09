@@ -471,7 +471,7 @@ test.describe("일회용 계정 로그아웃", () => {
 type PreLogin = { screens: number[]; component: string; forbidden: string[]; desktop_required: Record<string, string[]> };
 const PRE = (DS as unknown as { pre_login: PreLogin }).pre_login;
 
-test(`[C3][S*] 로그인 전 ${PRE.screens.join("·")} · 둘러보기 ${rules.guest.screens.join("·")}: desktop_migrated_screens 에 든 화면은 C3(로그인 전 = ${PRE.component} 1 · ${PRE.forbidden.join("·")} 0 / 둘러보기 1440 = ${DS.component} 1 · ${rules.guest.lock} ${rules.guest.tab_locks}), 아직이면 셸 run a 가 바꾸지 않았다(nav-pill 1 · ${DS.component}·${DS.item} 0)`, async ({ browser }, info) => {
+test(`[C3][S*] 로그인 전 ${PRE.screens.join("·")} · 둘러보기 ${rules.guest.screens.join("·")}: desktop_migrated_screens 에 든 화면은 C3(로그인 전 = ${PRE.component} 1 · ${PRE.forbidden.join("·")} 0 / 둘러보기 1440 = ${DS.component} 1 · 사이드바 안 ${rules.guest.lock} ${(rules.guest as unknown as { sidebar_locks: number }).sidebar_locks}), 아직이면 셸 run a 가 바꾸지 않았다(nav-pill 1 · ${DS.component}·${DS.item} 0)`, async ({ browser }, info) => {
   test.setTimeout(240_000);
   const demo = (await demoReagents())[0];
   const guestPath: Record<number, string> = {
@@ -504,7 +504,11 @@ test(`[C3][S*] 로그인 전 ${PRE.screens.join("·")} · 둘러보기 ${rules.g
           for (const n of PRE.desktop_required[String(t.screen)] ?? []) await expect(page.locator(sel(n)).first(), `${where}: ${n}`).toBeVisible();
         } else {
           await expect(sidebar(page), `${where}: ${DS.component} 1`).toHaveCount(1, { timeout: 30_000 });
-          await expect(page.locator(sel(rules.guest.lock)), `${where}: ${rules.guest.lock}`).toHaveCount(rules.guest.tab_locks);
+          // rules guest.sidebar_locks = 사이드바 안 guest-lock (기록·QR 찾기). 본문 잠금은 시안 {화면}-guest-desktop 대로 별도로 센다
+          const sbLocks = (rules.guest as unknown as { sidebar_locks: number }).sidebar_locks;
+          await expect(sidebar(page).locator(sel(rules.guest.lock)), `${where}: 사이드바 안 ${rules.guest.lock} = guest.sidebar_locks ${sbLocks}`).toHaveCount(sbLocks);
+          const frameLocks = newFrame(`${t.screen}-guest-desktop`).filter((n) => n.name === rules.guest.lock).length;
+          await expect(page.locator(sel(rules.guest.lock)), `${where}: ${rules.guest.lock} 전체 = 시안 ${t.screen}-guest-desktop ${frameLocks} (사이드바 ${sbLocks} + 본문)`).toHaveCount(frameLocks);
           for (const f of DS.forbidden_on_desktop) await expect(page.locator(sel(f)), `${where}: ${f} 0`).toHaveCount(0);
         }
         continue;

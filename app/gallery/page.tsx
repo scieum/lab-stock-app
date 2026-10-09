@@ -57,6 +57,13 @@ import { SidebarItem } from "@/components/sidebar-item";
 import { DataTable as DeskTable, DataTableCell as DeskCell, DataTableRow as DeskRow } from "@/components/data-table";
 import { DetailDrawer, DrawerRow, DrawerRows } from "@/components/detail-drawer";
 import { sidebarAccountLabel, sidebarMenu } from "@/lib/sidebar-menu";
+import { CtaBand } from "@/components/cta-band";
+import { LandingSection } from "@/components/landing-section";
+import { LandingTabs } from "@/components/landing-tabs";
+import { ProductShot, Shot, ShotReagentTable } from "@/components/product-shot";
+import { StepFlow } from "@/components/step-flow";
+import { WebFooter } from "@/components/web-footer";
+import { WebHeader } from "@/components/web-header";
 import { NavPill } from "@/components/nav-pill";
 import { QrLabel } from "@/components/qr-label";
 import { QrPrint } from "@/components/qr-print";
@@ -862,6 +869,55 @@ export default function GalleryPage() {
         <Item name="데스크톱 본문 페이지 (page-head · page-column 640 · bottom-bar) · 홈 숫자 타일 + 위젯">
           <Link href="/gallery/pages" className={styles.more}>
             본문 페이지 틀 · 홈 타일 · 위젯 · 서류 올리기 데스크톱 · QR 인쇄 드로어 보기 (/gallery/pages)
+          </Link>
+        </Item>
+
+        <Item name="로그인 전 · 랜딩 · 둘러보기 데스크톱 (web-header · product-shot · landing-tabs · landing-section · step-flow · cta-band · web-footer)">
+          <WebHeader actions="both" />
+          <ProductShot />
+          <LandingTabs
+            tabs={[
+              { id: "g-landing-section", label: "시약 목록" },
+              { id: "g-step-flow", label: "사용 기록" },
+            ]}
+          />
+          <LandingSection
+            id="g-landing-section"
+            tag="시약 목록"
+            title="필요한 시약을 바로 찾아요"
+            points={["이름 · 보관 분류 · 보관 위치로 거르고 정렬해요", "재고가 부족한 시약은 배지로 바로 보여요", "MSDS 요약을 목록에서 바로 열어요"]}
+            shot={
+              <Shot label="시약 목록 표 화면 예시" bleed="right">
+                <ShotReagentTable />
+              </Shot>
+            }
+          />
+          <StepFlow
+            id="g-step-flow"
+            title="다섯 단계면 시작해요"
+            steps={[
+              {
+                label: "학교 선택",
+                title: "학교 선택",
+                description: "회원가입 때 시/도 → 지역 → 학교급 → 학교 순서로 우리 학교를 골라요",
+                checks: ["NEIS 공식 학교 정보로 골라요", "초 · 중 · 고 학교급을 먼저 골라요", "가입한 뒤에는 우리 학교 데이터만 보여요"],
+                shot: (
+                  <Shot label="시약 목록 표 화면 예시">
+                    <ShotReagentTable compact />
+                  </Shot>
+                ),
+              },
+            ]}
+          />
+          <CtaBand
+            title="우리 학교 시약장, 오늘 시작해요"
+            description="학교를 고르고 이메일로 가입하면 바로 시작해요"
+            primary={{ href: "/signup", label: "회원가입" }}
+            secondary={{ href: "/demo", label: "둘러보기" }}
+          />
+          <WebFooter />
+          <Link href="/gallery/pre-login" className={styles.more}>
+            로그인 전 상단 바 · 긴 랜딩 컴포넌트 · 둘러보기 사이드바 보기 (/gallery/pre-login)
           </Link>
         </Item>
 

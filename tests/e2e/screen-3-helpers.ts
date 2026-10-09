@@ -82,8 +82,8 @@ export async function dbDetail(page: Page, id: string): Promise<DbDetail | null>
  * 폭 390 = reagent-detail-card 보임 / 폭 1440 = 시약 목록 옆 오른쪽 detail-drawer 1개 보임 + 하이드레이션
  * (d7 §23 run b 세부: 데스크톱 /reagents/[id] = 목록 + 드로어, 시안 3-desktop 에 reagent-detail-card 없음)
  */
-/** 1440 로그인 시약 상세 = 목록 옆 드로어 (둘러보기 /demo 는 run d 전 — 예전 전용 화면) */
-const deskDetail = (page: Page) => isDeskPage(page) && !new URL(page.url()).pathname.startsWith("/demo");
+/** 1440 시약 상세 = 목록 옆 드로어 (로그인 run b · 둘러보기 /demo run d — d7 §23 "run d 세부": 2g/3g/16g = data-table + 드로어) */
+const deskDetail = (page: Page) => isDeskPage(page);
 
 export async function waitDetail(page: Page): Promise<void> {
   if (deskDetail(page)) {
