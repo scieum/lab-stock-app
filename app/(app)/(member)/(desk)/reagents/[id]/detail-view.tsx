@@ -7,7 +7,6 @@ import { MsdsEntry } from "@/components/msds-entry";
 import { MSDS_TEXT } from "@/lib/msds-rules";
 import { msdsSummaryPath } from "@/lib/msds-summary";
 import { QrCodeSvg } from "@/components/msds-qr-tile";
-import { ReagentDetailCard } from "@/components/reagent-detail-card";
 import { locationText, slotLabel } from "@/lib/cabinet-rules";
 import { linkPrefetch } from "@/lib/link-prefetch";
 import { qrPath } from "@/lib/qr";
@@ -40,7 +39,8 @@ type Props = {
  * 로그인(디자인 1.15 3-mobile · 3-desktop): 한 열 — (데스크톱) page-header 뒤로가기 + "시약 상세" → reagent-detail-card
  *   (입고일 · reagent-location · reorder-threshold) → 정보/사용 기록 탭 + 표 → msds-entry → "사용 기록" + "입고"(교사·admin) / "목록"(학생).
  *   모바일 하단 버튼 줄은 tab-bar 바로 위 고정, 데스크톱은 열 안(폭 720, 가운데).
- * 둘러보기(3-guest): 예전 2열 배치 그대로 — 요약 열(카드 + MSDS) · 정보 열(탭 + 표 + 하단 버튼). 보관 위치·기준 줄 없이 표에 보관 위치.
+ * 둘러보기(3-guest-mobile 새 프레임, d7 §23 run d): 로그인과 같은 한 열 — 카드 안 reagent-location · reorder-threshold 는 읽기 전용
+ *   (위치 바꾸기·기준 고치기 없음), 처음 탭 = "정보", 아래 버튼은 잠긴 "사용 기록" 하나(guest-lock). 정보 표에도 재주문 기준 줄(출처 문구).
  */
 export async function ReagentDetailView({ data, role, openPicker = false, selfPath, listHref }: Props) {
   const { reagent, placement, threshold, picker, suggestion, usage } = data;
@@ -74,34 +74,6 @@ export async function ReagentDetailView({ data, role, openPicker = false, selfPa
     />
   );
 
-  if (guest) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.layout}>
-          <div className={styles.summary}>
-            <ReagentDetailCard
-              name={reagent.name}
-              stock={reagent.stock}
-              unit={reagent.unit}
-              lowStock={reagent.lowStock}
-              intakeDate={reagent.intakeDate}
-            />
-            {msds}
-          </div>
-          <div className={styles.info}>
-            <DetailTabs info={info} usage={usage} />
-            <div className={styles.actions}>
-              {/* 시안 3-guest bottom-actions: button-primary "사용 기록" + guest-lock 하나만 */}
-              <GuestLockedButton variant="primary" className={styles.primary}>
-                사용 기록
-              </GuestLockedButton>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className={styles.page}>
       <div className={styles.column}>
@@ -128,9 +100,17 @@ export async function ReagentDetailView({ data, role, openPicker = false, selfPa
           suggestion={staff ? suggestion : null}
           initialPicking={staff && picker !== null && openPicker}
         />
-        <DetailTabs info={info} usage={usage} />
+        <DetailTabs info={info} usage={usage} initialTab={guest ? "info" : undefined} />
         {msds}
         {staff ? <MsdsSavedToast /> : null}
+        {guest ? (
+          <div className={[styles.actions, styles.columnActions].join(" ")}>
+            {/* 시안 3-guest-mobile bottom-actions: button-primary "사용 기록" + guest-lock 하나만 */}
+            <GuestLockedButton variant="primary" className={styles.primary}>
+              사용 기록
+            </GuestLockedButton>
+          </div>
+        ) : (
         <div className={[styles.actions, styles.columnActions].join(" ")}>
           <ButtonPrimary href={`/usage/new?reagent=${reagent.id}`} className={styles.primary}>
             사용 기록
@@ -146,6 +126,7 @@ export async function ReagentDetailView({ data, role, openPicker = false, selfPa
             </span>
           )}
         </div>
+        )}
       </div>
     </div>
   );

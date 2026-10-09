@@ -96,3 +96,10 @@
 .action {
   display: flex;
 }
+
+/* 둘러보기 모바일 (13-guest-mobile): 잠긴 quick-action 두 칸 나란히 (사이 12) */
+.quickRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-12);
+}
