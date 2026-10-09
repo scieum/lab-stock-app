@@ -569,22 +569,48 @@ test.describe("일회용 학교", () => {
       await expect(sheet.getByRole("heading", { name: exact("QR 인쇄") })).toBeVisible();
       for (const c of VARIANTS.print) expect(await countComponent(page, c), `variants.print ${c}`).toBeGreaterThanOrEqual(1);
 
-      // 대상 고르기 pill: 시약장마다(번호 + 이름) + "모두"
-      const options = sheet.getByRole("group", { name: "인쇄할 시약장" }).getByRole("button");
-      await expect(options, "시약장 수 + 모두").toHaveCount(db.cabinets.length + 1);
-      const optionTexts = await options.evaluateAll((els, numSel) =>
-        els.map((el) => {
-          const n = el.querySelector(numSel)?.textContent?.trim() ?? null;
-          const clone = el.cloneNode(true) as HTMLElement;
-          clone.querySelector(numSel)?.remove();
-          return { number: n, label: (clone.textContent ?? "").trim(), pressed: el.getAttribute("aria-pressed") };
-        }),
-      sel(NUMBER));
-      expect(optionTexts.slice(0, -1).map((o) => ({ number: Number(o.number), label: o.label })), "대상 pill = DB 시약장 (번호 순)").toEqual(
-        [...db.cabinets].sort((a, b) => a.number - b.number).map((c) => ({ number: c.number, label: c.label })),
-      );
-      expect(optionTexts.at(-1)!.label, `마지막 pill "모두"`).toBe("모두");
-      expect(optionTexts.filter((o) => o.pressed === "true").map((o) => o.label), "기본 = 지금 시약장 (rules qr_print_layout)").toEqual([c2.label]);
+      const byNumber = [...db.cabinets].sort((a, b) => a.number - b.number);
+      let pickAll: () => Promise<void>;
+      if (viewport === "mobile") {
+        // 390 대상 고르기 pill: 시약장마다(번호 + 이름) + "모두" (시안 11-print-mobile)
+        const options = sheet.getByRole("group", { name: "인쇄할 시약장" }).getByRole("button");
+        await expect(options, "시약장 수 + 모두").toHaveCount(db.cabinets.length + 1);
+        const optionTexts = await options.evaluateAll((els, numSel) =>
+          els.map((el) => {
+            const n = el.querySelector(numSel)?.textContent?.trim() ?? null;
+            const clone = el.cloneNode(true) as HTMLElement;
+            clone.querySelector(numSel)?.remove();
+            return { number: n, label: (clone.textContent ?? "").trim(), pressed: el.getAttribute("aria-pressed") };
+          }),
+        sel(NUMBER));
+        expect(optionTexts.slice(0, -1).map((o) => ({ number: Number(o.number), label: o.label })), "대상 pill = DB 시약장 (번호 순)").toEqual(
+          byNumber.map((c) => ({ number: c.number, label: c.label })),
+        );
+        expect(optionTexts.at(-1)!.label, `마지막 pill "모두"`).toBe("모두");
+        expect(optionTexts.filter((o) => o.pressed === "true").map((o) => o.label), "기본 = 지금 시약장 (rules qr_print_layout)").toEqual([c2.label]);
+        pickAll = async () => {
+          await options.filter({ hasText: exact("모두") }).click();
+          await expect(options.filter({ hasText: exact("모두") })).toHaveAttribute("aria-pressed", "true");
+        };
+      } else {
+        // 1440 = 새 프레임 11-print-desktop: 오른쪽 detail-drawer 안 print-target "시약장" 드롭다운 (pill 아님, d7 §23 run c)
+        await expect(page.locator(`${sel("detail-drawer")}`), "1440 QR 인쇄 = detail-drawer").toHaveCount(1);
+        await expect(sheet.getByRole("group", { name: "인쇄할 시약장" }), "1440 대상 pill 줄 0").toHaveCount(0);
+        const combo = sheet.locator('[data-name="print-target"] [aria-haspopup="listbox"]');
+        await expect(combo, "1440 대상 = 드롭다운 1").toHaveCount(1);
+        await combo.click();
+        const opts = page.getByRole("listbox").getByRole("option");
+        expect((await opts.allInnerTexts()).map((t) => squash(t)), "드롭다운 선택지 = DB 시약장(번호 순) + 모두").toEqual([...byNumber.map((c) => c.label), "모두"]);
+        expect(squash(await opts.and(page.locator('[aria-selected="true"]')).innerText()), "기본 = 지금 시약장 (rules qr_print_layout)").toBe(c2.label);
+        await page.keyboard.press("Escape");
+        await expect(page.getByRole("listbox"), "Esc → 드롭다운 닫힘").toHaveCount(0);
+        await expect(sheet, "드로어는 그대로").toBeVisible();
+        pickAll = async () => {
+          await combo.click();
+          await opts.filter({ hasText: exact("모두") }).click();
+          await expect(combo, '대상 = "모두"').toContainText("모두");
+        };
+      }
 
       /** 미리보기 라벨: 글자 = 학교명 · 번호 · 이름 · 안내, QR 내용 */
       const expectLabels = async (want: typeof db.cabinets, what: string) => {
@@ -607,9 +633,8 @@ test.describe("일회용 학교", () => {
         expectOneSchool((await labels.allInnerTexts()).join("\n"), f.school.name, `${what} 라벨`);
       };
       await expectLabels(db.cabinets.filter((c) => c.id === c2.id), "기본");
-      await options.filter({ hasText: exact("모두") }).click();
-      await expect(options.filter({ hasText: exact("모두") })).toHaveAttribute("aria-pressed", "true");
-      const all = [...db.cabinets].sort((a, b) => a.number - b.number);
+      await pickAll();
+      const all = byNumber;
       await expectLabels(all, "모두");
       const frame = frameCounts(`${SCREEN}-print-${viewport}`);
       expect(await countComponent(page, QR_LABEL), `시안 11-print (시약장 ${frame[QR_LABEL]}개 "모두") 와 같은 규칙: 라벨 = 시약장 수`).toBe(all.length);
@@ -788,7 +813,7 @@ test.describe("일회용 학교", () => {
 // 공용 학교 A — 읽기·시트 열고 닫기만 (쓰기 요청 0건)
 // =====================================================================
 
-test(`[C2][S${SCREEN}] 학교A 교사: 폭 390 = ${SLOT_SHEET}·${QR_SHEET} 아래 끝 = tab-bar 위쪽 선(전폭, tab-bar 를 가리지 않음)·시트 버튼 가려지지 않음 / 폭 1440 = tab-bar 0 · 시트는 화면 가운데 카드 · 본문 2단(왼쪽 배치도 열 : 오른쪽 ${EDIT} 카드 ≈ 시안 11-desktop 860 : 420) (쓰기 0건)`, async ({ browser }, info) => {
+test(`[C2][S${SCREEN}] 학교A 교사: 폭 390 = ${SLOT_SHEET}·${QR_SHEET} 아래 끝 = tab-bar 위쪽 선(전폭, tab-bar 를 가리지 않음)·시트 버튼 가려지지 않음 / 폭 1440 = tab-bar 0 · 본문 한 열(새 프레임 11-desktop page-column) · ${SLOT_SHEET} = 팝오버(폭 = 시안 11-slot-desktop) · ${QR_SHEET} = 오른쪽 detail-drawer(11-print-desktop) (쓰기 0건)`, async ({ browser }, info) => {
   test.setTimeout(180_000);
   const tb = rules.tab_bar;
   const { context, page, viewport } = await openAs(browser, info, "teacher", SCREEN);
@@ -833,25 +858,38 @@ test(`[C2][S${SCREEN}] 학교A 교사: 폭 390 = ${SLOT_SHEET}·${QR_SHEET} 아�
     } else {
       await expect(page.locator(sel(tb.component)), "1440 tab-bar").toHaveCount(0);
       await expect(page.locator(sel(tb.item)), "1440 tab-item").toHaveCount(0);
-      // 2단: 왼쪽 열(전환·배치도·칸 없음 목록) · 오른쪽 편집 카드 — 시안 11-desktop page-body: layout-column 860 · cabinet-edit 420
+      // 새 프레임 11-desktop (데스크톱 재구성 run c): page-column 한 열 — switcher → 이름 → cabinet-edit(관리 줄 · 문 형태·단 수) → 배치도
+      const col = await boxOf(main(page).locator('[data-name="page-column"]').first());
       const left = await boxOf(main(page).locator(sel("cabinet-switcher")));
       const board = await boxOf(slots(page).first());
       const card = await boxOf(main(page).locator(sel(EDIT)));
-      expect(card.left, "편집 카드는 배치도 오른쪽 열").toBeGreaterThan(board.right);
-      expect(Math.abs(card.top - left.top), "두 열의 위 끝이 같다").toBeLessThanOrEqual(24);
-      const leftWidth = card.left - left.left;
-      const ratio = card.width / leftWidth;
-      const want = 420 / (860 + 32);
-      expect(Math.abs(ratio - want), `오른쪽 카드 : 왼쪽 열(사이 포함) ≈ 시안 420 : 892 (실제 ${card.width.toFixed(0)} : ${leftWidth.toFixed(0)})`).toBeLessThanOrEqual(0.06);
+      expect(Math.abs(card.left - left.left), "한 열: cabinet-edit 왼쪽 끝 = switcher 왼쪽 끝").toBeLessThanOrEqual(1);
+      expect(card.top, "한 열: cabinet-edit 은 switcher 아래").toBeGreaterThanOrEqual(left.bottom);
+      expect(board.top, "한 열: 배치도는 관리 줄 아래").toBeGreaterThan(card.top);
+      for (const [what, b] of [["switcher", left], ["배치도 첫 칸", board], ["cabinet-edit", card]] as const) {
+        expect(b.left, `${what} 은 page-column 안 (왼쪽)`).toBeGreaterThanOrEqual(col.left - 1);
+        expect(b.right, `${what} 은 page-column 안 (오른쪽)`).toBeLessThanOrEqual(col.right + 1);
+      }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), "가로 스크롤 없음").toBe(true);
+      const SLOT_SHEET_W = (JSON.parse(readFileSync(framePath(`${SCREEN}-slot-desktop`), "utf8")) as { frames: { nodes: { name: string; width?: number }[] }[] }).frames[0].nodes.find((n) => n.name === SLOT_SHEET)!.width!;
+      const DRAWER_W = (rules as unknown as { desktop_shell: { drawer_width: number } }).desktop_shell.drawer_width;
       for (const [name, open, sheet] of sheets) {
         await open();
         await expect(sheet, name).toBeVisible();
-        const s = await boxOf(sheet);
-        expect(Math.abs((s.left + s.right) / 2 - vp.width / 2), `${name}: 화면 가로 가운데`).toBeLessThanOrEqual(16);
-        expect(s.top, `${name}: 화면 안 (위)`).toBeGreaterThanOrEqual(0);
-        expect(s.bottom, `${name}: 화면 안 (아래)`).toBeLessThanOrEqual(vp.height);
-        expect(s.width, `${name}: 전폭이 아닌 카드`).toBeLessThan(vp.width / 2);
+        if (name === SLOT_SHEET) {
+          // 11-slot-desktop: 누른 칸 옆 팝오버 (바텀시트·가운데 카드 아님)
+          // 내용이 바뀌면(넣을 시약 고르기) 팝오버가 다시 자리를 잡는다 — 자리를 잡은 뒤 화면 안
+          await expect.poll(async () => { const b = await boxOf(sheet); return b.top >= 0 && b.bottom <= vp.height; }, { message: `${name}: 화면 안 (위·아래)`, timeout: 10_000 }).toBe(true);
+          const s = await boxOf(sheet);
+          expect(Math.abs(s.width - SLOT_SHEET_W), `${name}: 폭 = 시안 11-slot-desktop ${SLOT_SHEET_W}`).toBeLessThanOrEqual(1);
+        } else {
+          // 11-print-desktop: 오른쪽 detail-drawer (폭 rules drawer_width · 화면 높이)
+          const d = await boxOf(page.locator(sel("detail-drawer")));
+          expect(Math.round(d.width), `${name}: 드로어 폭 = rules drawer_width ${DRAWER_W}`).toBe(DRAWER_W);
+          expect(Math.round(d.right), `${name}: 드로어 오른쪽 끝 = 화면 끝`).toBe(vp.width);
+          expect(Math.round(d.top), `${name}: 드로어 위 = 0`).toBe(0);
+          expect(Math.round(d.bottom), `${name}: 드로어 아래 = 화면 아래`).toBe(vp.height);
+        }
         await sheetClose(sheet).click();
         await expect(sheet).toHaveCount(0);
       }
@@ -912,8 +950,17 @@ test(`[N1-ui][S${SCREEN}] 학교A 교사: ${SLOT_ASSIGN} 후보 = 자기 학교 
     await main(page).locator(sel(QR_PRINT)).getByRole("button").click();
     const qr = page.locator(sel(QR_SHEET));
     await expect(qr).toBeVisible();
-    const all = qr.getByRole("button", { name: exact("모두") });
-    if ((await all.count()) > 0) await all.click();
+    // 390 = 대상 pill "모두" · 1440 = print-target 드롭다운의 "모두" (새 프레임 11-print-desktop)
+    const combo = qr.locator('[data-name="print-target"] [aria-haspopup="listbox"]');
+    if ((await combo.count()) > 0) {
+      await combo.click();
+      const allOpt = page.getByRole("listbox").getByRole("option").filter({ hasText: exact("모두") });
+      if ((await allOpt.count()) > 0) await allOpt.click();
+      else await page.keyboard.press("Escape");
+    } else {
+      const all = qr.getByRole("button", { name: exact("모두") });
+      if ((await all.count()) > 0) await all.click();
+    }
     await expect(qr.locator(sel(QR_LABEL)), "라벨 수 = 자기 학교 시약장 수").toHaveCount(db.cabinets.length);
     for (const t of await qr.locator(sel(QR_LABEL)).allInnerTexts()) expect(t, "QR 라벨에 자기 학교명").toContain(me.schoolName);
     expectOneSchool((await qr.locator(sel(QR_LABEL)).allInnerTexts()).join("\n"), me.schoolName, "QR 라벨");

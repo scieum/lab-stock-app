@@ -5,7 +5,7 @@
 // 이 파일은 저장하지 않는다 (DB 불변). 저장 흐름·ex-toast 는 screen-7-save.spec.ts.
 // 로그인은 auth-state.ts 의 역할별 storageState 를 재사용한다.
 import { join } from "node:path";
-import { isDeskPage } from "./desk-helpers";
+import { isDeskPage, newFrame } from "./desk-helpers";
 import { test, expect, type Page } from "@playwright/test";
 import { ROLE_LABEL, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
@@ -23,6 +23,8 @@ import {
 import { detailPath, seedSchoolOf, waitDetail } from "./screen-3-helpers";
 import { expectShell, expectShellHeader, isShellComponent, shellSchoolScope } from "./shell-helpers";
 import { frameActiveLabel } from "../desktop-shell";
+/** 1440 본문 제목 = 새 프레임 7-desktop page-head 제목 ("입고" — 모바일 nav-pill 제목은 "입고·시약 등록", d7 §23 run c) */
+const DESK_TITLE7 = newFrame("7-desktop").find((n) => n.name === "title" && n.path.includes("page-title"))!.text!.characters;
 
 /** 셸의 입고 메뉴 글자: 폭 390 = nav-pill "입고·시약 등록", 폭 1440 = 사이드바 메뉴(rules desktop_shell.menu — 새 프레임 7-desktop 활성 메뉴) */
 const shellIntakeLabel = (viewport: string) => (viewport === "desktop" ? frameActiveLabel(SCREEN) : NAV_LABEL);
@@ -292,7 +294,7 @@ for (const role of [...STAFF, "schoolB"] as Role[]) {
         await expect(page.locator(sel(c)).first(), `${c} 보임`).toBeVisible();
       }
       // 셸 머리: 390 = nav-pill(워드마크 + 제목 + 학교명) / 1440 = 사이드바(워드마크 + 학교명) + 본문 제목
-      await expectShellHeader(page, viewport, { wordmark: "Lab_Stock", title: NAV_LABEL, schoolName: me.schoolName }, `${ROLE_LABEL[role]} 화면 ${SCREEN}`);
+      await expectShellHeader(page, viewport, { wordmark: "Lab_Stock", title: viewport === "desktop" ? DESK_TITLE7 : NAV_LABEL, schoolName: me.schoolName }, `${ROLE_LABEL[role]} 화면 ${SCREEN}`);
       // 맨 위 intake-mode(직접 입력 선택) + 직접 입력의 두 갈래, 각각 한 번에 하나만 선택
       await expect(modeControl(page), `${INTAKE_MODE} 1개`).toHaveCount(1);
       await expect(activeMode(page), `?mode=direct → "${MODE_DIRECT}"`).toHaveText(exact(MODE_DIRECT));

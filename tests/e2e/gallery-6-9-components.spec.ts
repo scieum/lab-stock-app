@@ -53,8 +53,16 @@ const loadFrame = (name: string) => (JSON.parse(readFileSync(framePath(`${name}`
  * (새 시안 9-mobile 은 같은 구조에 예시 판매처 이름·연락처 줄만 바뀌었다 — 새 프레임 대조는 run-b-frames.spec)
  */
 const loadFrame117 = (name: string) => (JSON.parse(readFileSync(preDesktopFramePath(`${name}`), "utf8")) as Frame).frames[0].nodes;
+/**
+ * 화면 6: 데스크톱 재구성 run c(dev-rules 1.13 desktop_migrated_screens 에 6)로 새 프레임이 됐다.
+ * - 안내 박스(manual-upload) 문구·배치 = 새 프레임 6-desktop · 6-mobile (화면과 갤러리가 같은 공용 안내 상수)
+ * - 갤러리 알림 카드 예시(/gallery/reorder admin 기본 예시 — 알림 3건 · 자동 1 · vendor-register · 새 창 안내)는 예전 시안 1.17 값으로 만든
+ *   컴포넌트 예시라 카드 값·개수는 예전 프레임에서 읽는다 (frames.ts preDesktopFramePath). 새 프레임 카드 대조는 run-c-frames.spec(화면 /reorder).
+ */
 const d6 = loadFrame(`${S6}-desktop`);
 const m6 = loadFrame(`${S6}-mobile`);
+const d6Gallery = loadFrame117(`${S6}-desktop`);
+const m6Gallery = loadFrame117(`${S6}-mobile`);
 const d9 = loadFrame117(`${S9}-desktop`);
 const m9 = loadFrame117(`${S9}-mobile`);
 
@@ -111,7 +119,7 @@ const GUIDE = {
  * 문구 틀은 d7 §11(2026-10-08 디자인 1.21 맞춤 · rules.json reorder.card_text): 수량 줄 "재주문 기준 {min}{unit} / 현재 재고 {stock}{unit}"(숫자·단위 붙여 씀),
  * 기준 문구 "재주문 기준 N u", 날짜 "M월 D일 알림"(한국 시간, 올해가 아니면 "YYYY년 M월 D일 알림"). 시안에서는 값만 읽는다.
  */
-const FRAME_CARDS = groups(d6, "reorder-alert-card").map((g) => {
+const FRAME_CARDS = groups(d6Gallery, "reorder-alert-card").map((g) => {
   const line = g.children.filter((c) => c.text && (c.name === "stock-line" || c.name === "threshold" || c.name === "stock")).map((c) => c.text!.characters).join(" ");
   const need = /재주문 기준 ([\d.,]+) (\S+)/.exec(line);
   const left = /\(([\d.,]+) (\S+) 남음\)/.exec(line) ?? /현재 재고 ([\d.,]+) (\S+)$/.exec(line);
@@ -141,12 +149,12 @@ const FRAME_CARDS = groups(d6, "reorder-alert-card").map((g) => {
     unit,
   };
 });
-const MOBILE_CARDS = groups(m6, "reorder-alert-card").length;
-const REGISTER_ENTRY = labelOf(groups(under(d6, "vendor-register"), "button-outline")[0]);
+const MOBILE_CARDS = groups(m6Gallery, "reorder-alert-card").length;
+const REGISTER_ENTRY = labelOf(groups(under(d6Gallery, "vendor-register"), "button-outline")[0]);
 /** 시안 1.17 6: 염산 카드의 새 창 안내 줄 (vendor-new-window) */
 const NEW_WINDOW = {
-  note: texts(under(d6, "vendor-new-window"), "note")[0],
-  action: texts(under(d6, "vendor-new-window"), "label")[0],
+  note: texts(under(d6Gallery, "vendor-new-window"), "note")[0],
+  action: texts(under(d6Gallery, "vendor-new-window"), "label")[0],
 };
 /**
  * 판매처 연결 모달: 시안 1.17 프레임에는 모달 열린 상태가 없다(새 창 안내 상태를 그렸다).
@@ -237,8 +245,9 @@ const countByName = (nodes: FrameNode[]) => {
   }
   return out;
 };
-const COUNTS_6D = countByName(d6);
-const COUNTS_6M = countByName(m6);
+/** 갤러리 예시 개수 기준 = 예전 1.17 프레임 (위 d6Gallery 설명) */
+const COUNTS_6D = countByName(d6Gallery);
+const COUNTS_6M = countByName(m6Gallery);
 const COUNTS_9D = countByName(d9);
 const COUNTS_9M = countByName(m9);
 /** 판매처 연결 모달 안 컴포넌트 (1.16 시안 모달 — 1.17 프레임에 모달 상태 없음) */
@@ -527,7 +536,9 @@ async function openEdit(scope: Locator, name: string): Promise<void> {
 // =====================================================================
 test(`[K1][S${S6}] 기대값 원본: 프레임 6-desktop·6-mobile(1.17) 과 rules.json colors·roles, d7 §11·§18 문구가 서로 맞는다`, () => {
   expect(GUIDE.title).toBe("재주문 기준");
-  expect(GUIDE.body, "시안 1.17 info-body").toBe("필요량 = 1반 1회 실험량 × 조 수 · 기준이 없는 시약은 최근 사용량으로 계산해요");
+  // 새 프레임 6-desktop · 6-mobile info-body (디자인 run 0936 — 입고량 근거 덧붙임, d7 §11-1 "없으면 마지막 입고량 × 20%")
+  expect(GUIDE.body, "새 프레임 info-body").toBe("필요량 = 1반 1회 실험량 × 조 수 · 기준이 없는 시약은 최근 사용량(사용 기록이 없으면 마지막 입고량의 20%)으로 계산해요");
+  expect(texts(under(m6, "manual-upload"), "info-body")[0], "6-mobile info-body = 6-desktop").toBe(GUIDE.body);
   expect(D7, "d7 §11 안내 박스 앞부분").toContain(`"${GUIDE.body.split(" · ")[0]}"`);
   expect(GUIDE.action).toBe("실험 매뉴얼 올리기");
   expect(HIGHLIGHTS, "안내 박스 채움 = 연하늘").toContain(GUIDE.fill);
@@ -701,15 +712,13 @@ test.describe("화면 6 재주문 알림 (/gallery/reorder)", () => {
     expect(await action.evaluate((el) => el.tagName.toLowerCase()), "화면 5 로 가는 링크").toBe("a");
     await expect(action).toHaveAttribute("href", MANUAL_ROUTE);
     await expectMinHeight(action, `"${GUIDE.action}"`);
-    // 시안 1.17 6-mobile: 버튼은 안내 글 아래 / 6-desktop: 글자 칸 왼쪽 · 버튼 오른쪽 (d7 §18 화면 6 배치)
-    if (isMobile(page)) {
-      expect((await box(action, "버튼")).y, "모바일: 버튼은 안내 글 아래(박스 끝)").toBeGreaterThanOrEqual((await box(body, "본문")).y);
-    } else {
-      const a = await box(action, "버튼");
-      const t = await box(title, "제목");
-      expect(a.x, "데스크톱: 버튼은 안내 글 오른쪽").toBeGreaterThan(t.x + t.width);
+    // 새 프레임 6-mobile · 6-desktop(run c 가운데 640 열): 두 폭 모두 info-head → info-body → button-pill-soft 세로 (버튼은 안내 글 아래)
+    const a = await box(action, "버튼");
+    const b = await box(body, "본문");
+    expect(a.y, "버튼은 안내 글 아래").toBeGreaterThanOrEqual(b.y + b.height - 1);
+    if (!isMobile(page)) {
       const bx = await box(boxEl, "안내 박스");
-      expect(a.x + a.width, "데스크톱: 버튼은 박스 오른쪽 끝 쪽").toBeGreaterThan(bx.x + bx.width / 2);
+      expect(a.x, "데스크톱: 버튼은 박스 왼쪽 쪽 (세로 배치)").toBeLessThan(bx.x + bx.width / 2);
     }
 
     const paint = await groupPaint(boxEl);
@@ -737,19 +746,15 @@ test.describe("화면 6 재주문 알림 (/gallery/reorder)", () => {
       expect(await cardLines(card), `카드 ${i + 1} 줄 순서`).toEqual([want.badge, want.name, ...want.amountLines, want.basis, want.date, want.link, ...nw]);
       if (want.auto) await expect(card.locator(sel("auto-threshold-badge")), `카드 ${i + 1} 자동 배지`).toHaveText(exact(want.auto));
       else await expect(card.locator(sel("auto-threshold-badge")), `카드 ${i + 1} 자동 배지 없음`).toHaveCount(0);
-      // 시안 1.17 6: 모바일 = 한 열 위→아래, 데스크톱 = 왼쪽 정보 칸(배지→시약명→수량→기준→날짜) · 오른쪽 vendor-link
+      // 시안 6-mobile · 새 프레임 6-desktop(run c 가운데 640 열): 두 폭 모두 한 열 위→아래 (배지→시약명→수량→기준→날짜→vendor-link)
       const info = [want.badge, want.name, want.amountLines[0], want.basis, want.date];
       const boxes = [];
       for (const t of info) boxes.push(await box(card.getByText(t, { exact: true }), t));
       const ys = boxes.map((b) => b.y);
       expect(ys, `카드 ${i + 1} 정보 칸 위→아래 배치`).toEqual([...ys].sort((a, b) => a - b));
       const lb = await box(card.getByText(want.link, { exact: true }), want.link);
-      if (isMobile(page)) {
-        expect(lb.y, `카드 ${i + 1} 모바일: "${want.link}" 은 날짜 아래`).toBeGreaterThan(ys[ys.length - 1]);
-      } else {
-        const right = Math.max(...boxes.map((b) => b.x + b.width));
-        expect(lb.x, `카드 ${i + 1} 데스크톱: "${want.link}" 은 정보 칸 오른쪽`).toBeGreaterThanOrEqual(right);
-      }
+      const dateBox = boxes[boxes.length - 1];
+      expect(lb.y, `카드 ${i + 1}: "${want.link}" 은 날짜 아래 (새 프레임 6-desktop · 6-mobile vendor-link 는 카드 맨 아래 줄)`).toBeGreaterThanOrEqual(dateBox.y + dateBox.height - 1);
       expect(await card.evaluate((el) => getComputedStyle(el).backgroundColor), `카드 ${i + 1} 바탕 = 프레임 채움`).toBe(hexToRgb(want.fill));
     }
   });

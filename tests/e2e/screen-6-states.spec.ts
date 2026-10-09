@@ -176,34 +176,40 @@ test(`[C1][S${SCREEN}] 일회용 학교 교사: 알림 = stock < min_stock 인 �
   }
 });
 
-test(`[C1][S${SCREEN}] 일회용 학교 admin: 시안 1.17 6 상태(알림 = 프레임의 ${CARD} 수 · 그중 1장은 자동 기준 · 첫 카드는 판매처 "확인" 뒤 새 창 안내 줄)에서 프레임 6 의 컴포넌트 개수 이상`, async ({ browser }, info) => {
+test(`[C1][S${SCREEN}] 일회용 학교 admin: 새 프레임 6 상태(알림 = 프레임의 ${CARD} 수 · 그중 프레임의 ${AUTO_BADGE} 수만큼 자동 기준 · 첫 카드는 판매처 "확인" 뒤 새 창 안내 줄)에서 프레임 6 의 컴포넌트 개수 이상`, async ({ browser }, info) => {
   const f = await fresh(info);
   const frame = frameCounts(`${SCREEN}-${info.project.name}`);
-  // 시안 1.17 (d7 §18): 카드 3 · auto-threshold-badge 1 · 새 창 안내 줄의 "직접 열기" pill + 안내 박스 pill = button-pill-soft 2 · 모달 없음
+  // 새 프레임 6 (데스크톱 재구성 run c — desktop_migrated_screens 에 6): 카드 3 · auto-threshold-badge 2(사용 기록 근거 · 입고량 근거) ·
+  // 새 창 안내 줄의 "직접 열기" pill + 안내 박스 pill = button-pill-soft 2 · 모달 없음. 자동 기준 시약은 입고량 근거로 만든다(배지 수만 대조).
   expect(frame[CARD], "프레임의 알림 카드 수").toBeGreaterThan(1);
-  expect(frame[AUTO_BADGE], "프레임: 자동 기준 카드 1장").toBe(1);
+  expect(frame[AUTO_BADGE], "프레임: 자동 기준 카드 ≥ 1").toBeGreaterThanOrEqual(1);
+  expect(frame[AUTO_BADGE], "프레임: 자동 아닌 카드 ≥ 1 (첫 카드 = 새 창 안내)").toBeLessThan(frame[CARD]);
   expect(frame[MODAL] ?? 0, "1.17 프레임은 모달이 닫힌 상태").toBe(0);
   expect(frame["button-pill-soft"], "프레임: 안내 박스 + 직접 열기").toBe(2);
   const made: DbReagent[] = [];
   for (let i = 0; i < frame[CARD] - frame[AUTO_BADGE]; i++) made.push(await prepReagent(f, { tag: `시안${i}`, stock: 30 - i, min: 60, unit: "g", perGroup: 10, groups: 6 }));
   // 자동(입고) 기준 시약: 등록(자동 = 첫 입고량 × 비율) 뒤 재고만 낮춘다 (service role — 사용 기록 없이 부족 상태를 만들 길이 함수에 없다)
-  const autoName = `임시시약-자동-${hex()}`;
-  const reg = await f.prep.rpc("register_reagent", { p_name: autoName, p_storage_class: STORAGE_CLASS, p_stock: 100, p_unit: "mL", p_intake_date: "2026-09-15", p_msds_url: null });
-  expect(reg.error, `준비: register_reagent (${reg.error?.message})`).toBeNull();
-  const autoId = ((Array.isArray(reg.data) ? reg.data[0] : reg.data) as { id: string }).id;
-  const low = await service().from("reagents").update({ stock: 1 }).eq("id", autoId).select("min_stock_source, min_stock, stock");
-  expect(low.error, `준비: 재고 낮추기 (${low.error?.message})`).toBeNull();
-  const autoRow = (low.data ?? [])[0] as { min_stock_source: string; min_stock: number; stock: number };
-  expect(autoRow.min_stock_source, "대조: 자동 기준").toBe("auto");
-  expect(autoRow.stock < autoRow.min_stock, "대조: 자동 기준 시약이 부족").toBe(true);
+  const autoNames: string[] = [];
+  for (let i = 0; i < frame[AUTO_BADGE]; i++) {
+    const autoName = `임시시약-자동${i}-${hex()}`;
+    const reg = await f.prep.rpc("register_reagent", { p_name: autoName, p_storage_class: STORAGE_CLASS, p_stock: 100, p_unit: "mL", p_intake_date: "2026-09-15", p_msds_url: null });
+    expect(reg.error, `준비: register_reagent (${reg.error?.message})`).toBeNull();
+    const autoId = ((Array.isArray(reg.data) ? reg.data[0] : reg.data) as { id: string }).id;
+    const low = await service().from("reagents").update({ stock: 1 }).eq("id", autoId).select("min_stock_source, min_stock, stock");
+    expect(low.error, `준비: 재고 낮추기 (${low.error?.message})`).toBeNull();
+    const autoRow = (low.data ?? [])[0] as { min_stock_source: string; min_stock: number; stock: number };
+    expect(autoRow.min_stock_source, "대조: 자동 기준").toBe("auto");
+    expect(autoRow.stock < autoRow.min_stock, "대조: 자동 기준 시약이 부족").toBe(true);
+    autoNames.push(autoName);
+  }
   const vendor = await prepVendor(f, { note: "평균 2일 배송", website: fakeSite("a") });
 
   const { context, page, viewport } = await openTemp(browser, info, f.admin, REORDER_HREF);
   await stubExternal(context, info);
   try {
     await waitReorder(page);
-    await expect(cards(page), CARD).toHaveCount(made.length + 1);
-    await expect(cardOf(page, autoName).locator(sel(AUTO_BADGE)), "자동 기준 카드에 배지").toHaveCount(1);
+    await expect(cards(page), CARD).toHaveCount(made.length + autoNames.length);
+    for (const autoName of autoNames) await expect(cardOf(page, autoName).locator(sel(AUTO_BADGE)), "자동 기준 카드에 배지").toHaveCount(1);
     // 첫 (자동 아닌) 카드: 판매처 "확인" → 새 창 → 그 카드 안에 안내 줄
     const first = cardOf(page, made[0].name);
     await openLinkModal(page, first);
@@ -214,9 +220,9 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin: 시안 1.17 6 상태(알림 = 프
     await expect(first.getByRole("status").filter({ has: directLink(page) }), "첫 카드 안 새 창 안내 줄").toHaveCount(1);
     const got = await countsOf(page, Object.keys(frame));
     for (const [name, n] of Object.entries(frame)) expect(got[name], `${viewport} ${name} ≥ 프레임 ${n}`).toBeGreaterThanOrEqual(n);
-    expect(got[CARD], `${CARD} = 알림 수`).toBe(made.length + 1);
-    expect(got[LINK], `${LINK} = 알림 수`).toBe(made.length + 1);
-    expect(got[AUTO_BADGE], `${AUTO_BADGE} = 자동 기준 카드 수`).toBe(1);
+    expect(got[CARD], `${CARD} = 알림 수`).toBe(made.length + autoNames.length);
+    expect(got[LINK], `${LINK} = 알림 수`).toBe(made.length + autoNames.length);
+    expect(got[AUTO_BADGE], `${AUTO_BADGE} = 자동 기준 카드 수`).toBe(autoNames.length);
     expect(got[MANUAL], MANUAL).toBe(1);
     expect(await countComponent(page, MODAL), `${MODAL} 닫힘`).toBe(0);
     // 6-mobile 프레임은 목록 아래 vendor-register 를 그리지 않았다(화면 밖) — admin 화면에는 1 (R3)

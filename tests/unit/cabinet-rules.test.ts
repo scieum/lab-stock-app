@@ -166,9 +166,17 @@ describe("cabinet rules: 칸 이름 · 칸 수", () => {
     expect(slotKeys("단문형", 3)).toHaveLength(3);
   });
 
-  it(`[K1][S11] 시약장 요약 full: 데스크탑 시안 "${FRAME_META_FULL}" (문 형태 · 단 수 · 칸 수), 기본값 = full`, () => {
-    expect(cabinetMeta("양문형", 4, "full")).toBe(FRAME_META_FULL);
-    expect(cabinetMeta("양문형", 4)).toBe(FRAME_META_FULL);
+  // 새 프레임(데스크톱 재구성 run c, dev-rules 1.13 desktop_migrated_screens 에 11): 11-desktop cabinet-meta 도 "양문형 · 4단" (칸 수 없음).
+  // 화면에 보이는 요약은 두 폭 모두 short 모양 — full("… · 8칸")은 시안 글자가 아니라 칸 수 계산으로만 확인한다
+  // (화면에 보이는 글자는 e2e run-c-frames 에서 innerText 로 본다).
+  it(`[K1][S11] 시약장 요약: 새 프레임 11-desktop "${FRAME_META_FULL}" = 11-mobile "${FRAME_META_SHORT}" (문 형태 · 단 수, 칸 수 없음) = short`, () => {
+    expect(FRAME_META_FULL, "11-desktop cabinet-meta = 11-mobile cabinet-meta").toBe(FRAME_META_SHORT);
+    expect(FRAME_META_FULL).not.toMatch(/칸/);
+    expect(cabinetMeta("양문형", 4, "short")).toBe(FRAME_META_FULL);
+  });
+
+  it("[K1][S11] 시약장 요약 full(칸 수 계산): short + ' · {열 수 × 단 수}칸', 기본값 = full", () => {
+    expect(cabinetMeta("양문형", 4)).toBe(cabinetMeta("양문형", 4, "full"));
     for (const d of cab.door_types) {
       for (const s of cab.shelves) expect(cabinetMeta(d as DoorType, s, "full")).toBe(`${d} · ${s}단 · ${columns(d) * s}칸`);
     }

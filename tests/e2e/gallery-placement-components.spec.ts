@@ -940,9 +940,9 @@ test.describe("화면 11 저장 안 한 편집 (rules cabinet.unsaved_confirm ·
 });
 
 // =====================================================================
-// 화면 11 — 데스크탑 2단 · 모바일 한 열 (시안 11-desktop · 11-mobile)
+// 화면 11 — 두 폭 모두 한 열 (시안 11-mobile · 새 프레임 11-desktop — 데스크톱 재구성 run c, 가운데 640 열)
 // =====================================================================
-test("[K1][S11] 배치: 데스크탑 = 왼쪽 배치도 열 · 오른쪽 편집 카드(폭 비율 = 시안 11-desktop), 모바일 = 한 열(관리 줄 → 배치도 → 칩 → 주의사항 → 칸 없음)", async ({ page }) => {
+test("[K1][S11] 배치: 두 폭 모두 한 열(관리 줄 → 배치도 → 칩 → 주의사항 → 칸 없음) — 1440 = 새 프레임 11-desktop page-column 한 열(블록 왼쪽 끝 같음 · cabinet-edit 폭 = switcher 폭)", async ({ page }) => {
   await open(page, "/gallery/cabinets");
   const sec = await area(page, "default");
   const edit = sec.locator(sel("cabinet-edit"));
@@ -951,28 +951,21 @@ test("[K1][S11] 배치: 데스크탑 = 왼쪽 배치도 열 · 오른쪽 편집 
   const firstSlot = await box(board(sec).first(), "첫 칸");
   const lastSlot = await box(board(sec).last(), "마지막 칸");
   const unassigned = await box(sec.getByRole("heading", { name: new RegExp(`^${esc(UNASSIGNED)} 시약`) }), "칸 없음 제목");
-  if (isMobile(page)) {
-    const rename = await box(edit.getByRole("button", { name: "이름 바꾸기", exact: true }), "이름 바꾸기");
-    const chip = await box(sec.locator(`button${sel("storage-class-chip")}`).first(), "첫 칩");
-    const mix = await box(sec.locator(sel("mix-warning")), "mix-warning");
-    expect(rename.y + rename.height, "관리 줄 → 배치도").toBeLessThanOrEqual(firstSlot.y);
-    expect(lastSlot.y + lastSlot.height, "배치도 → 칩").toBeLessThanOrEqual(chip.y);
-    expect(chip.y, "칩 → 주의사항").toBeLessThan(mix.y);
-    expect(mix.y + mix.height, "주의사항 → 칸 없음").toBeLessThanOrEqual(unassigned.y);
-  } else {
-    const frameCol = F11D.find((n) => leaf(n) === "layout-column")!.width!;
-    const frameEdit = F11D.find((n) => leaf(n) === "cabinet-edit")!.width!;
-    expect(e.x, "편집 카드는 배치도 오른쪽").toBeGreaterThanOrEqual(lastSlot.x + lastSlot.width);
-    expect(e.x, "편집 카드는 switcher 오른쪽").toBeGreaterThanOrEqual(sw.x + sw.width);
-    expect(unassigned.x + unassigned.width, "칸 없음 목록은 왼쪽 열").toBeLessThanOrEqual(e.x);
-    expect(Math.abs(e.y - sw.y), "편집 카드 위쪽 = 왼쪽 열 위쪽").toBeLessThanOrEqual(sw.height);
-    const ratio = e.width / sw.width;
-    expect(Math.abs(ratio - frameEdit / frameCol) / (frameEdit / frameCol), `편집 카드 : 왼쪽 열 폭 비율 ≈ 시안 ${frameEdit}:${frameCol}`).toBeLessThanOrEqual(0.15);
-    for (const n of ["cabinet-door-select", "cabinet-shelf-select", "mix-warning", "button-primary"]) {
-      const b = await box(edit.locator(sel(n)).first(), n);
-      expect(b.x, `${n} 은 편집 카드 안`).toBeGreaterThanOrEqual(e.x);
-      expect(b.x + b.width, `${n} 은 편집 카드 안`).toBeLessThanOrEqual(e.x + e.width + 1);
+  const rename = await box(edit.getByRole("button", { name: "이름 바꾸기", exact: true }), "이름 바꾸기");
+  const chip = await box(sec.locator(`button${sel("storage-class-chip")}`).first(), "첫 칩");
+  const mix = await box(sec.locator(sel("mix-warning")), "mix-warning");
+  expect(sw.y + sw.height, "switcher → 관리 줄").toBeLessThanOrEqual(rename.y);
+  expect(rename.y + rename.height, "관리 줄 → 배치도").toBeLessThanOrEqual(firstSlot.y);
+  expect(lastSlot.y + lastSlot.height, "배치도 → 칩").toBeLessThanOrEqual(chip.y);
+  expect(chip.y, "칩 → 주의사항").toBeLessThan(mix.y);
+  expect(mix.y + mix.height, "주의사항 → 칸 없음").toBeLessThanOrEqual(unassigned.y);
+  if (!isMobile(page)) {
+    // 새 프레임 11-desktop: page-column 안 블록이 모두 같은 왼쪽 끝 · cabinet-edit 폭 = cabinet-switcher 폭 (둘 다 열 폭)
+    expect(F11D.find((n) => leaf(n) === "cabinet-edit")!.width, "시안: cabinet-edit 폭 = switcher 폭").toBe(F11D.find((n) => leaf(n) === "cabinet-switcher")!.width);
+    for (const [what, b] of [["관리 줄", rename], ["첫 칩", chip], ["주의사항", mix], ["칸 없음 제목", unassigned], ["cabinet-edit", e]] as const) {
+      expect(Math.abs(b.x - sw.x), `1440 한 열: ${what} 왼쪽 끝 = switcher 왼쪽 끝`).toBeLessThanOrEqual(1);
     }
+    expect(Math.abs(e.width - sw.width), "1440 한 열: cabinet-edit 폭 = switcher 폭").toBeLessThanOrEqual(1);
   }
 });
 

@@ -856,7 +856,7 @@ for (const role of SCHOOL_A_ROLES) {
   });
 }
 
-test(`[C2][S${SCREEN}] 학교A 교사 폭 390: "${SAVE_BUTTON}" 줄은 tab-bar 바로 위 고정(스크롤해도 같은 자리·가려지지 않음) · 이름 시트·삭제 확인의 아래 끝 = tab-bar 위쪽 선(전폭, tab-bar 를 가리지 않음) / 폭 1440: tab-bar 0 · "${SAVE_BUTTON}" 은 ${EDIT} 맨 아래 · 시트는 화면 가운데 카드`, async ({ browser }, info) => {
+test(`[C2][S${SCREEN}] 학교A 교사 폭 390: "${SAVE_BUTTON}" 줄은 tab-bar 바로 위 고정(스크롤해도 같은 자리·가려지지 않음) · 이름 시트·삭제 확인의 아래 끝 = tab-bar 위쪽 선(전폭, tab-bar 를 가리지 않음) / 폭 1440: tab-bar 0 · "${SAVE_BUTTON}" 은 본문 아래 고정 bottom-bar 오른쪽 끝(새 프레임 11-desktop — 맨 아래까지 내려도 편집 컨트롤을 가리지 않음) · 시트는 화면 가운데 카드`, async ({ browser }, info) => {
   test.setTimeout(180_000);
   const tb = rules.tab_bar;
   const { context, page, viewport } = await openAs(browser, info, "teacher", SCREEN);
@@ -926,15 +926,22 @@ test(`[C2][S${SCREEN}] 학교A 교사 폭 390: "${SAVE_BUTTON}" 줄은 tab-bar �
     } else {
       await expect(page.locator(sel(tb.component)), "1440 tab-bar").toHaveCount(0);
       await expect(page.locator(sel(tb.item)), "1440 tab-item").toHaveCount(0);
-      // 저장은 cabinet-edit 안 맨 아래
-      const e = await boxOf(edit(page));
+      // 새 프레임 11-desktop (데스크톱 재구성 run c): "저장" = 본문 아래 고정 bottom-bar 오른쪽 끝 (rules desktop_shell heavy_pages · d7 §23)
+      const bar = main(page).locator('[data-name="bottom-bar"]').filter({ has: page.locator(sel("button-primary")).filter({ hasText: exact(SAVE_BUTTON) }) });
+      await expect(bar, '"저장" 은 bottom-bar 안').toHaveCount(1);
+      expect(await bar.evaluate((el) => getComputedStyle(el).position), "bottom-bar 고정").toBe("fixed");
+      const bb = await boxOf(bar);
+      expect(Math.round(bb.bottom), "bottom-bar 아래 = 화면 아래").toBe(vp.height);
       const s = await boxOf(save);
-      expect(s.top, "저장 버튼은 편집 영역 안").toBeGreaterThanOrEqual(e.top);
-      expect(s.bottom, "저장 버튼은 편집 영역 안").toBeLessThanOrEqual(e.bottom + 0.5);
+      expect(s.right, '"저장" 은 바 오른쪽 끝 쪽').toBeGreaterThan(bb.left + bb.width / 2);
+      // 맨 아래까지 내리면 편집 컨트롤(관리 줄 · 문 형태 · 단 수 · 마지막 칩)이 바 위에 있다 (가리지 않음)
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      const top = (await boxOf(bar)).top;
       for (const other of [renameButton(page), main(page).locator(sel(DOOR_SELECT)), main(page).locator(sel(SHELF_SELECT)), pickChips(page).last()]) {
         if ((await other.count()) === 0) continue;
-        expect((await boxOf(other)).bottom, "저장 버튼이 편집 컨트롤들 아래").toBeLessThanOrEqual(s.top);
+        expect((await boxOf(other)).bottom, "맨 아래에서 편집 컨트롤은 저장 바 위").toBeLessThanOrEqual(top + 0.5);
       }
+      await page.evaluate(() => window.scrollTo(0, 0));
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), "가로 스크롤 없음").toBe(true);
 
       for (const [name, open, dialogOf] of openSheets) {
@@ -944,7 +951,10 @@ test(`[C2][S${SCREEN}] 학교A 교사 폭 390: "${SAVE_BUTTON}" 줄은 tab-bar �
         const d = await boxOf(dialog);
         expect(d.top, `${name}: 화면 안 (위)`).toBeGreaterThanOrEqual(0);
         expect(d.bottom, `${name}: 화면 안 (아래)`).toBeLessThanOrEqual(vp.height);
-        expect(Math.abs((d.left + d.right) / 2 - vp.width / 2), `${name}: 화면 가로 가운데`).toBeLessThanOrEqual(16);
+        // 새 프레임 11-delete-desktop · 11-unsaved-desktop: 확인 카드는 화면 위 가운데 — 프레임에 좌표가 없어 화면 가운데 또는 본문(사이드바 오른쪽) 가운데
+        const bodyCenter = (rules.desktop_shell.width + vp.width) / 2;
+        const cx = (d.left + d.right) / 2;
+        expect(Math.min(Math.abs(cx - vp.width / 2), Math.abs(cx - bodyCenter)), `${name}: 가로 가운데 (화면 ${vp.width / 2} 또는 본문 ${bodyCenter}, 지금 ${cx})`).toBeLessThanOrEqual(16);
         expect(Math.abs((d.top + d.bottom) / 2 - vp.height / 2), `${name}: 화면 세로 가운데`).toBeLessThanOrEqual(16);
         expect(d.width, `${name}: 전폭이 아닌 카드`).toBeLessThan(vp.width / 2);
         for (const b of await dialog.locator("button").all()) expect(await onTop(b), `${name}: 카드 버튼이 가려지지 않음`).toBe(true);

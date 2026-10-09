@@ -26,6 +26,7 @@ import { demoReagents, guestDetailPath } from "./guest-helpers";
 import { browserClient, browserSession, devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
 import { HAS_SERVICE, forgetSession, openTemp, sweep, tempSchool, NO_RESIDUE } from "./screen-8-helpers";
 import { anonContext, expectShell, shellAccountButton, shellAccountLabel } from "./shell-helpers";
+import { newFrame } from "./desk-helpers";
 
 const ROLES: ShellRole[] = ["student", "teacher", "admin"];
 const ROUTE_AUTH = (devRules as unknown as { route_auth: Record<string, string> }).route_auth;
@@ -304,15 +305,20 @@ test(`[C3][S13] 학교A 교사: 1440 사이드바 메뉴를 누르면 그 화면
 // 데스크톱 page-head (run a 최소 보완): 4 사용 기록 · 5 실험 매뉴얼 · 11 시약장
 // =====================================================================
 
-/** 제목 = 새 프레임 문구, 뒤로 = 모바일 nav-pill 과 같은 대상 (4 → 화면 2, 5 → 화면 6, 11 = 최상위 메뉴라 없음) */
-const PAGE_HEADS: { screen: number; title: string; back: number | null; role: ShellRole }[] = [
-  { screen: 4, title: frameTexts("4-desktop", "drawer-title")[0], back: 2, role: "student" },
-  { screen: 5, title: frameTexts("5-desktop", "page-title")[0], back: 6, role: "teacher" },
-  { screen: 11, title: frameTexts("11-desktop", "page-title")[0], back: null, role: "teacher" },
+/**
+ * 제목 = 새 프레임 문구, 뒤로 = 모바일 nav-pill 과 같은 대상 (4 → 화면 2, 5 → 화면 6, 11 = 최상위 메뉴라 없음).
+ * 데스크톱 뒤로는 새 프레임 {N}-desktop 의 main 안에 뒤로(icon-back · back-link)가 그려졌을 때만 (run c: 5-desktop page-head 에는 뒤로 없음 —
+ * d7 §23 run c "run a 의 page-head(5·11)는 시안 제목 구조로 대체").
+ */
+const frameHasBack = (f: string): boolean => newFrame(f).some((n) => n.path.includes("main") && ["icon-back", "back-link"].includes(n.name));
+const PAGE_HEADS: { screen: number; title: string; back: number | null; deskBack: number | null; role: ShellRole }[] = [
+  { screen: 4, title: frameTexts("4-desktop", "drawer-title")[0], back: 2, deskBack: 2, role: "student" },
+  { screen: 5, title: frameTexts("5-desktop", "page-title")[0], back: 6, deskBack: frameHasBack("5-desktop") ? 6 : null, role: "teacher" },
+  { screen: 11, title: frameTexts("11-desktop", "page-title")[0], back: null, deskBack: null, role: "teacher" },
 ];
 
 for (const h of PAGE_HEADS) {
-  test(`[C3][S${h.screen}] 학교A ${ROLE_LABEL[h.role]} ${routeOf(h.screen)}: 1440 제목 "${h.title}"(새 프레임) 보이는 것 1 · 뒤로 ${h.back === null ? "없음" : `→ ${routeOf(h.back)} (누르면 도착)`}${h.screen === 4 ? " (화면 4 1440 = 드로어 제목 — 드로어 뒤로는 c3-run-b)" : ""} · nav-pill 0 / 390 = nav-pill 뒤로 대상 같음`, async ({ browser }, info) => {
+  test(`[C3][S${h.screen}] 학교A ${ROLE_LABEL[h.role]} ${routeOf(h.screen)}: 1440 제목 "${h.title}"(새 프레임) 보이는 것 1 · 뒤로 ${h.deskBack === null ? "없음 (새 프레임)" : `→ ${routeOf(h.deskBack)} (누르면 도착)`}${h.screen === 4 ? " (화면 4 1440 = 드로어 제목 — 드로어 뒤로는 c3-run-b)" : ""} · nav-pill 0 / 390 = nav-pill 뒤로 ${h.back === null ? "없음" : `→ ${routeOf(h.back)}`}`, async ({ browser }, info) => {
     test.setTimeout(150_000);
     expect(h.title, "프레임 제목").toBeTruthy();
     const { context, page, viewport } = await openAs(browser, info, h.role, h.screen);
@@ -351,21 +357,22 @@ for (const h of PAGE_HEADS) {
       } else {
         await expect(page.locator(sel("nav-pill")), "390 nav-pill 1").toHaveCount(1);
       }
-      if (h.back === null) {
-        await expect(back, "뒤로 없음").toHaveCount(0);
+      const backTo = viewport === "desktop" ? h.deskBack : h.back;
+      if (backTo === null) {
+        await expect(back, `${viewport} 뒤로 없음`).toHaveCount(0);
         return;
       }
       await expect(back, "보이는 뒤로 1").toHaveCount(1);
-      await expect(back, `뒤로 → ${routeOf(h.back)}`).toHaveAttribute("href", routeOf(h.back));
+      await expect(back, `뒤로 → ${routeOf(backTo)}`).toHaveAttribute("href", routeOf(backTo));
       if (viewport === "desktop") {
         const bb = (await back.boundingBox())!;
         const sb = (await sidebar(page).boundingBox())!;
         expect(bb.x, "뒤로는 본문 안").toBeGreaterThanOrEqual(sb.x + sb.width);
         await expect.poll(() => back.evaluate((el) => Object.keys(el).some((k) => k.startsWith("__reactProps"))), { message: "하이드레이션", timeout: 30_000 }).toBe(true);
         await back.click();
-        await page.waitForURL((u) => u.pathname === routeOf(h.back!), { timeout: 45_000 });
+        await page.waitForURL((u) => u.pathname === routeOf(backTo), { timeout: 45_000 });
         await waitBody(page);
-        await expect(sidebar(page).locator(`${sel(DS.item)}[aria-current="page"]`), "도착 화면 활성").toHaveText(exact(frameActiveLabel(h.back)));
+        await expect(sidebar(page).locator(`${sel(DS.item)}[aria-current="page"]`), "도착 화면 활성").toHaveText(exact(frameActiveLabel(backTo)));
       }
     } finally {
       await context.close();

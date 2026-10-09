@@ -8,6 +8,7 @@ import { ROLE_LABEL, SCHOOL_A_ROLES } from "./db-helpers";
 import { openAs } from "./auth-state";
 import { PROFILE_ROLE, ROLE_NAME, browserClient, browserSession, countComponent, devRules, roleChecks, routeOf, rules, sel } from "./screen-helpers";
 import { boxOf, clean, exact, linksTo, onTop } from "./screen-6-9-helpers";
+import { newFrame } from "./desk-helpers";
 
 const SCREEN = 13;
 const CABINETS = 11;
@@ -35,6 +36,13 @@ function parseQuick(text: string, sep: RegExp): Record<string, string[]> {
 const FROM_DEV = parseQuick(String((devRules as unknown as { route_auth: Record<string, string> }).route_auth.home_quick_action), /\s\/\s/);
 const FROM_RULES = parseQuick(String((rules as unknown as { app_exceptions: Record<string, string> }).app_exceptions["quick-action-cabinet"]).replace(/^\d+\s*홈:\s*/, ""), /,\s*/);
 const QUICK_LABELS = { student: FROM_DEV["학생"], teacher: FROM_DEV["교사"], admin: FROM_DEV["admin"] } as Record<"student" | "teacher" | "admin", string[]>;
+/**
+ * 데스크톱(1440) quick-action 순서 = 새 프레임 13-desktop(run c, 교사 시안) page-head 오른쪽 버튼 줄 — button-outline 들 뒤에 button-primary.
+ * 교사는 프레임 순서 그대로, 프레임이 없는 학생·admin 은 같은 라벨 묶음(dev-rules)만 본다 (순서는 시안이 없어 정하지 않는다).
+ */
+const DESK_TEACHER: string[] = newFrame("13-desktop")
+  .filter((n) => n.path.includes(QUICK) && n.name === "label" && n.text)
+  .map((n) => n.text!.characters);
 
 test(`[C1][S${SCREEN}] 기대값 원본: dev-rules route_auth.home_quick_action = rules.json app_exceptions quick-action-cabinet (교사·admin 3칸, 학생 2칸) · 교사·admin 에 "${SETTINGS}", 학생에 "${VIEW}"`, () => {
   expect(QUICK_LABELS.student, "학생 quick-action").toHaveLength(2);
@@ -44,6 +52,7 @@ test(`[C1][S${SCREEN}] 기대값 원본: dev-rules route_auth.home_quick_action 
   expect(FROM_RULES["admin"], "rules app_exceptions admin = dev-rules").toEqual(QUICK_LABELS.admin);
   for (const r of ["teacher", "admin"] as const) expect(QUICK_LABELS[r]).toContain(SETTINGS);
   expect(QUICK_LABELS.student).toContain(VIEW);
+  expect([...DESK_TEACHER].sort(), "새 프레임 13-desktop 교사 quick-action = dev-rules 교사 라벨 (순서만 다름)").toEqual([...QUICK_LABELS.teacher].sort());
 });
 const R7 = rules.roles.R7;
 const BUTTON_MIN_HEIGHT = (rules as unknown as { button: { min_height: number } }).button.min_height;
@@ -83,7 +92,10 @@ for (const role of SCHOOL_A_ROLES as ("student" | "teacher" | "admin")[]) {
       expect(await cabinetCount(page), "대조: 학교 A 에는 시약장이 1개 이상 있다 (만든 뒤에도 진입이 보여야 한다)").toBeGreaterThanOrEqual(1);
 
       await expect(page.locator(sel(QUICK)), `${QUICK} 1개`).toHaveCount(1);
-      expect((await quickItems(page).allInnerTexts()).map(clean), `${ROLE_LABEL[role]} ${QUICK} 라벨`).toEqual([...labels]);
+      const shown = (await quickItems(page).allInnerTexts()).map(clean);
+      if (viewport === "desktop" && role === "teacher") expect(shown, `1440 교사 ${QUICK} 라벨 = 새 프레임 13-desktop 순서`).toEqual(DESK_TEACHER);
+      else if (viewport === "desktop") expect([...shown].sort(), `1440 ${ROLE_LABEL[role]} ${QUICK} 라벨 묶음 (dev-rules)`).toEqual([...labels].sort());
+      else expect(shown, `${ROLE_LABEL[role]} ${QUICK} 라벨`).toEqual([...labels]);
       const other = role === "student" ? SETTINGS : VIEW;
       await expect(quick(page).getByText(exact(other)), `${ROLE_LABEL[role]} 에게 "${other}" 는 없다`).toHaveCount(0);
 

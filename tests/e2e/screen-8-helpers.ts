@@ -169,10 +169,12 @@ export async function deskInviteCount(page: Page): Promise<number> {
 /** 화면 8 이 그려졌는지 (빈 화면에서 0개를 세어 통과하지 않도록) */
 export async function waitUsers(page: Page): Promise<void> {
   await page.waitForLoadState("load");
-  await expect(manage(page), `${USER_MANAGE} 본문`).toBeVisible({ timeout: 30_000 });
-  await expect(memberRows(page).first(), "멤버 행").toBeVisible();
+  // 서버 HTML 에는 두 폭 사본(모바일 목록 · 데스크톱 표)이 함께 있다 — 첫 그림은 .first() 로 보고, 맞지 않는 폭이 빠진 뒤 1개를 확인한다
+  await expect(manage(page).first(), `${USER_MANAGE} 본문`).toBeVisible({ timeout: 30_000 });
   // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 (개수 세기 전)
   await waitWidthSettled(page);
+  await expect(manage(page), `${USER_MANAGE} 본문 1 (폭 정리 뒤)`).toHaveCount(1, { timeout: 30_000 });
+  await expect(memberRows(page).first(), "멤버 행").toBeVisible();
 }
 
 export type ShownMember = { name: string; role: MemberRole | null; self: boolean; texts: string[] };

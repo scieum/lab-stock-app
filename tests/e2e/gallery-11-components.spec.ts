@@ -87,7 +87,10 @@ const ACTIVE_PILL = switcherNodes.find((n) => n.name === "label" && n.path[n.pat
 const ACTIVE_PILL_NODE = mainNodes.find((n) => leaf(n) === "cabinet-chip-active")!;
 const ADD_LABEL = labelIn(groups(mainNodes, "cabinet-add")[0]);
 const TITLE = texts(mainNodes, "cabinet-title")[0];
-/** 시약장 요약: 모바일 시안은 "양문형 · 4단"(칸 수 없음), 데스크탑 시안은 "양문형 · 4단 · 8칸" */
+/**
+ * 시약장 요약: 모바일 시안은 "양문형 · 4단"(칸 수 없음). 데스크탑은 새 프레임 11-desktop(run c, desktop_migrated_screens 에 11)도
+ * "양문형 · 4단"(칸 수 없음) — 예전 1.15 데스크탑 시안의 "· 8칸" 은 빠졌다. 꼴은 프레임 글자에서 고른다(DESK_META_FORM).
+ */
 const META_MOBILE = texts(mainNodes, "cabinet-meta")[0];
 const META_DESKTOP = texts(desktopNodes, "cabinet-meta")[0];
 const HEADER_NUMBER = texts(under(mainNodes, "cabinet-header"), "label")[0];
@@ -209,7 +212,9 @@ const metaOf = (door: string, shelves: number, form: "full" | "short" = "full") 
 const MOBILE_W = (JSON.parse(readFileSync(join(root, "harness/dev-rules.json"), "utf8")) as { viewports: { mobile: number[] } }).viewports.mobile[0];
 const isMobile = (page: Page) => page.viewportSize()!.width <= MOBILE_W;
 /** 지금 폭에서 보여야 할 요약 (모바일 = 시안 11-mobile 꼴, 데스크탑 = 시안 11-desktop 꼴) */
-const metaFor = (page: Page, door: string, shelves: number) => metaOf(door, shelves, isMobile(page) ? "short" : "full");
+/** 데스크탑 요약 꼴 = 새 프레임 11-desktop cabinet-meta 가 "… · N칸" 으로 끝나면 full, 아니면 short */
+const DESK_META_FORM: "full" | "short" = /칸$/.test(META_DESKTOP) ? "full" : "short";
+const metaFor = (page: Page, door: string, shelves: number) => metaOf(door, shelves, isMobile(page) ? "short" : DESK_META_FORM);
 /** 11-delete 시안(1.14)의 2번 시약장 요약 "양문형 · 3단 · 6칸" 에서 문 형태·단 수 */
 const DEL_SHAPE = (() => {
   const m = /^(\S+) · (\d+)단/.exec(DEL.meta);
@@ -440,7 +445,9 @@ test(`[K1][S${SCREEN}] 기대값 원본: 프레임 11·11-empty·11-delete 와 r
   expect(HEADER_NUMBER, "프레임 제목 앞 번호 = 활성 pill 번호").toBe(PILL_NUMBERS[PILLS.indexOf(ACTIVE_PILL)]);
   expect(QR_PRINT_LABEL, "프레임 qr-print 라벨").toBe("QR 인쇄");
   expect(META_MOBILE, "11-mobile 요약 (칸 수 없음)").toBe(metaOf(DOOR.selected, parseInt(SHELF.selected, 10), "short"));
-  expect(META_DESKTOP, "11-desktop 요약 (칸 수 포함)").toBe(metaOf(DOOR.selected, parseInt(SHELF.selected, 10), "full"));
+  // 새 프레임 11-desktop (run c): 요약에 칸 수 없음 = 모바일과 같은 꼴
+  expect(DESK_META_FORM, "새 프레임 11-desktop 요약 꼴").toBe("short");
+  expect(META_DESKTOP, "11-desktop 요약 (새 프레임 — 칸 수 없음)").toBe(metaOf(DOOR.selected, parseInt(SHELF.selected, 10), "short"));
   expect(DEL.meta, "11-delete 요약 (1.14 데스크탑 꼴)").toBe(metaOf(DEL_SHAPE.door, DEL_SHAPE.shelves, "full"));
   expect(FRAME_SLOTS.map((s) => s.count), "프레임 칸 안 시약 수 (s2-spec: 좌1단 2 · 우1단 1 · 좌2단 3 · 우3단 1)").toEqual([2, 1, 3, 0, 0, 1, 0, 0]);
   expect(PICKER_HINT, "프레임 칩 묶음 안내").toBe("여러 개 고를 수 있어요");
@@ -633,14 +640,9 @@ test.describe("기본 예시 (교사·admin)", () => {
     const t = await box(title, "시약장 이름");
     const edit = await box(sec.locator(sel("cabinet-edit")), "cabinet-edit");
     expect(t.y, "이름은 switcher 아래").toBeGreaterThanOrEqual(sw.y + sw.height);
-    if (isMobile(page)) {
-      // 시안 11-mobile: 한 열 — cabinet-edit 관리 줄은 이름 아래
-      expect(edit.y, "cabinet-edit 은 이름 아래").toBeGreaterThanOrEqual(t.y);
-    } else {
-      // 시안 11-desktop: 2단 — 왼쪽 열(switcher · 이름) 오른쪽에 cabinet-edit 카드, 위쪽 끝이 switcher 와 같은 줄에서 시작
-      expect(edit.x, "cabinet-edit 카드는 switcher 오른쪽").toBeGreaterThanOrEqual(sw.x + sw.width);
-      expect(edit.y, "cabinet-edit 카드 위쪽 끝은 switcher 아래 끝보다 위").toBeLessThan(sw.y + sw.height);
-    }
+    // 시안 11-mobile · 새 프레임 11-desktop(run c 한 열): switcher → cabinet-header(이름) → cabinet-edit(관리 줄)
+    expect(edit.y, "cabinet-edit 은 이름 아래").toBeGreaterThanOrEqual(t.y + t.height - 1);
+    if (!isMobile(page)) expect(Math.abs(edit.x - sw.x), "1440 한 열: cabinet-edit 과 switcher 는 같은 왼쪽 끝").toBeLessThanOrEqual(1);
   });
 
   test(`[K1][S${SCREEN}] cabinet-switcher: 다른 pill 을 누르면 그 시약장만 활성, 아래 이름·요약·배치도가 그 시약장으로`, async ({ page }) => {
@@ -722,9 +724,9 @@ test.describe("기본 예시 (교사·admin)", () => {
     expect(s.height, `"저장" 높이 ≥ ${MIN_H}`).toBeGreaterThanOrEqual(MIN_H);
     const mix = await box(edit.locator(sel("mix-warning")), "mix-warning");
     expect(s.y, '"저장" 은 mix-warning 아래').toBeGreaterThanOrEqual(mix.y + mix.height);
-    // 편집 영역 안 구성 = 시안 11-desktop 편집 카드(관리 줄 · 문 형태 · 단 수 · 선택 칸 칩 · 주의사항 · 저장)
+    // 편집 영역 안 구성 = 새 프레임 11-desktop cabinet-edit(관리 줄 · 문 형태 · 단 수 — run c 한 열: 칩 묶음 · 주의사항은 page-column, 저장은 bottom-bar)
     expect([...EDIT_INSIDE].sort(), "11-desktop cabinet-edit 안 컴포넌트").toEqual(
-      ["button-outline", "qr-print", "cabinet-door-select", "cabinet-shelf-select", "storage-class-chip", "mix-warning", "button-primary"].sort(),
+      ["button-outline", "qr-print", "cabinet-door-select", "cabinet-shelf-select"].sort(),
     );
     for (const n of EDIT_INSIDE) expect(await edit.locator(sel(n)).count(), `cabinet-edit 안 ${n}`).toBeGreaterThanOrEqual(1);
   });
@@ -1081,15 +1083,9 @@ test.describe("기본 예시 (교사·admin)", () => {
     const lg = await box(legendChips.first(), "범례");
     const firstChip = await box(chips(sec).first(), "첫 칩");
     expect(lg.y, "범례는 배치도 아래").toBeGreaterThanOrEqual(lastSlot.y + lastSlot.height);
-    if (isMobile(page)) {
-      // 시안 11-mobile: 배치도 → 범례 → 칩 묶음
-      expect(lg.y, "범례는 칩 묶음 위").toBeLessThan(firstChip.y);
-    } else {
-      // 시안 11-desktop: 범례는 왼쪽 열, 칩 묶음은 오른쪽 편집 카드
-      const ed = await box(sec.locator(sel("cabinet-edit")), "cabinet-edit");
-      expect(lg.x + lg.width, "범례는 편집 카드 왼쪽").toBeLessThanOrEqual(ed.x);
-      expect(firstChip.x, "칩 묶음은 편집 카드 안").toBeGreaterThanOrEqual(ed.x);
-    }
+    // 시안 11-mobile · 새 프레임 11-desktop(run c 한 열): 배치도 → 범례 → 칩 묶음(slot-class-edit)
+    expect(lg.y, "범례는 칩 묶음 위").toBeLessThan(firstChip.y);
+    if (!isMobile(page)) expect(Math.abs(lg.x - firstChip.x), "1440 한 열: 범례와 칩 묶음은 같은 왼쪽 끝").toBeLessThanOrEqual(1);
   });
 
   test(`[K1][S${SCREEN}] "${UNASSIGNED_TITLE}": N = reagent-row 수, 행마다 시약명·재고 + caption "${cab.unassigned_label}", 시약 상세로 가는 링크`, async ({ page }) => {
@@ -1121,14 +1117,10 @@ test.describe("기본 예시 (교사·admin)", () => {
     }
     const mix = await box(sec.locator(sel("mix-warning")), "mix-warning");
     const t = await box(title, "칸 없음 제목");
-    if (isMobile(page)) {
-      // 시안 11-mobile: 주의사항 아래
-      expect(t.y, '"칸 없음 시약" 은 주의사항 아래').toBeGreaterThanOrEqual(mix.y + mix.height);
-    } else {
-      // 시안 11-desktop: 왼쪽 열(배치도 아래), 오른쪽 편집 카드 왼쪽
-      const ed = await box(sec.locator(sel("cabinet-edit")), "cabinet-edit");
+    // 시안 11-mobile · 새 프레임 11-desktop(run c 한 열): 주의사항(mix-warning) 아래 unassigned-list
+    expect(t.y, '"칸 없음 시약" 은 주의사항 아래').toBeGreaterThanOrEqual(mix.y + mix.height);
+    if (!isMobile(page)) {
       const last = await box(slots(sec).last(), "마지막 칸");
-      expect(t.x + t.width, '"칸 없음 시약" 은 편집 카드 왼쪽').toBeLessThanOrEqual(ed.x);
       expect(t.y, '"칸 없음 시약" 은 배치도 아래').toBeGreaterThanOrEqual(last.y + last.height);
     }
   });

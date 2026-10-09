@@ -6,6 +6,15 @@
 import { test, expect } from "@playwright/test";
 import { ROLE_LABEL, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
+import { isDeskPage, newFrame, waitWidthSettled } from "./desk-helpers";
+
+/**
+ * 1440 홈 = 새 프레임 13-desktop (데스크톱 재구성 run c): home-summary = "지금 처리할 것" 타일 + 위젯.
+ * 시안(교사)의 개수가 최대, 최소 = 위젯 열의 home-summary + 재고 부족 타일 1 (MSDS 타일은 역할에 따라).
+ */
+const DESK_HOME = newFrame("13-desktop").filter((n) => n.name === "home-summary");
+const DESK_HOME_MAX = DESK_HOME.length;
+const DESK_HOME_MIN = DESK_HOME.filter((n) => n.path.includes("widget-column")).length + 1;
 import {
   PROFILE_ROLE,
   browserSession,
@@ -132,7 +141,13 @@ for (const role of ["student", "schoolB"] as Role[]) {
     try {
       expect(new URL(page.url()).pathname, "경로 `/` 그대로").toBe(routeOf(HOME));
       await expect(page.locator(sel("home-summary")).first(), "홈 표시").toBeVisible({ timeout: 30_000 });
-      await expect(page.locator(sel("home-summary")), "home-summary 1개").toHaveCount(1);
+      await page.waitForLoadState("load");
+      await waitWidthSettled(page);
+      if (isDeskPage(page)) {
+        const n = await page.locator(sel("home-summary")).count();
+        expect(n, `1440 home-summary ${DESK_HOME_MIN}~${DESK_HOME_MAX} (새 프레임 13-desktop 타일 + 위젯 — 홈 한 벌)`).toBeGreaterThanOrEqual(DESK_HOME_MIN);
+        expect(n).toBeLessThanOrEqual(DESK_HOME_MAX);
+      } else await expect(page.locator(sel("home-summary")), "home-summary 1개").toHaveCount(1);
       for (const name of required as string[]) {
         expect(await countComponent(page, name), `홈 필수 ${name}`).toBeGreaterThanOrEqual(1);
       }

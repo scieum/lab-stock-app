@@ -73,6 +73,7 @@ import {
   UPLOAD,
   amountInput,
   backLink,
+  backExpected,
   blockSaves,
   bodyRows,
   bottomEdgeOnTop,
@@ -315,6 +316,12 @@ for (const role of STAFF) {
       await expect(titleScope(page).getByText(exact(NAV_TITLE)).first(), `제목 "${NAV_TITLE}"`).toBeVisible();
 
       const back = backLink(page);
+      if (!backExpected(page)) {
+        // 1440: 새 프레임 5-desktop page-head 에는 뒤로가 없다 (d7 §23 run c) — 화면 6 으로는 사이드바 메뉴
+        await expect(back, "1440 뒤로가기 없음 (새 프레임 5-desktop)").toHaveCount(0);
+        expect(saves.count(), "저장 요청 0건").toBe(0);
+        return;
+      }
       await expect(back, "뒤로가기 링크").toHaveCount(1);
       await expect(back).toBeVisible();
       await back.click();
@@ -339,8 +346,10 @@ for (const role of STAFF) {
       // 셸 (390 nav-pill · tab-bar / 1440 app-sidebar) · 제목·뒤로가기 (390 nav-pill / 1440 본문 page-head)
       await expectShell(page, viewport, SCREEN, "1단계");
       const back = backLink(page);
-      await expect(back, `뒤로가기 → ${REORDER_HREF}`).toHaveCount(1);
-      await expect(back).toBeVisible();
+      if (backExpected(page)) {
+        await expect(back, `뒤로가기 → ${REORDER_HREF}`).toHaveCount(1);
+        await expect(back).toBeVisible();
+      } else await expect(back, "1440 뒤로가기 없음 (새 프레임 5-desktop page-head = 제목만)").toHaveCount(0);
       await expect(titleScope(page).getByText(exact(NAV_TITLE)).first(), `제목 "${NAV_TITLE}"`).toBeVisible();
       const me = await browserSession(page);
       await expect(shellSchoolScope(page, viewport), "셸에 자기 학교명").toContainText(me.schoolName);

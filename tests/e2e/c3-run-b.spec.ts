@@ -137,7 +137,9 @@ async function expectMobileUnchanged(page: Page, what: string): Promise<void> {
 // =====================================================================
 
 test(`[C3][S*] 기대값 원본 (run b): desktop_migrated_screens ${MIGRATED.join("·")} · desktop_required ${Object.entries(REQ).map(([k, v]) => `${k}=${v.join("+")}`).join(" ")} · drawer_width ${DRAWER_W} · 본문 ${SIDEBAR_W}+${MAIN_W}+${DRAWER_W} · 한 쪽 ${PAGE_SIZE}행 · 팝오버 폭 ${FILTER_W}/${PICKER_W}/${CAND3_W}/${BULK_W} · overlay "드롭다운·팝오버"`, () => {
-  expect(MIGRATED, "dev-rules 1.12 desktop_migrated_screens (run b)").toEqual([2, 3, 4, 8, 9, 10, 16]);
+  // run b 화면 2·3·4·8·9·10·16 이 desktop_migrated_screens 에 들어 있다 (목록은 run 마다 늘어난다 — dev-rules 에서 읽는다, 1.13 = + 5·6·7·11·13)
+  for (const s of [2, 3, 4, 8, 9, 10, 16]) expect(MIGRATED, `run b 화면 ${s} 이전됨 (dev-rules desktop_migrated_screens)`).toContain(s);
+  for (const s of MIGRATED) expect(DESKTOP_SHELL.screens, `이전 화면 ${s} 은 desktop_shell.screens 안`).toContain(s);
   for (const s of devRules.components[TABLE]) expect(MIGRATED, `data-table 화면 ${s} 이전됨`).toContain(s);
   for (const s of devRules.components[DRAWER]) expect(MIGRATED, `detail-drawer 화면 ${s} 이전됨`).toContain(s);
   expect(SIDEBAR_W + MAIN_W + DRAWER_W, "사이드바 + 본문 + 드로어 = 데스크톱 폭").toBe(VIEW_W);

@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { test, expect, type Page } from "@playwright/test";
 import { anonClient } from "./db-helpers";
 import { openAs } from "./auth-state";
+import { isDeskPage } from "./desk-helpers";
 import { countComponent, devRules, implementedGuestScreens, routeOf, rules, seedRows, sel } from "./screen-helpers";
 import {
   GUEST,
@@ -120,16 +121,28 @@ test(`[C1][${TAG}] 둘러보기 홈: 재고 부족 수·시약명·${BADGE}·전
   const { context, page } = await openGuest(browser, info, guestRouteOf(SCREEN));
   try {
     await waitHome(page);
-    const summary = page.locator(sel("home-summary")).first();
+    // 1440 = 새 프레임 13-guest-desktop · 13-desktop 본문(데스크톱 재구성 run c): 숫자 N 은 "지금 처리할 것" 재고 부족 타일(큰 숫자 + 배지 "재고 부족"),
+    // 시약명은 재고 부족 위젯 칩, 최근 사용 기록은 data-table 행. 390 = 지금 그대로 (첫 home-summary 배지에 숫자)
+    const desk = isDeskPage(page);
+    const summary = desk
+      ? page.locator(`main [data-name="widget-column"] > ${sel("home-summary")}`).first()
+      : page.locator(sel("home-summary")).first();
     const summaryText = await summary.innerText();
-    const badges = summary.locator(sel(BADGE));
-    expect(await badges.count(), `home-summary 안 ${BADGE} (부족 ${N}종)`).toBeGreaterThanOrEqual(1);
-    await expect(badges.first()).toBeVisible();
-    const badgeTexts = (await badges.allInnerTexts()).map((t) => t.trim());
-    expect(
-      badgeTexts.some((t) => (t.match(/\d+/g) ?? ([] as string[])).includes(String(N))),
-      `${BADGE} 표시 숫자 = ${N} (보임: ${badgeTexts.join(", ")})`,
-    ).toBe(true);
+    if (desk) {
+      const tile = page.locator(`main [data-name="tile-row"] > ${sel("home-summary")}`).first();
+      await expect(tile.locator(sel(BADGE)), `재고 부족 타일 ${BADGE}`).toHaveCount(1);
+      const nums = (await tile.locator('[data-name="tile-value"]').innerText()).match(/\d+/g) ?? [];
+      expect(nums, `재고 부족 타일 숫자 = ${N}`).toEqual([String(N)]);
+    } else {
+      const badges = summary.locator(sel(BADGE));
+      expect(await badges.count(), `home-summary 안 ${BADGE} (부족 ${N}종)`).toBeGreaterThanOrEqual(1);
+      await expect(badges.first()).toBeVisible();
+      const badgeTexts = (await badges.allInnerTexts()).map((t) => t.trim());
+      expect(
+        badgeTexts.some((t) => (t.match(/\d+/g) ?? ([] as string[])).includes(String(N))),
+        `${BADGE} 표시 숫자 = ${N} (보임: ${badgeTexts.join(", ")})`,
+      ).toBe(true);
+    }
     for (const r of low) expect(summaryText, `부족 시약 ${r.name} 표시`).toContain(r.name);
     for (const r of ok) {
       if (low.some((l) => l.name.includes(r.name))) continue;
@@ -143,7 +156,7 @@ test(`[C1][${TAG}] 둘러보기 홈: 재고 부족 수·시약명·${BADGE}·전
       expect(new URL((await link.getAttribute("href"))!, "http://x").pathname).toBe(guestDetailPath(r.id));
     }
     // 최근 사용 기록 = demo_recent_usage (reagent-row 는 이 화면에서 최근 기록에만)
-    const recentList = page.locator(sel("reagent-row"));
+    const recentList = desk ? page.locator(`main [data-name="recent-usage-widget"] ${sel("ex-data-table-cell")}`) : page.locator(sel("reagent-row"));
     await expect(recentList, "최근 사용 기록 행 수 = demo_recent_usage").toHaveCount(recentRows.length);
     const shown = (await recentList.allInnerTexts()).join("\n");
     for (const u of recentRows) {

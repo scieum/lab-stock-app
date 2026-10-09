@@ -21,7 +21,7 @@ import {
 import { seedSchoolOf } from "./screen-3-helpers";
 import { expectShell, expectShellHeader, isShellComponent, shellSchoolScope } from "./shell-helpers";
 import { deskOnlyComponents, frameActiveLabel } from "../desktop-shell";
-import { PAGE_SIZE } from "./desk-helpers";
+import { PAGE_SIZE, newFrame, waitWidthSettled } from "./desk-helpers";
 
 /** 셸의 화면 10 메뉴 글자: 폭 1440 = 사이드바 메뉴(rules desktop_shell.menu — 새 프레임 10-desktop 활성 메뉴 "기록") */
 const SIDEBAR_LABEL = frameActiveLabel(10);
@@ -332,13 +332,22 @@ test(`[C1][S${SCREEN}] 학교A 교사 목록 (시안 10 1.17 · d7 §15 정정):
   }
 });
 
-test(`[C1][S${SCREEN}] 진입점 (d7 §7): 탭바 "${ACTIVE_TAB_LABEL}"(390) · 사이드바 "${SIDEBAR_LABEL}"(1440) · 홈 "더 보기" → ${routeOf(SCREEN)}`, async ({ browser }, info) => {
+/** 1440 홈 = 새 프레임 13-desktop (데스크톱 재구성 run c): 최근 사용 기록 위젯 머리의 button-pill-soft (예 "전체 보기") */
+const DESK_RECENT_MORE = newFrame("13-desktop").find((n) => n.name === "label" && n.path.includes("recent-usage-widget") && n.path.includes("button-pill-soft"))!.text!.characters;
+/** 홈에서 화면 10 으로 가는 링크: 390 = "더 보기" · 1440 = 최근 사용 기록 위젯 "전체 보기" */
+const homeMore = (page: Page, viewport: string) =>
+  viewport === "mobile"
+    ? page.locator("main a").filter({ hasText: exact("더 보기") })
+    : page.locator('main [data-name="recent-usage-widget"] a').filter({ hasText: exact(DESK_RECENT_MORE) });
+
+test(`[C1][S${SCREEN}] 진입점 (d7 §7): 탭바 "${ACTIVE_TAB_LABEL}"(390) · 사이드바 "${SIDEBAR_LABEL}"(1440) · 홈 "더 보기"(390) · 최근 사용 기록 "${DESK_RECENT_MORE}"(1440, 새 프레임 13-desktop) → ${routeOf(SCREEN)}`, async ({ browser }, info) => {
   test.setTimeout(150_000);
   const { context, page, viewport } = await openAs(browser, info, "student", HOME_SCREEN);
   try {
-    await expect(page.locator(sel("home-summary")).first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator(sel("home-summary")).first()).toBeAttached({ timeout: 30_000 });
     await page.waitForLoadState("load");
-    const more = page.locator("main a").filter({ hasText: exact("더 보기") });
+    await waitWidthSettled(page);
+    const more = homeMore(page, viewport);
     await expect(more, '홈 "더 보기" 링크').toHaveCount(1);
     await expect(more).toHaveAttribute("href", routeOf(SCREEN));
     const entry =
@@ -353,8 +362,10 @@ test(`[C1][S${SCREEN}] 진입점 (d7 §7): 탭바 "${ACTIVE_TAB_LABEL}"(390) · 
     await expect(rows(page).first()).toBeVisible();
     // 홈 "더 보기" 로도 도착
     await page.goto(routeOf(HOME_SCREEN));
-    await expect(page.locator(sel("home-summary")).first()).toBeVisible({ timeout: 30_000 });
-    await page.locator("main a").filter({ hasText: exact("더 보기") }).click();
+    await expect(page.locator(sel("home-summary")).first()).toBeAttached({ timeout: 30_000 });
+    await page.waitForLoadState("load");
+    await waitWidthSettled(page);
+    await homeMore(page, viewport).click();
     await page.waitForURL((u) => u.pathname === routeOf(SCREEN), { timeout: 30_000 });
     await waitHistory(page);
   } finally {

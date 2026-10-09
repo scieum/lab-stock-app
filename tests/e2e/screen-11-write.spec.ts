@@ -26,6 +26,8 @@ import {
   EDIT,
   EMPTY,
   EMPTY_HEADING,
+  expectEmptyHeading,
+  incompatiblePairsIn,
   EMPTY_STAFF,
   EMPTY_STUDENT,
   EMPTY_TITLE,
@@ -232,7 +234,7 @@ test(`[C1][S${SCREEN}] 일회용 교사 · 시약장 0개: "${EMPTY_HEADING}" + 
   try {
     expect(response?.status()).toBe(200);
     await waitCabinets(page, "empty");
-    await expect(main(page).getByRole("heading", { name: exact(EMPTY_HEADING) }), `제목 줄 "${EMPTY_HEADING}"`).toBeVisible();
+    await expectEmptyHeading(page, "교사 0개");
     for (const c of VARIANTS.empty) expect(await countComponent(page, c), `variants.empty ${c}`).toBeGreaterThanOrEqual(1);
     const frame = frameCounts(`${SCREEN}-empty-${viewport}`);
     for (const [name, n] of Object.entries(frame)) expect(await countComponent(page, name), `시안 11-empty ${name} = ${n}`).toBe(n);
@@ -288,7 +290,7 @@ test(`[R-ui][S${SCREEN}] 일회용 학생 · 시약장 0개: ${EMPTY} 에 "${EMP
   try {
     expect(response?.status()).toBe(200);
     await waitCabinets(page, "empty");
-    await expect(main(page).getByRole("heading", { name: exact(EMPTY_HEADING) })).toBeVisible();
+    await expectEmptyHeading(page, "학생 0개");
     await expect(emptyCard(page)).toHaveCount(1);
     await expect(emptyCard(page).getByText(exact(EMPTY_TITLE))).toBeVisible();
     await expect(emptyCard(page).getByText(exact(EMPTY_STUDENT))).toBeVisible();
@@ -622,7 +624,7 @@ test(`[C1][S${SCREEN}] 일회용 교사: 두 번째 추가 "${defaultName(2)}" �
     await expectToast(page, toastDeleted(defaultName(1)));
     await waitCabinets(page, "empty");
     expect(actions.count() - base2, "삭제 요청 1건").toBe(1);
-    await expect(main(page).getByRole("heading", { name: exact(EMPTY_HEADING) })).toBeVisible();
+    await expectEmptyHeading(page, "마지막 삭제 뒤 0개");
     for (const c of VARIANTS.empty) expect(await countComponent(page, c), `variants.empty ${c}`).toBeGreaterThanOrEqual(1);
     for (const c of [SWITCHER, SLOT, EDIT, MIX, MODAL]) expect(await countComponent(page, c), `빈 상태 ${c}`).toBe(0);
     db = await dbViewByService(f.school.id);
@@ -684,7 +686,12 @@ test(`[C1][S${SCREEN}] 일회용 교사 · 시안 상태(시약장 2개 · 1번 
     await expect(dialog.getByText(exact(deleteNotice(st.placed2.length)))).toBeVisible();
     await expect(dialog.getByText(exact(DELETE_CAPTION))).toBeVisible();
     const del = frameCounts(`${SCREEN}-delete-${viewport}`);
-    for (const [name, n] of Object.entries(del)) expect(await countComponent(page, name), `시안 11-delete ${name} ≥ ${n}`).toBeGreaterThanOrEqual(n);
+    // mix-warning 은 칸 분류 데이터에 달렸다: 이 테스트의 2번 시약장 = FRAME_LAYOUT_2(11-delete-mobile — 위험 조합 없음, 위 expectMix 로 0줄 확인).
+    // 새 프레임 11-delete-desktop 은 2번 시약장 좌1단에 산·염기를 그려 mix-warning 이 있다 — 데이터가 다르므로 개수 대조에서 뺀다.
+    for (const [name, n] of Object.entries(del)) {
+      if (name === MIX && !Object.values(FRAME_LAYOUT_2).some((cls) => incompatiblePairsIn(cls).length > 0)) continue;
+      expect(await countComponent(page, name), `시안 11-delete ${name} ≥ ${n}`).toBeGreaterThanOrEqual(n);
+    }
     for (const name of [MODAL, SWITCHER, SLOT]) expect(await countComponent(page, name), `시안 11-delete ${name} = ${del[name]}`).toBe(del[name]);
     expect(await dialog.locator(sel(OUTLINE)).count(), "확인 카드 button-outline (취소)").toBe(1);
     expect(await dialog.locator(sel(PRIMARY)).count(), "확인 카드 button-primary (삭제)").toBe(1);
