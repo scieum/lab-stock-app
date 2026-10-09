@@ -158,7 +158,6 @@ export function countScoped(scope: Locator, name: string): Promise<number> {
  */
 export async function waitWidthSettled(page: Page, timeout = 45_000): Promise<void> {
   const gone = isDeskPage(page) ? ["nav-pill", "tab-bar", "reagent-detail-card"] : [DESKTOP_SHELL.component, TABLE, DRAWER];
-  // 둘러보기(/demo)는 run d 전이라 1440 도 예전 화면(reagent-detail-card · nav-pill)
-  if (isDeskPage(page) && new URL(page.url()).pathname.startsWith("/demo")) return;
+  // 둘러보기(/demo)도 run d 부터 같은 규칙 (1440 = app-sidebar 셸 + 표·드로어, d7 §23 "run d 세부")
   for (const n of gone) await expect(page.locator(sel(n)), `폭 정리 대기: ${n} 0 (하이드레이션 뒤)`).toHaveCount(0, { timeout });
 }

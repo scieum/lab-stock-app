@@ -139,7 +139,13 @@ async function expectMobileUnchanged(page: Page, what: string): Promise<void> {
 test(`[C3][S*] 기대값 원본 (run b): desktop_migrated_screens ${MIGRATED.join("·")} · desktop_required ${Object.entries(REQ).map(([k, v]) => `${k}=${v.join("+")}`).join(" ")} · drawer_width ${DRAWER_W} · 본문 ${SIDEBAR_W}+${MAIN_W}+${DRAWER_W} · 한 쪽 ${PAGE_SIZE}행 · 팝오버 폭 ${FILTER_W}/${PICKER_W}/${CAND3_W}/${BULK_W} · overlay "드롭다운·팝오버"`, () => {
   // run b 화면 2·3·4·8·9·10·16 이 desktop_migrated_screens 에 들어 있다 (목록은 run 마다 늘어난다 — dev-rules 에서 읽는다, 1.13 = + 5·6·7·11·13)
   for (const s of [2, 3, 4, 8, 9, 10, 16]) expect(MIGRATED, `run b 화면 ${s} 이전됨 (dev-rules desktop_migrated_screens)`).toContain(s);
-  for (const s of MIGRATED) expect(DESKTOP_SHELL.screens, `이전 화면 ${s} 은 desktop_shell.screens 안`).toContain(s);
+  // run d (dev-rules 1.14): desktop_migrated_screens = 1~16 전부 — 로그인 전 1·14·15 는 사이드바 셸(desktop_shell.screens)이 아니라
+  // desktop_shell.pre_login.screens (web-header) 로 판정한다. 두 목록은 겹치지 않고, 이전 화면은 둘 중 하나에 든다.
+  const preScreens = (DESKTOP_SHELL as unknown as { pre_login: { screens: number[] } }).pre_login.screens;
+  for (const s of preScreens) expect(DESKTOP_SHELL.screens, `로그인 전 화면 ${s} 은 사이드바 셸 대상 아님`).not.toContain(s);
+  for (const s of MIGRATED) {
+    expect([...DESKTOP_SHELL.screens, ...preScreens], `이전 화면 ${s} 은 desktop_shell.screens 또는 pre_login.screens 안`).toContain(s);
+  }
   for (const s of devRules.components[TABLE]) expect(MIGRATED, `data-table 화면 ${s} 이전됨`).toContain(s);
   for (const s of devRules.components[DRAWER]) expect(MIGRATED, `detail-drawer 화면 ${s} 이전됨`).toContain(s);
   expect(SIDEBAR_W + MAIN_W + DRAWER_W, "사이드바 + 본문 + 드로어 = 데스크톱 폭").toBe(VIEW_W);

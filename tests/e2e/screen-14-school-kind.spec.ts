@@ -30,6 +30,7 @@ import {
   waitSignupScreen,
 } from "./screen-14-helpers";
 import { framePath } from "../frames";
+import { expectPreLoginShell } from "./pre-login-helpers";
 
 const N1 = rules.never.N1;
 const DK = rules.neis.default_kind;
@@ -436,6 +437,11 @@ for (const emptyKind of [DK, OTHER_KINDS[0]]) {
     const note = school.locator('[role="status"]');
     await expect(note).toHaveCount(1);
     await expect(note).toHaveText(want);
+    // 새 프레임 14-no-school-{폭} 셸 (run d): 1440 = web-header 1 · nav-pill·app-sidebar 0 · 소개 패널 feature-card = 시안 / 390 = nav-pill 그대로
+    await expectPreLoginShell(page, SCREEN, vp, "14-no-school");
+    await expect(page.locator(sel("feature-card")), `feature-card = 시안 ${SCREEN}-no-school-${vp}`).toHaveCount(
+      frameNodes(`${SCREEN}-no-school-${vp}`).filter((n) => n.name === "feature-card").length,
+    );
     const colors = await note.evaluate((el) => {
       const cs = getComputedStyle(el);
       return { color: cs.color, bg: cs.backgroundColor };

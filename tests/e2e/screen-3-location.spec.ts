@@ -677,7 +677,7 @@ test(`[R-ui][S${SCREEN}] 둘러보기 ${routeOf(SCREEN).replace("/reagents", "/d
   const demo = (await demoReagents())[0];
   const { context, page, response } = await openGuest(browser, info, guestDetailPath(demo.id));
   try {
-    await expect(page.locator(sel(CARD)).first()).toBeVisible({ timeout: 45_000 });
+    await expect(card(page).first(), "상세 (390 카드 / 1440 드로어)").toBeVisible({ timeout: 45_000 });
     const html = await response!.text();
     for (const c of HIDDEN) {
       expect(await countComponent(page, c), `둘러보기 ${c}`).toBe(0);

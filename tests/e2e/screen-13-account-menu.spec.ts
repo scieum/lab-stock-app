@@ -106,7 +106,7 @@ test(`[R-ui][S${SCREEN}] 로그인 전(랜딩 ${routeOf(15)} · ${routeOf(1)} ·
       expect(res?.status(), `${path} 응답`).toBe(200);
       await page.waitForLoadState("load");
       await expect(page.locator("body"), `${path} 그려짐`).not.toBeEmpty();
-      await expect(page.locator(sel("nav-pill")).or(page.locator(sel("ex-auth-form-card"))).or(page.locator(sel("landing-hero"))).first(), `${path} 본문`).toBeVisible({ timeout: 45_000 });
+      await expect(page.locator(sel("nav-pill")).or(page.locator(sel("web-header"))).or(page.locator(sel(rules.desktop_shell.component))).or(page.locator(sel("ex-auth-form-card"))).or(page.locator(sel("landing-hero"))).first(), `${path} 본문 (셸: 390 nav-pill / 1440 web-header·둘러보기 app-sidebar)`).toBeVisible({ timeout: 45_000 });
       await expect(page.locator(sel(MENU)), `${path}: ${MENU} 0`).toHaveCount(0);
       await expect(page.locator('button[aria-haspopup="menu"]'), `${path}: 계정 메뉴 버튼 0`).toHaveCount(0);
       expect(await res!.text(), `${path}: 응답 본문에 ${MENU}`).not.toContain(`data-component="${MENU}"`);

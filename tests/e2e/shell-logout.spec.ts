@@ -57,8 +57,15 @@ test.afterAll(async ({}, info) => {
   expect(left, "일회용 계정·학교·시약장·시약 잔여물").toEqual(NO_S11_RESIDUE);
 });
 
-/** 로그인 전·둘러보기 화면의 nav-pill (데스크톱 web-header·둘러보기 사이드바는 run d — 지금은 두 폭 모두 nav-pill) */
+/** 로그인 전·둘러보기 화면의 nav-pill (폭 390) */
 const nav = (page: Page) => page.locator(sel(NAV));
+/**
+ * 로그인 전·둘러보기 화면의 셸 (run d, d7 §23 · rules desktop_shell.pre_login · guest.desktop):
+ * 폭 390 = nav-pill, 폭 1440 = 로그인 전 web-header / 둘러보기 app-sidebar
+ */
+const anonShellName = (page: Page, guest: boolean): string =>
+  vpOf(page) === "mobile" ? NAV : guest ? rules.desktop_shell.component : (rules as unknown as { desktop_shell: { pre_login: { component: string } } }).desktop_shell.pre_login.component;
+const anonShell = (page: Page, guest: boolean) => page.locator(sel(anonShellName(page, guest)));
 /** 지금 폭 (dev-rules viewports) */
 const vpOf = (page: Page): ViewportName => (page.viewportSize()?.width === devRules.viewports.desktop[0] ? "desktop" : "mobile");
 /**
@@ -173,7 +180,7 @@ test(`[C1][S${HOME}] 학교A 교사 셸 화면(홈·시약 목록·기록·시�
   }
 });
 
-test(`[C1][S${HOME}] 로그인 전 화면(랜딩 ${routeOf(LANDING)} · ${routeOf(LOGIN)} · ${routeOf(SIGNUP)})과 둘러보기(${devRules.routes["13-guest"]} · ${devRules.routes["2-guest"]}): ${NAV} 에 메뉴 버튼·"${LOGOUT_LABEL}" 없음 · 둘러보기 학교명은 글자`, async ({ browser }, info) => {
+test(`[C1][S${HOME}] 로그인 전 화면(랜딩 ${routeOf(LANDING)} · ${routeOf(LOGIN)} · ${routeOf(SIGNUP)})과 둘러보기(${devRules.routes["13-guest"]} · ${devRules.routes["2-guest"]}): 셸(390 ${NAV} / 1440 web-header·app-sidebar) 에 메뉴 버튼·"${LOGOUT_LABEL}" 없음 · 둘러보기 학교명은 글자`, async ({ browser }, info) => {
   test.setTimeout(180_000);
   const context = await anonContext(browser, info);
   try {
@@ -185,14 +192,18 @@ test(`[C1][S${HOME}] 로그인 전 화면(랜딩 ${routeOf(LANDING)} · ${routeO
       expect(res?.status(), `${path} 응답`).toBe(200);
       await page.waitForLoadState("load");
       expect(new URL(page.url()).pathname, "리다이렉트 없음").toBe(path);
-      await expect(nav(page).first(), `${path}: ${NAV}`).toBeVisible();
-      await expect(nav(page).locator("[aria-haspopup]"), `${path}: ${NAV} 메뉴 버튼`).toHaveCount(0);
+      const isGuest = guest.includes(path);
+      const shellNm = anonShellName(page, isGuest);
+      await expect(anonShell(page, isGuest), `${path}: ${shellNm} 1`).toHaveCount(1, { timeout: 30_000 });
+      await expect(anonShell(page, isGuest).first(), `${path}: ${shellNm}`).toBeVisible();
+      await expect(anonShell(page, isGuest).locator("[aria-haspopup]"), `${path}: ${shellNm} 메뉴 버튼`).toHaveCount(0);
+      await expect(page.locator("[aria-haspopup=\"menu\"]"), `${path}: 계정 메뉴 버튼 0`).toHaveCount(0);
       await expect(page.getByRole("menu"), `${path}: 메뉴`).toHaveCount(0);
       await expect(page.getByRole("menuitem"), `${path}: 메뉴 항목`).toHaveCount(0);
       await expect(page.getByText(LOGOUT_LABEL), `${path}: "${LOGOUT_LABEL}" 글자`).toHaveCount(0);
       expect(await res!.text(), `${path}: 응답 본문에 "${LOGOUT_LABEL}"`).not.toContain(LOGOUT_LABEL);
       if (guest.includes(path)) {
-        const school = nav(page).getByText(exact(rules.guest.school_name));
+        const school = anonShell(page, true).getByText(exact(rules.guest.school_name));
         await expect(school, `${path}: 둘러보기 학교명`).toHaveCount(1);
         expect(await school.evaluate((el) => el.closest("button, a, [role=button]") === null), `${path}: 둘러보기 학교명은 누르는 요소가 아니다`).toBe(true);
         // 눌러도 메뉴가 열리지 않는다

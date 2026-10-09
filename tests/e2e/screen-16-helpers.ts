@@ -169,8 +169,8 @@ export const originalLink = (page: Page) => page.locator(`${sel(ORIGINAL)} a`);
 /**
  * 뒤로: 390 = nav-pill "뒤로" / 1440 = 시약 목록 옆 드로어의 drawer-nav 뒤로 링크(시안 16-desktop back-link "‹ 시약 상세" — d7 §23 run b)
  */
-/** 1440 로그인 화면 16 = 드로어 (둘러보기 /demo 는 run d 전 — 예전 전용 화면) */
-const deskDrawer16 = (page: Page) => isDeskPage(page) && !new URL(page.url()).pathname.startsWith("/demo");
+/** 1440 화면 16 = 드로어 (로그인 run b · 둘러보기 /demo run d — 시안 16-desktop · 16-guest-desktop) */
+const deskDrawer16 = (page: Page) => isDeskPage(page);
 export const visibleBack = (page: Page) =>
   deskDrawer16(page) ? drawer(page).locator('[data-name="back-link"]') : page.getByRole("link", { name: "뒤로", exact: true }).filter({ visible: true });
 /** 시안 16-desktop 드로어 뒤로 글자 ("‹ 시약 상세") */

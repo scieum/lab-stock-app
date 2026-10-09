@@ -8,7 +8,7 @@
 //   (이름·재고·입고일·분류·칸·MSDS 를 정해 정렬 동률·분류 없음·칸 없음·MSDS 없음·결과 0 을 모두 만든다). 화면 동작은 쓰기를 하지 않는다.
 // 둘러보기(/demo/reagents, [S2g])는 anon 데모 학교 데이터로 같은 동작을 본다. 공용 학교 A·B·데모 데이터는 바꾸지 않는다.
 import { join } from "node:path";
-import { isDeskPage, waitWidthSettled } from "./desk-helpers";
+import { isDeskPage, waitWidthSettled, PAGE_SIZE, pagination } from "./desk-helpers";
 import { test, expect, type Browser, type Locator, type Page, type TestInfo } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { anonClient } from "./db-helpers";
@@ -53,8 +53,8 @@ const sheet = (page: Page) => page.locator(sel("list-filter-sheet"));
 const chipRow = (page: Page) => main(page).locator(sel("filter-chip-row"));
 const emptyCard = (page: Page) => main(page).locator(sel("ex-empty-state-card"));
 /** 목록 행: 390 = reagent-row / 1440 = data-table 행 (d7 §23 run b — 일회용 학교 시약 수는 한 쪽 안) */
-/** 둘러보기(/demo, run d 전)는 1440 도 예전 목록(reagent-row) */
-const deskList = (page: Page) => isDeskPage(page) && !new URL(page.url()).pathname.startsWith("/demo");
+/** 1440 목록 = data-table (로그인 run b · 둘러보기 /demo run d — 시안 2-desktop · 2-guest-desktop) */
+const deskList = (page: Page) => isDeskPage(page);
 const rowsOf = (page: Page) => main(page).locator(deskList(page) ? `${sel("data-table")} ${sel("ex-data-table-cell")}` : sel("reagent-row"));
 const exact = (s: string) => new RegExp(`^\\s*${s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`);
 
@@ -202,6 +202,23 @@ function filterItems(items: DbItem[], c: Cond): DbItem[] {
 const expected = (items: DbItem[], c: Cond, sort: SortKey = "name") => sortItems(filterItems(items, c), sort).map((r) => r.name);
 
 async function expectList(page: Page, want: string[], what: string): Promise<void> {
+  if (deskList(page) && want.length > PAGE_SIZE) {
+    // 1440 data-table 은 한 쪽 PAGE_SIZE 행 (시안 2-desktop · 2-guest-desktop 쪽 번호) — 쪽마다 넘겨 전체 순서를 본다
+    const pages = Math.ceil(want.length / PAGE_SIZE);
+    const pager = pagination(main(page));
+    for (let p = 0; p < pages; p++) {
+      if (p > 0) await pager.getByRole("button", { name: String(p + 1), exact: true }).click();
+      await expect(pager.locator(`[aria-current="true"]`), `${what}: ${p + 1}쪽`).toHaveText(String(p + 1));
+      await expect
+        .poll(() => shownNames(page), { message: `${what}: ${p + 1}쪽 목록 = DB(d7 §16)`, timeout: 15_000 })
+        .toEqual(want.slice(p * PAGE_SIZE, (p + 1) * PAGE_SIZE));
+    }
+    await expect(pager.getByRole("button"), `${what}: 쪽 번호 ${pages}개`).toHaveCount(pages);
+    await pager.getByRole("button", { name: "1", exact: true }).click();
+    await expect(pager.locator(`[aria-current="true"]`), `${what}: 1쪽으로`).toHaveText("1");
+    await expect(emptyCard(page), `${what}: 결과가 있으면 빈 상태 없음`).toHaveCount(0);
+    return;
+  }
   await expect.poll(() => shownNames(page), { message: `${what}: 목록 = DB(d7 §16)`, timeout: 15_000 }).toEqual(want);
   if (want.length === 0) await expect(emptyCard(page), `${what}: 결과 0 → ex-empty-state-card`).toHaveCount(1);
   else await expect(emptyCard(page), `${what}: 결과가 있으면 빈 상태 없음`).toHaveCount(0);
