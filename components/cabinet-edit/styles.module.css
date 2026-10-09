@@ -385,14 +385,14 @@
     gap: var(--space-16);
   }
 
-  /* bottom-bar 안: 안내 · 실패 문구(오른쪽 맞춤) + "저장" 200 */
+  /* bottom-bar 안: 안내 · 실패 문구는 "저장" 위 줄(오른쪽 맞춤, d7 §9) · "저장" 200 오른쪽 끝 */
   .saveBar > :is(button, a) {
     flex: 0 0 auto;
     width: calc(var(--space-48) * 4 + var(--space-8));
   }
 
   .saveBar > p {
-    flex: 1 1 auto;
+    flex: 1 0 100%;
     min-width: 0;
     text-align: end;
   }

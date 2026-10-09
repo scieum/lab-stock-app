@@ -1,7 +1,8 @@
 /* 데스크톱 본문 페이지 틀 (d7 §23 run c, 시안 5·6·7·11·13-desktop main)
  * page-head: 왼쪽 page-title(제목 24/700 + 개수 12 회색, 아래 부제 13 회색, 사이 4) · 오른쪽 page-actions(사이 8)
  * page-column: 가운데 640(--form-width), 블록 사이 24 (화면 6 = 12) · wide = 전폭
- * bottom-bar: 사이드바 오른쪽 본문 아래 고정, 흰 바탕 + 위 hairline, 높이 80(안쪽 16 32), 버튼 오른쪽 끝 사이 8
+ * bottom-bar: 사이드바 오른쪽 본문 아래 고정, 흰 바탕 + 위 hairline, 높이 80(안쪽 16 32), 버튼 오른쪽 끝 사이 8 —
+ *   안내·실패 문구(note)는 버튼 위 한 줄(오른쪽 맞춤), 그만큼 바가 높아진다
  * 모바일: page-head 는 읽기 도구용 제목만, page-column 은 display: contents, bottom-bar 는 부르는 쪽 모양
  */
 
@@ -154,6 +155,7 @@
     z-index: 10;
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: flex-end;
     gap: var(--space-8);
@@ -182,9 +184,11 @@
     margin-right: auto;
   }
 
+  /* 안내 · 실패 문구는 버튼 위 한 줄 (d7 §9 "칸 없음 안내는 저장 버튼 위"), 오른쪽 맞춤 */
   .barNote {
     display: flex;
-    flex: 1 1 auto;
+    flex: 1 0 100%;
+    order: -1;
     justify-content: flex-end;
     min-width: 0;
     text-align: end;

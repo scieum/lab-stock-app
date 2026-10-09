@@ -91,7 +91,7 @@ type BarProps = {
   children: React.ReactNode;
   /** 왼쪽 끝 (화면 7-suggest "나중에") */
   start?: React.ReactNode;
-  /** 바 위 안내 한 줄 (저장 실패 · 막힌 이유) — 데스크톱에서는 버튼 왼쪽 */
+  /** 안내 한 줄 (저장 실패 · 막힌 이유) — 두 폭 모두 버튼 위 (데스크톱은 바 안 위 줄, 오른쪽 맞춤) */
   note?: React.ReactNode;
   /** 모바일 모양 (부르는 쪽 — tab-bar 위 고정 줄 등). 데스크톱에서는 이 틀의 모양이 앞선다 */
   className?: string;
