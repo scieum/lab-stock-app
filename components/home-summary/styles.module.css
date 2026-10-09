@@ -137,3 +137,66 @@ a.headerLink:active,
 a.headerLink:has([data-pending]) {
   opacity: var(--pressed-opacity);
 }
+
+/* ───── 데스크톱 홈 타일 · 위젯 (시안 13-desktop) ───── */
+
+/* 숫자 타일: 안쪽 24, 사이 8 */
+.tile {
+  gap: var(--space-8);
+}
+
+.tile .caption {
+  margin: 0;
+  line-height: var(--line-height-normal);
+}
+
+.tileValue {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+/* 위젯: 안쪽 24, 사이 16 (시약장 요약 12) */
+.widget {
+  gap: var(--space-16);
+}
+
+.widgetCabinet {
+  gap: var(--space-12);
+}
+
+.widgetHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: var(--button-min-height);
+}
+
+/* "전체 보기" pill: 13/600, 안쪽 0 12 0 16 */
+.more {
+  height: var(--button-min-height);
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-12) 0 var(--space-16);
+  font-size: var(--font-size-13);
+}
+
+/* stock-chip: 13/400 (데스크톱 위젯) */
+.stockChip {
+  font-weight: var(--font-weight-regular);
+}
+
+/* slot-bar: 높이 8 한 줄 (회색 트랙 + 하늘색 지정 비율) */
+.slotBar {
+  display: flex;
+  height: var(--status-bar-height);
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-border-strong);
+}
+
+.slotBarAssigned {
+  display: block;
+  height: 100%;
+  background: var(--color-highlight);
+}

@@ -73,6 +73,12 @@ export function DataTable({ label, columns, children, empty, className }: TableP
                       className={[styles.sortIcon, c.sort === "none" ? "" : styles.sortActive].filter(Boolean).join(" ")}
                     />
                   </button>
+                ) : c.label && c.sort && c.sort !== "none" ? (
+                  // 정렬을 바꿀 수 없는 표의 지금 정렬 표시 (시안 13-desktop 최근 사용 기록 "사용일 ↓")
+                  <span className={[styles.headLabel, styles.sortStatic].join(" ")}>
+                    <span>{c.label}</span>
+                    <Icon name={c.sort === "asc" ? "arrow-up" : "arrow-down"} className={[styles.sortIcon, styles.sortActive].join(" ")} />
+                  </span>
                 ) : c.label ? (
                   <span className={styles.headLabel}>{c.label}</span>
                 ) : (

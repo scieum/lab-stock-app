@@ -1,7 +1,9 @@
 /* 화면 11 시약장 설정 (디자인 1.15) — 본문 배치는 components/cabinet-edit CabinetScreen 이 한다.
  * 모바일(11-mobile): switcher → 제목 → 관리 줄 · selects → 배치도 · 범례 → 분류 칩 → mix-warning → 칸 없음 목록, 사이 24.
  *                    저장 줄은 tab-bar 바로 위 고정. 화면 제목은 nav-pill 안(nav-title)
- * 데스크톱(11-desktop): 왼쪽 열 860(switcher · 제목 · 배치도 · 범례 · 칸 없음 목록) + 32 + 오른쪽 편집 카드 420
+ * 데스크톱(11-desktop, d7 §23 run c): page-head("시약장" + "N개") → 가운데 열 640(모바일과 같은 순서) → 아래 고정 bottom-bar "저장".
+ *   칸 시트 = 누른 칸 옆 팝오버(11-slot), QR 인쇄 = 오른쪽 detail-drawer(11-print, 본문을 밀어냄), 이름·삭제·저장 안 한 변경 =
+ *   본문 가운데 확인 카드(11-delete · 11-unsaved), 시약장 0개 = page-head 아래 카드(11-empty)
  */
 
 .page {
@@ -21,15 +23,14 @@
   padding-bottom: calc(var(--control-height) + var(--space-64));
 }
 
-/* 화면 제목은 nav-pill(모바일 제목 · 데스크톱 현재 섹션 표시)이 대신한다 — 읽기 도구에만 남긴다 */
-.title {
-  position: absolute;
-  width: var(--border-width);
-  height: var(--border-width);
-  margin: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+/* 배치도 + 범례 묶음 (누른 칸을 기억하려고 감싼다 — 배치에는 끼어들지 않는다) */
+.boardBox {
+  display: contents;
+}
+
+/* QR 인쇄 드로어 자리 — 모바일에서는 쓰지 않는다 */
+.printDrawer {
+  display: contents;
 }
 
 .pageTitle {
@@ -93,20 +94,43 @@
     padding-bottom: var(--space-0);
   }
 
+  /* 시안 11-empty-desktop: 제목 개수("0개")는 page-head 가 보여 준다 */
+  .pageTitle {
+    display: none;
+  }
+
   .emptyArea {
-    min-height: calc(100dvh - var(--control-height) * 5);
+    justify-content: flex-start;
+    min-height: 0;
+    padding-top: var(--space-16);
   }
 
-  /* 시안 11-empty-desktop: 카드 폭 480 */
+  /* 시안 11-empty-desktop: 가운데 열 640 카드 */
   .emptyCard {
-    width: calc(var(--space-48) * 10);
-    max-width: 100%;
+    width: 100%;
   }
 
-  /* 시안 11-delete-desktop: 화면 가운데 카드(폭 480), 딤 없음 — 카드 밖은 누름이 그대로 지나간다 */
+  /* 시안 11-print-desktop: 오른쪽 detail-drawer 480 — 화면 높이 고정, 본문은 그 왼쪽으로 밀린다 */
+  .printDrawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 12;
+    display: flex;
+  }
+
+  .printing {
+    margin-right: var(--drawer-width);
+  }
+
+  /* 시안 11-delete · 11-unsaved desktop: 본문(사이드바 오른쪽) 가운데 카드 480, 딤 없음 — 카드 밖은 누름이 그대로 지나간다 */
   .dialog {
     position: fixed;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: var(--sidebar-width);
     z-index: 15;
     display: grid;
     place-items: center;

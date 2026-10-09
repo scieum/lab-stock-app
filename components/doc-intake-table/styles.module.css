@@ -284,17 +284,47 @@
   opacity: var(--pressed-opacity);
 }
 
+/* 데스크톱 (시안 7-doc-review-desktop, d7 §23 run c — 본문 전폭 표):
+ * 흰 카드(hairline, radius 16, 안쪽 24 24 8). table-top = 왼쪽 table-head · 오른쪽 doc-date(라벨 + 입력 200), 아래 16.
+ * table-header(품명 558 · 규격 160 · 수량 120 · 단위 환산 200 비율, 12/600 회색, 위아래 8, 아래 선) +
+ * doc-item-row(위아래 16, 사이 8, 아래 선): 품명 17/600 · 규격 15 · 수량 입력 · 단위 환산 12 회색이 한 줄 → 그 아래 reagent-link 등
+ */
 @media (min-width: 1024px) {
-  .date {
-    max-width: calc(var(--space-48) * 6 + var(--space-16));
+  .root {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--space-16);
+    row-gap: var(--space-0);
+    padding: var(--space-24) var(--space-24) var(--space-8);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-sizing: border-box;
+  }
+
+  .root > * {
+    grid-column: 1 / -1;
+  }
+
+  .root > .head {
+    grid-column: 1;
+    padding-bottom: var(--space-16);
+  }
+
+  .root > .date {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    width: calc(var(--space-64) * 4 + var(--space-8));
+    max-width: none;
   }
 
   .header {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) calc(var(--space-32) * 5) calc(var(--space-24) * 5);
+    grid-template-columns: minmax(0, 558fr) minmax(0, 160fr) minmax(0, 120fr) minmax(0, 200fr);
     gap: var(--space-16);
     padding: var(--space-8) 0;
-    border-bottom: var(--border-width) solid var(--color-border-strong);
+    border-bottom: var(--border-width) solid var(--color-border);
     color: var(--color-text-muted);
     font-size: var(--font-size-12);
     font-weight: var(--font-weight-semibold);
@@ -307,21 +337,45 @@
 
   .row {
     --color-surface-input: var(--color-gray-100);
+    display: grid;
+    grid-template-columns: minmax(0, 558fr) minmax(0, 160fr) minmax(0, 120fr) minmax(0, 200fr);
+    align-items: center;
+    column-gap: var(--space-16);
+    row-gap: var(--space-8);
     padding: var(--space-16) 0;
     border-bottom: var(--border-width) solid var(--color-border);
     border-radius: 0;
     background: transparent;
   }
 
-  .itemLine {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) calc(var(--space-32) * 5) calc(var(--space-24) * 5);
-    align-items: center;
-    gap: var(--space-16);
+  .row > * {
+    grid-column: 1 / -1;
   }
 
-  .itemName {
+  /* 첫 줄: 품명 · 규격 · 수량 (item-line · item-name 은 칸을 나눠 주기만 한다) · 단위 환산 */
+  .row > .itemLine,
+  .itemLine > .itemName {
     display: contents;
+  }
+
+  .itemTitle {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .itemSpec {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .itemQty {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .row > [data-name="unit-convert"] {
+    grid-column: 4;
+    grid-row: 1;
   }
 
   .specLabel,

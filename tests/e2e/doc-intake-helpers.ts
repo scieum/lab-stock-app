@@ -40,6 +40,14 @@ export const UPLOAD_CAPTION = one(F_UP, "caption", DOC_UPLOAD);
 export const [CAMERA, PICK_FILE] = texts(F_UP, "label", "button-pill-soft");
 /** "AI로 읽기" */
 export const READ = one(F_UP, "label", "button-primary");
+/**
+ * doc-upload 안 버튼 줄(upload-actions) 글자 — 폭별 시안: 390 = 7-mobile [촬영하기][파일 선택],
+ * 1440 = 새 프레임 7-desktop [파일 선택] (데스크톱 재구성 run c — 촬영하기 없음, "AI로 읽기" 는 bottom-bar).
+ */
+export const UPLOAD_BUTTONS = {
+  mobile: texts(F_UP, "label", "button-pill-soft"),
+  desktop: texts(frame("7-desktop"), "label", "upload-actions"),
+} as const;
 /** "읽는 중이에요" · "품목·규격·수량을 찾고 있어요" · "취소" */
 export const READING = one(F_PROC, "heading", DOC_UPLOAD);
 export const READING_BODY = one(F_PROC, "body", DOC_UPLOAD);
@@ -169,7 +177,14 @@ export async function interceptExtract(
 
 export const upload = (page: Page) => page.locator(`main ${sel(DOC_UPLOAD)}`);
 export const fileInput = (page: Page) => upload(page).locator('input[type="file"]:not([capture])');
-export const readButton = (page: Page) => upload(page).locator(sel("button-primary")).filter({ hasText: exact(READ) });
+/**
+ * "AI로 읽기": 390 = doc-upload 안 (시안 7-mobile), 1440 = 본문 아래 고정 bottom-bar (새 프레임 7-desktop — d7 §23 run c).
+ * 두 자리 모두 main 안의 button-primary "AI로 읽기" 하나다.
+ */
+export const readButton = (page: Page) =>
+  page
+    .locator(`main ${sel(DOC_UPLOAD)} ${sel("button-primary")}, main [data-name="bottom-bar"] ${sel("button-primary")}`)
+    .filter({ hasText: exact(READ) });
 export const table = (page: Page) => page.locator(`main ${sel(DOC_TABLE)}`);
 /** 표의 품목 행 (role=list "서류 품목" 의 항목 — "시약 아님" 묶음의 줄은 빼고) */
 export const itemRows = (page: Page) => table(page).getByRole("list", { name: "서류 품목" }).getByRole("listitem");

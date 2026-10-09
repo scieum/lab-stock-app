@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import { ButtonOutline } from "@/components/button-outline";
 import { ButtonPillSoft } from "@/components/button-pill-soft";
 import { ButtonPrimary } from "@/components/button-primary";
+import { BottomBar } from "@/components/page-frame";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { Icon } from "@/components/icons";
 import { ReagentRow } from "@/components/reagent-row";
@@ -255,11 +256,11 @@ export function StockIntake({
           </p>
         ) : null}
 
-        <div className={styles.actions} data-name="bottom-actions">
+        <BottomBar className={styles.actions} inline={!stickyActions}>
           <ButtonPrimary type="submit" className={styles.primary} disabled={!canSubmit}>
             {pending ? "저장 중…" : "입고"}
           </ButtonPrimary>
-        </div>
+        </BottomBar>
       </div>
     </form>
   );

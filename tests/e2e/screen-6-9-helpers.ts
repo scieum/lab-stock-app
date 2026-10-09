@@ -543,8 +543,9 @@ export const cells = (page: Page) => main(page).locator(sel(CELL));
 export async function waitVendors(page: Page): Promise<void> {
   await page.waitForLoadState("load");
   await expect.poll(() => new URL(page.url()).pathname, { message: "화면 9 경로", timeout: 45_000 }).toBe(VENDORS_HREF);
-  await expect(segment(page), SEGMENT).toBeVisible({ timeout: 45_000 });
-  await expect(registerBlock(page), REGISTER).toBeVisible();
+  // 서버 HTML 의 두 폭 사본 — 첫 그림은 .first(), 개수는 아래 폭 정리 뒤
+  await expect(segment(page).first(), SEGMENT).toBeVisible({ timeout: 45_000 });
+  await expect(registerBlock(page).first(), REGISTER).toBeVisible();
   await expect(page.locator(BUSY), "자리 표시는 본문으로 바뀐다").toHaveCount(0);
   // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 (개수 세기 전)
   await waitWidthSettled(page);

@@ -9,7 +9,7 @@
 //  4) 탭 이동에 셸(nav-pill·tab-bar)이 다시 만들어지지 않는다.
 //  5) 아직 없는 화면(dev-rules routes 에 없는 경로)으로의 요청(404)이 저절로 나가지 않는다.
 // 느린 응답은 화면 전환 요청을 붙잡았다 풀어 흉내 낸다 (shell-helpers.ts installNavGate, 고정 대기 없음).
-import { isDeskPage } from "./desk-helpers";
+import { isDeskPage, newFrame } from "./desk-helpers";
 import { test, expect, type Browser, type BrowserContext, type Page, type TestInfo } from "@playwright/test";
 import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
@@ -169,7 +169,9 @@ test(`[R-ui][S${LANDING}] 비로그인 ${LANDING_SEGMENT} 직접 요청: 3xx →
 for (const role of ALL_ROLES) {
   test(`[R-ui][S${HOME}] ${ROLE_LABEL[role]} ${LANDING_SEGMENT} 직접 접근: 3xx → ${routeOf(HOME)} = 화면 ${HOME} (랜딩 전용 컴포넌트 0 · screens_required[${HOME}] 표시)`, async ({ browser }, info) => {
     test.setTimeout(120_000);
-    const home = new Set(componentsOf(HOME));
+    // 화면 13 컴포넌트 = dev-rules components + 새 프레임 13-desktop · 13-mobile 노드 이름 (run c: 데스크톱 홈 quick-action 이
+    // button-outline · button-primary 로 그려졌다 — 랜딩 전용이 아니다)
+    const home = new Set([...componentsOf(HOME), ...newFrame("13-desktop").map((n) => n.name), ...newFrame("13-mobile").map((n) => n.name)]);
     const landingOnly = componentsOf(LANDING).filter((n) => !home.has(n));
     expect(landingOnly, "대조: 랜딩 전용 컴포넌트").toEqual(expect.arrayContaining(requiredOf(LANDING).filter((n) => !home.has(n))));
     expect(landingOnly.length).toBeGreaterThan(0);

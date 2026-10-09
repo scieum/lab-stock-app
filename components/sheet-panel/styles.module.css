@@ -254,3 +254,26 @@
     right: calc(var(--drawer-width) + var(--space-8));
   }
 }
+
+/* 누른 곳 옆 팝오버 (SheetAnchor — 시안 7-msds · 11-slot desktop): 모바일은 배치에 끼어들지 않는다 */
+.anchor {
+  display: contents;
+}
+
+@media (min-width: 1024px) {
+  :global([data-sheet-placement="anchor"]) .sheet {
+    top: var(--popover-top);
+    right: auto;
+    bottom: auto;
+    left: var(--popover-left);
+    width: var(--side-column-width);
+    max-width: var(--side-column-width);
+    max-height: var(--popover-max-height, calc(100% - var(--space-32)));
+    transform: none;
+    visibility: hidden;
+  }
+
+  :global([data-sheet-placement="anchor"][data-placed]) .sheet {
+    visibility: visible;
+  }
+}

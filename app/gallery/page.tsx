@@ -859,6 +859,12 @@ export default function GalleryPage() {
           </DetailDrawer>
         </Item>
 
+        <Item name="데스크톱 본문 페이지 (page-head · page-column 640 · bottom-bar) · 홈 숫자 타일 + 위젯">
+          <Link href="/gallery/pages" className={styles.more}>
+            본문 페이지 틀 · 홈 타일 · 위젯 · 서류 올리기 데스크톱 · QR 인쇄 드로어 보기 (/gallery/pages)
+          </Link>
+        </Item>
+
         <Item name="tab-bar · tab-item">
           <TabBar active="home" responsive={false} />
           <div className={styles.row}>

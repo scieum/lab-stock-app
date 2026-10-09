@@ -7,6 +7,7 @@
 import { join } from "node:path";
 import { test, expect, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { openAs } from "./auth-state";
+import { waitWidthSettled } from "./desk-helpers";
 import { anonClient } from "./db-helpers";
 import { browserSession, countComponent, devRules, routeOf, rules, sel } from "./screen-helpers";
 import { HAS_SERVICE, clientFor, openTemp, service, type TempUser } from "./screen-8-helpers";
@@ -53,6 +54,7 @@ import {
   NO_MSDS,
   PICK_FILE,
   READ,
+  UPLOAD_BUTTONS,
   READING,
   READING_BODY,
   REAGENT_LINK,
@@ -133,10 +135,11 @@ function frameDoc(docDate: string | null): { docDate: string | null; items: DocI
 for (const role of ["teacher", "admin"] as const) {
   test(`[C1][S${SCREEN}] ${role === "teacher" ? "교사" : "admin"} 기본 = ${MODE_DOC}: screens_required ${INTAKE_MODE} · 선택 칸 "${MODE_DOC}" · 순서 "${MODE_DIRECT} / ${MODE_DOC}" · variants["7"].doc-upload · doc-upload("${UPLOAD_HEADING}"·"${UPLOAD_CAPTION}"·[${CAMERA}][${PICK_FILE}]·"${READ}" 파일 전 비활성) · ${INTAKE} 0 · 누름 높이 ≥ ${MIN_H} → "${MODE_DIRECT}" 누름 = 직접 입력 · 다시 "${MODE_DOC}" / ?mode=direct·?mode=doc`, async ({ browser }, info) => {
     test.setTimeout(150_000);
-    const { context, page, response } = await openAs(browser, info, role, SCREEN);
+    const { context, page, response, viewport } = await openAs(browser, info, role, SCREEN);
     try {
       expect(response?.status()).toBe(200);
       await waitUpload(page);
+      await waitWidthSettled(page);
       for (const c of rules.screens_required[String(SCREEN)] ?? []) expect(await countComponent(page, c), `screens_required ${c}`).toBeGreaterThanOrEqual(1);
       await expect(modeControl(page)).toHaveCount(1);
       await expect(activeMode(page), "기본 선택").toHaveText(exact(MODE_DOC));
@@ -146,12 +149,16 @@ for (const role of ["teacher", "admin"] as const) {
       const up = upload(page);
       await expect(up.getByRole("heading", { name: exact(UPLOAD_HEADING) })).toBeVisible();
       await expect(up.getByText(UPLOAD_CAPTION, { exact: true })).toBeVisible();
-      for (const l of [CAMERA, PICK_FILE]) await expect(up.locator(sel("button-pill-soft")).filter({ hasText: exact(l) }), `[${l}]`).toHaveCount(1);
+      // 폭별 시안: 390 = [촬영하기][파일 선택] (7-mobile) · 1440 = [파일 선택] (새 프레임 7-desktop — 촬영하기 없음)
+      const want = UPLOAD_BUTTONS[viewport];
+      expect(UPLOAD_BUTTONS.mobile, "7-mobile 버튼").toEqual([CAMERA, PICK_FILE]);
+      expect((await up.locator(sel("button-pill-soft")).filter({ visible: true }).allInnerTexts()).map((t) => t.trim()), `${viewport} doc-upload 버튼 = 시안`).toEqual(want);
+      if (viewport === "desktop") await expect(up.locator(sel("button-pill-soft")).filter({ hasText: exact(CAMERA) }), `1440 [${CAMERA}] 0`).toHaveCount(0);
       await expect(readButton(page), `"${READ}" 1`).toHaveCount(1);
       await expect(readButton(page), "파일 전 비활성").toBeDisabled();
       await expect(page.locator(sel(INTAKE)), `${INTAKE} 0`).toHaveCount(0);
       await expect(page.locator(sel(DOC_TABLE))).toHaveCount(0);
-      expect(await expectButtonHeights(page.locator("main"), "올리기"), "버튼 있음").toBeGreaterThanOrEqual(3);
+      expect(await expectButtonHeights(page.locator("main"), "올리기"), `버튼 = 시안 버튼 줄 ${want.length} + "${READ}"`).toBeGreaterThanOrEqual(want.length + 1);
       await shot(page, info, "doc-upload");
 
       await switchMode(page, "direct");

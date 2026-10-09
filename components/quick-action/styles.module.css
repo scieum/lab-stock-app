@@ -84,3 +84,23 @@ button.item {
     grid-column: auto;
   }
 }
+
+/* 데스크톱 버튼 한 줄 (시안 13-desktop quick-action: 사이 8, 버튼 높이 44 · 좌우 16) */
+.buttons {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-8);
+}
+
+.entry {
+  display: flex;
+}
+
+.buttons .button {
+  height: var(--button-min-height);
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-16);
+  white-space: nowrap;
+}

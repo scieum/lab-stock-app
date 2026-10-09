@@ -1,6 +1,7 @@
 /* 화면 7 입고·시약 등록
  * 모바일(7-mobile): intake-mode(전폭) → 갈래, 사이 24(시안 content gap). 제목은 nav-pill 안(nav-title)에 있다
- * 데스크톱(7-desktop): page-title → intake-mode(page-column 720) → 갈래, 사이 24
+ * 데스크톱(7-desktop, d7 §23 run c): page-head "입고" → 가운데 page-column 640(intake-mode → 갈래, 사이 24) → 아래 고정 bottom-bar
+ *   (서류: "AI로 읽기" / 확인 표: "확인 후 입고" — 확인 표 단계는 page-column 전폭, intake-mode 는 왼쪽 640). 모양은 components/page-frame
  * 직접 입력: 그 아래 segmented-control(기존 시약 입고 / 새 시약 등록) → 고른 갈래 (예전 그대로)
  * 서류로 입고: doc-upload / ex-empty-state-card + doc-upload / doc-intake-table + 하단 "확인 후 입고"
  */
@@ -14,21 +15,6 @@
 
 .page[data-mode="doc"] {
   gap: var(--space-24);
-}
-
-/* 모바일에서는 nav-pill 의 제목이 대신한다 (화면에는 안 보이고 읽기 도구에는 남긴다) */
-.title {
-  position: absolute;
-  width: var(--border-width);
-  height: var(--border-width);
-  margin: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  color: var(--color-text);
-  font-size: var(--font-size-28);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-normal);
-  white-space: nowrap;
 }
 
 .mode {
@@ -90,37 +76,25 @@
     gap: var(--space-24);
   }
 
-  .title {
-    position: static;
-    width: auto;
-    height: auto;
-    overflow: visible;
-    clip-path: none;
-  }
-
-  /* page-column 720 */
-  .mode,
-  .docColumn {
-    width: calc(var(--space-48) * 15);
-    max-width: 100%;
-  }
-
-  .segment {
-    width: var(--side-column-width);
+  /* intake-mode 640 (확인 표 단계에서도 왼쪽 640 — 시안 7-doc-review-desktop) */
+  .mode {
+    width: 100%;
+    max-width: var(--form-width);
   }
 
   .reviewing {
     padding-bottom: var(--space-0);
   }
 
-  .docActions {
-    position: static;
-    padding: var(--space-16) 0 0;
-    border-top: var(--border-width) solid var(--color-border);
-    background: transparent;
+  /* bottom-bar 안 버튼 (시안: "확인 후 입고" 안쪽 32 · "AI로 읽기" 내용 폭) */
+  .docSubmit {
+    width: auto;
+    padding-right: var(--space-32);
+    padding-left: var(--space-32);
   }
 
-  .docSubmit {
-    width: calc(var(--control-height) * 5);
+  .docError,
+  .docReason {
+    text-align: end;
   }
 }

@@ -6,6 +6,7 @@
 // 추출 API 는 가로채 가짜 응답을 준다 (실제 Gemini 호출 없음). service role 은 준비·정리·대조 조회에만 쓴다.
 import { test, expect, type TestInfo } from "@playwright/test";
 import { openAs } from "./auth-state";
+import { frameActiveLabel } from "../desktop-shell";
 import { browserClient, browserSession, countComponent, rules, sel } from "./screen-helpers";
 import { HAS_SERVICE, openTemp } from "./screen-8-helpers";
 import { autoFromIntake } from "./reorder-auto-helpers";
@@ -59,6 +60,7 @@ import {
   UNITS,
   amountInput,
   backLink,
+  backExpected,
   basisOf,
   blockSaves,
   bodyRows,
@@ -528,8 +530,9 @@ test(`[C1][S${SCREEN}] 일회용 학교 교사: 추출하고 고치기만 하고
     await expect(table(page)).toHaveCount(1, { timeout: 20_000 });
     expect(await schoolReagents(f.school.id), `"${RETRY}" 뒤 DB 불변`).toEqual(dbBefore);
 
-    // 화면 6 으로 떠난다 → 돌아온다
-    await backLink(page).click();
+    // 화면 6 으로 떠난다 → 돌아온다 (390 = nav-pill 뒤로, 1440 = 새 프레임 5-desktop 에 뒤로가 없으면 사이드바 "${frameActiveLabel(6)}")
+    if (backExpected(page)) await backLink(page).click();
+    else await page.locator(sel("app-sidebar")).getByRole("link", { name: frameActiveLabel(6), exact: true }).click();
     await waitReorder(page);
     const shown = await readAlerts(page);
     expect(shown.map((s) => s.name), "화면 6: 저장하지 않았으니 알림은 준비한 그대로(0건)").toEqual([]);

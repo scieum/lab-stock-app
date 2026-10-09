@@ -56,23 +56,7 @@
   display: flex;
 }
 
-/* 시안 1.17 6-desktop manual-upload: 글자 칸 + 버튼(오른쪽), 안쪽 16·24, 사이 24 · 글자 사이 8 */
-@media (min-width: 1024px) {
-  .box {
-    flex-direction: row;
-    align-items: center;
-    gap: var(--space-24);
-    padding: var(--space-16) var(--space-24);
-  }
-
-  .box .text {
-    gap: var(--space-8);
-  }
-
-  .action {
-    flex-shrink: 0;
-  }
-}
+/* 시안 6-desktop (d7 §23 run c): 가운데 열 640 안에서 모바일과 같은 세로 묶음(안쪽 16, 사이 12) — 데스크톱 따로 없음 */
 
 /* ───────── 화면 5: 업로드 영역 (시안 5 manual-upload: 묶음 사이 12, 바탕 없음) ───────── */
 .upload {

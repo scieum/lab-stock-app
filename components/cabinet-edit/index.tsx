@@ -1,5 +1,6 @@
 import { Children, isValidElement } from "react";
 import { ButtonOutline } from "@/components/button-outline";
+import { BottomBar } from "@/components/page-frame";
 import styles from "./styles.module.css";
 
 export { CabinetDeleteConfirm, CabinetRenameSheet, CabinetUnsavedConfirm } from "./sheets";
@@ -120,8 +121,8 @@ type SaveBarProps = {
   /** 저장 버튼 위 안내 한 줄 ("이 변경으로 시약 2종이 '칸 없음'이 돼요", d7 §9 칸 줄이기) */
   notice?: string;
   /**
-   * true(기본) = 모바일에서 tab-bar 바로 위에 고정 (시안 11-mobile save-bar). 고정된 줄은 자리를 차지하지 않으므로
-   * 화면 쪽이 본문 아래에 그만큼 여백을 둔다. false = 항상 제자리(갤러리). 데스크톱은 늘 제자리다.
+   * true(기본) = 모바일에서 tab-bar 바로 위에 고정 (시안 11-mobile save-bar), 데스크톱은 본문 아래 고정 bottom-bar.
+   * 고정된 줄은 자리를 차지하지 않으므로 화면 쪽이 본문 아래에 그만큼 여백을 둔다. false = 항상 제자리(갤러리).
    */
   sticky?: boolean;
   /** button-primary "저장" */
@@ -130,14 +131,15 @@ type SaveBarProps = {
 
 /** 저장 버튼 줄 — cabinet-edit 안 맨 아래에 둔다 */
 export function CabinetSaveBar({ notice, sticky = true, children }: SaveBarProps) {
+  // 데스크톱(d7 §23 run c): 고정 줄이면 본문 아래 bottom-bar (시안 11-desktop — "저장" 200 오른쪽 끝)
   return (
-    <div className={[styles.saveBar, sticky ? styles.sticky : ""].filter(Boolean).join(" ")}>
+    <BottomBar className={[styles.saveBar, sticky ? styles.sticky : ""].filter(Boolean).join(" ")} inline={!sticky}>
       {notice ? (
         <p className={styles.notice} role="status">
           {notice}
         </p>
       ) : null}
       {children}
-    </div>
+    </BottomBar>
   );
 }

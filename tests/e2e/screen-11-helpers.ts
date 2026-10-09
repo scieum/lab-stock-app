@@ -385,13 +385,24 @@ export const isMobile = (page: Page) => page.viewportSize()!.width === devRules.
 export const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
- * 시약장 이름 + 요약 — 시안 1.15: 데스크톱 11-desktop "양문형 · 4단 · 8칸", 모바일 11-mobile "양문형 · 4단" (칸 수 = 문 형태 × 단 수).
- * number 를 주면 제목 앞 cabinet-number = 그 번호 (DB cabinets.number).
+ * 데스크톱 요약 꼴: 프레임 11-desktop cabinet-meta 가 "… · N칸" 이면 칸 수까지, 아니면 모바일과 같은 "문 형태 · N단".
+ * (예전 1.15 데스크톱 시안 = "양문형 · 4단 · 8칸" → 새 프레임(데스크톱 재구성 run c, desktop_migrated_screens 에 11) = "양문형 · 4단")
+ */
+export const DESK_META_WITH_SLOTS = (() => {
+  const nodes = (JSON.parse(readFileSync(framePath(`${SCREEN}-desktop`), "utf8")) as { frames: { nodes: { name: string; text: { characters: string } | null }[] }[] }).frames[0].nodes;
+  const meta = nodes.find((n) => n.name === "cabinet-meta" && n.text)?.text?.characters ?? "";
+  if (!meta) throw new Error(`${SCREEN}-desktop cabinet-meta 없음`);
+  return /칸$/.test(meta);
+})();
+
+/**
+ * 시약장 이름 + 요약 — 모바일 11-mobile "양문형 · 4단", 데스크톱 = 프레임 11-desktop 꼴(DESK_META_WITH_SLOTS — 새 프레임은 칸 수 없음).
+ * 보이는 글자(innerText)로 본다. number 를 주면 제목 앞 cabinet-number = 그 번호 (DB cabinets.number).
  */
 export async function expectHeader(page: Page, label: string, door: string, shelves: number, what: string, number?: number): Promise<void> {
   await expect(title(page, label), `${what}: 시약장 이름 "${label}"`).toHaveCount(1);
   await expect(title(page, label)).toBeVisible();
-  const text = isMobile(page) ? `${door} · ${shelves}단` : `${door} · ${shelves}단 · ${slotCount(door, shelves)}칸`;
+  const text = isMobile(page) || !DESK_META_WITH_SLOTS ? `${door} · ${shelves}단` : `${door} · ${shelves}단 · ${slotCount(door, shelves)}칸`;
   const head = title(page, label).locator("xpath=..");
   await expect
     .poll(async () => (await head.innerText()).replace(/\s+/g, " ").trim(), { message: `${what}: 제목 줄 = [번호] 이름 + 요약 "${text}"` })
@@ -720,6 +731,24 @@ export async function prepPlace(f: S11Fixture, reagentId: string, cabinetId: str
 /** s2-spec 상태 화면 11-delete 예시의 2번 시약장 (양문형 3단, 프레임 11-delete 의 칸 글자) */
 export const FRAME_LAYOUT_2: Record<string, string[]> = { L1: ["무기염"], R1: ["유기"], L2: ["산"], R2: ["기타"], L3: ["염기"], R3: ["인화성"] };
 export const EMPTY_HEADING = "시약장 0개";
+
+/**
+ * 0개 상태 제목 줄: 390 = 본문 제목 "시약장 0개" (heading), 1440 = 새 프레임 11-empty-desktop page-head — h1 "시약장" + 옆 회색 "0개"
+ * (제목 줄 글자 = 프레임 title + count = "시약장 0개").
+ */
+export async function expectEmptyHeading(page: Page, what: string): Promise<void> {
+  if (isMobile(page)) {
+    await expect(main(page).getByRole("heading", { name: exact(EMPTY_HEADING) }), `${what}: 제목 줄 "${EMPTY_HEADING}"`).toBeVisible();
+    return;
+  }
+  const nodes = (JSON.parse(readFileSync(framePath(`${SCREEN}-empty-desktop`), "utf8")) as { frames: { nodes: { name: string; path: string[]; text: { characters: string } | null }[] }[] }).frames[0].nodes;
+  const t = nodes.find((n) => n.name === "title" && n.path.includes("title-row"))?.text?.characters ?? "";
+  const c = nodes.find((n) => n.name === "count" && n.path.includes("title-row"))?.text?.characters ?? "";
+  expect(`${t} ${c}`, "프레임 11-empty-desktop 제목 줄 = EMPTY_HEADING").toBe(EMPTY_HEADING);
+  const row = main(page).locator('[data-name="page-head"] [data-name="title-row"]');
+  await expect(row.getByRole("heading", { level: 1, name: exact(t) }), `${what}: 1440 h1 "${t}"`).toBeVisible();
+  await expect.poll(async () => (await row.innerText()).replace(/\s+/g, " ").trim(), { message: `${what}: 1440 제목 줄 "${EMPTY_HEADING}"` }).toBe(EMPTY_HEADING);
+}
 
 export const FRAME_LAYOUT: Record<string, string[]> = {
   L1: ["산", "염기"],

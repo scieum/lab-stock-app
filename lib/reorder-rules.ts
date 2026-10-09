@@ -140,8 +140,9 @@ export function thresholdSourceText(r: {
   return MANUAL_SOURCE_TEXT;
 }
 
-/** 화면 6 재주문 기준 안내 박스 본문 (시안 1.17 6 manual-upload info-body) */
-export const REORDER_GUIDE_TEXT = "필요량 = 1반 1회 실험량 × 조 수 · 기준이 없는 시약은 최근 사용량으로 계산해요";
+/** 화면 6 재주문 기준 안내 박스 본문 (시안 6-mobile · 6-desktop manual-upload info-body, 디자인 run 0936 — 입고량 근거 덧붙임) */
+export const REORDER_GUIDE_TEXT =
+  "필요량 = 1반 1회 실험량 × 조 수 · 기준이 없는 시약은 최근 사용량(사용 기록이 없으면 마지막 입고량의 20%)으로 계산해요";
 
 /** 알림 카드 수량 줄 앞말 (디자인 1.21 reorder.card_text — 화면 3 용어와 같다) */
 export const REORDER_NEED_LABEL = "재주문 기준";

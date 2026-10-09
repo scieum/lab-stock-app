@@ -2,7 +2,8 @@
 // 기대값: harness/d7-data.md §11(알림 대상 stock < min_stock · 카드 문구 틀 "재주문 기준 {min_stock}{unit} / 현재 재고 {stock}{unit}" ·
 //         기준 문구 두 형태 · 알림 날짜 "M월 D일 알림"(한국 시간, 올해가 아니면 "YYYY년 M월 D일 알림") · 부족한 정도가 큰 순 — 2026-10-08 디자인 1.21 맞춤),
 //         design/rules.json reorder.card_text('재주문 기준 N{단위}' · '10월 7일 알림'),
-//         design/frames/6-desktop.json(시안 1.17 알림 카드 3건의 값·자동 배지·캡션 — 문구 틀은 d7·rules).
+//         design/frames/6-desktop.json(새 프레임 — 데스크톱 재구성 run c, dev-rules 1.13 desktop_migrated_screens 에 6:
+//         알림 카드 3건의 값·날짜 "M월 D일 알림"·자동 배지·캡션 2종 — 캡션 문구는 d7 §23 "자동 기준 표시" 행).
 //         구현에서 읽지 않는다.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -41,11 +42,11 @@ const amountOf = (min: number | string, stock: number | string, unit: string) =>
 /** "올해" 를 정하는 기준 시각: 한국 시간 2026-10-08 12:00 */
 const NOW_2026 = new Date("2026-10-08T03:00:00Z");
 
-// ---------- 시안 프레임 6-desktop (1.17) 의 알림 카드 ----------
-// 시안 1.17 카드: alert-info(badge-low-stock · reagent-name · stock-line · [auto-caption] · alert-date).
+// ---------- 새 프레임 6-desktop (run c) 의 알림 카드 ----------
+// 카드: badge-low-stock · reagent-name · stock-line · [auto-caption] · alert-date.
 // 자동 기준 카드는 stock-line 이 threshold · auto-threshold-badge "자동" · stock 세 조각, 그 아래 auto-caption.
-// 시안 1.17 의 수량 줄("재주문 기준 N u / 현재 재고 …" 띄어 씀)·날짜 모양("YYYY-MM-DD 알림")은 프레임이 예전 그대로라
-// 1.21 문구 틀(d7 §11 · rules.json reorder.card_text)과 다르다 — 문구 틀은 d7·rules 가 기대값이고, 시안에서는 값(재고 < 기준, 날짜 숫자, 자동 배지·캡션)만 읽는다.
+// 새 프레임 날짜는 올해 모양 "M월 D일 알림"(d7 §11 · rules card_text 와 같음). 수량 줄은 프레임이 "100 mL" 처럼 띄어 써서
+// 문구 틀(숫자·단위 붙여 씀)은 d7·rules 가 기대값이고, 시안에서는 값(재고 < 기준, 날짜, 자동 배지·캡션)만 읽는다.
 type FrameNode = { name: string; path: string[]; text: { characters: string } | null };
 const frame = JSON.parse(readFileSync(framePath("6-desktop"), "utf8")) as { frames: { nodes: FrameNode[] }[] };
 type FrameCard = { name: string; line: string; badge: string | null; caption: string | null; date: string };
@@ -65,7 +66,12 @@ const FRAME_CARDS: FrameCard[] = (() => {
   return out;
 })();
 const FRAME_LINE_RE = /^재주문 기준 (\d+) (\S+) \/ 현재 재고 (\d+) (\S+)$/;
-const FRAME_DATE_RE = /^(\d{4})-(\d{2})-(\d{2}) 알림$/;
+/** 새 프레임 날짜 = 올해 모양 (해 없음) */
+const FRAME_DATE_RE = /^(\d{1,2})월 (\d{1,2})일 알림$/;
+/** 새 프레임의 '오늘' 해 = NOW_2026 의 해 (13-desktop subtitle "오늘 10월 7일" 과 같은 해로 본다) */
+const FRAME_YEAR = 2026;
+/** d7 §23 "자동 기준 표시 (화면 3·6)" 행의 캡션 두 문구 (사용 기록 근거 · 입고량 근거) */
+const D7_AUTO_CAPTIONS = [...(D7.split(/\r?\n/).find((l) => l.startsWith("| 자동 기준 표시")) ?? "").matchAll(/\*\*"([^"]+)"\*\*/g)].map((m) => m[1]);
 /** 시안 카드 중 수량 줄이 "숫자 단위 / 숫자 단위" 꼴인 것 (1병(50 mL 남음) 같은 병 표기는 제외) */
 const FRAME_SIMPLE = FRAME_CARDS.filter((c) => FRAME_LINE_RE.test(c.line)).map((c) => {
   const m = FRAME_LINE_RE.exec(c.line)!;
@@ -95,18 +101,20 @@ afterEach(() => {
 });
 
 describe("reorder rules: 기대값 원본", () => {
-  it("[K1][S6] 기대값 원본: 프레임 6-desktop(1.17) 알림 카드 3건 — 재고 < 기준, 날짜, 자동 카드 1건(배지 \"자동\" + 캡션)", () => {
+  it("[K1][S6] 기대값 원본: 새 프레임 6-desktop 알림 카드 3건 — 재고 < 기준, 날짜 \"M월 D일 알림\", 자동 카드 2건(배지 \"자동\" + d7 §23 캡션 두 형태)", () => {
     expect(FRAME_CARDS.length).toBe(3);
     for (const c of FRAME_CARDS) {
       expect(c.name, "시약명").not.toBe("");
       expect(c.date, `${c.name} 날짜`).toMatch(FRAME_DATE_RE);
+      expect(c.date, `${c.name} 날짜 = d7 §11 모양`).toMatch(DATE_RE);
     }
-    expect(FRAME_SIMPLE.length, "숫자 단위 / 숫자 단위 꼴 카드").toBe(2);
+    expect(FRAME_SIMPLE.length, "숫자 단위 / 숫자 단위 꼴 카드 (새 프레임은 3건 모두)").toBe(FRAME_CARDS.length);
     for (const c of FRAME_SIMPLE) expect(c.stock, `${c.name}: 재고 < 기준`).toBeLessThan(c.minStock);
+    expect(D7_AUTO_CAPTIONS, "d7 §23 자동 기준 캡션 두 문구").toHaveLength(2);
     const autos = FRAME_CARDS.filter((c) => c.badge !== null);
-    expect(autos.length).toBe(1);
-    expect(autos[0].badge).toBe("자동");
-    expect(autos[0].caption).toBe("최근 사용량으로 계산했어요");
+    expect(autos.length).toBe(2);
+    for (const a of autos) expect(a.badge).toBe("자동");
+    expect(autos.map((a) => a.caption), "자동 카드 캡션 = d7 §23 두 형태 (사용 기록 근거 · 입고량 근거)").toEqual(D7_AUTO_CAPTIONS);
     for (const c of FRAME_CARDS.filter((x) => x.badge === null)) expect(c.caption, `${c.name}: 자동 아니면 캡션 없음`).toBeNull();
   });
 
@@ -207,15 +215,16 @@ describe("reorder rules: 기준 문구 두 형태", () => {
 });
 
 describe('reorder rules: 알림 날짜 "M월 D일 알림" · 올해가 아니면 "YYYY년 M월 D일 알림" (한국 시간, d7 §11 · rules 1.21)', () => {
-  it("[K1][S6] 시안 날짜(alert-date)의 한국 날짜 낮 → 같은 날짜, 올해면 rules.json 예시 모양 \"10월 7일 알림\"", () => {
-    const [, y, m, d] = FRAME_DATE_RE.exec(FRAME_CARDS[0].date)!;
-    const want = `${Number(m)}월 ${Number(d)}일 알림`;
-    expect(want).toMatch(DATE_RE);
-    const now = new Date(`${y}-10-08T03:00:00Z`);
-    expect(reorderAlertDateText(`${y}-${m}-${d}T02:10:00Z`, now)).toBe(want);
-    expect(reorderAlertDateText(`${y}-${m}-${d}T11:10:00+09:00`, now)).toBe(want);
-    // 시안 날짜 2026-10-07 = rules.json card_text 예시
-    expect(reorderAlertDateText(`${y}-${m}-${d}T02:10:00Z`, now)).toBe(RULES_DATE);
+  it("[K1][S6] 새 프레임 날짜(alert-date \"M월 D일 알림\")의 한국 날짜 낮 → 같은 글자 (올해), rules.json 예시 모양 \"10월 7일 알림\"", () => {
+    for (const c of FRAME_CARDS) {
+      const [, m, d] = FRAME_DATE_RE.exec(c.date)!;
+      const day = `${FRAME_YEAR}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+      expect(reorderAlertDateText(`${day}T02:10:00Z`, NOW_2026), `${c.name}`).toBe(c.date);
+      expect(reorderAlertDateText(`${day}T11:10:00+09:00`, NOW_2026), `${c.name} (+09:00)`).toBe(c.date);
+      expect(reorderAlertDateText(`${day}T02:10:00Z`, new Date(`${FRAME_YEAR + 1}-01-02T03:00:00Z`)), `${c.name} 다음 해에 보면 해 붙임`).toBe(`${FRAME_YEAR}년 ${c.date}`);
+    }
+    // 새 프레임 첫 카드 날짜 = rules.json card_text 예시
+    expect(FRAME_CARDS[0].date).toBe(RULES_DATE);
   });
 
   it.each([

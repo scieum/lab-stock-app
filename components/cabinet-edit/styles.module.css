@@ -356,47 +356,54 @@
     border-radius: var(--radius-none) var(--radius-none) var(--radius-lg) var(--radius-lg);
   }
 
-  .sticky {
-    position: static;
-    padding: var(--space-0);
-  }
 }
 
-/* 디자인 1.15 11-desktop: 왼쪽 열 860 · 사이 32 · 오른쪽 편집 카드 420. 맨 아래 1fr 줄이 카드의 남는 높이를 받아
- * 왼쪽 열 블록 사이가 벌어지지 않는다 */
+/*
+ * 시안 11-desktop (d7 §23 run c): 가운데 열 640 한 줄 — 모바일과 같은 순서(switcher · 제목 → 관리 줄 · 문 형태/단 수 → 배치도 · 범례
+ * → 선택 칸 분류 → mix-warning → 칸 없음 목록), 블록 사이 24. 편집 패널은 테두리 카드가 아니다(시안 cabinet-edit 채움 없음).
+ * 저장은 본문 아래 고정 bottom-bar (CabinetSaveBar → components/page-frame). 제목 요약은 "양문형 · 4단" (칸 수 없음).
+ */
 @media (min-width: 1024px) {
-  .screenEdit {
-    grid-template-columns: minmax(0, 43fr) minmax(0, 21fr);
-    grid-template-rows: auto auto auto 1fr;
-    column-gap: var(--space-32);
-  }
-
-  .screenEdit > .sTop {
-    grid-row: 1;
-  }
-
-  .screenEdit > .sBoard {
-    grid-row: 2;
-  }
-
-  .screenEdit > .sBottom {
-    grid-row: 3;
-  }
-
   .screenEdit > .panel {
-    display: flex;
-    flex-direction: column;
-    grid-row: 1 / -1;
-    grid-column: 2;
-    align-self: start;
     gap: var(--space-24);
+  }
+
+  .edit.panel {
+    padding: var(--space-0);
+    border: 0;
+    border-radius: var(--radius-none);
+    background: transparent;
+  }
+
+  /* 시안 cabinet-selects: 문 형태 316 · 단 수 316, 사이 8 */
+  .panel .selects {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-8);
   }
 
   .pHead {
-    gap: var(--space-24);
+    gap: var(--space-16);
   }
 
-  .titleMetaWide {
-    display: inline;
+  /* bottom-bar 안: 안내 · 실패 문구는 "저장" 위 줄(오른쪽 맞춤, d7 §9) · "저장" 200 오른쪽 끝 */
+  .saveBar > :is(button, a) {
+    flex: 0 0 auto;
+    width: calc(var(--space-48) * 4 + var(--space-8));
+  }
+
+  .saveBar > p {
+    flex: 1 0 100%;
+    min-width: 0;
+    text-align: end;
+  }
+
+  /* 확인 카드 (시안 11-delete · 11-unsaved desktop modal-actions): 오른쪽 끝, 내용 폭 버튼, 사이 8 */
+  .confirm {
+    justify-content: flex-end;
+    gap: var(--space-8);
+  }
+
+  .confirm .confirmButton {
+    flex: 0 0 auto;
   }
 }

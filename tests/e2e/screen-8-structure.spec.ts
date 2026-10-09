@@ -10,7 +10,7 @@ import { ROLE_LABEL, SCHOOL_A_ROLES } from "./db-helpers";
 import { openAs } from "./auth-state";
 import { PROFILE_ROLE, ROLE_NAME, browserClient, browserSession, countComponent, devRules, roleChecks, routeOf, rules, sel } from "./screen-helpers";
 import { DESKTOP_SHELL, frameActiveLabel } from "../desktop-shell";
-import { newFrame } from "./desk-helpers";
+import { newFrame, waitWidthSettled } from "./desk-helpers";
 import { expectShellHeader, shellSchoolScope } from "./shell-helpers";
 import {
   ACTIVE_TAB_LABEL,
@@ -220,6 +220,8 @@ for (const role of SCHOOL_A_ROLES) {
       for (const screen of NAV_SCREENS) {
         if (screen !== HOME_SCREEN) await page.goto(routeOf(screen));
         await page.waitForLoadState("load");
+        // 서버 HTML 에는 두 폭(홈 quick-action 모바일 칸 · 데스크톱 버튼 줄)이 함께 있다 — 맞지 않는 폭이 빠진 뒤 센다
+        await waitWidthSettled(page);
         expect(new URL(page.url()).pathname, `화면 ${screen}`).toBe(routeOf(screen));
         await expect(shellSchoolScope(page, viewport).first(), "셸 (390 nav-pill / 1440 app-sidebar)").toBeVisible();
         if (screen === HOME_SCREEN) await expect(page.locator(sel("quick-action")).first()).toBeVisible();
@@ -259,6 +261,10 @@ for (const role of SCHOOL_A_ROLES) {
       if (isAdmin) {
         // 홈 quick-action → 화면 8
         await page.goto(routeOf(HOME_SCREEN));
+        await page.waitForLoadState("load");
+        await waitWidthSettled(page);
+        // 폭 전용 사본(모바일 quick-action 칸)이 빠질 때까지 — 홈 quick-action 진입점 1
+        await expect(page.locator(`${sel("quick-action")} ${sel(USER_MANAGE)}`), "홈 quick-action 진입점 1").toHaveCount(1, { timeout: 45_000 });
         await page.locator(`${sel("quick-action")} ${sel(USER_MANAGE)}`).click();
         await page.waitForURL((u) => u.pathname === USERS_HREF, { timeout: 30_000 });
         await waitUsers(page);

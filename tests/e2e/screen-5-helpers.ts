@@ -328,6 +328,13 @@ export const titleScope = (page: Page) => (isDesktopPage(page) ? main(page) : na
  * 뒤로가기 (화면 6 으로): 폭 390 = nav-pill 의 뒤로(데스크톱 주 메뉴 nav 링크 제외), 폭 1440 = 본문 page-head 의 "뒤로" 링크
  * (사이드바 "재주문 알림" 메뉴는 뒤로가기가 아니다)
  */
+/**
+ * 데스크톱 뒤로가기가 시안에 있는가: 새 프레임 5-desktop main 안에 icon-back · back-link 가 있을 때만
+ * (run c: 5-desktop page-head = 제목만 — d7 §23 run c "run a 의 page-head(5·11)는 시안 제목 구조로 대체"). 모바일 5 는 nav-pill 뒤로 그대로.
+ */
+export const DESK_BACK = m5d.some((n) => n.path.includes("main") && (n.name === "icon-back" || n.name === "back-link"));
+/** 이 폭에서 화면 5 뒤로가기(→ 화면 6)가 있어야 하는가 */
+export const backExpected = (page: Page): boolean => !isDesktopPage(page) || DESK_BACK;
 export const backLink = (page: Page) =>
   isDesktopPage(page)
     ? main(page).getByRole("link", { name: "뒤로", exact: true }).and(page.locator(`a[href="${REORDER_HREF}"]`))

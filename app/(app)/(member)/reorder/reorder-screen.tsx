@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { ManualUpload } from "@/components/manual-upload";
+import { PageColumn, PageHead } from "@/components/page-frame";
 import { ReorderAlertItemCard, ReorderAlertList, ReorderAlertListItem } from "@/components/reorder-alert-card";
 import {
   VendorLink,
@@ -46,8 +47,8 @@ const VENDORS_PATH = "/vendors";
 
 /**
  * 화면 6 재주문 알림 (교사·admin 전용).
- * 시안 1.17: (데스크톱 screen-title) → manual-upload(재주문 기준 안내 + "실험 매뉴얼 올리기") → 알림 카드 목록(또는 빈 상태)
- *       → (admin) vendor-register "판매처 등록". 데스크톱은 가운데 한 열(page-column 880), 카드는 정보 칸 + 동작 칸.
+ * 시안 6: (데스크톱 page-head "재주문 알림" + "N건") → manual-upload(재주문 기준 안내 + "실험 매뉴얼 올리기") → 알림 카드 목록(또는 빈 상태)
+ *       → (admin) vendor-register "판매처 등록". 데스크톱은 가운데 한 열(page-column 640, 사이 12, d7 §23 run c), 카드는 위아래(정보 → 동작).
  * "확인" 뒤에는 그 카드의 vendor-link 아래에 새 창 안내 줄(vendor-new-window, d7 §18)이 남는다.
  * "판매처 연결" → ex-modal-card (모바일: tab-bar 위 하단 시트 / 데스크톱: 화면 오른쪽 아래 카드, 시안 6-desktop).
  * 판매처를 고르고 "확인" → 그 판매처 웹사이트(공통 목록 4곳은 시약 이름 검색 결과 주소)를 새 창으로 연다. 아무것도 저장하지 않는다 (서버 요청 없음).
@@ -151,44 +152,46 @@ export function ReorderScreen({ isAdmin, alerts, vendors: initialVendors }: Prop
 
   return (
     <div ref={pageRef} className={styles.page}>
-      <h1 className={styles.title}>재주문 알림</h1>
+      <PageHead title="재주문 알림" count={`${alerts.length}건`} />
 
-      <div className={styles.layout} data-name="reorder-layout">
-        <div className={styles.guide}>
-          <ManualUpload href={MANUAL_PATH} description={REORDER_GUIDE_TEXT} />
-        </div>
-
-        <div className={styles.alerts}>
-          {alerts.length === 0 ? (
-            <EmptyStateCard title="재고가 부족한 시약이 없어요" />
-          ) : (
-            <ReorderAlertList>
-              {alerts.map((a) => (
-                <ReorderAlertListItem key={a.id}>
-                  <ReorderAlertItemCard
-                    name={a.name}
-                    amount={a.amount}
-                    basis={a.basis}
-                    auto={a.auto ?? undefined}
-                    date={a.date}
-                  >
-                    <VendorLink expanded={openKey === a.id} onClick={(e) => toggle(a.id, e.currentTarget)} />
-                    {opened && opened.alertId === a.id && openKey !== a.id ? (
-                      <VendorNewWindowNote vendorName={opened.name} url={opened.url} />
-                    ) : null}
-                  </ReorderAlertItemCard>
-                </ReorderAlertListItem>
-              ))}
-            </ReorderAlertList>
-          )}
-        </div>
-
-        {isAdmin ? (
-          <div className={styles.register}>
-            <VendorRegisterEntry href={VENDORS_PATH} />
+      <PageColumn gap="tight">
+        <div className={styles.layout} data-name="reorder-layout">
+          <div className={styles.guide}>
+            <ManualUpload href={MANUAL_PATH} description={REORDER_GUIDE_TEXT} />
           </div>
-        ) : null}
-      </div>
+
+          <div className={styles.alerts}>
+            {alerts.length === 0 ? (
+              <EmptyStateCard title="재고가 부족한 시약이 없어요" />
+            ) : (
+              <ReorderAlertList>
+                {alerts.map((a) => (
+                  <ReorderAlertListItem key={a.id}>
+                    <ReorderAlertItemCard
+                      name={a.name}
+                      amount={a.amount}
+                      basis={a.basis}
+                      auto={a.auto ?? undefined}
+                      date={a.date}
+                    >
+                      <VendorLink expanded={openKey === a.id} onClick={(e) => toggle(a.id, e.currentTarget)} />
+                      {opened && opened.alertId === a.id && openKey !== a.id ? (
+                        <VendorNewWindowNote vendorName={opened.name} url={opened.url} />
+                      ) : null}
+                    </ReorderAlertItemCard>
+                  </ReorderAlertListItem>
+                ))}
+              </ReorderAlertList>
+            )}
+          </div>
+
+          {isAdmin ? (
+            <div className={styles.register}>
+              <VendorRegisterEntry href={VENDORS_PATH} />
+            </div>
+          ) : null}
+        </div>
+      </PageColumn>
 
       <div ref={dockRef} className={styles.dock}>
         {open ? (

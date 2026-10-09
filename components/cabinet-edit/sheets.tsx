@@ -14,6 +14,8 @@ type SheetProps = {
   /** true(기본) = 모바일에서 tab-bar 위쪽 선에 붙는 하단 시트. false = 항상 제자리(갤러리) */
   sheet?: boolean;
   modal?: boolean;
+  /** true = 오른쪽 위 × 닫기 (시안 11-delete · 11-unsaved desktop sheet-close) */
+  closeIcon?: boolean;
 };
 
 type RenameProps = SheetProps & {
@@ -43,6 +45,7 @@ export function CabinetRenameSheet({
   onClose,
   sheet,
   modal,
+  closeIcon,
 }: RenameProps) {
   const [name, setName] = useState(defaultName);
   const formRef = useRef<HTMLFormElement>(null);
@@ -64,7 +67,7 @@ export function CabinetRenameSheet({
   };
 
   return (
-    <ModalCard title="시약장 이름" density="roomy" hideClose onClose={onClose ?? onCancel} sheet={sheet} modal={modal}>
+    <ModalCard title="시약장 이름" density="roomy" hideClose closeIcon={closeIcon} onClose={onClose ?? onCancel} sheet={sheet} modal={modal}>
       <form ref={formRef} className={styles.sheetForm} onSubmit={submit} noValidate>
         <div className={styles.sheetField}>
           <TextInput
@@ -109,7 +112,17 @@ type DeleteProps = SheetProps & {
  * 삭제 확인 카드 (ex-modal-card, 시안 11-delete): "이 시약장을 삭제할까요?" + 안내 + 보조 + "취소" · "삭제".
  * 핑크를 쓰지 않는다 (시약장 삭제는 재고·안전 신호가 아니다).
  */
-export function CabinetDeleteConfirm({ reagentCount = 0, pending = false, error, onCancel, onConfirm, onClose, sheet, modal }: DeleteProps) {
+export function CabinetDeleteConfirm({
+  reagentCount = 0,
+  pending = false,
+  error,
+  onCancel,
+  onConfirm,
+  onClose,
+  sheet,
+  modal,
+  closeIcon,
+}: DeleteProps) {
   const description =
     reagentCount > 0 ? `배치된 시약 ${reagentCount}개는 '${UNASSIGNED_LABEL}'으로 바뀌어요` : "이 시약장에 배치된 시약은 없어요";
   return (
@@ -120,6 +133,7 @@ export function CabinetDeleteConfirm({ reagentCount = 0, pending = false, error,
       caption="시약 정보와 재고는 지워지지 않아요"
       density="roomy"
       hideClose
+      closeIcon={closeIcon}
       onClose={onClose ?? onCancel}
       sheet={sheet}
       modal={modal}
@@ -157,12 +171,13 @@ type UnsavedProps = SheetProps & {
  * 편집 중 시약장 전환·화면 이탈 → ex-modal-card "저장하지 않은 변경이 있어요" + 안내 +
  * 가로 2버튼 button-outline "버리고 이동"(왼쪽) · button-primary "계속 편집"(오른쪽). 핑크·하늘색 없음.
  */
-export function CabinetUnsavedConfirm({ cabinetLabel, onDiscard, onContinue, onClose, sheet, modal }: UnsavedProps) {
+export function CabinetUnsavedConfirm({ cabinetLabel, onDiscard, onContinue, onClose, sheet, modal, closeIcon }: UnsavedProps) {
   return (
     <ModalCard
       title="저장하지 않은 변경이 있어요"
       description={`이동하면 ${cabinetLabel}에서 바꾼 내용이 사라져요`}
       hideClose
+      closeIcon={closeIcon}
       onClose={onClose ?? onContinue}
       sheet={sheet}
       modal={modal}
