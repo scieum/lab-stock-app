@@ -55,7 +55,9 @@ const FILTER_W = frameNode("2-filter-desktop", "list-filter-sheet").width!;
 const PICKER_W = frameNode("3-location-desktop", "location-picker").width!;
 const CAND3_W = frameNode("3-msds-desktop", MSDS_CANDIDATES).width!;
 const BULK_W = frameNode("2-msds-bulk-desktop", MSDS_CANDIDATES).width!;
-const BACK_LABEL = newFrame("4-desktop").find((n) => n.name === "label" && n.path.includes("back-link"))!.text!.characters;
+// drawer-nav 뒤로 = 시안 16-desktop (1.25 부터 4-desktop 은 본문 페이지 — rules desktop_shell.heavy_pages)
+const BACK_LABEL = newFrame("16-desktop").find((n) => n.name === "label" && n.path.includes("back-link"))!.text!.characters;
+const HEAVY = (DESKTOP_SHELL as unknown as { heavy_pages: number[] }).heavy_pages;
 const VIEW_W = devRules.viewports.desktop[0];
 const VIEW_H = devRules.viewports.desktop[1];
 
@@ -156,7 +158,9 @@ test(`[C3][S*] 기대값 원본 (run b): desktop_migrated_screens ${MIGRATED.joi
   expect(OVERLAY, "rules overlay: 모바일 바텀시트는 데스크톱에서 드롭다운·팝오버").toMatch(/드롭다운/);
   expect(OVERLAY).toMatch(/팝오버/);
   for (const w of [FILTER_W, PICKER_W, CAND3_W, BULK_W]) expect(w, "팝오버 폭 < 본문").toBeLessThan(MAIN_W);
-  expect(BACK_LABEL, "4·16 drawer-nav 뒤로").toBe("‹ 시약 상세");
+  expect(BACK_LABEL, "16 drawer-nav 뒤로").toBe("‹ 시약 상세");
+  expect(HEAVY, "rules heavy_pages 에 4 (1.25 — 사용 기록 = 본문 페이지)").toContain(4);
+  expect(devRules.components[DRAWER], "dev-rules detail-drawer 에 4 없음").not.toContain(4);
 });
 
 // =====================================================================
@@ -205,7 +209,12 @@ for (const c of REQ_CASES) {
       if (viewport === "mobile") {
         await expectMobileUnchanged(page, where);
         if (c.screen === 2) expect(await page.locator(sel("reagent-row")).count(), "390 reagent-row ≥ 1").toBeGreaterThan(0);
-        if (c.screen === 3 || c.screen === 4) await expect(page.locator(sel("reagent-detail-card")), "390 reagent-detail-card 1").toHaveCount(1);
+        if (c.screen === 3) await expect(page.locator(sel("reagent-detail-card")), "390 reagent-detail-card 1").toHaveCount(1);
+        // 화면 4 (1.25 4-mobile): 전용 화면 = 담은 시약 카드 목록 (usage-batch-list 1 · ?reagent 의 시약 1행)
+        if (c.screen === 4) {
+          await expect(page.locator(sel("usage-batch-list")), "390 usage-batch-list 1").toHaveCount(1, { timeout: 45_000 });
+          await expect(page.locator(sel("usage-item-row")), "390 담은 시약 1").toHaveCount(1);
+        }
         return;
       }
       await expect(page.locator(sel("nav-pill")), `${where}: nav-pill 0`).toHaveCount(0, { timeout: 45_000 });
@@ -236,7 +245,13 @@ for (const c of REQ_CASES) {
         await expect(page.locator(sel(name)).first(), `${where}: ${name}`).toBeVisible({ timeout: 45_000 });
       }
       for (const m of ["reagent-row", "reagent-detail-card"]) await expect(page.locator(sel(m)), `${where}: 1440 모바일 전용 ${m} 0`).toHaveCount(0);
-      if ([3, 4, 16].includes(c.screen)) await expect(deskTable(page), `${where}: 드로어 뒤 시약 목록 ${TABLE}`).toBeVisible();
+      if ([3, 16].includes(c.screen)) await expect(deskTable(page), `${where}: 드로어 뒤 시약 목록 ${TABLE}`).toBeVisible();
+      if (HEAVY.includes(c.screen)) {
+        // 본문 페이지 (rules heavy_pages): 드로어 0 · 표는 담은 시약 표(usage-batch-list 안) 하나
+        await expect(drawer(page), `${where}: 본문 페이지 = ${DRAWER} 0`).toHaveCount(0);
+        await expect(page.locator(`main ${sel(TABLE)}`), `${where}: ${TABLE} 1 (담은 시약 표)`).toHaveCount(1);
+        await expect(page.locator(`main ${sel("usage-batch-list")} ${sel(TABLE)}`), `${where}: ${TABLE} 는 usage-batch-list 안`).toHaveCount(1);
+      }
     } finally {
       await context.close();
     }
@@ -257,7 +272,7 @@ test(`[C3][S16] /gallery: 요약 있는 상태의 msds-summary 보임 (desktop_r
 type LayoutCase = { screen: number; role: "student" | "admin"; open: (page: Page) => Promise<string> };
 const LAYOUTS: LayoutCase[] = [
   { screen: 3, role: "student", open: async (p) => pathOf(3, (await ownReagent(p))!.id) },
-  { screen: 4, role: "student", open: async (p) => `${routeOf(4)}?reagent=${(await ownReagent(p))!.id}` },
+  // 화면 4 는 1.25 부터 본문 페이지(heavy_pages) — 드로어 배치 대상 아님 (위 REQ_CASES 4 에서 드로어 0 확인)
   { screen: 16, role: "student", open: async (p) => pathOf(16, (await ownReagent(p, true))!.id) },
   { screen: 10, role: "student", open: async (p) => `${routeOf(10)}?id=${(await dbHistory(p, {}))[0].id}` },
   { screen: 9, role: "admin", open: async () => `${routeOf(9)}?form=new` },
@@ -519,7 +534,7 @@ test.describe("일회용 학교 (run b 드로어·팝오버·쪽 번호)", () =>
     }
   });
 
-  test(`[C3][S4] [C3][S16] 일회용 교사 드로어 사이 이동: 3 "사용 기록" → /usage/new?reagent=[id]&(목록 쿼리) · drawer-nav "${BACK_LABEL}" → /reagents/[id]?(쿼리) · 3 "MSDS 보기" → /msds/[id]?(쿼리) · 4·16 × → /reagents?(쿼리) / 390 = 전용 화면`, async ({ browser }, info) => {
+  test(`[C3][S4] [C3][S16] 일회용 교사 드로어·본문 페이지 이동: 3 "사용 기록" → /usage/new?reagent=[id]&(목록 쿼리) = 본문 페이지(드로어 0 · 그 시약 담김, heavy_pages) · 3 "MSDS 보기" → /msds/[id]?(쿼리) · 16 drawer-nav "${BACK_LABEL}" → /reagents/[id]?(쿼리) · 16 × → /reagents?(쿼리) / 390 = 전용 화면`, async ({ browser }, info) => {
     test.setTimeout(420_000);
     const s = await runB(info);
     const query = { filter: "low-stock", q: s.prefix };
@@ -534,7 +549,7 @@ test.describe("일회용 학교 (run b 드로어·팝오버·쪽 번호)", () =>
       }
       const t = await waitDeskList(page);
       await expect(tableRows(t), "재고 부족 + 검색 = 부족 시약 2").toHaveCount(s.low.length);
-      // 3 → 4
+      // 3 → 4 (본문 페이지)
       const r = s.low[0];
       await rowLink(rowNamed(t, r.name)).click();
       await waitDrawer(page);
@@ -543,25 +558,12 @@ test.describe("일회용 학교 (run b 드로어·팝오버·쪽 번호)", () =>
       await usage.click();
       await page.waitForURL((u) => u.pathname === routeOf(4));
       expectAt(page, routeOf(4), { reagent: r.id, ...query }, "4 열림");
-      await waitDrawer(page);
-      await expect(drawerTitle(page)).toHaveText("사용 기록");
-      await expect(drawer(page).locator('[data-name="drawer-title"]'), "캡션 = 시약명").toContainText(r.name);
-      await expect(rowNamed(deskTable(page), r.name), "4 드로어의 시약 = 선택 행").toHaveAttribute("data-selected", "true");
-      await expectDrawerLayout(page, deskTable(page), "화면 4");
-      const back = drawer(page).getByRole("link", { name: BACK_LABEL, exact: true });
-      await expect(back, `drawer-nav "${BACK_LABEL}"`).toHaveCount(1);
-      await expectHref(back, pathOf(3, r.id), query, "4 뒤로");
-      await expectHref(drawerClose(page), routeOf(2), query, "4 ×");
-      await back.click();
-      await page.waitForURL((u) => u.pathname === pathOf(3, r.id));
-      await waitDrawer(page);
-      await expect(drawerTitle(page), "뒤로 → 시약 상세").toHaveText(r.name);
-      // 4 × → 목록
-      await page.goto(`${routeOf(4)}?reagent=${r.id}&filter=low-stock&q=${encodeURIComponent(s.prefix)}`);
-      await waitDrawer(page);
-      await drawerClose(page).click();
-      await page.waitForURL((u) => u.pathname === routeOf(2));
-      expectAt(page, routeOf(2), query, "4 × 뒤");
+      const batch = page.locator(`main ${sel("usage-batch-list")}`);
+      await expect(batch, "4 = 본문 페이지의 담은 시약 목록").toHaveCount(1, { timeout: 45_000 });
+      await expect(drawer(page), "4 = 본문 페이지 (드로어 0)").toHaveCount(0);
+      await expect(batch.locator(sel("usage-item-row")), "그 시약이 담긴 채 시작").toHaveCount(1);
+      await expect(batch.locator(sel("usage-item-row")).first()).toContainText(r.name);
+      await expect(page.locator(`main ${sel(TABLE)}`), "4: 시약 목록 표 없음 (담은 시약 표 1)").toHaveCount(1);
       // 3 → 16 (MSDS 있는 시약 — 목록 쿼리 없이 q 만)
       const q2 = { q: s.msds.name };
       await page.goto(`${pathOf(3, s.msds.id)}?q=${encodeURIComponent(s.msds.name)}`);

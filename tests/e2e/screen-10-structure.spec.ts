@@ -403,6 +403,23 @@ test(`[C1][S${SCREEN}] 학교A 학생 시안과 같은 상태(390 = 목록, 1440
         expect(await countComponent(page, name), `셸 ${name} = 1`).toBe(1);
         continue;
       }
+      // d7 §24 (1.25): class-label · deleted-reagent-tag 는 데이터에 따라 — 시안 개수가 아니라 보이는 기록으로 센다.
+      // 390 = 수업이 있는 행만 class-label(rules class_info.label "있는 것만"), 1440 = 표 1쪽 모든 행의 "수업" 칸 + 열린 드로어의 "수업" 줄.
+      // deleted-reagent-tag = 보관(삭제)된 시약의 행 (+ 열린 상세가 그 기록이면 1)
+      if (name === "class-label" || name === "deleted-reagent-tag") {
+        expect(want, `시안 ${SCREEN}-${viewport} 에 ${name}`).toBeGreaterThan(0);
+        const shownRows = viewport === "desktop" ? snap.flat.slice(0, PAGE_SIZE) : snap.flat;
+        const openRec = detailOpen ? snap.shown[0] : null;
+        const expected =
+          name === "class-label"
+            ? viewport === "desktop"
+              ? shownRows.length + (openRec ? 1 : 0)
+              : shownRows.filter((f) => f.cls !== null).length
+            : shownRows.filter((f) => f.deleted).length + (openRec?.reagent_deleted ? 1 : 0);
+        expect(await countComponent(page, name), `${name} = 보이는 기록 기준 ${expected}`).toBe(expected);
+        checked++;
+        continue;
+      }
       if (want === 0) {
         if (widthZero.includes(name)) {
           expect(await countComponent(page, name), `${name} (폭 ${viewport} 0 — 시안 ${SCREEN}-${viewport} 에 없음)`).toBe(0);

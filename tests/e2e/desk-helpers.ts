@@ -35,7 +35,8 @@ export const PAGE_SIZE = newFrame("2-desktop").filter((n) => n.name === ROW && n
  * 데스크톱에서 시약 목록(화면 2 data-table) 위 오른쪽 드로어로 여는 화면 (d7 §23 run b 세부: 3 · 16 · 4).
  * 이 화면들의 본문 = 드로어 안 (뒤 목록은 화면 2).
  */
-export const REAGENT_DRAWER_SCREENS = [3, 4, 16];
+// 1.25(d7 §24): 화면 4 는 본문 페이지(rules desktop_shell.heavy_pages) — dev-rules components detail-drawer 에 든 화면만 남긴다.
+export const REAGENT_DRAWER_SCREENS = [3, 4, 16].filter((s) => devRules.components[DRAWER].includes(s));
 
 /** 프로젝트 폭이 데스크톱인가 (dev-rules viewports.desktop 폭) */
 export const isDeskPage = (page: Page): boolean => (page.viewportSize()?.width ?? 0) >= devRules.viewports.desktop[0];

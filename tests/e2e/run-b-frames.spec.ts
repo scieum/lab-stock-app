@@ -1,4 +1,4 @@
-// 데스크톱 재구성 run b — 화면 2·3·4·8·9·10·16 을 새 프레임(design/frames, dev-rules 1.12 desktop_migrated_screens)과 대조 (C1).
+// 데스크톱 재구성 run b — 화면 2·3·4(1.25 부터 본문 페이지)·8·9·10·16 을 새 프레임(design/frames, dev-rules 1.12 desktop_migrated_screens)과 대조 (C1).
 // 기준: harness/d7-data.md §23 "2026-10-09 run b 세부", 새 프레임 {N}-desktop · {N}-mobile 과 상태 프레임 2-filter-empty · 4-past-date · 16-*.
 // - 1440: 본문 제목·건수 줄 · data-table 머리행 열 이름 · 툴바 문구 · 드로어(제목 · 뒤로 · 정보/입력 줄 라벨 순서 · 아래 버튼 글자)
 // - 390: 새 모바일 프레임의 화면 고유 문구 (모바일은 변경 없음 — 구조 검사는 각 화면 spec)
@@ -27,7 +27,8 @@ function frameHeads(f: string, tableIndex = 0): string[] {
   const out: string[][] = [];
   for (const n of newFrame(f)) {
     if (n.name === TABLE) out.push([]);
-    else if (n.text && n.name === "label" && n.path.includes("head-cell") && out.length) out[out.length - 1].push(n.text.characters);
+    // 머리 칸 = head-cell(2·8·9·10) 또는 table-head 안 ex-data-table-cell(4-desktop, 1.25)
+    else if (n.text && n.name === "label" && (n.path.includes("head-cell") || n.path.includes("table-head")) && out.length) out[out.length - 1].push(n.text.characters);
   }
   return out[tableIndex] ?? [];
 }
@@ -170,7 +171,10 @@ test(`[C1][S3] 학교A 교사 시약 상세 새 프레임 대조: 1440 = 3-deskt
   }
 });
 
-test(`[C1][S4] 학교A 학생 사용 기록 입력 새 프레임 대조: 1440 = 4-desktop 드로어(뒤로 "${one("4-desktop", (n) => n.name === "label" && n.path.includes("back-link"), "뒤로")}" · 제목 "${one("4-desktop", (n) => n.name === "title" && n.path.includes("drawer-title"), "제목")}" · 캡션 "{시약명} · 현재 {재고}" · 입력 줄 ${drawerLabels("4-desktop").join("→")} · "필수" 3 · 메모 안내 · 아래 "${actionLabels("4-desktop").join("")}") · 지난 날짜 = 4-past-date(past-date-note 가 저장 버튼 위) / 390 = 4-mobile 라벨`, async ({ browser }, info) => {
+// 화면 4 는 디자인 1.25(run 20261010-1340)부터 데스크톱 본문 페이지(rules desktop_shell.heavy_pages — run b 의 드로어에서 바뀜).
+// 새 4-desktop · 4-past-date-desktop · 4-mobile 대조 (자세한 흐름은 screen-4-batch-*.spec.ts).
+const F4_FIELDS = (f: string) => txt(f, (n) => n.name === "field-label" && !n.path.includes("reagent-picker"));
+test(`[C1][S4] 학교A 학생 사용 기록 새 프레임 대조: 1440 = 4-desktop 본문 페이지(제목 "${one("4-desktop", (n) => n.name === "title" && n.path.includes("page-title"), "제목")}" · 캡션 "${one("4-desktop", (n) => n.name === "caption" && n.path.includes("page-title"), "캡션")}" · 표 머리 ${frameHeads("4-desktop").join("·")} · 공통 칸 ${F4_FIELDS("4-desktop").join("→")} · 저장 바 "사용 기록 저장 · N개") · 지난 날짜 = 4-past-date(past-date-note 가 저장 바 안 버튼 앞) / 390 = 4-mobile 라벨`, async ({ browser }, info) => {
   test.setTimeout(150_000);
   const { context, page, viewport } = await openAs(browser, info, "student", 13);
   try {
@@ -178,35 +182,44 @@ test(`[C1][S4] 학교A 학생 사용 기록 입력 새 프레임 대조: 1440 = 
     await page.goto(`${routeOf(4)}?reagent=${r.id}`);
     await settle(page, viewport);
     const f = `4-${viewport}`;
+    const saveExample = one(f, (n) => n.name === "label" && n.path.includes("save-bar") && n.path.includes("button-primary"), "저장");
+    const saveLabel = saveExample.replace(/\d+개$/, "1개");
     if (viewport === "mobile") {
-      const labels = txt(f, (n) => n.name === "field-label" && !n.path.includes("reagent-detail-card"));
-      for (const l of labels) await expect(page.locator("main").getByText(l, { exact: true }).first(), `390 라벨 "${l}"`).toBeVisible({ timeout: 45_000 });
-      await expect(page.locator("main").getByRole("button", { name: one(f, (n) => n.name === "label" && n.path.includes("button-primary"), "저장") })).toHaveCount(1);
+      for (const l of F4_FIELDS(f)) await expect(page.locator("main").getByText(l, { exact: true }).first(), `390 라벨 "${l}"`).toBeVisible({ timeout: 45_000 });
+      await expect(page.getByRole("button", { name: saveLabel, exact: true }), `저장 "${saveLabel}"`).toHaveCount(1);
+      await expect(drawer(page), "390 드로어 0").toHaveCount(0);
       return;
     }
-    await waitDrawer(page);
-    const back = drawer(page).locator('[data-name="back-link"]');
-    await expect(back, "뒤로 글자 = 시안").toHaveText(one(f, (n) => n.name === "label" && n.path.includes("back-link"), "뒤로"));
-    await expect(drawerTitle(page)).toHaveText(one(f, (n) => n.name === "title" && n.path.includes("drawer-title"), "제목"));
-    const cap = one(f, (n) => n.name === "caption" && n.path.includes("drawer-title"), "캡션");
-    expect(cap, "시안 캡션 틀").toMatch(/^.+ · 현재 [\d,]+ \S+$/);
-    await expect(drawer(page).locator('[data-name="drawer-title"]')).toContainText(new RegExp(`${esc(r.name)} · 현재 [\\d.,]+ ?\\S+`));
-    expect(await shownDrawerLabels(page), "입력 줄 라벨 순서 = 시안 4-desktop").toEqual(drawerLabels(f));
-    const required = newFrame(f).filter((n) => n.name === "required").length;
-    await expect(drawer(page).locator('[data-name="form-row"]').getByText("필수", { exact: true }), `"필수" = 시안 ${required}`).toHaveCount(required);
-    const memoPh = one(f, (n) => n.name === "placeholder" && n.path.includes("form-row"), "메모 안내");
-    await expect(drawer(page).getByPlaceholder(memoPh), `메모 안내 "${memoPh}"`).toHaveCount(1);
-    expect(await shownActions(page), "drawer-actions = 시안").toEqual(actionLabels(f));
-    // 4-past-date: 지난 날짜 → past-date-note 가 drawer-actions 안 저장 버튼 위 (시안 4-past-date-desktop)
+    const head = page.locator('main [data-name="page-head"]');
+    await expect(head.getByRole("heading", { level: 1 }), "제목 = 시안").toHaveText(one(f, (n) => n.name === "title" && n.path.includes("page-title"), "제목"), { timeout: 45_000 });
+    await expect(head, "캡션 = 시안").toContainText(one(f, (n) => n.name === "caption" && n.path.includes("page-title"), "캡션"));
+    await expect(drawer(page), "본문 페이지 = 드로어 0").toHaveCount(0);
+    const table = page.locator(`main ${sel("usage-batch-list")} ${sel(TABLE)}`);
+    await expect(table, "담은 시약 표 1").toHaveCount(1);
+    expect(await heads(table), "표 머리 = 시안 4-desktop").toEqual(frameHeads(f));
+    // 공통 칸 순서: 사용일 → 수업 → 메모 (위에서 아래)
+    const ys: number[] = [];
+    for (const l of F4_FIELDS(f)) {
+      const lab = page.locator("main").getByText(l, { exact: true }).first();
+      await expect(lab, `라벨 "${l}"`).toBeVisible();
+      ys.push((await lab.boundingBox())!.y);
+    }
+    expect(ys, `공통 칸 순서 ${F4_FIELDS(f).join("→")}`).toEqual([...ys].sort((a, b) => a - b));
+    const bar = page.locator('main [data-name="bottom-bar"]');
+    await expect(bar.getByRole("button", { name: saveLabel, exact: true }), `저장 바 "${saveLabel}"`).toHaveCount(1);
+    // 4-past-date: 지난 날짜 → past-date-note 가 저장 바 안, 저장 버튼 앞(왼쪽)
     const pd = newFrame("4-past-date-desktop");
-    expect(pd.some((n) => n.name === "past-date-note" && n.path.includes("drawer-actions")), "시안: past-date-note 는 drawer-actions 안").toBe(true);
+    const pdIdx = pd.findIndex((n) => n.name === "past-date-note");
+    const btnIdx = pd.findIndex((n) => n.name === "button-primary" && n.path.includes("save-bar"));
+    expect(pd[pdIdx]?.path.includes("save-bar"), "시안: past-date-note 는 save-bar 안").toBe(true);
+    expect(pdIdx, "시안: past-date-note 가 버튼 앞").toBeLessThan(btnIdx);
     const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(Date.now() - 3 * 86_400_000));
-    await drawer(page).locator(`${sel("usage-date")} input`).fill(day);
-    const note = drawer(page).locator(`[data-name="drawer-actions"] ${sel("past-date-note")}`);
-    await expect(note, "past-date-note (drawer-actions 안)").toHaveCount(1);
+    await page.locator(`main ${sel("usage-date")} input`).fill(day);
+    const note = bar.locator(sel("past-date-note"));
+    await expect(note, "past-date-note (저장 바 안)").toHaveCount(1);
     const nb = (await note.boundingBox())!;
-    const sb = (await drawer(page).locator(`[data-name="drawer-actions"] ${sel("button-primary")}`).boundingBox())!;
-    expect(nb.y + nb.height, "past-date-note 는 저장 버튼 위").toBeLessThanOrEqual(sb.y + 1);
+    const sb = (await bar.locator(sel("button-primary")).boundingBox())!;
+    expect(nb.x + nb.width, "past-date-note 는 저장 버튼 왼쪽").toBeLessThanOrEqual(sb.x + 1);
   } finally {
     await context.close();
   }

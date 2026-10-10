@@ -49,7 +49,15 @@ export const SCOPE_MINE = "내 기록";
 export const SEARCH_PLACEHOLDER = "시약명 검색";
 export const EMPTY_TITLE = "아직 사용 기록이 없어요";
 /** 상세 라벨 (10-desktop 시안 ex-modal-card field-label 순서 = d7 §15) */
-export const DETAIL_LABELS = ["사용자", "사용일", "기록한 날", "메모"] as const;
+// 2026-10-10 (d7 §24 · rules class_info.label): 상세에 "수업" 줄 — 사용일 다음 (새 프레임 10-desktop 드로어 info-row 순서와 같은 자리)
+export const DETAIL_LABELS = ["사용자", "사용일", "수업", "기록한 날", "메모"] as const;
+/** d7 §24 class_info: 표기 "{학년}학년 {반}반 · {수업명}" — 있는 것만. 데스크톱 표·드로어는 없으면 "—"(rules class_info.label), 모바일 상세는 메모와 같은 "-" */
+export const CLASS_NONE_DESK = "—";
+export const classText = (g: number | null, n: number | null, subject: string | null): string =>
+  [[g ? `${g}학년` : "", n ? `${n}반` : ""].filter(Boolean).join(" "), subject ?? ""].filter(Boolean).join(" · ");
+/** rules reagent_delete.history "deleted-reagent-tag '삭제된 시약'" */
+export const DELETED_TAG = "deleted-reagent-tag";
+export const CLASS_LABEL = "class-label";
 /** d7 §15 기록일 캡션 "10월 6일에 기록" */
 export const CAPTION_RE = /^(\d{1,2})월 (\d{1,2})일에 기록$/;
 export const recordedCaption = (ymd: string) => `${Number(ymd.slice(5, 7))}월 ${Number(ymd.slice(8, 10))}일에 기록`;
@@ -77,7 +85,7 @@ const DB_LIMIT = 500;
 export const exact = (s: string) => new RegExp(`^\\s*${s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`);
 export const squash = (s: string) => s.replace(/[\s,]/g, "");
 
-export type Filter = { mine?: boolean; period?: PeriodValue; q?: string };
+export type Filter = { mine?: boolean; period?: PeriodValue; q?: string; grade?: number; cls?: number };
 
 /** routes["10"] + ?mine · ?period · ?q */
 export function historyPath(f: Filter & { raw?: Record<string, string> } = {}): string {
@@ -85,6 +93,8 @@ export function historyPath(f: Filter & { raw?: Record<string, string> } = {}): 
   if (f.mine) p.set("mine", "1");
   if (f.period && f.period !== DEFAULT_PERIOD) p.set("period", f.period);
   if (f.q) p.set("q", f.q);
+  if (f.grade) p.set("grade", String(f.grade));
+  if (f.grade && f.cls) p.set("cls", String(f.cls));
   for (const [k, v] of Object.entries(f.raw ?? {})) p.set(k, v);
   const s = p.toString();
   return s ? `${routeOf(SCREEN)}?${s}` : routeOf(SCREEN);
@@ -163,18 +173,30 @@ export async function switchScope(page: Page, label: string): Promise<void> {
 export const queryParam = (page: Page, key: string) => new URL(page.url()).searchParams.get(key);
 
 // ---------- 목록 읽기 ----------
-export type Entry = { kind: "group"; label: string } | { kind: "row"; texts: string[] };
+/** 기록 행: 글자 조각(삭제된 시약 태그 · class-label 제외) + 수업 표기(없으면 null — 1440 은 칸 글자 "—") + 삭제된 시약 태그 여부 */
+export type Entry = { kind: "group"; label: string } | { kind: "row"; texts: string[]; cls: string | null; deleted: boolean };
 /** 사용일 묶음 헤더 "10월 7일 · 오늘" · "10월 6일" · "2025년 12월 3일" (시안 10 group-label) */
 export const GROUP_LABEL = /^(?:\d{4}년 )?\d{1,2}월 \d{1,2}일(?: · 오늘)?$/;
 
-/** 1440 표 한 쪽: 묶음 머리 행 + 기록 행(칸: 사용일 · 시약명(+캡션) · 사용자 · 사용량 · 기록 시각) */
-type DeskCells = { day: string; name: string; caption: string | null; user: string; amount: string; time: string };
+/** 1440 표 한 쪽: 묶음 머리 행 + 기록 행(칸: 사용일 · 시약명(+캡션) · 수업 · 사용자 · 사용량 · 기록 시각 — 열은 머리행 이름으로 찾는다, 시안 10-desktop 1.25) */
+type DeskCells = { day: string; name: string; caption: string | null; cls: string; deleted: boolean; user: string; amount: string; time: string };
 type DeskEntry = { kind: "group"; label: string } | { kind: "row"; cells: DeskCells };
+/** 시안 10-desktop 머리행 열 이름 (사용일 · 시약명 · 수업 · 사용자 · 사용량 · 기록 시각) */
+export const DESK_HEADS = newFrame("10-desktop")
+  .filter((n) => n.name === "label" && n.path.includes("head-cell") && n.text)
+  .map((n) => n.text!.characters);
 async function readDeskPage(page: Page): Promise<DeskEntry[]> {
   return page.locator(`main ${sel("data-table")}`).first().evaluate(
     (table, a) => {
-      const out: ({ kind: "group"; label: string } | { kind: "row"; cells: { day: string; name: string; caption: string | null; user: string; amount: string; time: string } })[] = [];
+      const out: ({ kind: "group"; label: string } | { kind: "row"; cells: DeskCells })[] = [];
       const clean = (s: string | null | undefined) => (s ?? "").replace(/\s+/g, " ").trim();
+      const heads = [...table.querySelectorAll("thead th")].map((th) => clean((th as HTMLElement).innerText));
+      const col = (label: string) => {
+        const i = heads.findIndex((h) => h === label || h.startsWith(`${label} `));
+        if (i < 0) throw new Error(`표 머리에 '${label}' 열 없음 (${JSON.stringify(heads)})`);
+        return i;
+      };
+      const [cDay, cName, cCls, cUser, cAmount, cTime] = a.heads.map(col);
       for (const tr of table.querySelectorAll("tbody tr")) {
         if (tr.getAttribute("data-name") === "date-group-row") {
           out.push({ kind: "group", label: clean((tr as HTMLElement).innerText) });
@@ -182,28 +204,31 @@ async function readDeskPage(page: Page): Promise<DeskEntry[]> {
         }
         if (tr.getAttribute("data-component") !== a.row) continue;
         const td = [...tr.querySelectorAll("td")];
-        const nameCell = td[1];
+        const nameCell = td[cName];
         const parts: string[] = [];
         const w = document.createTreeWalker(nameCell, NodeFilter.SHOW_TEXT);
         for (let n = w.nextNode(); n; n = w.nextNode()) {
+          if (n.parentElement?.closest(`[data-component="${a.tag}"]`)) continue;
           const t = clean(n.textContent);
           if (t) parts.push(t);
         }
         out.push({
           kind: "row",
           cells: {
-            day: clean((td[0] as HTMLElement)?.innerText),
+            day: clean((td[cDay] as HTMLElement)?.innerText),
             name: parts[0] ?? "",
             caption: parts.length > 1 ? parts.slice(1).join(" ") : null,
-            user: clean((td[2] as HTMLElement)?.innerText),
-            amount: clean((td[3] as HTMLElement)?.innerText),
-            time: clean((td[4] as HTMLElement)?.innerText),
+            cls: clean((td[cCls] as HTMLElement)?.innerText),
+            deleted: nameCell.querySelectorAll(`[data-component="${a.tag}"]`).length > 0,
+            user: clean((td[cUser] as HTMLElement)?.innerText),
+            amount: clean((td[cAmount] as HTMLElement)?.innerText),
+            time: clean((td[cTime] as HTMLElement)?.innerText),
           },
         });
       }
       return out;
     },
-    { row: ROW },
+    { row: ROW, tag: DELETED_TAG, heads: DESK_HEADS },
   );
 }
 
@@ -244,6 +269,8 @@ async function readDeskList(page: Page): Promise<Entry[]> {
       : {
           kind: "row" as const,
           texts: [e.cells.name, e.cells.caption ? e.cells.user : `${e.cells.user} · ${e.cells.time}`, ...(e.cells.caption ? [e.cells.caption] : []), e.cells.amount],
+          cls: e.cells.cls,
+          deleted: e.cells.deleted,
         },
   );
 }
@@ -253,8 +280,8 @@ export async function readList(page: Page): Promise<Entry[]> {
   if (isDeskPage(page)) return readDeskList(page);
   return page.locator("main").evaluate(
     (main, a) => {
-      const out: ({ kind: "group"; label: string } | { kind: "row"; texts: string[] })[] = [];
-      const seen = new Map<Element, { kind: "row"; texts: string[] }>();
+      const out: ({ kind: "group"; label: string } | { kind: "row"; texts: string[]; cls: string | null; deleted: boolean })[] = [];
+      const seen = new Map<Element, { kind: "row"; texts: string[]; cls: string | null; deleted: boolean }>();
       const re = new RegExp(a.re);
       const walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT);
       for (let n = walker.nextNode(); n; n = walker.nextNode()) {
@@ -266,10 +293,13 @@ export async function readList(page: Page): Promise<Entry[]> {
         if (row) {
           let e = seen.get(row);
           if (!e) {
-            e = { kind: "row", texts: [] };
+            const label = row.querySelector(a.cls);
+            e = { kind: "row", texts: [], cls: label ? (label.textContent ?? "").replace(/\s+/g, " ").trim() : null, deleted: row.querySelector(a.tag) !== null };
             seen.set(row, e);
             out.push(e);
           }
+          // 삭제된 시약 태그 · 수업 표기는 따로 (cls · deleted)
+          if (parent.closest(`${a.cls}, ${a.tag}`)) continue;
           e.texts.push(t);
         } else if (re.test(t) && !parent.closest(a.modal)) {
           out.push({ kind: "group", label: t });
@@ -277,7 +307,7 @@ export async function readList(page: Page): Promise<Entry[]> {
       }
       return out;
     },
-    { row: sel(ROW), modal: sel(MODAL), re: GROUP_LABEL.source },
+    { row: sel(ROW), modal: sel(MODAL), re: GROUP_LABEL.source, cls: sel(CLASS_LABEL), tag: sel(DELETED_TAG) },
   );
 }
 
@@ -295,6 +325,11 @@ export type HistoryRow = {
   msds_url: string | null;
   user_name: string;
   is_mine: boolean;
+  /** d7 §24 */
+  reagent_deleted: boolean;
+  class_grade: number | null;
+  class_no: number | null;
+  class_subject: string | null;
 };
 
 /** now 에서 달 수만큼 앞 (기간 필터의 시작 시각) */
@@ -316,13 +351,16 @@ export function sinceOf(period: PeriodValue, now: Date = new Date()): string | n
  */
 export async function dbHistory(page: Page, f: Filter = {}): Promise<HistoryRow[]> {
   const { client } = await browserClient(page);
-  const { data, error } = await client.rpc("usage_history", {
+  // d7 §24: 화면 10 조회 = usage_records (usage_history + reagent_deleted · 수업 3열 · 반 필터)
+  const { data, error } = await client.rpc("usage_records", {
     p_only_mine: f.mine === true,
     p_since: sinceOf(f.period ?? DEFAULT_PERIOD),
     p_query: f.q ?? null,
     p_limit: DB_LIMIT,
+    p_class_grade: f.grade ?? null,
+    p_class_no: f.grade && f.cls ? f.cls : null,
   });
-  expect(error, `자기 세션 usage_history 조회: ${error?.message}`).toBeNull();
+  expect(error, `자기 세션 usage_records 조회: ${error?.message}`).toBeNull();
   const list = ((data ?? []) as Record<string, unknown>[]).map((r) => ({ ...(r as unknown as HistoryRow), amount: Number(r.amount) }));
   // 사용일 최신순, 같은 날은 기록 시각 최신순 (d7 §15) 인지 직접 확인
   for (let i = 1; i < list.length; i++) {
@@ -391,11 +429,12 @@ export const captionOf = (r: Pick<HistoryRow, "used_on" | "used_at">): string | 
 export const amountText = (r: Pick<HistoryRow, "amount" | "unit">) => squash(`${String(r.amount)}${r.unit}`);
 
 /** 화면 한 행: 묶음 · 시약명 · 사용자 · (같은 날이면) 기록 시각 · (다른 날이면) 캡션 · 사용량 */
-type Flat = { group: string; name: string; user: string; time: string | null; caption: string | null; amount: string };
+type Flat = { group: string; name: string; user: string; time: string | null; caption: string | null; amount: string; cls: string | null; deleted: boolean };
 
 /** DB 행 → 화면에 보여야 하는 값 (묶음 = 사용일, 같은 날이면 사용자 옆 기록 시각, 다른 날이면 캡션) */
-function wantOf(r: HistoryRow, today: string): Flat {
+function wantOf(r: HistoryRow, today: string, desk: boolean): Flat {
   const cap = captionOf(r);
+  const cls = classText(r.class_grade, r.class_no, r.class_subject);
   return {
     group: groupLabel(r.used_on, today),
     name: r.reagent_name,
@@ -403,6 +442,9 @@ function wantOf(r: HistoryRow, today: string): Flat {
     time: cap ? null : recordedTime(r.used_at),
     caption: cap,
     amount: amountText(r),
+    // 모바일 행 = 있는 것만(없으면 class-label 없음), 1440 표 "수업" 칸 = 없으면 "—"
+    cls: cls || (desk ? CLASS_NONE_DESK : null),
+    deleted: r.reagent_deleted === true,
   };
 }
 
@@ -437,6 +479,8 @@ export function flatten(entries: Entry[]): Flat[] {
       time: sub ? sub[2] : null,
       caption: hasCaption ? e.texts[2] : null,
       amount: squash(e.texts.slice(hasCaption ? 3 : 2).join("")),
+      cls: e.cls,
+      deleted: e.deleted,
     });
   }
   // "· 오늘" 묶음은 있으면 맨 위 하나
@@ -456,9 +500,9 @@ export type Snapshot = { db: HistoryRow[]; shown: HistoryRow[]; flat: Flat[] };
  * DB 목록 맨 앞에서 건너뛴다 — 건너뛴 행은 모두 t0 이후에 생긴 것이어야 한다.
  * 맞지 않으면 null (호출부가 다시 읽거나 실패 처리).
  */
-function matchWindow(flat: Flat[], db: HistoryRow[], t0: number): { offset: number } | { diff: string } {
+function matchWindow(flat: Flat[], db: HistoryRow[], t0: number, desk: boolean): { offset: number } | { diff: string } {
   const today = todayKst();
-  const want = db.map((r) => wantOf(r, today));
+  const want = db.map((r) => wantOf(r, today, desk));
   const SKEW_MS = 30_000;
   for (let k = 0; k <= db.length; k++) {
     if (k > 0 && Date.parse(db[k - 1].used_at) < t0 - SKEW_MS) break;
@@ -485,7 +529,7 @@ export async function expectListMatchesDb(page: Page, f: Filter, t0: number): Pr
     const entries = await readList(page);
     const flat = flatten(entries);
     const db = await dbHistory(page, f);
-    const m = matchWindow(flat, db, t0);
+    const m = matchWindow(flat, db, t0, isDeskPage(page));
     if ("diff" in m) {
       last = m.diff;
       throw new Error(m.diff);
@@ -606,7 +650,17 @@ export async function expectDetail(page: Page, r: HistoryRow): Promise<void> {
     if (!cap) expect(caps, "기록한 날 = 사용일이면 캡션 없음").toEqual([]);
     else for (const c of caps) expect(c, "상세 캡션 = 기록한 날").toBe(cap);
     expect(d.fields["메모"], "상세 메모").toBe(memoText(r.memo));
+    // d7 §24 수업: 있는 것만 "{학년}학년 {반}반 · {수업명}", 없으면 1440 "—"(rules class_info.label) · 390 "-"(메모와 같은 표기)
+    expect(d.fields["수업"], "상세 수업").toBe(classText(r.class_grade, r.class_no, r.class_subject) || (desk ? CLASS_NONE_DESK : MEMO_NONE));
   }).toPass({ timeout: 10_000 });
+  if (r.reagent_deleted) {
+    // d7 §24 · rules reagent_delete.history: 보관(삭제)된 시약 = 태그 · 시약 상세·MSDS 로 가는 링크 없음
+    await expect(modal(page).locator(sel(MSDS)), "삭제된 시약: msds-entry 0").toHaveCount(0);
+    await expect(modal(page).locator(sel(DELETED_TAG)), "삭제된 시약 태그").toHaveCount(1);
+    await expect(modal(page).locator('a[href*="/reagents/"], a[href*="/msds/"]'), "삭제된 시약: 시약·MSDS 링크 0").toHaveCount(0);
+    await expect(closeButton(page), `button-outline "${CLOSE_LABEL}"`).toHaveCount(1);
+    return;
+  }
   const entry = modal(page).locator(sel(MSDS));
   await expect(entry, `상세 안 ${MSDS} 1개`).toHaveCount(1);
   await expect(entry).toBeVisible();

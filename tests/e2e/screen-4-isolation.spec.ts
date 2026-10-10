@@ -1,8 +1,8 @@
-// 화면 4 (사용 기록 입력) 학교 격리 N1-ui
+// 화면 4 (사용 기록 — 1.25 여러 시약, d7 §24) 학교 격리 N1-ui
 //  - 자기 학교 시약(?reagent): 학교명 종류 = rules.json never.N1.distinct_school_names, 자기 학교명만, 다른 학교명·다른 학교 시약명 미노출
 //  - 다른 학교 시약 id 로 직접 접근: 응답 404, 응답 본문(HTML·RSC 포함)과 화면에 그 시약명·학교명 없음 (학교 A ↔ 학교 B 양방향)
 //  - 없는 id · 형식이 틀린 id: 다른 학교 id 와 같은 상태 코드·같은 화면 글자 (존재 여부 비노출)
-//  - ?reagent 없이: 시약 선택 목록 = 자기 세션(RLS)으로 읽은 자기 학교 시약 전부, 다른 학교 시약 없음
+//  - ?reagent 없이: 시약 고르기(reagent-picker — 모바일 바텀시트 · 데스크톱 드롭다운) = 자기 세션(RLS)으로 읽은 자기 학교 시약 전부, 다른 학교 시약 없음
 // 다른 학교 시약이 실제로 있다는 양성 대조는 그 학교 계정의 브라우저 세션(RLS)으로 확인한다. service role 미사용.
 import { randomUUID } from "node:crypto";
 import { test, expect, type Page } from "@playwright/test";
@@ -10,7 +10,7 @@ import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
 import { PROFILE_ROLE, browserClient, browserSession, rules, seedRows } from "./screen-helpers";
 import { seedReagents, seedSchoolOf } from "./screen-3-helpers";
-import { SCREEN, dbStock, usagePath, waitUsage, reagentHead } from "./screen-4-helpers";
+import { SCREEN, dbStock, itemNamed, items, list as batchList, openPicker, picker, pickerNames, usagePath, waitUsage } from "./screen-4-helpers";
 
 const N1 = rules.never.N1;
 const ROLES: Role[] = [...SCHOOL_A_ROLES, "schoolB"];
@@ -48,11 +48,11 @@ for (const role of ROLES) {
 
       const { context, page } = await openAs(browser, info, role, SCREEN, usagePath(withReagent ? own[0].id : undefined));
       try {
-        await waitUsage(page, withReagent);
+        await waitUsage(page);
         const me = await browserSession(page);
         expect(me.role, "테스트 계정 역할").toBe(PROFILE_ROLE[role]);
         expect(me.schoolName, "테스트 계정 학교 = seed 학교").toBe(school.name);
-        if (withReagent) await expect(reagentHead(page).first()).toContainText(own[0].name);
+        if (withReagent) await expect(itemNamed(page, own[0].name), "담은 시약 = ?reagent 의 시약").toHaveCount(1);
 
         const text = await page.locator("body").innerText();
         checkSchoolNames(text, me.schoolName, schools.filter((s) => s.id !== school.id).map((s) => s.name));
@@ -69,7 +69,7 @@ for (const role of ROLES) {
 
 // ---------- ?reagent 없이: 선택 목록 = 자기 학교 시약만 ----------
 for (const role of ROLES) {
-  test(`[N1-ui][S${SCREEN}] ${ROLE_LABEL[role]} ?reagent 없이 진입: 시약 선택 목록 = 자기 학교 시약(RLS) 전부 · 다른 학교 시약 없음`, async ({ browser }, info) => {
+  test(`[N1-ui][S${SCREEN}] ${ROLE_LABEL[role]} ?reagent 없이 진입: 시약 고르기(reagent-picker) 목록 = 자기 학교 시약(RLS) 전부 · 다른 학교 시약 없음`, async ({ browser }, info) => {
     test.setTimeout(120_000);
     const school = seedSchoolOf(role);
     const all = seedReagents();
@@ -80,10 +80,10 @@ for (const role of ROLES) {
     const { context, page, response } = await openAs(browser, info, role, SCREEN, usagePath());
     try {
       expect(response?.status(), "?reagent 없이 진입 응답").toBe(200);
-      await waitUsage(page, false);
+      await waitUsage(page);
       const me = await browserSession(page);
       expect(me.schoolName, "테스트 계정 학교 = seed 학교").toBe(school.name);
-      expect(await reagentHead(page).count(), "시약 미지정이면 시약 카드 없음").toBe(0);
+      expect(await items(page).count(), "시약 미지정이면 빈 채 시작").toBe(0);
 
       // 자기 세션(RLS)으로 읽은 자기 학교 시약명 (양성 대조: seed 자기 학교 시약이 모두 포함)
       // 자기 세션(RLS)으로 읽은 자기 학교 시약명 (양성 대조: seed 자기 학교 시약이 모두 포함)
@@ -94,14 +94,10 @@ for (const role of ROLES) {
         for (const r of data ?? []) expect(r.school_id, "RLS 로 자기 학교 시약만").toBe(school.id);
         return (data ?? []).map((r) => r.name as string).sort();
       };
-      const box = page.locator('main button[aria-haspopup="listbox"]').first();
-      const list = page.locator('main [role="listbox"]');
+      const list = picker(page);
       const readOptions = async (): Promise<string[]> => {
-        await expect(async () => {
-          if ((await box.getAttribute("aria-expanded")) !== "true") await box.click();
-          await expect(list).toBeVisible({ timeout: 1_000 });
-        }).toPass({ timeout: 15_000 });
-        return (await list.locator('[role="option"]').allInnerTexts()).map((t) => t.trim()).sort();
+        await openPicker(page);
+        return (await pickerNames(page)).sort();
       };
 
       // 같은 실행의 R-db 테스트가 임시 시약을 넣었다 지우므로, 화면을 읽기 전·후 DB 가 같을 때의 짝으로 비교한다
@@ -109,14 +105,14 @@ for (const role of ROLES) {
       for (let attempt = 0; attempt < 5 && !pair; attempt++) {
         const before = await readDb();
         await page.goto(usagePath());
-        await waitUsage(page, false);
+        await waitUsage(page);
         const options = await readOptions();
         const after = await readDb();
         if (JSON.stringify(before) === JSON.stringify(after)) pair = { db: after, options };
       }
       expect(pair, "시약 목록이 계속 바뀌어 화면과 비교할 스냅샷을 얻지 못함").not.toBeNull();
       for (const n of ownSeed) expect(pair!.db, `자기 학교 seed 시약 ${n}`).toContain(n);
-      expect(pair!.options, "선택 목록 = 자기 학교 시약 전부").toEqual(pair!.db);
+      expect(pair!.options, "고르기 목록 = 자기 학교 시약 전부 (RLS — 보관 시약 제외)").toEqual(pair!.db);
       const listText = await list.innerText();
       for (const n of foreign) {
         if (ownSeed.some((o) => o.includes(n))) continue;
@@ -151,8 +147,8 @@ for (const role of ROLES) {
     const o = await openAs(browser, info, other, SCREEN, usagePath(target.id));
     try {
       expect(o.response?.status(), `${ROLE_LABEL[other]} 자기 시약 사용 기록 응답`).toBe(200);
-      await waitUsage(o.page, true);
-      await expect(reagentHead(o.page).first()).toContainText(target.name);
+      await waitUsage(o.page);
+      await expect(itemNamed(o.page, target.name), "양성 대조: 그 학교 계정에는 담긴 채 열림").toHaveCount(1);
       expect(await dbStock(o.page, target.id), `${ROLE_LABEL[other]} 세션으로 ${target.name} 읽힘`).not.toBeNull();
     } finally {
       await o.context.close();
@@ -169,8 +165,8 @@ for (const role of ROLES) {
       expect(response!.status(), "다른 학교 시약 id → 404").toBe(404);
       const html = await response!.text();
       const shownForeign = await bodyText(page);
-      expect(await reagentHead(page).count(), "다른 학교 시약 카드 없음").toBe(0);
-      expect(await page.locator('main input[name="amount"]').count(), "다른 학교 시약 사용량 입력 없음").toBe(0);
+      expect(await batchList(page).count(), "다른 학교 시약 → 사용 기록 화면 없음").toBe(0);
+      expect(await items(page).count(), "다른 학교 시약 행 없음").toBe(0);
       for (const r of foreign) {
         if (ownNames.some((n) => n.includes(r.name))) continue;
         expect(html, `응답 본문에 다른 학교 시약명 ${r.name}`).not.toContain(r.name);

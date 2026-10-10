@@ -13,7 +13,7 @@ import { routeOf, rules, sel } from "./screen-helpers";
 import { isDeskPage } from "./desk-helpers";
 import { tempSchoolLike, HAS_SERVICE, clientFor, openTemp, service, type TempUser } from "./screen-8-helpers";
 import { NO_S11_RESIDUE, cleanup, makeFixture, sharedCabinetSnapshot, type S11Fixture } from "./screen-11-helpers";
-import { TOAST, amountInput, submitButton, usagePath, waitUsage, reagentHead } from "./screen-4-helpers";
+import { amountOf, doneText, itemNamed, list as batchList, saveBar, saveButton, toast, usagePath, waitUsage } from "./screen-4-helpers";
 import {
   CAPTION_RE,
   captionOf,
@@ -144,7 +144,7 @@ test.describe("일회용 학교", () => {
   });
 
   for (const role of ["student", "teacher", "admin"] as const) {
-    test(`[C1][S4] 일회용 ${role === "student" ? "학생" : role === "teacher" ? "교사" : "admin"} 사용일: "${DATE_LABEL}" 기본 = 한국 오늘 · max = 오늘 · 사용량 아래 · 지난 날짜 → past-date-note "${PAST_NOTE_EXAMPLE}" 틀(저장 버튼 위, 무채색) · 미래 날짜 저장 거부 · 지난 날짜 저장 → DB used_on · 화면 10 그 사용일 묶음("M월 D일")에 "N월 N일에 기록" 캡션 · 상세 사용일·기록한 날`, async ({ browser }, info) => {
+    test(`[C1][S4] 일회용 ${role === "student" ? "학생" : role === "teacher" ? "교사" : "admin"} 사용일: "${DATE_LABEL}" 기본 = 한국 오늘 · max = 오늘 · 담은 시약 목록 아래(1.25 공통 칸 첫 줄) · 지난 날짜 → past-date-note "${PAST_NOTE_EXAMPLE}" 틀(고정 바 안 — 저장 버튼 위(390)/왼쪽(1440), 무채색) · 미래 날짜 저장 거부 · 지난 날짜 저장 → DB used_on · 화면 10 그 사용일 묶음("M월 D일")에 "N월 N일에 기록" 캡션 · 상세 사용일·기록한 날`, async ({ browser }, info) => {
       test.setTimeout(TIMEOUT);
       const { f, reagent, name } = await prepared(info);
       const u = f[role];
@@ -154,27 +154,27 @@ test.describe("일회용 학교", () => {
       const t = await open(browser, info, u, usagePath(reagent));
       const page = t.page;
       try {
-        await waitUsage(page, true);
-        await expect(reagentHead(page).first()).toContainText(name);
+        await waitUsage(page);
+        await expect(itemNamed(page, name), "?reagent 의 시약 담긴 채").toHaveCount(1);
         // 기본 상태
         await expect(dateField(page), `usage-date "${DATE_LABEL}" 1개`).toHaveCount(1);
-        // 라벨: 390 = usage-date 안 label / 1440 = 드로어 form-row 라벨 칸(htmlFor 로 사용일 입력과 이어짐, 시안 4-desktop)
-        if (isDeskPage(page)) await expect(dateInput(page), "라벨").toHaveAccessibleName(DATE_LABEL);
-        else await expect(dateField(page).locator("label"), "라벨").toContainText(DATE_LABEL);
+        await expect(dateField(page).getByText(DATE_LABEL, { exact: true }).first(), "라벨").toBeVisible();
         await expect(dateInput(page), "기본 = 한국 오늘").toHaveValue(today);
         await expect(dateInput(page), "고를 수 있는 마지막 날 = 오늘").toHaveAttribute("max", today);
         await expect(note(page), "오늘이면 past-date-note 없음").toHaveCount(0);
-        const amt = (await amountInput(page).boundingBox())!;
+        const lst = (await batchList(page).boundingBox())!;
         const dt = (await dateInput(page).boundingBox())!;
-        expect(dt.y, "사용일은 사용량 아래 (rules usage_date.field)").toBeGreaterThan(amt.y);
-        // 지난 날짜 → past-date-note
+        expect(dt.y, "사용일은 담은 시약 목록 아래 (rules usage_batch.common · usage_date.field)").toBeGreaterThan(lst.y);
+        // 지난 날짜 → past-date-note (고정 바 안)
         await dateInput(page).fill(past);
         await expect(note(page), "지난 날짜 → past-date-note").toHaveCount(1);
+        await expect(saveBar(page).locator(sel("past-date-note")), "past-date-note 는 고정 바 안 (시안 4-past-date)").toHaveCount(1);
         await expect(note(page)).toHaveText(new RegExp(`^\\s*${pastNote(past)}\\s*$`));
         for (const c of VARIANT_PAST) await expect(page.locator(sel(c)).first(), `variants["4"]["past-date"] ${c}`).toBeVisible();
         const nb = (await note(page).boundingBox())!;
-        const sb = (await submitButton(page).boundingBox())!;
-        expect(nb.y + nb.height, "past-date-note 는 저장 버튼 위").toBeLessThanOrEqual(sb.y + 1);
+        const sb = (await saveButton(page).boundingBox())!;
+        if (isDeskPage(page)) expect(nb.x + nb.width, "1440: past-date-note 는 저장 버튼 왼쪽").toBeLessThanOrEqual(sb.x + 1);
+        else expect(nb.y + nb.height, "390: past-date-note 는 저장 버튼 위").toBeLessThanOrEqual(sb.y + 1);
         const paints = await note(page).evaluate((el) => {
           const out: string[] = [];
           for (const n of [el, ...Array.from(el.querySelectorAll("*"))]) {
@@ -185,28 +185,27 @@ test.describe("일회용 학교", () => {
           return out;
         });
         expect(paints.filter((c) => COLORFUL.includes(c)), "past-date-note 무채색 (핑크·하늘색 없음)").toEqual([]);
-        if (role === "student") await page.screenshot({ path: join(process.cwd(), "test-results", `v1-4-past-date-${t.viewport}.png`), fullPage: false });
         // 오늘로 되돌리면 안내가 사라진다
         await dateInput(page).fill(today);
         await expect(note(page), "오늘로 되돌림 → 없음").toHaveCount(0);
 
-        // 미래 날짜는 저장되지 않는다 (입력 max 를 넘겨 넣어도)
+        // 미래 날짜는 저장되지 않는다 (입력 max 를 넘겨 넣어도 — 서버 거절, 이동 없음)
         const before = await logsBy(u.id, reagent);
-        await amountInput(page).fill("1");
+        await amountOf(page, name).fill("1");
         await dateInput(page).fill(daysAgo(-1));
-        await submitButton(page).click();
+        await saveButton(page).click();
         await expect(page.locator('main [role="alert"]').first(), "미래 사용일 → 에러").toBeVisible({ timeout: 30_000 });
-        await expect(page.locator(sel(TOAST)), "미래 사용일 → 토스트 없음").toHaveCount(0);
+        await expect(toast(page).filter({ hasText: doneText(1) }), "미래 사용일 → 저장 토스트 없음").toHaveCount(0);
+        expect(new URL(page.url()).pathname, "미래 사용일 → 이동 없음").toBe(routeOf(4));
         expect(await logsBy(u.id, reagent), "미래 사용일 → usage_logs 그대로").toEqual(before);
 
-        // 지난 날짜로 저장
+        // 지난 날짜로 저장 → 토스트 → 들어온 곳(?reagent = 그 시약 상세)
         await dateInput(page).fill(past);
-        await amountInput(page).fill("1");
+        await amountOf(page, name).fill("1");
         const t0 = Date.now();
-        await submitButton(page).click();
-        await expect(page.locator(sel(TOAST)), "저장 → 토스트").toHaveCount(1, { timeout: 30_000 });
-        await expect(dateInput(page), "저장 뒤 사용일은 오늘로").toHaveValue(today);
-        await expect(note(page), "저장 뒤 안내 없음").toHaveCount(0);
+        await saveButton(page).click();
+        await expect(toast(page).filter({ hasText: doneText(1) }), "저장 → 토스트").toBeVisible({ timeout: 30_000 });
+        await page.waitForURL((url) => url.pathname === routeOf(3).replace(/\[[^\]]+\]/, reagent), { timeout: 30_000 });
         const added = (await logsBy(u.id, reagent)).filter((l) => !before.some((b) => b.id === l.id));
         expect(added, "usage_logs 새 행 1").toHaveLength(1);
         expect(added[0].used_on, "DB used_on = 고른 지난 날짜").toBe(past);
