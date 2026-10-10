@@ -1,0 +1,21 @@
+{
+  "gate": "gate-D3-S13",
+  "pass": true,
+  "exit": 0,
+  "violations": [],
+  "logs": {},
+  "report": {
+    "V1": {
+      "screenshots": [
+        "test-results/v1-13-admin-desktop.png",
+        "test-results/v1-13-desktop.png",
+        "test-results/v1-13-mobile.png",
+        "test-results/v1-13-student-desktop.png",
+        "test-results/v1-13-teacher-desktop.png",
+        "test-results/v1-13g-desktop.png",
+        "test-results/v1-13g-mobile.png"
+      ],
+      "figma_page": "https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2"
+    }
+  }
+}
