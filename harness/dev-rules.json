@@ -1,5 +1,5 @@
 {
-  "version": "1.15",
+  "version": "1.16",
   "supabase_project": "kammofjdizvtvmbadmma",
   "github": "https://github.com/scieum/lab-stock-app",
   "vercel": "https://vercel.com/hayeonkeems-projects/lab-stock-app-o97y",
@@ -360,8 +360,7 @@
       13
     ],
     "reagent-detail-card": [
-      3,
-      4
+      3
     ],
     "reagent-location": [
       3
