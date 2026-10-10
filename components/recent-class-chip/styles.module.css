@@ -1,0 +1,33 @@
+/* 시안 4 recent-class-chip: canvas-soft pill, 높이 44, 좌우 16, 12/600 ink. 선택 = highlight-soft + highlight 테두리 */
+.chip {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  min-height: var(--button-min-height);
+  padding: var(--space-0) var(--space-16);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.selected {
+  border-color: var(--color-highlight);
+  background: var(--color-highlight-soft);
+}
+
+.chip:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: var(--space-4);
+}
+
+.chip:disabled {
+  cursor: not-allowed;
+  opacity: var(--pressed-opacity);
+}

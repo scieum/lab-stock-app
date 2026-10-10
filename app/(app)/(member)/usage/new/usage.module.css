@@ -1,0 +1,119 @@
+/* 화면 4 여러 시약 사용 기록 (디자인 1.25, d7 §24)
+ * 모바일(4-mobile): content 사이 16 — usage-batch-list → usage-date → class-select → 메모. save-bar = tab-bar 위 고정(흰 바탕, 위 hairline, 안쪽 12 16)
+ *   지난 날짜면 past-date-note 한 줄(사이 8) + 저장 버튼
+ * 데스크톱(4-desktop): page-head("사용 기록" + "여러 시약을 한 번에 기록해요") → 가운데 640(검색 칸 + 드롭다운 → 표 → 공통 칸, 사이 24)
+ *   공통 칸 = 줄마다 위아래 16 · 아래 hairline · 라벨 120 + 입력. bottom-bar 왼쪽 "담은 시약 N개"(또는 past-date-note) · 오른쪽 저장
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.mobileColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+  /* 고정된 저장 바(12 + 48 + 12 + 테두리)만큼 비워 둔다 */
+  padding-bottom: calc(var(--space-12) * 2 + var(--control-height) + var(--border-width));
+}
+
+/* past-date-note 한 줄(13 × 줄 높이) + 사이 8 만큼 더 */
+.page[data-past] .mobileColumn {
+  padding-bottom: calc(
+    var(--space-12) * 2 + var(--control-height) + var(--border-width) + var(--font-size-13) * var(--line-height-normal) + var(--space-8)
+  );
+}
+
+.mobileBar {
+  position: fixed;
+  right: 0;
+  bottom: var(--tab-bar-height);
+  left: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-16);
+  border-top: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.saveButton {
+  width: 100%;
+}
+
+.searchGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.commonFields {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.formRow {
+  min-width: 0;
+}
+
+.summary {
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.notFound {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+.notFoundText {
+  margin: 0;
+  padding: var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+  text-align: center;
+}
+
+@media (min-width: 1024px) {
+  .page {
+    gap: var(--space-24);
+  }
+
+  /* 공통 칸 한 줄: 위아래 16 · 아래 hairline · 라벨 120 + 입력 (usage-date · 메모 — text-input 라벨 줄을 왼쪽 칸으로) */
+  .formRow {
+    padding: var(--space-16) var(--space-0);
+    border-bottom: var(--border-width) solid var(--color-border);
+  }
+
+  .rowField {
+    display: grid;
+    grid-template-columns: calc(var(--space-24) * 5) minmax(0, 1fr);
+    align-items: center;
+    column-gap: var(--space-16);
+    row-gap: var(--space-4);
+  }
+
+  .rowField > * {
+    grid-column: 2;
+  }
+
+  .rowField > :first-child {
+    grid-column: 1;
+  }
+
+  .saveButton {
+    width: auto;
+  }
+}

@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  archiveReagent,
   placeReagentAt,
   resetReorderThreshold,
   setReorderThreshold,
+  type ArchiveReagentResult,
   type PlaceReagentResult,
   type ResetReorderThresholdResult,
   type SetReorderThresholdResult,
@@ -50,6 +52,17 @@ export async function setReorderThresholdAction(input: unknown): Promise<SetReor
  */
 export async function resetReorderThresholdAction(input: unknown): Promise<ResetReorderThresholdResult> {
   const result = await resetReorderThreshold({ reagentId: field(input, "reagentId") });
+  if (!result.ok) return result;
+  revalidatePath("/", "layout");
+  return result;
+}
+
+/**
+ * 시약 삭제 = 보관 (d7 §24). reagentId 만 꺼내 lib/supabase 가 형식을 다시 보고, 교사·admin · 자기 학교 · 데모 거부는
+ * DB 함수 archive_reagent 가 본다. 목록 · 시약장 · 홈 · 재주문 알림에서 빠지므로 전체를 다시 받게 한다.
+ */
+export async function archiveReagentAction(input: unknown): Promise<ArchiveReagentResult> {
+  const result = await archiveReagent({ reagentId: field(input, "reagentId") });
   if (!result.ok) return result;
   revalidatePath("/", "layout");
   return result;

@@ -13,6 +13,7 @@ import { MSDS_TEXT } from "@/lib/msds-rules";
 import type { ReagentDetail } from "@/lib/supabase/reagent-detail";
 import { DeskDrawer, useDeskHrefs } from "../../_desk/desk-drawer";
 import { DetailSummary } from "./detail-summary";
+import { ReagentDeleteFlow } from "./reagent-delete-flow";
 import { UsagePanel } from "./detail-tabs";
 import styles from "./detail.module.css";
 
@@ -54,6 +55,8 @@ export function ReagentDetailDrawer({ data, staff, guest = false, openPicker, qr
       reagentId={reagent.id}
       title={reagent.name}
       focusKey={reagent.id}
+      // d7 §24: 시약 삭제(보관) — 머리 × 왼쪽 ⋯, 교사·admin 만 (R5 · 둘러보기 숨김). 삭제 뒤 = 지금 목록 쿼리 그대로 화면 2
+      headActions={staff && !guest ? <ReagentDeleteFlow reagentId={reagent.id} name={reagent.name} listHref={hrefs.list} /> : undefined}
       actions={
         <DrawerActionRow>
           {guest ? (

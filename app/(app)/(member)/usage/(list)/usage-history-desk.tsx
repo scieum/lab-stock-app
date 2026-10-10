@@ -13,6 +13,9 @@ import {
   type DataTableColumn,
 } from "@/components/data-table";
 import { DetailDrawer, DrawerRow, DrawerRows } from "@/components/detail-drawer";
+import { ClassFilterButton } from "@/components/class-filter";
+import { ClassLabel } from "@/components/class-label";
+import { DeletedReagentTag } from "@/components/deleted-reagent-tag";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { MsdsEntry } from "@/components/msds-entry";
 import { SegmentedControl } from "@/components/segmented-control";
@@ -29,13 +32,15 @@ const SCOPE_OPTIONS = [
 ];
 const PERIODS = USAGE_PERIOD_OPTIONS.map((o) => ({ value: o.value, label: o.label }));
 
-/* 시안 10-desktop 열 폭 (표 안쪽 624 기준 비율) */
-const COLUMNS_W = { day: "19.2%", name: "32%", user: "22.4%", amount: "16%", time: "10.4%" };
+/* 시안 10-desktop(1.25) 열 폭 (표 안쪽 624 기준: 88 · 184 · 136 · 96 · 64 · 56) */
+const COLUMNS_W = { day: "14.1%", name: "29.5%", cls: "21.8%", user: "15.4%", amount: "10.2%", time: "9%" };
 
 type Props = {
   filters: UsageFilters;
   groups: UsageHistoryGroup[];
   truncated: boolean;
+  /** 학교급별 최고 학년 (class-filter) */
+  maxGrade: number;
 };
 
 /** 주소창만 바꾼다 (서버 조회 없음 — 열린 기록 · 쪽 · 정렬은 화면 상태). push = 뒤로가기로 되돌릴 수 있게 */
@@ -55,8 +60,8 @@ type Row = { kind: "group"; key: string; label: string } | { kind: "record"; rec
  * 행을 누르면 오른쪽 detail-drawer(모달 대신): 시약명 → 사용량(32/700) → 사용자 · 사용일 · 기록 시각 · 메모 → msds-entry → "닫기".
  * 열린 기록은 주소창 ?id= (새로고침·뒤로가기 유지), 쪽 ?page=, 사용일 정렬 ?order=asc(기본 최신순).
  */
-export function UsageHistoryDesk({ filters, groups, truncated }: Props) {
-  const { pending, shown, text, changeText, sendQuery, changeScope, changePeriod } = filters;
+export function UsageHistoryDesk({ filters, groups, truncated, maxGrade }: Props) {
+  const { pending, shown, text, changeText, sendQuery, changeScope, changePeriod, changeClass } = filters;
   const sp = useSearchParams();
   const openId = sp.get("id");
   const asc = sp.get("order") === "asc";
@@ -98,6 +103,7 @@ export function UsageHistoryDesk({ filters, groups, truncated }: Props) {
         }, "replace"),
     },
     { key: "name", label: "시약명", width: COLUMNS_W.name },
+    { key: "class", label: "수업", width: COLUMNS_W.cls },
     { key: "user", label: "사용자", width: COLUMNS_W.user },
     { key: "amount", label: "사용량", width: COLUMNS_W.amount },
     { key: "time", label: "기록 시각", width: COLUMNS_W.time },
@@ -141,6 +147,8 @@ export function UsageHistoryDesk({ filters, groups, truncated }: Props) {
             value={shown.period}
             onChange={(e) => changePeriod(e.target.value)}
           />
+          {/* d7 §24: 반 필터 — 학년 → 반 (드롭다운) */}
+          <ClassFilterButton value={shown.classFilter} onChange={changeClass} maxGrade={maxGrade} />
         </div>
 
         <DataTable
@@ -166,8 +174,18 @@ export function UsageHistoryDesk({ filters, groups, truncated }: Props) {
                       caption={row.record.recordedCaption ?? undefined}
                       onClick={() => (row.record.id === selected?.id ? close() : open(row.record.id))}
                     >
-                      {row.record.reagentName}
+                      {row.record.reagentDeleted ? (
+                        <span className={styles.deskDeletedName}>
+                          <span className={styles.deskMutedName}>{row.record.reagentName}</span>
+                          <DeletedReagentTag />
+                        </span>
+                      ) : (
+                        row.record.reagentName
+                      )}
                     </DataTableButtonCell>
+                    <DataTableCell>
+                      <ClassLabel value={row.record.classInfo} variant="cell" />
+                    </DataTableCell>
                     <DataTableCell>{row.record.userName}</DataTableCell>
                     <DataTableCell>{row.record.amountLabel}</DataTableCell>
                     <DataTableCell>{row.record.recordedTime}</DataTableCell>
@@ -202,17 +220,27 @@ export function UsageHistoryDesk({ filters, groups, truncated }: Props) {
           <DrawerRows label="기록 정보">
             <DrawerRow label="사용자">{selected.userName}</DrawerRow>
             <DrawerRow label="사용일">{selected.usedOn}</DrawerRow>
+            <DrawerRow label="수업">
+              <ClassLabel value={selected.classInfo} variant="value" />
+            </DrawerRow>
             <DrawerRow label="기록 시각">{selected.recordedCaption ? selected.recordedAt : selected.recordedTime}</DrawerRow>
             <DrawerRow label="메모">{selected.memo ?? "-"}</DrawerRow>
           </DrawerRows>
-          <MsdsEntry
-            variant="button"
-            href={selected.msdsUrl ?? undefined}
-            // d7 §22: "MSDS 보기" = 화면 16, 뒤로 = 이 화면(/usage)
-            summaryHref={msdsSummaryPath(selected.reagentId, { from: "usage" })}
-            summaryIcon="chevron-right"
-            notice="MSDS 링크가 아직 등록되지 않았어요"
-          />
+          {/* d7 §24: 보관(삭제)된 시약은 시약 · MSDS 로 가는 링크 없음 — 태그만 */}
+          {selected.reagentDeleted ? (
+            <div>
+              <DeletedReagentTag />
+            </div>
+          ) : (
+            <MsdsEntry
+              variant="button"
+              href={selected.msdsUrl ?? undefined}
+              // d7 §22: "MSDS 보기" = 화면 16, 뒤로 = 이 화면(/usage)
+              summaryHref={msdsSummaryPath(selected.reagentId, { from: "usage" })}
+              summaryIcon="chevron-right"
+              notice="MSDS 링크가 아직 등록되지 않았어요"
+            />
+          )}
         </DetailDrawer>
       ) : null}
     </div>

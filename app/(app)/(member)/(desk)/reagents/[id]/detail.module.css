@@ -179,3 +179,30 @@
   padding-bottom: var(--space-4);
   font-size: var(--font-size-13);
 }
+
+/* 시약 삭제 확인 (시안 3-delete): 모바일은 카드가 tab-bar 위 하단 시트로 스스로 붙는다 */
+.deleteDialog {
+  display: contents;
+}
+
+@media (min-width: 1024px) {
+  /* 시안 3-delete-desktop: 본문(사이드바 오른쪽) 가운데 카드 440, 딤 없음 — 카드 밖은 누름이 그대로 지나간다 */
+  .deleteDialog {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: var(--sidebar-width);
+    z-index: 45;
+    display: grid;
+    place-items: center;
+    padding: var(--space-24);
+    pointer-events: none;
+  }
+
+  .deleteDialog > * {
+    width: calc(var(--space-48) * 9 + var(--space-8));
+    max-width: 100%;
+    pointer-events: auto;
+  }
+}

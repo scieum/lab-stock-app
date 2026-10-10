@@ -193,3 +193,19 @@
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-normal);
 }
+
+/* 디자인 1.25 10-desktop: 보관된 시약 = 시약명 회색 + deleted-reagent-tag (사이 8) */
+.deskDeletedName {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  max-width: 100%;
+}
+
+.deskMutedName {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

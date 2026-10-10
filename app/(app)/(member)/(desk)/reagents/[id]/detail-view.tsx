@@ -18,6 +18,7 @@ import { ReagentDetailDrawer } from "./detail-drawer-view";
 import { DetailSummary } from "./detail-summary";
 import { DetailTabs, type InfoRow } from "./detail-tabs";
 import { MsdsFind, MsdsSavedToast } from "./msds-find";
+import { ReagentDeleteFlow } from "./reagent-delete-flow";
 import styles from "./detail.module.css";
 
 type Props = {
@@ -99,6 +100,8 @@ export async function ReagentDetailView({ data, role, openPicker = false, selfPa
           picker={staff ? picker : null}
           suggestion={staff ? suggestion : null}
           initialPicking={staff && picker !== null && openPicker}
+          // d7 §24: 시약 삭제(보관) — 교사·admin 만 (R5: 학생 · 둘러보기 reagent-more-menu 0)
+          cardAction={staff ? <ReagentDeleteFlow reagentId={reagent.id} name={reagent.name} listHref={listHref} /> : undefined}
         />
         <DetailTabs info={info} usage={usage} initialTab={guest ? "info" : undefined} />
         {msds}

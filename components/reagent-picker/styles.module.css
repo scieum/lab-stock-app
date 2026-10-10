@@ -1,0 +1,287 @@
+/* 디자인 1.25 reagent-picker
+ * 모바일(4-picker-mobile): 바텀시트(SheetPanel) 안 — 검색 칸 → caption 12 회색 → 행 56(아래 hairline, 왼쪽 12) → 하단 "{N}개 담기"
+ *   고른 행 = highlight-soft, 체크 = 하늘색 원 24 + 흰 체크, 안 고른 = 흰 원 + 회색 테두리, 이미 담음 = "담음" 12 회색
+ * 데스크톱(4-picker-desktop): 흰 바탕, 회색 테두리(hairline-strong), radius 24, 안쪽 8 — caption-row(8 12) → 행 44(radius 16, 좌우 12, 사이 12) → close-row
+ */
+.sheetWrap {
+  display: contents;
+}
+
+.sheetBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: var(--button-min-height);
+  padding: var(--space-12) var(--space-16);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-input);
+  box-sizing: border-box;
+}
+
+.searchBox:focus-within {
+  border-color: var(--color-highlight);
+}
+
+.searchIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex-shrink: 0;
+  color: var(--color-highlight);
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.caption {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.empty,
+.dropdownEmpty {
+  margin: 0;
+  padding: var(--space-16);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+  text-align: center;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  width: 100%;
+  min-height: calc(var(--button-min-height) + var(--space-12));
+  padding: var(--space-0) var(--space-0) var(--space-0) var(--space-12);
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.row:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: calc(var(--border-width) * -1);
+}
+
+.rowOn {
+  background: var(--color-highlight-soft);
+}
+
+.rowAdded {
+  cursor: default;
+}
+
+.nameCol {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stock {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
+.checkHit {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+}
+
+.check {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  box-sizing: border-box;
+}
+
+.checkOn {
+  border-color: var(--color-highlight);
+  background: var(--color-highlight);
+}
+
+.checkMuted {
+  border-color: var(--color-border);
+  background: var(--color-surface-input);
+}
+
+.checkIcon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  color: var(--color-on-primary);
+}
+
+.addedCaption {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.rowAdded .name {
+  color: var(--color-text-placeholder);
+}
+
+.pickButton {
+  width: 100%;
+}
+
+/* ───────── 데스크톱 드롭다운 ───────── */
+.dropdown {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-8);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.captionRow {
+  padding: var(--space-8) var(--space-12);
+}
+
+.dropdownList {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(var(--button-min-height) * 6);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.dropdownRow {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-12);
+  min-height: var(--button-min-height);
+  padding: var(--space-0) var(--space-12);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.dropdownRow:hover:not(.rowOn):not(.rowAdded) {
+  background: var(--color-surface-muted);
+}
+
+.dropdownRow .check {
+  width: var(--icon-md);
+  height: var(--icon-md);
+}
+
+.dropdownRow .checkIcon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+}
+
+.dropdownName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowAdded .dropdownName {
+  color: var(--color-text-placeholder);
+  font-weight: var(--font-weight-regular);
+}
+
+.dropdownRow .stock {
+  font-size: var(--font-size-13);
+}
+
+.dropdownRow .addedCaption {
+  font-size: var(--font-size-13);
+}
+
+.closeRow {
+  display: flex;
+  align-items: center;
+  min-height: var(--button-min-height);
+  padding: var(--space-0) var(--space-12);
+}
+
+.closeLink {
+  padding: var(--space-0);
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+}
+
+.closeLink:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}

@@ -1,0 +1,187 @@
+/* 디자인 1.25 class-select
+ * 모바일(4-mobile): 라벨 줄(수업 13/600 + 선택 12 회색) → 최근 줄(caption 12 + 칩, 사이 8) → 학년·반 반씩(사이 8) → 수업명 전폭. 사이 8
+ * 데스크톱(4-desktop): 위아래 16 · 아래 hairline 줄, 라벨 칸 120 + 입력 칸(최근 줄 → 학년 120 · 반 120 · 수업명 나머지, 사이 8), 사이 16
+ */
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.label {
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.optional,
+.caption {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.recentRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.caption {
+  flex-shrink: 0;
+}
+
+.chips {
+  display: flex;
+  gap: var(--space-8);
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.inputs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.gradeRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-8);
+}
+
+.selectBox,
+.subjectBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: var(--button-min-height);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-input);
+  box-sizing: border-box;
+}
+
+.selectBox:focus-within,
+.subjectBox:focus-within {
+  border-color: var(--color-highlight);
+}
+
+.select {
+  width: 100%;
+  min-width: 0;
+  padding: var(--space-12) calc(var(--space-16) + var(--icon-md) + var(--space-8)) var(--space-12) var(--space-16);
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+  appearance: none;
+  cursor: pointer;
+}
+
+/* 고르기 전 = 회색 글자 ("학년" · "반") */
+.selectBox[data-empty] .select {
+  color: var(--color-text-placeholder);
+}
+
+.select option {
+  color: var(--color-text);
+}
+
+.caret {
+  position: absolute;
+  right: var(--space-16);
+  width: var(--icon-md);
+  height: var(--icon-md);
+  color: var(--color-highlight);
+  pointer-events: none;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-12) var(--space-16);
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+}
+
+.input::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.srOnly {
+  position: absolute;
+  width: var(--border-width);
+  height: var(--border-width);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (min-width: 1024px) {
+  .root {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--space-16);
+    padding: var(--space-16) var(--space-0);
+    border-bottom: var(--border-width) solid var(--color-border);
+  }
+
+  /* 라벨 칸 120 (입력 줄 높이 44 에 맞춰 가운데) */
+  .labelRow {
+    flex: 0 0 calc(var(--space-24) * 5);
+    min-height: var(--button-min-height);
+  }
+
+  .fields {
+    flex: 1;
+  }
+
+  /* 학년 120 · 반 120 · 수업명 나머지 */
+  .inputs {
+    flex-direction: row;
+  }
+
+  .gradeRow {
+    flex: 0 0 auto;
+    grid-template-columns: calc(var(--space-24) * 5) calc(var(--space-24) * 5);
+  }
+
+  .subjectBox {
+    flex: 1;
+  }
+}
