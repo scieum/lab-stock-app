@@ -24,7 +24,6 @@ import {
   EMPTY,
   EMPTY_AMOUNT,
   EMPTY_TITLE,
-  ITEM,
   OVER,
   PICKER,
   RECENT_CHIP,
@@ -228,9 +227,14 @@ test.describe("일회용 학교", () => {
         await expect(picker(page).locator('[data-name="picker-row"]'), "검색 결과 = 그 시약").toHaveCount(1);
         await expect(picker(page).locator('[data-name="picker-row"]')).toContainText(da.name);
         await picker(page).getByRole("button", { name: exact("닫기") }).click();
-        // 시안 4-picker-desktop close-row "닫기" — 실패해도 나머지를 보도록 soft (실패는 그대로 보고), 이어서 Esc 로 닫는다
-        await expect.soft(picker(page), "닫기 → 드롭다운 닫힘").toHaveCount(0);
-        if ((await picker(page).count()) > 0) await page.keyboard.press("Escape");
+        // 시안 4-picker-desktop close-row "닫기" → 닫힘 (다시 열리지 않음), 검색 칸을 다시 누르면 다시 열린다
+        await expect(picker(page), "닫기 → 드롭다운 닫힘").toHaveCount(0);
+        await page.waitForTimeout(500);
+        await expect(picker(page), "닫힌 채 그대로 (포커스 복귀로 다시 열리지 않음)").toHaveCount(0);
+        await input.click();
+        await expect(picker(page), "검색 칸을 다시 누르면 열림").toBeVisible();
+        await expect(picker(page).locator('[data-name="picker-row"]').first(), "다시 연 목록").toBeVisible();
+        await page.keyboard.press("Escape");
         await expect(picker(page), "Esc → 드롭다운 닫힘").toHaveCount(0);
       } else {
         const pick = picker(page).getByRole("button", { name: /개 담기$/ });

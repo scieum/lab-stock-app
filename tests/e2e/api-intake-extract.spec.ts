@@ -14,7 +14,6 @@ import { openAs } from "./auth-state";
 import { rules } from "./screen-helpers";
 import { HAS_SERVICE, service, sweep, tempEmail, NO_RESIDUE, contextFor, type TempUser } from "./screen-8-helpers";
 
-const SCREEN = 7;
 const HOME_SCREEN = 13;
 const API = "/api/intake/extract";
 const GROUP = "docapi";

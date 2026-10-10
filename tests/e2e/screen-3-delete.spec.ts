@@ -117,7 +117,7 @@ test(`[C1][S3] 기대값 원본: rules reagent_delete 문구("${ITEM_LABEL}" · 
 test.describe("일회용 학교", () => {
   test.skip(!HAS_SERVICE, NO_SERVICE_REASON);
 
-  test(`[C1][S3] [R-ui][S3] 일회용 교사 시약 삭제: ⋯(모바일 카드 오른쪽 위 / 데스크톱 드로어 머리 × 왼쪽) → "${ITEM_LABEL}" → 확인 모달(rules confirm 문구 · 취소 = 그대로) → "${CONFIRM}" → 토스트 "${DONE}" → 화면 2 · DB 보관(deleted_at · deleted_by · 칸 비움) · 목록·시약장 칸·홈·재주문 알림에서 빠짐 · 상세 주소 = 없는 시약과 같은 404`, async ({ browser }, info) => {
+  test(`[C1][S3] [R-ui][S3] 일회용 교사 시약 삭제: ⋯(모바일 카드 오른쪽 위 / 데스크톱 드로어 머리 × 왼쪽) → "${ITEM_LABEL}" → 확인 모달(rules confirm 문구 · 취소 = 그대로) → "${CONFIRM}" → 화면 2 → 도착 화면 토스트 "${DONE}" · DB 보관(deleted_at · deleted_by · 칸 비움) · 목록·시약장 칸·홈·재주문 알림에서 빠짐 · 상세 주소 = 없는 시약과 같은 404`, async ({ browser }, info) => {
     test.setTimeout(TIMEOUT);
     const f = await fixture(info);
     const cab = await prepCabinet(f);
@@ -177,9 +177,12 @@ test.describe("일회용 학교", () => {
       await page.locator(sel(DELETE)).click();
       const t0 = Date.now();
       await page.locator(sel(MODAL)).locator(sel("button-primary")).click();
-      // 토스트가 없어도 나머지(이동 · DB · 목록)를 보도록 soft — 실패는 그대로 보고된다
-      await expect.soft(page.locator(sel(TOAST)).filter({ hasText: DONE }), `토스트 "${DONE}"`).toBeVisible({ timeout: 30_000 });
+      // rules reagent_delete.after: 화면 2 로 이동 → 도착 화면에서 토스트 "시약을 삭제했어요"
       await page.waitForURL((u) => u.pathname === routeOf(2), { timeout: 30_000 });
+      const done = page.locator(sel(TOAST)).filter({ hasText: DONE });
+      await expect(done, `화면 2 에서 토스트 "${DONE}"`).toBeVisible({ timeout: 10_000 });
+      expect(new URL(page.url()).pathname, "토스트가 보일 때 = 화면 2").toBe(routeOf(2));
+      await expect(done, "토스트는 잠시 뒤 사라짐").toHaveCount(0, { timeout: 15_000 });
       const row = await rowOf(r.id);
       expect(row.deleted_by, "deleted_by = 교사").toBe(f.teacher.id);
       expect(Math.abs(Date.parse(String(row.deleted_at)) - t0), "deleted_at = 지금").toBeLessThan(60_000);
@@ -212,7 +215,7 @@ test.describe("일회용 학교", () => {
     }
   });
 
-  test(`[C1][S3] [R-ui][S3] 일회용 admin 시약 삭제: ⋯ → "${ITEM_LABEL}" → "${CONFIRM}" → 토스트 → 화면 2 · DB deleted_by = admin`, async ({ browser }, info) => {
+  test(`[C1][S3] [R-ui][S3] 일회용 admin 시약 삭제: ⋯ → "${ITEM_LABEL}" → "${CONFIRM}" → 화면 2 → 토스트 · DB deleted_by = admin`, async ({ browser }, info) => {
     test.setTimeout(TIMEOUT);
     const f = await fixture(info);
     const r = await prepReagent(f, "관리자삭제", 9, "g");
@@ -224,8 +227,12 @@ test.describe("일회용 학교", () => {
       await page.locator(sel(DELETE)).click();
       await expect(page.locator(sel(MODAL)).getByRole("heading")).toHaveText(exact(titleOf(r.name)));
       await page.locator(sel(MODAL)).locator(sel("button-primary")).click();
-      await expect.soft(page.locator(sel(TOAST)).filter({ hasText: DONE }), `토스트 "${DONE}"`).toBeVisible({ timeout: 30_000 });
+      // rules reagent_delete.after: 화면 2 로 이동 → 도착 화면에서 토스트 "시약을 삭제했어요"
       await page.waitForURL((u) => u.pathname === routeOf(2), { timeout: 30_000 });
+      const done = page.locator(sel(TOAST)).filter({ hasText: DONE });
+      await expect(done, `화면 2 에서 토스트 "${DONE}"`).toBeVisible({ timeout: 10_000 });
+      expect(new URL(page.url()).pathname, "토스트가 보일 때 = 화면 2").toBe(routeOf(2));
+      await expect(done, "토스트는 잠시 뒤 사라짐").toHaveCount(0, { timeout: 15_000 });
       expect((await rowOf(r.id)).deleted_by, "deleted_by = admin").toBe(f.admin.id);
     } finally {
       await t.context.close();
