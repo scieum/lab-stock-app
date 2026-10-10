@@ -1,0 +1,26 @@
+/* 시안 4-error usage-over-stock: accent-soft 바탕, radius 16, 안쪽 12 16, 사이 8, 아이콘 20 핑크, 글자 13 ink */
+.box {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-8);
+  margin: 0;
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--color-accent-soft);
+}
+
+.icon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex-shrink: 0;
+  color: var(--color-accent);
+}
+
+.message {
+  min-width: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}

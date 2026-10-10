@@ -3,6 +3,10 @@
 import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { DesktopOnly, MobileOnly } from "@/components/viewport-only";
+import { ClassFilterButton } from "@/components/class-filter";
+import { ClassLabel } from "@/components/class-label";
+import { DeletedReagentTag } from "@/components/deleted-reagent-tag";
+import { classLabelText, type ClassFilter, type ClassInfo } from "@/lib/class-info";
 import { DataRecordRow } from "@/components/ex-data-table-cell";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { ModalCard } from "@/components/ex-modal-card";
@@ -38,6 +42,10 @@ export type UsageHistoryItem = {
   /** 기록한 시각 "14:05" (한국 시간, 데스크톱 표) */
   recordedTime: string;
   reagentName: string;
+  /** 보관(삭제)된 시약의 기록 (d7 §24) — 시약명 회색 + deleted-reagent-tag, 시약 상세 · MSDS 링크 없음 */
+  reagentDeleted: boolean;
+  /** 수업 (d7 §24) */
+  classInfo: ClassInfo;
   userName: string;
   /** 행의 사용자 줄: 기록한 날 = 사용일이면 "학생 이OO · 14:05", 다르면 "교사 김OO" */
   subtitle: string;
@@ -60,7 +68,7 @@ export type UsageHistoryGroup = {
   records: UsageHistoryItem[];
 };
 
-export type UsageFilter = { onlyMine: boolean; period: UsagePeriod; query: string };
+export type UsageFilter = { onlyMine: boolean; period: UsagePeriod; query: string; classFilter: ClassFilter };
 type Filter = UsageFilter;
 
 type Props = {
@@ -70,6 +78,8 @@ type Props = {
   groups: UsageHistoryGroup[];
   /** 상한(200건)에 닿아 더 있을 수 있음 */
   truncated: boolean;
+  /** 학교급별 최고 학년 (class-filter) */
+  maxGrade: number;
 };
 
 export const SCOPES = [
@@ -85,6 +95,8 @@ function hrefOf(f: Filter): string {
   if (f.onlyMine) p.set("mine", "1");
   if (f.period !== DEFAULT_USAGE_PERIOD) p.set("period", f.period);
   if (f.query) p.set("q", f.query);
+  if (f.classFilter.grade !== null) p.set("grade", String(f.classFilter.grade));
+  if (f.classFilter.grade !== null && f.classFilter.classNo !== null) p.set("cls", String(f.classFilter.classNo));
   const qs = p.toString();
   return qs ? `/usage?${qs}` : "/usage";
 }
@@ -160,7 +172,15 @@ function useUsageFilters(filter: Filter) {
     go({ ...shown, query, period: toUsagePeriod(value) });
   };
 
-  return { pending, shown, text, changeText, sendQuery, changeScope, changePeriod };
+  const changeClass = (classFilter: ClassFilter) => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    const query = normalizeUsageQuery(text) ?? "";
+    if (query !== shown.query) setSent((s) => [...s, query]);
+    go({ ...shown, query, classFilter });
+  };
+
+  return { pending, shown, text, changeText, sendQuery, changeScope, changePeriod, changeClass };
 }
 
 export type UsageFilters = ReturnType<typeof useUsageFilters>;
@@ -172,9 +192,9 @@ export type UsageFilters = ReturnType<typeof useUsageFilters>;
  * 데스크톱(≥ 1024)은 UsageHistoryDesk — data-table + 기록 상세 detail-drawer (d7 §23 run b).
  * 필터는 주소(?mine · ?period · ?q)에 두고 서버가 다시 조회한다. 학교·사용자 값은 보내지 않는다.
  */
-export function UsageHistoryScreen({ filter, groups, truncated }: Props) {
+export function UsageHistoryScreen({ filter, groups, truncated, maxGrade }: Props) {
   const filters = useUsageFilters(filter);
-  const { pending, shown, text, changeText, sendQuery, changeScope, changePeriod } = filters;
+  const { pending, shown, text, changeText, sendQuery, changeScope, changePeriod, changeClass } = filters;
 
   // ---- 상세 ----
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -264,6 +284,8 @@ export function UsageHistoryScreen({ filter, groups, truncated }: Props) {
             }
           }}
         />
+        {/* d7 §24: 반 필터 — 학년 → 반 (바텀시트) */}
+        <ClassFilterButton value={shown.classFilter} onChange={changeClass} maxGrade={maxGrade} />
       </div>
 
       <div className={styles.layout} data-name="history-layout">
@@ -282,7 +304,10 @@ export function UsageHistoryScreen({ filter, groups, truncated }: Props) {
                         else rows.current.delete(r.id);
                       }}
                       title={r.reagentName}
+                      titleMuted={r.reagentDeleted}
+                      titleAddon={r.reagentDeleted ? <DeletedReagentTag /> : undefined}
                       subtitle={r.subtitle}
+                      extra={<ClassLabel value={r.classInfo} />}
                       caption={r.recordedCaption ?? undefined}
                       amount={r.amountLabel}
                       selected={r.id === openId}
@@ -314,18 +339,26 @@ export function UsageHistoryScreen({ filter, groups, truncated }: Props) {
               fields={[
                 { label: "사용자", value: selected.userName },
                 { label: "사용일", value: selected.usedOn },
+                { label: "수업", value: classLabelText(selected.classInfo) || "-" },
                 { label: "기록한 날", value: selected.recordedAt },
                 { label: "메모", value: selected.memo ?? "-" },
               ]}
               onClose={closeDetail}
             >
-              <MsdsEntry
-                variant="button"
-                href={selected.msdsUrl ?? undefined}
-                // d7 §22: "MSDS 보기" = 화면 16, 뒤로 = 이 화면(/usage)
-                summaryHref={msdsSummaryPath(selected.reagentId, { from: "usage" })}
-                notice="MSDS 링크가 아직 등록되지 않았어요"
-              />
+              {/* d7 §24: 보관(삭제)된 시약은 시약 · MSDS 로 가는 링크 없음 — 태그만 */}
+              {selected.reagentDeleted ? (
+                <div>
+                  <DeletedReagentTag />
+                </div>
+              ) : (
+                <MsdsEntry
+                  variant="button"
+                  href={selected.msdsUrl ?? undefined}
+                  // d7 §22: "MSDS 보기" = 화면 16, 뒤로 = 이 화면(/usage)
+                  summaryHref={msdsSummaryPath(selected.reagentId, { from: "usage" })}
+                  notice="MSDS 링크가 아직 등록되지 않았어요"
+                />
+              )}
             </ModalCard>
           ) : null}
         </div>
@@ -334,7 +367,7 @@ export function UsageHistoryScreen({ filter, groups, truncated }: Props) {
     </MobileOnly>
     {/* 데스크톱 (d7 §23 run b): data-table + 기록 상세 오른쪽 드로어 (?id= 주소창) */}
     <DesktopOnly>
-      <UsageHistoryDesk filters={filters} groups={groups} truncated={truncated} />
+      <UsageHistoryDesk filters={filters} groups={groups} truncated={truncated} maxGrade={maxGrade} />
     </DesktopOnly>
     </>
   );

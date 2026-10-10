@@ -1,0 +1,68 @@
+/* 디자인 1.25 reagent-add
+ * 모바일: button-pill-soft 높이 44, 좌 12 우 16, 사이 4 — + 아이콘 20 하늘색 + "시약 추가" 15/600
+ * 데스크톱: 검색 칸 전폭 회색(surface-input), radius 16, 안쪽 12 16, 사이 8 — + 아이콘 20 + placeholder. 열림 = ink 테두리
+ */
+.wrap {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.button {
+  padding-left: var(--space-12);
+}
+
+/* ButtonPillSoft 는 글자를 span 으로 감싼다 — 아이콘과 글자를 한 줄로 */
+.button > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.icon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex-shrink: 0;
+  color: var(--color-highlight);
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: var(--button-min-height);
+  padding: var(--space-12) var(--space-16);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-input);
+  box-sizing: border-box;
+}
+
+.search:focus-within {
+  border-color: var(--color-highlight);
+}
+
+.open,
+.open:focus-within {
+  border-color: var(--color-text);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+}
+
+.input::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.input::-webkit-search-cancel-button {
+  display: none;
+}

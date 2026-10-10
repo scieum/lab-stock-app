@@ -38,7 +38,6 @@ import {
   DOC_PDF,
   DOC_PNG,
   DOC_TABLE,
-  DOC_UPLOAD,
   DONE_D7,
   EMPTY_ACTION,
   EMPTY_BODY,

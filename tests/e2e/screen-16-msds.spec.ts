@@ -123,11 +123,6 @@ test.afterAll(async ({}, info) => {
 const userOf = (f: S16Fx, role: "student" | "teacher" | "admin"): TempUser => (role === "admin" ? f.admin : f[role]);
 const ROLE_KO = { student: "학생", teacher: "교사", admin: "admin" } as const;
 
-async function counts(page: Page, names: string[]): Promise<Record<string, number>> {
-  const out: Record<string, number> = {};
-  for (const n of names) out[n] = await countComponent(page, n);
-  return out;
-}
 
 /** 상태별 컴포넌트: variants 16 의 그 상태 목록은 각각 ≥ 1, 요약 성공 컴포넌트(screens_required 중 그 상태에 없는 것)는 0 */
 async function expectVariant(page: Page, state: "no-summary" | "fail", what: string): Promise<void> {

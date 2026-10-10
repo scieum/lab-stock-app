@@ -220,6 +220,8 @@ export type Database = {
         Row: {
           cas_no: string | null
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           id: string
           intake_date: string
           low_stock_since: string | null
@@ -239,6 +241,8 @@ export type Database = {
         Insert: {
           cas_no?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           intake_date?: string
           low_stock_since?: string | null
@@ -258,6 +262,8 @@ export type Database = {
         Update: {
           cas_no?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           intake_date?: string
           low_stock_since?: string | null
@@ -330,6 +336,9 @@ export type Database = {
       usage_logs: {
         Row: {
           amount: number
+          class_grade: number | null
+          class_no: number | null
+          class_subject: string | null
           demo_user_name: string | null
           id: string
           memo: string | null
@@ -341,6 +350,9 @@ export type Database = {
         }
         Insert: {
           amount: number
+          class_grade?: number | null
+          class_no?: number | null
+          class_subject?: string | null
           demo_user_name?: string | null
           id?: string
           memo?: string | null
@@ -352,6 +364,9 @@ export type Database = {
         }
         Update: {
           amount?: number
+          class_grade?: number | null
+          class_no?: number | null
+          class_subject?: string | null
           demo_user_name?: string | null
           id?: string
           memo?: string | null
@@ -478,6 +493,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      archive_reagent: { Args: { p_reagent_id: string }; Returns: Json }
       change_member_role: {
         Args: { p_role: string; p_user_id: string }
         Returns: {
@@ -592,6 +608,9 @@ export type Database = {
         }
         Returns: {
           amount: number
+          class_grade: number | null
+          class_no: number | null
+          class_subject: string | null
           demo_user_name: string | null
           id: string
           memo: string | null
@@ -607,6 +626,17 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      record_usage_batch: {
+        Args: {
+          p_class_grade?: number
+          p_class_no?: number
+          p_class_subject?: string
+          p_items: Json
+          p_memo?: string
+          p_used_on?: string
+        }
+        Returns: Json
       }
       register_profile: {
         Args: {
@@ -644,6 +674,8 @@ export type Database = {
         Returns: {
           cas_no: string | null
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           id: string
           intake_date: string
           low_stock_since: string | null
@@ -733,6 +765,33 @@ export type Database = {
           is_mine: boolean
           memo: string
           msds_url: string
+          reagent_id: string
+          reagent_name: string
+          unit: string
+          used_at: string
+          used_on: string
+          user_name: string
+        }[]
+      }
+      usage_records: {
+        Args: {
+          p_class_grade?: number
+          p_class_no?: number
+          p_limit?: number
+          p_only_mine?: boolean
+          p_query?: string
+          p_since?: string
+        }
+        Returns: {
+          amount: number
+          class_grade: number
+          class_no: number
+          class_subject: string
+          id: string
+          is_mine: boolean
+          memo: string
+          msds_url: string
+          reagent_deleted: boolean
           reagent_id: string
           reagent_name: string
           unit: string

@@ -78,6 +78,18 @@ import { RecordGroup, RecordList } from "@/components/record-group";
 import { ReorderAlertCard } from "@/components/reorder-alert-card";
 import { ReorderThreshold } from "@/components/reorder-threshold";
 import { AutoThresholdBadge } from "@/components/auto-threshold-badge";
+import { ReagentPickerSheet } from "@/components/reagent-picker";
+import { ReagentAdd } from "@/components/reagent-add";
+import { UsageBatchList } from "@/components/usage-batch-list";
+import { UsageItemRow } from "@/components/usage-item-row";
+import { UsageOverStock } from "@/components/usage-over-stock";
+import { ClassSelect } from "@/components/class-select";
+import { RecentClassChip } from "@/components/recent-class-chip";
+import { ClassLabel } from "@/components/class-label";
+import { ClassFilterButton } from "@/components/class-filter";
+import { DeletedReagentTag } from "@/components/deleted-reagent-tag";
+import { ReagentMoreMenu } from "@/components/reagent-more-menu";
+import { ReagentDelete } from "@/components/reagent-delete";
 import { SchoolSelectKind } from "@/components/school-select-kind";
 import { SchoolSelectRegion } from "@/components/school-select-region";
 import { KIND_FIRST_TEXT, noSchoolText } from "@/lib/school-kinds";
@@ -852,6 +864,75 @@ export default function GalleryPage() {
           </DeskTable>
           <Link href="/gallery/desk" className={styles.more}>
             목록 표 · 드로어 더 보기 — 정렬 · 묶음 머리 · 더보기 · 빈 상태 · 쪽 번호 · 입력 드로어 (/gallery/desk)
+          </Link>
+        </Item>
+
+        <Item name="reagent-add · reagent-picker (화면 4 — 모바일 + 시약 추가 → 바텀시트 체크 → N개 담기)">
+          <div className={styles.row}>
+            <ReagentAdd />
+          </div>
+          <ReagentPickerSheet
+            sheet={false}
+            reagents={[
+              { id: "g-ethanol", name: "에탄올", stock: 1200, unit: "mL" },
+              { id: "g-phenol", name: "페놀프탈레인 용액", stock: 120, unit: "mL" },
+              { id: "g-naoh", name: "수산화나트륨", stock: 500, unit: "g" },
+            ]}
+            recentIds={["g-ethanol", "g-phenol"]}
+            addedIds={new Set(["g-ethanol"])}
+            initialSelected={["g-phenol"]}
+          />
+        </Item>
+
+        <Item name="usage-batch-list · usage-item-row · usage-over-stock (화면 4 — 담은 시약 카드, 재고 초과 경고)">
+          <UsageBatchList
+            items={[
+              { id: "g-ethanol", name: "에탄올", stock: 1200, unit: "mL", amount: "50" },
+              { id: "g-phenol", name: "페놀프탈레인 용액", stock: 120, unit: "mL", amount: "150" },
+            ]}
+          />
+          <ul className={styles.row}>
+            <UsageItemRow name="수산화나트륨" stock={500} unit="g" amount="" showEmptyError />
+          </ul>
+          <UsageOverStock>재고 120 mL보다 많아요</UsageOverStock>
+        </Item>
+
+        <Item name="class-select · recent-class-chip (화면 4 — 수업 (선택), 최근 조합 최대 3)">
+          <ClassSelect
+            value={{ grade: 1, classNo: 2, subject: "통합과학" }}
+            maxGrade={3}
+            recent={[
+              { grade: 1, classNo: 2, subject: "통합과학" },
+              { grade: 2, classNo: 1, subject: "화학" },
+            ]}
+          />
+          <div className={styles.row}>
+            <RecentClassChip label="1학년 2반 · 통합과학" selected />
+            <RecentClassChip label="2학년 1반 · 화학" />
+          </div>
+        </Item>
+
+        <Item name="class-label · class-filter · deleted-reagent-tag (화면 10 — 수업 표기, 반 필터, 삭제된 시약)">
+          <ClassLabel value={{ grade: 1, classNo: 2, subject: "통합과학" }} />
+          <ClassLabel value={{ grade: 2, classNo: null, subject: null }} variant="cell" />
+          <div className={styles.row}>
+            <ClassFilterButton value={{ grade: null, classNo: null }} maxGrade={3} />
+            <DeletedReagentTag />
+          </div>
+        </Item>
+
+        <Item name="reagent-more-menu · reagent-delete (화면 3 — ⋯ → 시약 삭제, 교사·admin)">
+          <div className={styles.row}>
+            <ReagentMoreMenu label="과산화수소 더보기">
+              <ReagentDelete />
+            </ReagentMoreMenu>
+          </div>
+        </Item>
+
+        <Item name="여러 시약 사용 기록 · 시약 삭제 · 수업 (화면 3 · 4 · 10 — 디자인 1.25)">
+          <Link href="/gallery/usage-batch" className={styles.more}>
+            reagent-picker · reagent-add · usage-batch-list · usage-item-row · usage-over-stock · class-select · recent-class-chip ·
+            class-label · class-filter · deleted-reagent-tag · reagent-more-menu · reagent-delete (/gallery/usage-batch)
           </Link>
         </Item>
 

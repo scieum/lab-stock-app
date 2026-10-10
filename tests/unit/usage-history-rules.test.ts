@@ -12,9 +12,10 @@ import { framePath } from "../frames";
 const UD = rules.usage_date as Record<string, string>;
 const D7 = read(join(ROOT, "harness/d7-data.md"));
 const D7_15 = D7.slice(D7.indexOf("## 15."), D7.indexOf("\n## ", D7.indexOf("## 15.") + 1));
-type FrameNode = { name: string; text: { characters: string } | null };
+type FrameNode = { name: string; path?: string[]; text: { characters: string } | null };
+const frameNodes = (file: string) => (JSON.parse(read(framePath(file))) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes;
 const frameTexts = (file: string, name: string) =>
-  (JSON.parse(read(framePath(file))) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes
+  frameNodes(file)
     .filter((n) => n.name === name && n.text)
     .map((n) => n.text!.characters);
 
@@ -30,7 +31,10 @@ describe("기대값 원본", () => {
   it("[K1][S4] rules usage_date 예시 문장 = 프레임 4-past-date · 10 의 글자, d7 §15 규칙 문장이 있다", () => {
     expect(PAST_NOTE).toBe("10월 3일 사용으로 기록해요");
     expect(CAPTION).toBe("10월 6일에 기록");
-    expect(frameTexts("4-past-date-mobile.json", "note-text"), "4-past-date past-date-note 글자").toEqual([PAST_NOTE]);
+    // 디자인 1.25(run 20261010-1340) 4-past-date: past-date-note 안 글자 노드 = message, 예시 날짜는 시안마다 다르다 → 날짜만 바꾼 같은 틀
+    const notes = frameNodes("4-past-date-mobile.json").filter((n) => n.path?.includes("past-date-note") && n.text).map((n) => n.text!.characters);
+    expect(notes, "4-past-date past-date-note 글자 1개").toHaveLength(1);
+    expect(notes[0].replace(/\d{1,2}월 \d{1,2}일/, "@"), "4-past-date past-date-note 틀 = rules usage_date.past_note 틀").toBe(PAST_NOTE.replace(/\d{1,2}월 \d{1,2}일/, "@"));
     expect(frameTexts("10-mobile.json", "record-caption").every((t) => /^\d{1,2}월 \d{1,2}일에 기록$/.test(t)), "10 record-caption 틀").toBe(true);
     expect(D7_15).toMatch(/오늘\(한국 날짜\) 이후는 거부/);
     expect(D7_15).toMatch(/과거 하한은 두지 않는다/);
@@ -108,7 +112,13 @@ describe("usageDayLabel · usageRowSubtitle (화면 10 시안 1.17)", () => {
   const groupLabels = frameTexts("10-mobile.json", "group-label");
   const subs = frameTexts("10-mobile.json", "record-sub");
   const captions = frameTexts("10-mobile.json", "record-caption");
-  const FRAME_TODAY = "2026-10-07"; // 시안의 "오늘"(10월 7일 · 오늘)
+  // 시안의 "오늘" = " · 오늘" 이 붙은 묶음 헤더의 날짜 (1.17 = 10월 7일, 1.25 = 10월 10일 — 시안에서 읽는다)
+  const FRAME_TODAY = (() => {
+    const t = groupLabels.find((l) => / · 오늘$/.test(l));
+    const m = t ? /^(\d{1,2})월 (\d{1,2})일/.exec(t) : null;
+    if (!m) throw new Error("10-mobile 에 ' · 오늘' 묶음 헤더 없음");
+    return `2026-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}`;
+  })();
 
   it("[K1][S10] 시안 group-label 글자 = usageDayLabel (오늘 = 2026-10-07)", () => {
     expect(groupLabels.length, "시안 묶음 헤더").toBeGreaterThanOrEqual(2);

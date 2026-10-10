@@ -172,8 +172,11 @@ test(`[C3][S*] 기대값 원본 (run c): desktop_migrated_screens ⊇ 5·6·7·1
   for (const s of HEAVY) {
     expect(MIGRATED, `heavy_pages ${s} 이전됨`).toContain(s);
     expect(fnode(`${s}-desktop`, "page-column").width, `${s}-desktop page-column = form_width`).toBe(FORM_W);
-    expect(has(`${s}-desktop`, "bottom-bar", "main"), `${s}-desktop main 안 bottom-bar`).toBe(true);
-    expect(fnode(`${s}-desktop`, "bottom-bar").width, `${s}-desktop bottom-bar = main 폭`).toBe(fnode(`${s}-desktop`, "main").width);
+    // 하단 고정 바 노드 이름: 5·7·11 = bottom-bar, 4(1.25, 디자인 run 20261010-1340) = save-bar — 같은 자리·같은 폭
+    const barName = has(`${s}-desktop`, "bottom-bar", "main") ? "bottom-bar" : "save-bar";
+    expect(has(`${s}-desktop`, barName, "main"), `${s}-desktop main 안 하단 고정 바(bottom-bar · save-bar)`).toBe(true);
+    expect(fnode(`${s}-desktop`, barName).width, `${s}-desktop ${barName} = main 폭`).toBe(fnode(`${s}-desktop`, "main").width);
+    expect(fnode(`${s}-desktop`, barName).height, `${s}-desktop ${barName} 높이 = 5-desktop bottom-bar`).toBe(BAR_H);
   }
   expect(SIDEBAR_W + fnode("5-desktop", "main").width!, "사이드바 + main = 1440").toBe(VIEW_W);
   expect(fnode("6-desktop", "page-column").width, "6-desktop page-column = form_width").toBe(FORM_W);

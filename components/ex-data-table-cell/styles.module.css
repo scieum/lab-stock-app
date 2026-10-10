@@ -246,3 +246,15 @@
     background: var(--color-surface);
   }
 }
+
+/* 디자인 1.25 화면 10: 보관된 시약 = 시약명 회색 + deleted-reagent-tag (사이 8) */
+.recordTitleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.recordTitleMuted {
+  color: var(--color-text-muted);
+}

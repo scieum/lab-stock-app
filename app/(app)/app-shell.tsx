@@ -1,5 +1,6 @@
 "use client";
 
+import { FlashToast } from "./flash-toast";
 import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { NavPill, type NavLinkItem } from "@/components/nav-pill";
@@ -182,19 +183,20 @@ function MobileNav({ schoolName, staff = false, admin = false, page }: AppNavPro
 /**
  * 데스크톱 재구성 run b(d7 §23): 목록 data-table + 오른쪽 detail-drawer 화면 — 본문 여백을 페이지가 직접 둔다
  * (시안 main 안쪽 32, 드로어는 본문 오른쪽 끝에 붙는다). 모바일 여백은 그대로.
- * 2 /reagents · 3 /reagents/[id] · 16 /msds/[id] · 4 /usage/new · 10 /usage · 8 /users · 9 /vendors
+ * 2 /reagents · 3 /reagents/[id] · 16 /msds/[id] · 10 /usage · 8 /users · 9 /vendors
+ * (화면 4 /usage/new 는 2026-10-10 디자인 1.25 부터 본문 페이지 — heavy_pages)
  */
 function isDeskPath(pathname: string): boolean {
-  return /^\/(reagents(\/[^/]+)?|msds\/[^/]+|usage(\/new)?|users|vendors)\/?$/.test(pathname);
+  return /^\/(reagents(\/[^/]+)?|msds\/[^/]+|usage|users|vendors)\/?$/.test(pathname);
 }
 
 /**
  * 데스크톱 재구성 run c(d7 §23): 본문 페이지 — 시안 main 안쪽 32 · 블록 사이 24 (page-head → page-column, 아래 고정 bottom-bar).
- * 13 / · 5 /manual · 6 /reorder · 7 /intake · 11 /cabinets. 제목은 각 페이지의 page-head 가 그린다 (run a 의 셸 page-head 대신).
+ * 13 / · 5 /manual · 6 /reorder · 7 /intake · 11 /cabinets · 4 /usage/new(d7 §24). 제목은 각 페이지의 page-head 가 그린다 (run a 의 셸 page-head 대신).
  * 오른쪽 detail-drawer(11 QR 인쇄)가 열리면 본문 + 드로어 가로 배치.
  */
 function isPagePath(pathname: string): boolean {
-  return /^\/(manual|reorder|intake|cabinets)?\/?$/.test(pathname);
+  return /^\/(manual|reorder|intake|cabinets|usage\/new)?\/?$/.test(pathname);
 }
 
 /**
@@ -231,6 +233,8 @@ export function AppShell({ schoolName, role, displayName, children }: Props) {
         </main>
       </div>
       <TabBar active={activeTab(pathname)} />
+      {/* 화면을 옮긴 뒤 보여 줄 토스트 (시약 삭제 → 화면 2) — 셸은 이동해도 남는다 */}
+      <FlashToast />
     </div>
   );
 }

@@ -1,0 +1,31 @@
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: var(--line-height-normal);
+}
+
+/* 시안 10-mobile class-label: 12 회색 */
+.caption {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+}
+
+/* 시안 10-desktop 표 열 "수업": 13 기본색 */
+.cell {
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+}
+
+/* 시안 10-desktop 드로어 "수업 | 값": 15 기본색 */
+.value {
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  white-space: normal;
+}
+
+/* 없음 "—" = text-faint */
+.empty {
+  color: var(--color-text-placeholder);
+}

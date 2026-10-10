@@ -115,3 +115,18 @@
     flex: 0 0 var(--space-64);
   }
 }
+
+/* 시안 3-delete-mobile: 카드 오른쪽 위 reagent-more-menu (안쪽 24 자리 그대로, 44 버튼을 위·오른쪽 끝에 맞춘다) */
+.withAction {
+  position: relative;
+}
+
+.withAction .titleRow {
+  padding-right: var(--button-min-height);
+}
+
+.action {
+  position: absolute;
+  top: var(--space-12);
+  right: var(--space-12);
+}

@@ -100,7 +100,16 @@ for (const role of ROLES) {
       expect(stateOnly, `variants["${SCREEN}"].msds ${n} 은 기본 프레임에 없는 상태 컴포넌트`).toContain(n);
       expect(frameNames(`${SCREEN}-msds-${viewportName}`), `상태 컴포넌트 ${n} 은 3-msds 프레임에 있다`).toContain(n);
     }
-    for (const n of stateOnly.filter((x) => x !== "mix-warning" && !msdsVariant.includes(x) && !otherTab.includes(x))) expect(frameNames(`${SCREEN}-location-${viewportName}`), `상태 컴포넌트 ${n} 은 3-location 프레임에 있다`).toContain(n);
+    // 1.25 variants["3"].delete (reagent-more-menu · ex-modal-card — d7 §24 시약 삭제): ⋯ 는 기본 프레임(교사), 확인 모달은 상태 프레임 3-delete.
+    // reagent-delete("시약 삭제" 메뉴 항목)는 ⋯ 를 연 동안만 있는 항목 — 시안은 메뉴를 그리지 않는다(rules reagent_delete.entry). 아래에서 ⋯ 를 열어 본다
+    const delVariant = (rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants[String(SCREEN)].delete ?? [];
+    expect(delVariant, "variants 3.delete").toEqual(expect.arrayContaining(["reagent-more-menu", "ex-modal-card"]));
+    expect(baseFrame.has("reagent-more-menu"), "기본 프레임(교사 시안)에 reagent-more-menu").toBe(true);
+    for (const n of delVariant) expect(frameNames(`${SCREEN}-delete-${viewportName}`), `상태 컴포넌트 ${n} 은 3-delete 프레임에 있다`).toContain(n);
+    const DELETE_ITEM = "reagent-delete";
+    expect(stateOnly, "reagent-delete 는 기본 프레임에 없는 상태 컴포넌트 (메뉴 항목)").toContain(DELETE_ITEM);
+    const delState = [...delVariant, DELETE_ITEM];
+    for (const n of stateOnly.filter((x) => x !== "mix-warning" && !msdsVariant.includes(x) && !otherTab.includes(x) && !delState.includes(x))) expect(frameNames(`${SCREEN}-location-${viewportName}`), `상태 컴포넌트 ${n} 은 3-location 프레임에 있다`).toContain(n);
     const fromDev = fromDevAll.filter((n) => baseFrame.has(n));
     expect(fromDev.length, `dev-rules components 에 화면 ${SCREEN} 컴포넌트가 있어야 함`).toBeGreaterThan(0);
 
@@ -230,6 +239,26 @@ for (const role of ROLES) {
         if (sug) await expect(page.locator('[data-testid="location-picker-suggest"]'), "추천 칸 있음(DB 계산) → 추천 줄 1").toHaveCount(1);
         await page.locator(sel("location-picker")).getByRole("button", { name: /^\s*닫기\s*$/ }).click();
         await expect(page.locator(sel("location-picker")), "× → 닫힘").toHaveCount(0);
+      }
+      // variants["3"].delete: 교사·admin 은 ⋯ → "시약 삭제"(reagent-delete) → 확인 모달(ex-modal-card) — 취소하고 닫는다 (쓰기 0). 학생은 ⋯·항목 0 (R5)
+      if (forbidden.has(DELETE_ITEM) || forbidden.has("reagent-more-menu")) {
+        expect(await countComponent(page, "reagent-more-menu"), "학생 reagent-more-menu (R5)").toBe(0);
+        expect(await countComponent(page, DELETE_ITEM), "학생 reagent-delete (R5)").toBe(0);
+      } else {
+        const more = scope.locator(`${sel("reagent-more-menu")} button[aria-haspopup="menu"]`);
+        await expect(more, "⋯ 버튼 1").toHaveCount(1);
+        await expect(async () => {
+          await more.click();
+          await expect(scope.locator(sel(DELETE_ITEM)), "⋯ → 시약 삭제 항목").toBeVisible({ timeout: 2_000 });
+        }).toPass({ timeout: 30_000 });
+        expect(await countComponent(page, DELETE_ITEM), "reagent-delete 1").toBe(1);
+        await scope.locator(sel(DELETE_ITEM)).click();
+        for (const name of delVariant) {
+          expect(await countScoped(page.locator("body"), name), `variants["${SCREEN}"].delete ${name}`).toBeGreaterThanOrEqual(1);
+          await expect(page.locator(sel(name)).first(), `${name} 보임`).toBeVisible();
+        }
+        await page.locator(sel("ex-modal-card")).getByRole("button", { name: /^\s*취소\s*$/ }).click();
+        await expect(page.locator(sel("ex-modal-card")), "취소 → 확인 모달 닫힘").toHaveCount(0);
       }
       expect(actions.count(), "쓰기 요청 0건 (저장하지 않음)").toBe(0);
     } finally {

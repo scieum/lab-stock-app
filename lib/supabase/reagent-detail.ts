@@ -384,3 +384,33 @@ export async function resetReorderThreshold(input: { reagentId: unknown }): Prom
     previousMinStock: numOrNull(obj.previous_min_stock),
   };
 }
+
+export type ArchiveReagentResult = { ok: true; reagentId: string; name: string } | { ok: false; error: string };
+
+/**
+ * 시약 삭제 = 보관 (d7 §24) — DB 함수 public.archive_reagent 하나만 호출한다 (deleted_at · deleted_by, 칸 배치 비움).
+ * 교사·admin · 자기 학교 · 데모 거부는 DB 가 본다. 사용·입고 기록은 그대로 남는다. 되돌리기 없음.
+ */
+export async function archiveReagent(input: { reagentId: unknown }): Promise<ArchiveReagentResult> {
+  if (typeof input.reagentId !== "string" || !UUID_RE.test(input.reagentId)) {
+    return { ok: false, error: REAGENT_NOT_FOUND };
+  }
+
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  if (!claims?.claims?.sub) return { ok: false, error: SIGNED_OUT };
+
+  const { data, error } = await supabase.rpc("archive_reagent", { p_reagent_id: input.reagentId });
+  if (error) {
+    switch (error.code) {
+      case "P0002":
+        return { ok: false, error: REAGENT_NOT_FOUND };
+      case "42501":
+        return { ok: false, error: error.message === "not authenticated" ? SIGNED_OUT : "교사·관리자만 시약을 삭제할 수 있어요" };
+      default:
+        return { ok: false, error: "삭제하지 못했어요. 잠시 후 다시 시도해 주세요" };
+    }
+  }
+  const obj = data && typeof data === "object" && !Array.isArray(data) ? (data as Record<string, unknown>) : {};
+  return { ok: true, reagentId: input.reagentId, name: typeof obj.name === "string" ? obj.name : "" };
+}

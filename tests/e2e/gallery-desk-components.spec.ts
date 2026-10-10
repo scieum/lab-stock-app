@@ -22,7 +22,10 @@ const first = (f: string, pred: (n: FNode) => boolean, what: string): FNode => {
 // ---------- 기대값: 새 프레임 ----------
 const F2 = "2-desktop";
 const F3 = "3-desktop";
-const F4 = "4-desktop";
+const F16 = "16-desktop";
+const F9 = "9-desktop";
+/** rules desktop_shell.heavy_pages — 본문 페이지(드로어 없음). 1.25 부터 4 포함 (run b 의 4 드로어에서 바뀜) */
+const HEAVY = (DESKTOP_SHELL as unknown as { heavy_pages: number[] }).heavy_pages;
 const F10 = "10-desktop";
 const TABLE_NODE = first(F2, (n) => n.name === TABLE, "data-table");
 const HEAD = first(F2, (n) => n.name === "table-head", "table-head");
@@ -37,7 +40,9 @@ const DRAWER_BODY = first(F3, (n) => n.name === "drawer-body", "drawer-body");
 const DRAWER_CLOSE = first(F3, (n) => n.name === "drawer-close", "drawer-close");
 const DRAWER_ACTIONS = first(F3, (n) => n.name === "drawer-actions", "drawer-actions");
 const ROW_LABEL = first(F3, (n) => n.name === "row-label" && n.path.includes("info-row"), "info-row 라벨");
-const BACK_TEXT = first(F4, (n) => n.name === "label" && n.path.includes("back-link"), "back-link 글자").text!.characters;
+// 드로어 위 뒤로 링크(drawer-nav) = 시안 16-desktop ("‹ 시약 상세") — 1.25 에서 4-desktop 이 본문 페이지가 되어 16 만 남았다
+const BACK_TEXT = first(F16, (n) => n.name === "label" && n.path.includes("back-link"), "back-link 글자").text!.characters;
+const FORM_ROWS = nodesOf(F9).filter((n) => n.name === "form-row").length;
 
 const rgb = (hex: string) => {
   const h = hex.replace("#", "");
@@ -62,14 +67,21 @@ test(`[K1][S2] 기대값 원본: rules desktop_shell.desktop_required(2·8·9·1
   const req = DESKTOP_SHELL.desktop_required;
   for (const s of devRules.components[TABLE]) expect(req[String(s)] ?? [], `desktop_required ${s} 에 ${TABLE}`).toContain(TABLE);
   for (const s of ["3", "16"]) expect(req[s], `desktop_required ${s} 에 ${DRAWER}`).toContain(DRAWER);
-  expect(devRules.components[DRAWER], "dev-rules detail-drawer 화면").toEqual([3, 4, 9, 10, 16]);
-  expect(devRules.components[TABLE], "dev-rules data-table 화면").toEqual([2, 8, 9, 10]);
-  for (const f of ["3-desktop", "4-desktop", "9-desktop", "10-desktop", "16-desktop", "16-fail-desktop", "16-loading-desktop", "16-no-summary-desktop", "3-location-desktop", "3-msds-desktop", "4-past-date-desktop"]) {
+  // dev-rules data-table 화면 = rules desktop_required 에 data-table 이 있는 화면 (1.25: + 4)
+  const tableScreens = Object.entries(req).filter(([, v]) => v.includes(TABLE)).map(([k]) => Number(k)).sort((a, b) => a - b);
+  expect([...devRules.components[TABLE]].sort((a, b) => a - b), "dev-rules data-table 화면 = desktop_required").toEqual(tableScreens);
+  for (const s of ["3", "16"]) expect(devRules.components[DRAWER], `dev-rules detail-drawer 에 ${s}`).toContain(Number(s));
+  for (const s of HEAVY) expect(devRules.components[DRAWER], `본문 페이지(heavy_pages) ${s} 에는 드로어 없음`).not.toContain(s);
+  for (const f of ["3-desktop", "9-desktop", "10-desktop", "16-desktop", "16-fail-desktop", "16-loading-desktop", "16-no-summary-desktop", "3-location-desktop", "3-msds-desktop", "3-delete-desktop"]) {
     expect(first(f, (n) => n.name === DRAWER, "drawer").width, `${f} detail-drawer 폭 = rules drawer_width`).toBe(DRAWER_W);
   }
+  for (const f of ["4-desktop", "4-past-date-desktop", "4-picker-desktop", "4-empty-desktop", "4-error-desktop"]) {
+    expect(nodesOf(f).filter((n) => n.name === DRAWER), `${f} = 본문 페이지 (드로어 0)`).toHaveLength(0);
+  }
+  expect(FORM_ROWS, "9-desktop form-row ≥ 1").toBeGreaterThan(0);
   expect(DRAWER_NODE.height, "드로어 높이 = 프레임 높이 (화면 높이)").toBe(900);
   expect([HEAD.height, ROW_NODE.height]).toEqual([40, 48]);
-  expect(BACK_TEXT, "4-desktop 뒤로 링크").toMatch(/^‹ /);
+  expect(BACK_TEXT, "16-desktop 뒤로 링크").toMatch(/^‹ /);
 });
 
 // ---------- data-table ----------
@@ -132,7 +144,10 @@ test.describe("data-table (/gallery/desk)", () => {
     const t = section(page, "group").locator(sel(TABLE)).first();
     const group = t.locator('[data-name="date-group-row"]');
     expect(await group.count(), "묶음 머리 ≥ 1").toBeGreaterThanOrEqual(1);
-    await expect(group.first()).toHaveText(GROUP_CAPTION.text!.characters);
+    // 시안 예시 날짜는 시안마다 다르다(1.17 "10월 7일 · 오늘" → 1.25 "10월 10일 · 오늘") — 날짜 자리만 틀로
+    const groupTpl = GROUP_CAPTION.text!.characters.replace(/\d{1,2}월 \d{1,2}일/, "@");
+    expect(groupTpl, "시안 묶음 머리 = 날짜 + ' · 오늘'").toBe("@ · 오늘");
+    await expect(group.first()).toHaveText(/^\s*\d{1,2}월 \d{1,2}일 · 오늘\s*$/);
     expect(await css(group.first().locator("th").first(), "color"), "묶음 글자 색").toBe(rgb(GROUP_CAPTION.fills![0]));
     const bar = await group.first().locator("th").first().evaluate((th) => {
       const el = [...th.querySelectorAll("*")].find((e) => getComputedStyle(e).backgroundColor !== "rgba(0, 0, 0, 0)");
@@ -220,7 +235,7 @@ test.describe("detail-drawer (/gallery/desk)", () => {
     await expect(act.locator(sel("button-outline"))).toHaveCount(1);
   });
 
-  test(`[K1][S4] 입력 드로어(시안 4-desktop): drawer-nav "${BACK_TEXT}" 링크 + × → drawer-title(제목 + 캡션) → form-row(라벨 칸 + 입력, 라벨 클릭 = 입력 포커스) · "필수" 표시`, async ({ page }) => {
+  test(`[K1][S16] 입력 드로어 예시(drawer-nav = 시안 16-desktop, form-row = 9-desktop): drawer-nav "${BACK_TEXT}" 링크 + × → drawer-title(제목 + 캡션) → form-row(라벨 칸 + 입력, 라벨 클릭 = 입력 포커스) · "필수" 표시`, async ({ page }) => {
     await open(page, GALLERY_DESK);
     const d = section(page, "drawer-form").locator(sel(DRAWER));
     const nav = d.locator('[data-name="drawer-nav"]');

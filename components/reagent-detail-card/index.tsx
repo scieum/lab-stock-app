@@ -14,10 +14,12 @@ type Props = {
    * 입고일 · 이 줄들을 라벨-값 한 줄씩 쌓는다 (시안 3-mobile card-meta, 사이 12). 없으면 예전 배치(입고일은 재고 오른쪽).
    */
   meta?: React.ReactNode;
+  /** 카드 오른쪽 위 (시안 3-delete-mobile reagent-more-menu ⋯ — 교사·admin) */
+  action?: React.ReactNode;
 };
 
 /** 시약 상세 카드 */
-export function ReagentDetailCard({ name, stock, unit, lowStock, intakeDate, variant = "full", meta }: Props) {
+export function ReagentDetailCard({ name, stock, unit, lowStock, intakeDate, variant = "full", meta, action }: Props) {
   if (variant === "compact") {
     return (
       <section data-component="reagent-detail-card" className={[styles.card, styles.compact].join(" ")}>
@@ -33,7 +35,8 @@ export function ReagentDetailCard({ name, stock, unit, lowStock, intakeDate, var
   }
   if (meta) {
     return (
-      <section data-component="reagent-detail-card" className={styles.card}>
+      <section data-component="reagent-detail-card" className={[styles.card, action ? styles.withAction : ""].filter(Boolean).join(" ")}>
+        {action ? <div className={styles.action}>{action}</div> : null}
         <div className={styles.titleRow}>
           <h2 className={styles.name}>{name}</h2>
           {lowStock ? <BadgeLowStock /> : null}

@@ -1,0 +1,49 @@
+/* 디자인 1.25 reagent-more-menu: 44 원형 버튼 · ⋯ 20(ink) · 열림 = highlight-soft. 메뉴 = canvas · radius 16 · hairline-soft 테두리 · 안쪽 8 */
+.wrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+  padding: var(--space-0);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.buttonOpen {
+  background: var(--color-highlight-soft);
+}
+
+.button:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.icon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + var(--space-4));
+  right: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: calc(var(--control-height) * 3);
+  padding: var(--space-8);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-none);
+}

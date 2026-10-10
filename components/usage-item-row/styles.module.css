@@ -1,0 +1,185 @@
+/* 디자인 1.25 usage-item-row
+ * 카드(4-mobile): canvas-soft, radius 16, 안쪽 16, 사이 8. row-head = name-col(17/600 + 12 회색) · remove-link(15/600, 누름 44)
+ *   amount-row = 흰 입력(radius 16, 안쪽 12 16) + 단위 12 회색, 사이 8
+ * 행(4-desktop): 높이 64, 좌우 16, 아래 hairline. 시약명 17/600 · 재고 13 회색 · 입력 120(회색 칸) + 단위 · 빼기
+ */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  list-style: none;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: var(--button-min-height);
+}
+
+.nameCol {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.caption {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+/* 조용한 "빼기" — 채움·테두리 없음, 15/600 ink, 누름 영역 44 */
+.remove {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  min-height: var(--button-min-height);
+  padding: var(--space-0) var(--space-0) var(--space-0) var(--space-16);
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+}
+
+.remove:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.remove:disabled {
+  cursor: not-allowed;
+  opacity: var(--pressed-opacity);
+}
+
+.amountRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.inputBox {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+  min-height: var(--button-min-height);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-sizing: border-box;
+}
+
+.inputBox:focus-within {
+  border-color: var(--color-highlight);
+}
+
+/* 빈 값·0 = 두 줄 굵기 ink 테두리 */
+.inputError,
+.inputError:focus-within {
+  border: calc(var(--border-width) * 2) solid var(--color-text);
+}
+
+.input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  padding: var(--space-12) var(--space-16);
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+}
+
+.input::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.unit {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.fieldError {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+/* ───────── 데스크톱 표 행 ───────── */
+.tr {
+  height: calc(var(--space-64));
+  border-bottom: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.trWithError {
+  border-bottom: 0;
+}
+
+.td {
+  padding: var(--space-0) var(--space-16);
+  vertical-align: middle;
+}
+
+.td .name {
+  display: block;
+}
+
+.stockCell {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
+.amountCell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+/* 표 안 입력 120, 회색 칸 */
+.inputCell {
+  flex: 0 0 calc(var(--space-24) * 5);
+  background: var(--color-surface-input);
+}
+
+.errorTr {
+  border-bottom: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.errorTd {
+  padding: var(--space-0) var(--space-16) var(--space-12);
+}
+
+/* 표 칸 안 "빼기": 왼쪽 여백 없이 한 줄 */
+.td .remove {
+  padding-left: var(--space-0);
+  white-space: nowrap;
+}

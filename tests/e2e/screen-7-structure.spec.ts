@@ -124,7 +124,8 @@ test(`[R-ui][S${SCREEN}] rules.json R5 = 학생 ${INTAKE}·${REGISTER} max 0 이
   // rules 1.15 R5 에 더해진 threshold-edit(재주문 기준 직접 입력)는 화면 3 소속 — R5 중 stock-intake·reagent-register 가 화면 7 이다
   for (const c of [INTAKE, REGISTER]) expect(devRules.components[c] ?? [], `dev-rules components ${c}`).toContain(SCREEN);
   // R5 의 나머지 컴포넌트 화면 소속 (dev-rules 1.9): threshold-edit [3] · msds-search [3,7] · msds-bulk-banner [2] · doc-upload [7](서류로 입고, d7 §21)
-  const R5_HOME: Record<string, number[]> = { "threshold-edit": [3], "msds-search": [3, SCREEN], "msds-bulk-banner": [2], "doc-upload": [SCREEN] };
+  // 1.25 (d7 §24 · rules reagent_delete.entry "화면 3에서만"): reagent-more-menu · reagent-delete = 화면 3
+  const R5_HOME: Record<string, number[]> = { "threshold-edit": [3], "msds-search": [3, SCREEN], "msds-bulk-banner": [2], "doc-upload": [SCREEN], "reagent-more-menu": [3], "reagent-delete": [3] };
   expect(R5_COMPONENTS, "1.17 R5 에 doc-upload").toContain("doc-upload");
   expect(devRules.components["doc-upload"] ?? [], "dev-rules 1.9 components 에 doc-upload").toContain(SCREEN);
   for (const c of R5_COMPONENTS.filter((x) => ![INTAKE, REGISTER].includes(x) && x in devRules.components)) {

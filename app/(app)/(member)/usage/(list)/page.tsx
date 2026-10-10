@@ -15,7 +15,13 @@ import { UsageHistoryScreen, type UsageHistoryGroup } from "./usage-history-scre
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: Promise<{ mine?: string | string[]; period?: string | string[]; q?: string | string[] }>;
+  searchParams: Promise<{
+    mine?: string | string[];
+    period?: string | string[];
+    q?: string | string[];
+    grade?: string | string[];
+    cls?: string | string[];
+  }>;
 };
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
@@ -28,7 +34,8 @@ function safeUrl(v: string | null): string | null {
 
 /**
  * 화면 10 사용 기록 내역 (모든 역할 — dev-rules route_auth 10). 비로그인 → /login.
- * 필터는 주소에 둔다: ?mine=1(내 기록) · ?period=1m|3m|6m|all · ?q=시약명.
+ * 필터는 주소에 둔다: ?mine=1(내 기록) · ?period=1m|3m|6m|all · ?q=시약명 · ?grade=학년&cls=반 (d7 §24 class-filter).
+ * 수업(d7 §24): 행에 class-label, 보관(삭제)된 시약의 기록 = 시약명 회색 + deleted-reagent-tag, 시약 상세 · MSDS 링크 없음.
  * 학교·사용자는 주소에서 받지 않는다 — 로그인 세션(RLS)이 자기 학교 기록만 돌려준다.
  * 날짜·묶음·일시는 여기(서버)에서 한국 시간으로 글자를 만들어 넘긴다 (브라우저 시간대와 무관).
  * 사용일(d7 §15, 디자인 1.17 시안 10): 사용일별 묶음 헤더 "10월 7일 · 오늘" · "10월 6일" (사용일 최신순, 같은 날은 기록 시각 최신순 — DB 정렬).
@@ -41,10 +48,12 @@ export default async function UsageHistoryPage({ searchParams }: Props) {
     onlyMine: first(sp.mine) === "1",
     period: toUsagePeriod(first(sp.period)),
     query: normalizeUsageQuery(first(sp.q)),
+    grade: first(sp.grade),
+    classNo: first(sp.cls),
   });
   if (result.kind === "signed-out") redirect("/login");
 
-  const { filter, records, truncated } = result.data;
+  const { filter, records, truncated, maxGrade } = result.data;
   // records 는 사용일 최신순 — 같은 사용일이 이어지는 동안 한 묶음
   const today = seoulDate();
   const groups: UsageHistoryGroup[] = [];
@@ -64,6 +73,8 @@ export default async function UsageHistoryPage({ searchParams }: Props) {
       recordedCaption: r.recordedOn !== r.usedOn ? recordedOnCaption(r.recordedOn) : null,
       recordedTime: formatTimeHm(at),
       reagentName: r.reagentName,
+      reagentDeleted: r.reagentDeleted,
+      classInfo: r.classInfo,
       userName: r.userName,
       subtitle: usageRowSubtitle(r.userName, r.usedOn, r.recordedOn, formatTimeHm(at)),
       amount: amountFmt.format(r.amount),
@@ -75,5 +86,5 @@ export default async function UsageHistoryPage({ searchParams }: Props) {
     });
   }
 
-  return <UsageHistoryScreen filter={filter} groups={groups} truncated={truncated} />;
+  return <UsageHistoryScreen filter={filter} groups={groups} truncated={truncated} maxGrade={maxGrade} />;
 }

@@ -312,30 +312,21 @@ test(`[C3][S13] 학교A 교사: 1440 사이드바 메뉴를 누르면 그 화면
  */
 const frameHasBack = (f: string): boolean => newFrame(f).some((n) => n.path.includes("main") && ["icon-back", "back-link"].includes(n.name));
 const PAGE_HEADS: { screen: number; title: string; back: number | null; deskBack: number | null; role: ShellRole }[] = [
-  { screen: 4, title: frameTexts("4-desktop", "drawer-title")[0], back: 2, deskBack: 2, role: "student" },
+  // 1.25 (d7 §24): 화면 4 = 본문 페이지(heavy_pages) — 제목은 4-desktop page-head, 데스크톱 뒤로는 새 프레임에 그려졌을 때만
+  { screen: 4, title: frameTexts("4-desktop", "page-title")[0], back: 2, deskBack: frameHasBack("4-desktop") ? 2 : null, role: "student" },
   { screen: 5, title: frameTexts("5-desktop", "page-title")[0], back: 6, deskBack: frameHasBack("5-desktop") ? 6 : null, role: "teacher" },
   { screen: 11, title: frameTexts("11-desktop", "page-title")[0], back: null, deskBack: null, role: "teacher" },
 ];
 
 for (const h of PAGE_HEADS) {
-  test(`[C3][S${h.screen}] 학교A ${ROLE_LABEL[h.role]} ${routeOf(h.screen)}: 1440 제목 "${h.title}"(새 프레임) 보이는 것 1 · 뒤로 ${h.deskBack === null ? "없음 (새 프레임)" : `→ ${routeOf(h.deskBack)} (누르면 도착)`}${h.screen === 4 ? " (화면 4 1440 = 드로어 제목 — 드로어 뒤로는 c3-run-b)" : ""} · nav-pill 0 / 390 = nav-pill 뒤로 ${h.back === null ? "없음" : `→ ${routeOf(h.back)}`}`, async ({ browser }, info) => {
+  test(`[C3][S${h.screen}] 학교A ${ROLE_LABEL[h.role]} ${routeOf(h.screen)}: 1440 제목 "${h.title}"(새 프레임) 보이는 것 1 · 뒤로 ${h.deskBack === null ? "없음 (새 프레임)" : `→ ${routeOf(h.deskBack)} (누르면 도착)`}${h.screen === 4 ? " (화면 4 1440 = 본문 페이지 page-head, 1.25)" : ""} · nav-pill 0 / 390 = nav-pill 뒤로 ${h.back === null ? "없음" : `→ ${routeOf(h.back)}`}`, async ({ browser }, info) => {
     test.setTimeout(150_000);
     expect(h.title, "프레임 제목").toBeTruthy();
     const { context, page, viewport } = await openAs(browser, info, h.role, h.screen);
     try {
       await waitBody(page);
       const back = page.getByRole("link", { name: "뒤로", exact: true }).filter({ visible: true });
-      if (viewport === "desktop" && isDesktopMigrated(h.screen) && h.screen === 4) {
-        // 화면 4 는 run b 로 이전 (d7 §23 세부): 1440 = 시약 목록 옆 드로어 — 제목은 드로어 drawer-title, 뒤로 = drawer-nav "‹ 시약 상세"(시약을 고른 경우)
-        // → c3-run-b.spec 이 본다. 여기서는 셸만: nav-pill 0 · 본문(드로어) 제목 "${h.title}" 1 · 사이드바 오른쪽
-        await expect(page.locator(sel("nav-pill")), "nav-pill 0").toHaveCount(0);
-        const d = page.locator(sel("detail-drawer"));
-        await expect(d, "detail-drawer 1").toHaveCount(1);
-        await expect(d.getByRole("heading", { name: h.title, exact: true }), `드로어 제목 "${h.title}"`).toBeVisible();
-        const sb = (await sidebar(page).boundingBox())!;
-        expect((await d.boundingBox())!.x, "드로어는 본문(사이드바 오른쪽)").toBeGreaterThanOrEqual(sb.x + sb.width);
-        return;
-      }
+      if (viewport === "desktop") await expect(page.locator(sel("detail-drawer")), "본문 페이지 — 드로어 0").toHaveCount(0);
       if (viewport === "desktop") {
         await expect(page.locator(sel("nav-pill")), "nav-pill 0").toHaveCount(0);
         // 본문(main) 안 제목 — 사이드바 메뉴 글자(예: "실험 매뉴얼" · "시약장")와 따로 센다

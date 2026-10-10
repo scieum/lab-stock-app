@@ -232,3 +232,11 @@
 .rows > :last-child {
   border-bottom: 0;
 }
+
+/* 머리 줄 오른쪽 묶음 (시안 3-delete-desktop drawer-head-actions: ⋯ + ×, 사이 8) */
+.headActions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-8);
+}

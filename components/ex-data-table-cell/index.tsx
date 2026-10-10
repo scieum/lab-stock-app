@@ -41,10 +41,29 @@ type RecordRowProps = {
   amount: string;
   /** 누른 행 (상세가 열려 있음) = 연하늘 바탕 */
   selected?: boolean;
+  /** 시약명 옆 (디자인 1.25 화면 10 deleted-reagent-tag) */
+  titleAddon?: React.ReactNode;
+  /** 시약명 회색 (보관된 시약) */
+  titleMuted?: boolean;
+  /** 사용자 줄 아래 (디자인 1.25 화면 10 class-label) */
+  extra?: React.ReactNode;
 } & Omit<React.ComponentProps<"button">, "title" | "children">;
 
 /** 기록 행 (화면 10): 시약명/사용자(+ 캡션) · 사용량 (date 를 주면 왼쪽 날짜 열). 누르면 상세(ex-modal-card)가 열린다 */
-export function DataRecordRow({ date, title, subtitle, caption, amount, selected, className, type = "button", ...rest }: RecordRowProps) {
+export function DataRecordRow({
+  date,
+  title,
+  subtitle,
+  caption,
+  amount,
+  selected,
+  titleAddon,
+  titleMuted = false,
+  extra,
+  className,
+  type = "button",
+  ...rest
+}: RecordRowProps) {
   return (
     <button
       data-component="ex-data-table-cell"
@@ -56,8 +75,16 @@ export function DataRecordRow({ date, title, subtitle, caption, amount, selected
     >
       {date ? <span className={styles.recordDate}>{date}</span> : null}
       <span className={styles.recordMain}>
-        <span className={styles.recordTitle}>{title}</span>
+        {titleAddon ? (
+          <span className={styles.recordTitleRow} data-name="name-row">
+            <span className={[styles.recordTitle, titleMuted ? styles.recordTitleMuted : ""].filter(Boolean).join(" ")}>{title}</span>
+            {titleAddon}
+          </span>
+        ) : (
+          <span className={[styles.recordTitle, titleMuted ? styles.recordTitleMuted : ""].filter(Boolean).join(" ")}>{title}</span>
+        )}
         {subtitle ? <span className={styles.recordSubtitle}>{subtitle}</span> : null}
+        {extra}
         {caption ? <span className={styles.recordCaption}>{caption}</span> : null}
       </span>
       <span className={styles.recordAmount}>{amount}</span>

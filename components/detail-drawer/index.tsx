@@ -24,6 +24,8 @@ type Props = {
   closeLabel?: string;
   /** 아래 고정 줄 (drawer-actions: 버튼들) */
   actions?: React.ReactNode;
+  /** 머리 줄 × 왼쪽 (시안 3-delete-desktop drawer-head-actions: reagent-more-menu ⋯) */
+  headActions?: React.ReactNode;
   /** 바뀌면 제목으로 포커스를 다시 옮긴다 (같은 드로어에서 다른 행을 열 때) */
   focusKey?: string;
   /** true = 제자리 상자 (갤러리 — 화면 높이 고정·포커스 이동 없음) */
@@ -60,6 +62,7 @@ export function DetailDrawer({
   onClose,
   closeLabel = "닫기",
   actions,
+  headActions,
   focusKey,
   inline = false,
   children,
@@ -120,7 +123,7 @@ export function DetailDrawer({
     return () => window.removeEventListener("keydown", onKey, true);
   }, [closeHref, onClose, inline]);
 
-  const closeButton =
+  const closeLink =
     closeHref || onClose ? (
       closeHref ? (
         <Link href={closeHref} scroll={false} prefetch={linkPrefetch(closeHref)} className={styles.close} aria-label={closeLabel} data-name="drawer-close">
@@ -132,6 +135,15 @@ export function DetailDrawer({
         </button>
       )
     ) : null;
+
+  const closeButton = headActions ? (
+    <div className={styles.headActions} data-name="drawer-head-actions">
+      {headActions}
+      {closeLink}
+    </div>
+  ) : (
+    closeLink
+  );
 
   const heading = (
     <h2 id={titleId} ref={titleRef} tabIndex={-1} className={styles.title}>

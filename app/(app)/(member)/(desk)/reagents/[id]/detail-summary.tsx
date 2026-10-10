@@ -45,6 +45,8 @@ type Props = {
   layout?: "card" | "drawer";
   /** drawer 배치에서 마지막에 덧붙이는 줄 (CAS 번호 · 분류 등) */
   extraRows?: { label: string; value: string }[];
+  /** card 배치의 카드 오른쪽 위 (시약 삭제 ⋯ — 교사·admin, d7 §24) */
+  cardAction?: React.ReactNode;
 };
 
 /**
@@ -62,6 +64,7 @@ export function DetailSummary({
   initialPicking = false,
   layout = "card",
   extraRows = [],
+  cardAction,
 }: Props) {
   const canEdit = picker !== null;
   const [picking, setPicking] = useState(canEdit && initialPicking);
@@ -223,6 +226,7 @@ export function DetailSummary({
           lowStock={reagent.lowStock}
           intakeDate={reagent.intakeDate}
           meta={lines}
+          action={cardAction}
         />
       )}
       {canEdit && picking && picker ? (

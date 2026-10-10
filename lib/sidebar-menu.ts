@@ -64,12 +64,12 @@ function under(pathname: string, base: string) {
 
 /**
  * 현재 화면의 활성 메뉴 (시안 *-desktop 의 활성 sidebar-item):
- * 13 홈 · 2·3·4·16 시약(사용 기록 입력·MSDS 요약도 시약 섹션) · 10 기록 · 11 시약장 · 12 QR 찾기 ·
+ * 13 홈 · 2·3·16 시약(MSDS 요약도 시약 섹션) · 4·10 기록(시안 4-desktop 1.25 — 사용 기록 입력은 기록 섹션) · 11 시약장 · 12 QR 찾기 ·
  * 7 입고 · 5 실험 매뉴얼 · 6 재주문 알림 · 8 사용자 · 9 판매처
  */
 export function sidebarActiveKey(pathname: string): SidebarKey | undefined {
   if (pathname === "/") return "home";
-  if (under(pathname, "/reagents") || under(pathname, "/msds") || under(pathname, "/usage/new")) return "reagents";
+  if (under(pathname, "/reagents") || under(pathname, "/msds")) return "reagents";
   if (under(pathname, "/usage")) return "records";
   if (under(pathname, "/cabinets")) return "cabinets";
   if (under(pathname, "/scan")) return "scan";
