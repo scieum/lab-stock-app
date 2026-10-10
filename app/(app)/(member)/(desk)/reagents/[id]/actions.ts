@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import {
   archiveReagent,
   placeReagentAt,
@@ -57,13 +58,19 @@ export async function resetReorderThresholdAction(input: unknown): Promise<Reset
   return result;
 }
 
+/** 삭제 뒤 갈 곳: 화면 2 (/reagents + 목록 쿼리)만 — 다른 주소는 /reagents */
+function listTarget(v: unknown): string {
+  return typeof v === "string" && /^\/reagents(\?[^#\s]*)?$/.test(v) ? v : "/reagents";
+}
+
 /**
  * 시약 삭제 = 보관 (d7 §24). reagentId 만 꺼내 lib/supabase 가 형식을 다시 보고, 교사·admin · 자기 학교 · 데모 거부는
- * DB 함수 archive_reagent 가 본다. 목록 · 시약장 · 홈 · 재주문 알림에서 빠지므로 전체를 다시 받게 한다.
+ * DB 함수 archive_reagent 가 본다. 목록 · 시약장 · 홈 · 재주문 알림에서 빠지므로 전체를 다시 받게 하고,
+ * 같은 응답으로 화면 2 로 보낸다 (지금 상세가 "찾을 수 없어요"로 다시 그려지는 일 없이). 실패하면 결과를 돌려준다.
  */
 export async function archiveReagentAction(input: unknown): Promise<ArchiveReagentResult> {
   const result = await archiveReagent({ reagentId: field(input, "reagentId") });
   if (!result.ok) return result;
   revalidatePath("/", "layout");
-  return result;
+  redirect(listTarget(field(input, "listHref")));
 }

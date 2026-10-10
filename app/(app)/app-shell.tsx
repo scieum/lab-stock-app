@@ -1,5 +1,6 @@
 "use client";
 
+import { FlashToast } from "./flash-toast";
 import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { NavPill, type NavLinkItem } from "@/components/nav-pill";
@@ -232,6 +233,8 @@ export function AppShell({ schoolName, role, displayName, children }: Props) {
         </main>
       </div>
       <TabBar active={activeTab(pathname)} />
+      {/* 화면을 옮긴 뒤 보여 줄 토스트 (시약 삭제 → 화면 2) — 셸은 이동해도 남는다 */}
+      <FlashToast />
     </div>
   );
 }

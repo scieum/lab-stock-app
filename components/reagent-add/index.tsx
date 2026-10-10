@@ -22,6 +22,8 @@ type SearchProps = {
   value: string;
   onChange?: (value: string) => void;
   onFocus?: () => void;
+  /** 칸을 누름 (없으면 onFocus) */
+  onPress?: () => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   /** 드롭다운이 열려 있음 (칸 테두리 ink) */
   expanded?: boolean;
@@ -38,7 +40,7 @@ type SearchProps = {
  */
 export function ReagentAdd(props: ButtonProps | SearchProps) {
   if (props.variant === "search") {
-    const { value, onChange, onFocus, onKeyDown, expanded = false, controls, disabled, inputRef, className } = props;
+    const { value, onChange, onFocus, onPress, onKeyDown, expanded = false, controls, disabled, inputRef, className } = props;
     return (
       <div
         data-component="reagent-add"
@@ -62,7 +64,7 @@ export function ReagentAdd(props: ButtonProps | SearchProps) {
           onChange={(e) => onChange?.(e.target.value)}
           readOnly={onChange ? undefined : true}
           onFocus={onFocus}
-          onClick={onFocus}
+          onClick={onPress ?? onFocus}
           onKeyDown={onKeyDown}
         />
       </div>

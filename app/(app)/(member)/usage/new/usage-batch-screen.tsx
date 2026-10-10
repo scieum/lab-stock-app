@@ -72,6 +72,8 @@ export function UsageBatchScreen({ entry, returnHref }: Props) {
   const [sessionIds, setSessionIds] = useState<Set<string>>(new Set());
   const searchGroupRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  // "닫기" 뒤 검색 칸으로 포커스를 돌려줄 때는 포커스로 여는 동작을 한 번 건너뛴다 (사용자가 다시 누르면 열린다)
+  const skipFocusOpen = useRef(false);
 
   useEffect(() => {
     if (!toast || leaving) return;
@@ -282,7 +284,14 @@ export function UsageBatchScreen({ entry, returnHref }: Props) {
                 setQuery(v);
                 openDropdown();
               }}
-              onFocus={openDropdown}
+              onPress={openDropdown}
+              onFocus={() => {
+                if (skipFocusOpen.current) {
+                  skipFocusOpen.current = false;
+                  return;
+                }
+                openDropdown();
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") e.preventDefault();
                 if (e.key === "Escape" && dropOpen) {
@@ -304,7 +313,12 @@ export function UsageBatchScreen({ entry, returnHref }: Props) {
                 onClose={() => {
                   setDropOpen(false);
                   setQuery("");
+                  skipFocusOpen.current = true;
                   searchRef.current?.focus({ preventScroll: true });
+                  // 이미 포커스가 있어 focus 이벤트가 오지 않았으면 표시를 지운다
+                  window.requestAnimationFrame(() => {
+                    skipFocusOpen.current = false;
+                  });
                 }}
               />
             ) : null}
