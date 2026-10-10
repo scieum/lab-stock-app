@@ -1,5 +1,5 @@
 {
-  "version": "1.14",
+  "version": "1.15",
   "supabase_project": "kammofjdizvtvmbadmma",
   "github": "https://github.com/scieum/lab-stock-app",
   "vercel": "https://vercel.com/hayeonkeems-projects/lab-stock-app-o97y",
@@ -132,6 +132,7 @@
     ],
     "ex-empty-state-card": [
       2,
+      4,
       6,
       7,
       8,
@@ -177,16 +178,52 @@
     ],
     "data-table": [
       2,
+      4,
       8,
       9,
       10
     ],
     "detail-drawer": [
       3,
-      4,
       9,
       10,
       16
+    ],
+    "reagent-picker": [
+      4
+    ],
+    "reagent-add": [
+      4
+    ],
+    "usage-batch-list": [
+      4
+    ],
+    "usage-item-row": [
+      4
+    ],
+    "usage-over-stock": [
+      4
+    ],
+    "class-select": [
+      4
+    ],
+    "recent-class-chip": [
+      4
+    ],
+    "class-label": [
+      10
+    ],
+    "class-filter": [
+      10
+    ],
+    "deleted-reagent-tag": [
+      10
+    ],
+    "reagent-more-menu": [
+      3
+    ],
+    "reagent-delete": [
+      3
     ],
     "app-sidebar": [
       2,
@@ -217,6 +254,7 @@
       16
     ],
     "ex-modal-card": [
+      3,
       6,
       8,
       9,

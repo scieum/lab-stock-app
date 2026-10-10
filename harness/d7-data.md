@@ -306,6 +306,16 @@
 | 상태 프레임 | 디자인 run 20261008-1610 의 상태 프레임 20종(2-filter·3-location·7-doc-*·11-*·16-* 등)은 그 화면 run 에서 대조 |
 | 검사 | d5 C3. 화면별 이전 완료 = dev-rules `desktop_migrated_screens` |
 
+## 24. 여러 시약 사용 기록·시약 삭제·수업 기록 (화면 3·4·10, 2026-10-10 결정 — design/rules.json 1.25 usage_batch·reagent_delete·class_info)
+
+| 항목 | 결정 |
+|---|---|
+| 여러 시약 사용 기록 (화면 4) | 모든 역할(학생 포함), 둘러보기 잠금. 시약 여러 개를 담아 시약마다 사용량, 사용일·수업·메모는 묶음 공통, 사용자 = 로그인한 사람. 진입: 화면 3 "사용 기록"(그 시약 담긴 채) · 홈 quick-action·탭 "기록"(빈 채). 모바일 = 전용 화면(reagent-add → 바텀시트 체크 → "{N}개 담기"), **데스크톱 = 본문 페이지(rules desktop_shell.heavy_pages 4 — run b 의 드로어에서 바뀜)** + 검색 아래 드롭다운 + data-table(시약명·현재 재고·사용량·빼기). 저장 바 "사용 기록 저장 · N개"(0개면 비활성). 재고 초과 = 그 행 usage-over-stock 경고 + 저장 비활성, 빈 값·0 = 입력 칸 오류. 저장 뒤 토스트 "N개 시약 사용을 기록했어요" → 들어온 화면 |
+| 저장 DB | 새 함수 `record_usage_batch(p_items jsonb, p_used_on date, p_memo text, p_class_grade int, p_class_no int, p_class_subject text)` — 한 트랜잭션, 항목 1~30(같은 시약 중복 불가), 각 항목은 record_usage 와 같은 검사(자기 학교·보관 안 된 시약·amount > 0·재고 이상 차감 금지·사용일 미래 금지·데모 거부), 하나라도 틀리면 전부 취소하고 문제 항목 번호를 오류에 담는다. 기존 record_usage 는 남긴다(다른 호출 호환) |
+| 수업 기록 | `usage_logs` 에 `class_grade int null`·`class_no int null`·`class_subject text null`(20자) 추가 — 모두 선택. 학년 범위 = 학교급별(rules class_info.grades: 초 1~6, 중·고 1~3 — schools 의 학교급 기준, 학교급을 모르면 1~6), 반 1~20. class-select(학년·반 select + 수업명) + 최근 조합 칩 최대 3(그 사용자의 최근 기록에서). 화면 10: class-label "{학년}학년 {반}반 · {수업명}"(있는 것만), 데스크톱 표 열 "수업"(없으면 "—"), class-filter "반: 전체 ▾"(학년 → 반) |
+| 시약 삭제 (화면 3) | 교사·admin(R5: 학생 reagent-more-menu·reagent-delete 0, 둘러보기 숨김). 진입 = 화면 3 만: 모바일 카드 오른쪽 위 ⋯ / 데스크톱 드로어 머리 × 왼쪽 ⋯ → "시약 삭제" → 확인 모달(rules reagent_delete.confirm 문구, 삭제 = 검정 button-primary) → 토스트 "시약을 삭제했어요" → 화면 2 |
+| 삭제 DB = 보관 | `reagents.deleted_at timestamptz null`(+ deleted_by). 함수 `archive_reagent(p_reagent_id)` — 교사·admin·자기 학교·데모 거부. 보관된 시약은 목록·상세(404 처럼)·시약장 칸·홈·재주문 알림·사용 기록 고르기·입고 고르기·MSDS 일괄·위치 추천에서 제외(조회 함수·RLS select 정책·뷰 중 안전한 방법), 칸 배치는 비움(slot_id null). 사용·입고 기록은 그대로 남고 화면 10 은 deleted-reagent-tag "삭제된 시약" + 시약명 회색 + 상세 링크 없음. 되돌리기 없음. 같은 이름 새 시약 등록은 허용(이름 중복 검사가 있다면 보관된 시약은 제외 — 바꾸려면 인덱스를 다시 만들어야 하면 보고) |
+
 ## 10. 로그아웃 (2026-10-05 결정)
 
 - 로그인 후 모든 화면의 nav-pill 학교명을 누르면 작은 메뉴가 열리고 "로그아웃" 1개가 있다. 누르면 `POST /api/auth/logout` → `/login`.
