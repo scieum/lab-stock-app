@@ -1,0 +1,82 @@
+/* sensor-alert-tile
+ * 데스크톱 (시안 13-desktop): 흰 카드 + hairline-soft · radius 24 · 안쪽 24 · 사이 8 — caption 12 → 숫자 32/700 → note 13
+ * 모바일 (시안 13-mobile home-summary 안): 위 구분선 → 줄(아이콘 20 + 글자 15 + 사이 12, 오른쪽 ›) 위 여백 12
+ */
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-24);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.tile:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.caption {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.value {
+  color: var(--color-text);
+  font-size: var(--font-size-32);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.note {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.line {
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.lineLink {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  min-height: var(--button-min-height);
+  padding-top: var(--space-12);
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+  text-decoration: none;
+}
+
+.lineLink:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.lineLeft {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+.lineIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.chevron {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex-shrink: 0;
+  color: var(--color-highlight);
+}

@@ -297,6 +297,75 @@ export type Database = {
           },
         ]
       }
+      sensors: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          location_text: string | null
+          maker: string
+          memo: string | null
+          model: string | null
+          name: string
+          quantity: number
+          school_id: string
+          slot_id: string | null
+          status: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          location_text?: string | null
+          maker: string
+          memo?: string | null
+          model?: string | null
+          name: string
+          quantity?: number
+          school_id: string
+          slot_id?: string | null
+          status?: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          location_text?: string | null
+          maker?: string
+          memo?: string | null
+          model?: string | null
+          name?: string
+          quantity?: number
+          school_id?: string
+          slot_id?: string | null
+          status?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sensors_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sensors_slot_fk"
+            columns: ["slot_id", "school_id"]
+            isOneToOne: false
+            referencedRelation: "cabinet_slots"
+            referencedColumns: ["id", "school_id"]
+          },
+        ]
+      }
       schools: {
         Row: {
           cabinet_seq: number
@@ -494,6 +563,9 @@ export type Database = {
         }
       }
       archive_reagent: { Args: { p_reagent_id: string }; Returns: Json }
+      archive_reagents: { Args: { p_reagent_ids: string[] }; Returns: number }
+      archive_sensor: { Args: { p_sensor_id: string }; Returns: Json }
+      archive_sensors: { Args: { p_sensor_ids: string[] }; Returns: number }
       change_member_role: {
         Args: { p_role: string; p_user_id: string }
         Returns: {
@@ -750,6 +822,21 @@ export type Database = {
       }
       set_reorder_threshold: {
         Args: { p_min_stock: number; p_reagent_id: string }
+        Returns: Json
+      }
+      upsert_sensor: {
+        Args: {
+          p_id?: string
+          p_location_text?: string
+          p_maker: string
+          p_memo?: string
+          p_model?: string
+          p_name: string
+          p_quantity: number
+          p_slot_id?: string
+          p_status: string
+          p_type: string
+        }
         Returns: Json
       }
       usage_history: {

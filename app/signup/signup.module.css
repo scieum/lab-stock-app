@@ -281,6 +281,15 @@ form.card {
   line-height: var(--line-height-normal);
 }
 
+/* 칸 아래 오류 (시안 14-error field-error: 13 회색, 위 8) — 핑크 없음 */
+.fieldError {
+  margin: 0;
+  padding-top: var(--space-8);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
 /* 모바일: 가입하기 = 화면 하단 고정 바 (탭바 없음) */
 .actionBar {
   position: fixed;
@@ -289,6 +298,8 @@ form.card {
   left: 0;
   z-index: 10;
   display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
   padding: var(--space-12) var(--space-16) var(--space-32);
   border-top: var(--border-width) solid var(--color-border);
   background: var(--color-surface);

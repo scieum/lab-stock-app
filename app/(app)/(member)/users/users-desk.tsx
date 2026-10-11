@@ -27,6 +27,7 @@ import {
 import type { Role } from "@/lib/types";
 import { isValidEmail, normalizeEmails } from "@/lib/users-rules";
 import { changeMemberRoleAction, inviteMembersAction, removeMemberAction } from "./actions";
+import { INVITE_EMAIL_ERROR } from "@/lib/users-rules";
 import styles from "./users.module.css";
 
 type Props = {
@@ -132,7 +133,8 @@ export function UsersDesk({ schoolName, members, counts, invites, onCopyLink }: 
     }
     const bad = emails.filter((x) => !isValidEmail(x));
     if (bad.length > 0) {
-      setInviteError(`이메일 주소를 확인해 주세요 (${bad.join(", ")})`);
+      // d7 §25 QA 6: 두 폭 같은 문구
+      setInviteError(INVITE_EMAIL_ERROR);
       return;
     }
     setInviteError(null);

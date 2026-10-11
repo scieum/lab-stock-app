@@ -58,3 +58,13 @@
 .outlined .action {
   margin-top: var(--space-8);
 }
+
+/* 시안 1.26 13-not-found · 17-empty: 버튼 줄이 카드 폭 전체 (위 16) */
+.actionFull {
+  align-self: stretch;
+  padding-top: var(--space-8);
+}
+
+.iconInk {
+  color: var(--color-text);
+}

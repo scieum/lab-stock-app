@@ -14,7 +14,7 @@ import {
   type ReagentListItem,
   type ReagentListRow,
 } from "./reagents-data";
-import { toPlacement, toThreshold, type ReagentDetail } from "./reagent-detail";
+import { toPlacement, toThreshold, toUsageRows, type ReagentDetail } from "./reagent-detail";
 
 /**
  * 둘러보기(비회원) 데이터 — harness/d7-data.md §5.
@@ -24,12 +24,6 @@ import { toPlacement, toThreshold, type ReagentDetail } from "./reagent-detail";
 export const DEMO_SCHOOL_ID = "00000000-d3e0-4000-8000-000000000001";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const SEOUL_DATE = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Asia/Seoul",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-});
 const numberFmt = new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 2 });
 
 export type DemoSchool = { id: string; name: string };
@@ -55,15 +49,19 @@ export type DemoHomeData = Omit<HomeData, "role">;
 
 export async function getDemoHomeData(): Promise<DemoHomeData> {
   const supabase = createAnonClient();
-  const [reagents, cabinets, slots, recent, usedOn, school] = await Promise.all([
+  const [reagents, cabinets, slots, recent, school] = await Promise.all([
     supabase.from("reagents").select("id, name, unit, stock, min_stock, msds_url").eq("school_id", DEMO_SCHOOL_ID).order("name"),
     supabase.from("cabinets").select("id, door_type, shelves").eq("school_id", DEMO_SCHOOL_ID),
     supabase.from("cabinet_slots").select("id", { count: "exact", head: true }).not("storage_class", "is", null).eq("school_id", DEMO_SCHOOL_ID),
     supabase.rpc("demo_recent_usage", { p_limit: 3 }),
-    // 같은 순서의 사용일 — 데스크톱 표 "사용일" 칸
-    supabase.from("usage_logs").select("id, used_on").eq("school_id", DEMO_SCHOOL_ID).order("used_at", { ascending: false }).limit(3),
     getDemoSchool(),
   ]);
+  // 사용일 — 행과 같은 출처(돌려받은 기록 id)에서 (d7 §25 QA 1)
+  const recentIds = (recent.data ?? []).map((u) => u.id);
+  const usedOn =
+    recentIds.length > 0
+      ? await supabase.from("usage_logs").select("id, used_on").eq("school_id", DEMO_SCHOOL_ID).in("id", recentIds)
+      : { data: [] as { id: string; used_on: string }[] };
   const rows = reagents.data ?? [];
   const cabs = cabinets.data ?? [];
   const now = new Date();
@@ -81,6 +79,8 @@ export async function getDemoHomeData(): Promise<DemoHomeData> {
     totalSlots: cabs.reduce((n, c) => n + slotCapacity(c.door_type, c.shelves), 0),
     assignedSlots: slots.count ?? 0,
     recent: (recent.data ?? []).map((u) => toHomeRecent(u, u.user_name ?? "", usedOnById, now)),
+    // 둘러보기에는 센서 알림 타일이 없다 (rules guest.hidden_components)
+    sensorAlerts: { broken: 0, check: 0 },
   };
 }
 
@@ -133,6 +133,12 @@ export async function getDemoReagentDetail(id: string): Promise<DemoReagentDetai
   const r = reagentRes.data;
   if (reagentRes.error || !r) return null;
   const placement = toPlacement(r.slot);
+  // 사용 기록 탭의 사용일 — 같은 기록 id 에서 (d7 §25 QA 1)
+  const usageIds = (usageRes.data ?? []).map((u) => u.id);
+  const usedOnRes =
+    usageIds.length > 0
+      ? await supabase.from("usage_logs").select("id, used_on").eq("school_id", DEMO_SCHOOL_ID).in("id", usageIds)
+      : { data: [] as { id: string; used_on: string }[] };
 
   return {
     reagent: {
@@ -152,11 +158,6 @@ export async function getDemoReagentDetail(id: string): Promise<DemoReagentDetai
     // 둘러보기: 위치 바꾸기 없음 (guest.hidden_components)
     picker: null,
     suggestion: null,
-    usage: (usageRes.data ?? []).map((u) => ({
-      id: u.id,
-      date: formatDateDots(SEOUL_DATE.format(new Date(u.used_at))),
-      user: u.user_name || "-",
-      amount: formatStock(Number(u.amount), r.unit),
-    })),
+    usage: toUsageRows(usageRes.data ?? [], usedOnRes.data ?? [], r.unit, (u) => u.user_name || "-"),
   };
 }

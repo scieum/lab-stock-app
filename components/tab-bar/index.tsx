@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { inventoryHref, useLastInventory } from "@/components/inventory-switch";
 import { TabItem } from "@/components/tab-item";
 import { MOBILE_MEDIA_QUERY } from "@/lib/breakpoints";
 import styles from "./styles.module.css";
@@ -30,6 +31,12 @@ const isMobile = () => window.matchMedia(MOBILE_MEDIA_QUERY).matches;
 const GUEST_HREF: Partial<Record<TabKey, string>> = { home: "/demo", reagents: "/demo/reagents" };
 const GUEST_LOCKED: TabKey[] = ["scan", "records"];
 
+/**
+ * 아직 없는 화면의 탭 (디자인 1.26 tab_bar.qr_pending): 화면 12 전까지 QR 스캔 = 회색 + tab-soon "준비 중",
+ * 누르면 토스트 "준비 중이에요" (/scan 으로 가지 않는다). 둘러보기는 그대로 guest-lock.
+ */
+const SOON: TabKey[] = ["scan"];
+
 type Props = {
   active?: TabKey;
   /**
@@ -44,7 +51,13 @@ type Props = {
 /** 모바일 하단 탭바 — 전폭 사각형(radius 0), 탭 4개 */
 export function TabBar({ active, responsive = true, guest = false }: Props) {
   const mobile = useSyncExternalStore(subscribe, isMobile, () => true);
+  // "시약" 탭 = 시약 | 센서 중 마지막으로 고른 쪽 (rules tab_bar.sensor_entry)
+  const inventory = useLastInventory();
   if (responsive && !mobile) return null;
+  const hrefOf = (t: (typeof TABS)[number]) => {
+    if (t.key === "reagents") return inventoryHref(inventory, guest ? "/demo" : "");
+    return guest ? (GUEST_HREF[t.key] ?? t.href) : t.href;
+  };
   return (
     <nav
       data-component="tab-bar"
@@ -55,10 +68,11 @@ export function TabBar({ active, responsive = true, guest = false }: Props) {
         <TabItem
           key={t.key}
           label={t.label}
-          href={guest ? (GUEST_HREF[t.key] ?? t.href) : t.href}
+          href={hrefOf(t)}
           icon={t.icon}
           active={t.key === active}
           locked={guest && GUEST_LOCKED.includes(t.key)}
+          soon={!guest && SOON.includes(t.key)}
         />
       ))}
     </nav>

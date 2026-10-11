@@ -1,0 +1,42 @@
+/* sensor-add (시안 17: button-primary 높이 44 · 안쪽 0/16/0/12 · plus 20 + 사이 4, 빈 상태 = 전폭 48) */
+.wrap {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-16) 0 var(--space-12);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.button:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: var(--space-4);
+}
+
+.full,
+.full .button {
+  width: 100%;
+}
+
+.full .button {
+  min-height: var(--control-height);
+}
+
+.icon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+}

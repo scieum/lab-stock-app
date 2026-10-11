@@ -12,6 +12,29 @@ const PUBLIC_ROOTS = ["/login", "/signup", "/forgot-password", "/auth", "/api", 
  */
 const GUEST_ONLY = ["/signup", "/demo"];
 
+/**
+ * 로그인해야 열리는 앱 경로 (로그인 전이면 /login 으로). 여기에도 공개 경로에도 없는 주소는 없는 페이지 —
+ * 로그인 전에는 /login 으로 보내지 않고 404(프레임 1-not-found, 디자인 1.26 not_found.pre_login)를 그대로 보여 준다.
+ */
+const APP_ROOTS = [
+  "/reagents",
+  "/msds",
+  "/usage",
+  "/intake",
+  "/cabinets",
+  "/reorder",
+  "/vendors",
+  "/manual",
+  "/users",
+  "/sensors",
+  "/scan",
+  "/reset-password",
+];
+
+export function isAppPath(pathname: string): boolean {
+  return APP_ROOTS.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
+
 /** 화면 15 랜딩의 내부 세그먼트 (app/landing) — 주소창에는 드러나지 않는다 */
 const LANDING_SEGMENT = "/landing";
 
@@ -50,7 +73,7 @@ export async function updateSession(request: NextRequest) {
   const signedIn = Boolean(data?.claims?.sub);
   const { pathname, search } = request.nextUrl;
 
-  if (!signedIn && pathname !== LANDING_SEGMENT && !isPublicPath(pathname)) {
+  if (!signedIn && pathname !== LANDING_SEGMENT && !isPublicPath(pathname) && isAppPath(pathname)) {
     const to = request.nextUrl.clone();
     to.pathname = "/login";
     to.search = "";

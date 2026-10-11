@@ -22,6 +22,8 @@ export type DataTableColumn = {
   /** 머리 칸을 누르면 (정렬 바꾸기) */
   onSort?: () => void;
   align?: "start" | "end";
+  /** 머리 칸에 글자 대신 둘 요소 (디자인 1.26 select-cell: 전체 선택 select-checkbox) */
+  header?: React.ReactNode;
 };
 
 type TableProps = {
@@ -65,7 +67,9 @@ export function DataTable({ label, columns, children, empty, className }: TableP
                 className={[styles.headCell, c.align === "end" ? styles.end : ""].filter(Boolean).join(" ")}
                 aria-sort={ariaSort(c.sort)}
               >
-                {c.sort && c.onSort ? (
+                {c.header ? (
+                  <span className={styles.headLabel}>{c.header}</span>
+                ) : c.sort && c.onSort ? (
                   <button type="button" className={styles.sortButton} onClick={c.onSort}>
                     <span>{c.label}</span>
                     <Icon
@@ -107,17 +111,36 @@ type RowProps = {
   /** 행 높이가 글자 두 줄일 때 (기록 캡션) — 위아래 12 */
   tall?: boolean;
   className?: string;
+  /** 행의 data-component (기본 ex-data-table-cell — 화면 17 표 행은 시안 이름 sensor-row) */
+  component?: string;
+  /** 방금 추가된 행 (화면 10 기록 추가 뒤 잠깐 highlight-soft) */
+  fresh?: boolean;
 };
 
 const INTERACTIVE = "a, button, input, select, textarea, label, [role='menu'], [role='menuitem']";
 
 /** 표 행 (시안 노드 이름 ex-data-table-cell). */
-export function DataTableRow({ children, selected = false, clickable = false, tall = false, className }: RowProps) {
+export function DataTableRow({
+  children,
+  selected = false,
+  clickable = false,
+  tall = false,
+  className,
+  component = "ex-data-table-cell",
+  fresh = false,
+}: RowProps) {
   return (
     <tr
-      data-component="ex-data-table-cell"
+      data-component={component}
       data-selected={selected ? "true" : undefined}
-      className={[styles.row, selected ? styles.selected : "", clickable ? styles.clickable : "", tall ? styles.tall : "", className ?? ""]
+      data-fresh={fresh ? "true" : undefined}
+      className={[
+        styles.row,
+        selected || fresh ? styles.selected : "",
+        clickable ? styles.clickable : "",
+        tall ? styles.tall : "",
+        className ?? "",
+      ]
         .filter(Boolean)
         .join(" ")}
       onClick={
@@ -203,17 +226,20 @@ type ButtonCellProps = {
   caption?: string;
   /** 누르면 열리는 것 (읽기 도구) */
   controls?: string;
+  /** 선택 모드 행 (디자인 1.26 bulk_delete.row_tap) — 누르면 고르기 · aria-pressed */
+  pressed?: boolean;
 };
 
 /** 행의 대표 칸 = 버튼 (주소 대신 화면 상태로 여는 행) */
-export function DataTableButtonCell({ onClick, children, current = false, caption, controls }: ButtonCellProps) {
+export function DataTableButtonCell({ onClick, children, current = false, caption, controls, pressed }: ButtonCellProps) {
   return (
     <td className={[styles.cell, current ? styles.strong : ""].filter(Boolean).join(" ")}>
       <button
         type="button"
         data-row-link=""
         className={styles.rowLink}
-        aria-expanded={current}
+        aria-expanded={pressed === undefined ? current : undefined}
+        aria-pressed={pressed}
         aria-controls={controls}
         onClick={onClick}
       >

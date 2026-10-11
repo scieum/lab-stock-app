@@ -17,6 +17,8 @@ export const USAGE_BATCH_TEXT = {
   emptyHint: "위 검색 칸에서 시약을 찾아 담아 주세요",
   amountRequired: "사용량을 적어 주세요",
   amountNumber: "사용량은 숫자로 적어 주세요",
+  /** d7 §25 QA 4: 0 · 음수 */
+  amountPositive: "사용량은 0보다 커야 해요",
   saveFailed: "저장하지 못했어요 — 표시한 시약을 확인해 주세요",
   memoPlaceholder: "메모 (선택)",
 } as const;
@@ -62,8 +64,10 @@ const AMOUNT_RE = /^\d+(\.\d+)?$/;
 
 export type AmountCheck =
   | { kind: "ok"; value: number }
-  /** 빈 값 · 0 = 입력 칸 오류 "사용량을 적어 주세요" */
+  /** 빈 값 = 입력 칸 오류 "사용량을 적어 주세요" */
   | { kind: "empty" }
+  /** 0 · 음수 = "사용량은 0보다 커야 해요" (d7 §25 QA 4) */
+  | { kind: "nonpositive" }
   /** 숫자가 아님 */
   | { kind: "invalid" }
   /** 사용량 > 현재 재고 = usage-over-stock */
@@ -73,10 +77,11 @@ export type AmountCheck =
 export function checkAmount(raw: string, stock: number): AmountCheck {
   const v = raw.trim().replace(/,/g, "");
   if (v === "") return { kind: "empty" };
+  if (/^-\d+(\.\d+)?$/.test(v)) return { kind: "nonpositive" };
   if (!AMOUNT_RE.test(v)) return { kind: "invalid" };
   const n = Number(v);
   if (!Number.isFinite(n)) return { kind: "invalid" };
-  if (n <= 0) return { kind: "empty" };
+  if (n <= 0) return { kind: "nonpositive" };
   if (n > stock) return { kind: "over", value: n };
   return { kind: "ok", value: n };
 }
@@ -84,7 +89,7 @@ export function checkAmount(raw: string, stock: number): AmountCheck {
 export type BatchItemInput = { reagentId: string; amount: string };
 export type BatchStock = { stock: number; unit: string };
 
-/** 저장할 수 있는지 (0개 · 빈 값 · 0 · 숫자 아님 · 재고 초과가 하나라도 있으면 false) */
+/** 저장할 수 있는지 (0개 · 빈 값 · 0 이하 · 숫자 아님 · 재고 초과가 하나라도 있으면 false) */
 export function canSaveBatch(items: readonly BatchItemInput[], stocks: ReadonlyMap<string, BatchStock>): boolean {
   if (items.length === 0 || items.length > USAGE_BATCH_MAX) return false;
   return items.every((i) => {

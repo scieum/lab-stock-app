@@ -43,3 +43,36 @@ export function toSignupFields(body: unknown): SignupFields {
     agreePrivacy: b.agreePrivacy === true,
   };
 }
+
+/* ───────── 가입 오류 칸 (디자인 1.26 signup_error, d7 §25) ───────── */
+
+export type SignupField = "school" | "displayName" | "email" | "password" | "passwordConfirm" | "terms";
+
+export type SignupFieldProblem = {
+  field: SignupField;
+  /** 칸 아래 문구 */
+  message: string;
+  /** 버튼 위 signup-error-summary 한 줄 (첫 오류) */
+  summary: string;
+};
+
+/** 모든 문제 칸을 화면 위에서 아래 순서로 (signup-error-summary 는 첫 번째 + "외 N개") */
+export function signupFieldProblems(f: SignupFields): SignupFieldProblem[] {
+  const out: SignupFieldProblem[] = [];
+  if (!f.neisCode.trim()) out.push({ field: "school", message: "학교를 선택해 주세요", summary: "학교를 선택해 주세요" });
+  const name = f.displayName.trim();
+  if (!name) out.push({ field: "displayName", message: "이름을 입력해 주세요", summary: "이름을 입력해 주세요" });
+  else if (name.length > DISPLAY_NAME_MAX) {
+    const m = `이름은 ${DISPLAY_NAME_MAX}자 이하로 입력해 주세요`;
+    out.push({ field: "displayName", message: m, summary: m });
+  }
+  if (!EMAIL_RE.test(f.email.trim())) out.push({ field: "email", message: "이메일 주소를 확인해 주세요", summary: "이메일 주소를 확인해 주세요" });
+  if (f.password.length < PASSWORD_MIN) {
+    const m = `비밀번호는 ${PASSWORD_MIN}자 이상 입력해 주세요`;
+    out.push({ field: "password", message: m, summary: m });
+  } else if (f.password !== f.passwordConfirm) {
+    out.push({ field: "passwordConfirm", message: "비밀번호가 일치하지 않아요", summary: "비밀번호가 일치하지 않아요" });
+  }
+  if (!f.agreeTerms || !f.agreePrivacy) out.push({ field: "terms", message: "필수 약관에 동의해 주세요", summary: "약관에 동의해 주세요" });
+  return out;
+}

@@ -694,3 +694,125 @@
   color: var(--color-text);
   font-weight: var(--font-weight-semibold);
 }
+
+/* 새 화면 4 조각 (시안 1.26 15-desktop shot-4: 480 × 360 — 열 안쪽 16/16/0/16 · 사이 16, 아래 줄 68) */
+.batch {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.batchColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  padding: var(--space-16) var(--space-16) 0;
+}
+
+.batchHeading {
+  color: var(--color-text);
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}
+
+.batchTable {
+  display: flex;
+  flex-direction: column;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.batchRow {
+  display: grid;
+  grid-template-columns: 39% 22% 27% 1fr;
+  align-items: center;
+  min-height: var(--control-height);
+  padding: 0 var(--space-16);
+  border-top: var(--border-width) solid var(--color-border);
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+}
+
+.batchRow:first-child {
+  border-top: 0;
+}
+
+.batchHead {
+  min-height: var(--space-32);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+}
+
+.batchName {
+  overflow: hidden;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.batchMuted {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+}
+
+.batchAmount {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.batchField {
+  display: inline-flex;
+  align-items: center;
+  min-height: calc(var(--space-32) + var(--space-4));
+  padding: 0 var(--space-12);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-input);
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  box-sizing: border-box;
+}
+
+.batchUnit {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+}
+
+.batchClass {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+}
+
+.batchWide {
+  flex: 1;
+}
+
+.batchBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: calc(var(--button-min-height) + var(--space-24));
+  padding: 0 var(--space-16);
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.batchButton {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-16);
+  border-radius: var(--radius-button);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}

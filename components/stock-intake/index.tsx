@@ -244,6 +244,8 @@ export function StockIntake({
               icon="calendar"
               type="date"
               name="intake_date"
+              // d7 §25 QA 2: 입고일은 오늘까지 (기본값 = 오늘, 서버도 미래 날짜를 거부한다)
+              max={defaultIntakeDate}
               value={intakeDate}
               onChange={(e) => setIntakeDate(e.target.value)}
             />

@@ -32,6 +32,11 @@
   gap: var(--space-16);
 }
 
+/* 센서 타일까지 4칸 (시안 1.26 13-desktop tile-row: 272 × 4) */
+.tiles:has(> :nth-child(4)) {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .grid {
   display: grid;
   grid-template-columns: minmax(0, 47fr) minmax(0, 23fr);

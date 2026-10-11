@@ -101,3 +101,6 @@ export function countMembers(roles: readonly string[]): MemberCounts {
   for (const r of roles) if (isMemberRole(r)) c[r] += 1;
   return c;
 }
+
+/** 초대 이메일 형식 오류 (d7 §25 QA 6 — 모바일 시트 · 데스크톱 드로어 같은 문구) */
+export const INVITE_EMAIL_ERROR = "이메일 주소를 확인해 주세요";

@@ -9,6 +9,7 @@ import { Icon } from "@/components/icons";
 import { SegmentedControl } from "@/components/segmented-control";
 import { TextInput } from "@/components/text-input";
 import type { Role } from "@/lib/types";
+import { INVITE_EMAIL_ERROR } from "@/lib/users-rules";
 import styles from "./styles.module.css";
 
 const ROLE_OPTIONS: { value: Role; label: string }[] = [
@@ -161,7 +162,8 @@ export function InviteBody({
     const email = draft.trim().toLowerCase();
     if (email === "") return;
     if (!EMAIL_PATTERN.test(email)) {
-      setError("이메일 주소를 확인하세요");
+      // d7 §25 QA 6: 두 폭 같은 문구
+      setError(INVITE_EMAIL_ERROR);
       return;
     }
     if (emails.includes(email)) {

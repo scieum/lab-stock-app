@@ -5,6 +5,7 @@ import { CabinetWidget, HomeSummaryTile, StockWidget, WidgetHead } from "@/compo
 import { PageHead } from "@/components/page-frame";
 import { QuickActionButtons, type QuickActionItem } from "@/components/quick-action";
 import { ReorderAlertTile } from "@/components/reorder-alert-card";
+import { SensorAlertTile } from "@/components/sensor-alert-tile";
 import type { HomeData, Role } from "@/lib/supabase/home-data";
 import styles from "./home-desk.module.css";
 
@@ -76,6 +77,10 @@ export function HomeDesk({ data, role }: Props) {
           {staff ? <ReorderAlertTile count={lowCount} href="/reorder" /> : null}
           {staff ? (
             <HomeSummaryTile caption="MSDS 없는 시약" value={data.msdsMissing} note="시약 목록에서 MSDS를 찾아 연결해요" />
+          ) : null}
+          {/* d7 §25: 고장 · 점검 필요 센서 (교사·admin, 1개 이상일 때만) */}
+          {staff && data.sensorAlerts.broken + data.sensorAlerts.check > 0 ? (
+            <SensorAlertTile variant="desktop" counts={data.sensorAlerts} />
           ) : null}
         </div>
       </section>

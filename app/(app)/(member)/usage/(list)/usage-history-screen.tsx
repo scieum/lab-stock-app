@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { RecordAdd } from "@/components/record-add";
 import { DesktopOnly, MobileOnly } from "@/components/viewport-only";
 import { ClassFilterButton } from "@/components/class-filter";
 import { ClassLabel } from "@/components/class-label";
@@ -185,6 +186,32 @@ function useUsageFilters(filter: Filter) {
 
 export type UsageFilters = ReturnType<typeof useUsageFilters>;
 
+const FRESH_MS = 2500;
+
+/**
+ * 기록 추가(화면 4) 뒤 돌아왔을 때 새 기록 행 (d7 §25 record_add): 주소 ?new=id,id → 그 행들을 잠깐 highlight-soft.
+ * 시간이 지나면 표시를 끄고 주소에서 ?new 를 뺀다 (새로고침해도 다시 켜지지 않게).
+ */
+function useFreshRows(): ReadonlySet<string> {
+  const sp = useSearchParams();
+  const raw = sp.get("new") ?? "";
+  const [fresh, setFresh] = useState<{ raw: string; ids: ReadonlySet<string> }>({ raw: "", ids: new Set() });
+  if (raw && raw !== fresh.raw) setFresh({ raw, ids: new Set(raw.split(",").filter(Boolean)) });
+  useEffect(() => {
+    if (!fresh.raw) return;
+    const t = setTimeout(() => {
+      setFresh((cur) => ({ raw: cur.raw, ids: new Set() }));
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("new")) {
+        url.searchParams.delete("new");
+        window.history.replaceState(window.history.state, "", url);
+      }
+    }, FRESH_MS);
+    return () => clearTimeout(t);
+  }, [fresh.raw]);
+  return fresh.ids;
+}
+
 /**
  * 화면 10 사용 기록 내역.
  * 시안: (데스크톱 screen-title) → filter-row(전체/내 기록 · 기간 · 시약명 검색) → record-list(사용일별 묶음 "10월 7일 · 오늘")
@@ -195,6 +222,7 @@ export type UsageFilters = ReturnType<typeof useUsageFilters>;
 export function UsageHistoryScreen({ filter, groups, truncated, maxGrade }: Props) {
   const filters = useUsageFilters(filter);
   const { pending, shown, text, changeText, sendQuery, changeScope, changePeriod, changeClass } = filters;
+  const fresh = useFreshRows();
 
   // ---- 상세 ----
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -247,7 +275,11 @@ export function UsageHistoryScreen({ filter, groups, truncated, maxGrade }: Prop
     <>
     <MobileOnly>
     <div ref={pageRef} className={styles.page}>
-      <h1 className={styles.title}>사용 기록 내역</h1>
+      {/* 시안 1.26 10-mobile list-head: "사용 기록 N건" + record-add "기록 추가" (모든 역할) */}
+      <div className={styles.listHead} data-name="list-head">
+        <h1 className={styles.title}>{`사용 기록 ${all.length}건`}</h1>
+        <RecordAdd />
+      </div>
 
       <div className={styles.filters} role="search" aria-label="사용 기록 필터">
         <div className={styles.scope}>
@@ -311,6 +343,8 @@ export function UsageHistoryScreen({ filter, groups, truncated, maxGrade }: Prop
                       caption={r.recordedCaption ?? undefined}
                       amount={r.amountLabel}
                       selected={r.id === openId}
+                      className={fresh.has(r.id) ? styles.fresh : undefined}
+                      data-fresh={fresh.has(r.id) ? "true" : undefined}
                       onClick={() => {
                         if (r.id === openId) closeDetail();
                         else setSelectedId(r.id);
@@ -357,6 +391,8 @@ export function UsageHistoryScreen({ filter, groups, truncated, maxGrade }: Prop
                   // d7 §22: "MSDS 보기" = 화면 16, 뒤로 = 이 화면(/usage)
                   summaryHref={msdsSummaryPath(selected.reagentId, { from: "usage" })}
                   notice="MSDS 링크가 아직 등록되지 않았어요"
+                  // d7 §25 QA 8: MSDS 없는 시약은 "MSDS 보기" 진입 없이 안내만
+                  missingAction={null}
                 />
               )}
             </ModalCard>
@@ -367,7 +403,7 @@ export function UsageHistoryScreen({ filter, groups, truncated, maxGrade }: Prop
     </MobileOnly>
     {/* 데스크톱 (d7 §23 run b): data-table + 기록 상세 오른쪽 드로어 (?id= 주소창) */}
     <DesktopOnly>
-      <UsageHistoryDesk filters={filters} groups={groups} truncated={truncated} maxGrade={maxGrade} />
+      <UsageHistoryDesk filters={filters} groups={groups} truncated={truncated} maxGrade={maxGrade} fresh={fresh} />
     </DesktopOnly>
     </>
   );

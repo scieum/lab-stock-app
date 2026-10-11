@@ -11,6 +11,7 @@ export async function DeskList() {
       items={data.items}
       cabinets={data.cabinets}
       canFindMsds={data.role === "teacher" || data.role === "admin"}
+      canSelect={data.role === "teacher" || data.role === "admin"}
     />
   );
 }

@@ -125,11 +125,57 @@ import { sampleInvites, sampleMemberCounts, sampleMembers } from "./users/sample
 import { sampleFilterCabinets } from "./filter/sample";
 import { sampleMsdsCandidates } from "./msds/sample";
 import { SAMPLE_TODAY as DOC_TODAY, sampleDocReagents, sampleDocRows } from "./intake/sample";
+import { BulkActionBar } from "@/components/bulk-action-bar";
+import { BulkDeleteConfirm } from "@/components/bulk-action-bar/confirm";
+import { InventorySwitch } from "@/components/inventory-switch";
+import { ListSelectToggle } from "@/components/list-select-toggle";
+import { RecordAdd } from "@/components/record-add";
+import { SelectCheckbox } from "@/components/select-checkbox";
+import { SensorAdd } from "@/components/sensor-add";
+import { SensorAlertTile } from "@/components/sensor-alert-tile";
+import { SensorDelete, SensorDeleteConfirm } from "@/components/sensor-delete";
+import { SensorDetail } from "@/components/sensor-detail";
+import { SensorEdit } from "@/components/sensor-edit";
+import { SensorForm } from "@/components/sensor-form";
+import { SensorList } from "@/components/sensor-list";
+import { SensorMakerSelect } from "@/components/sensor-maker-select";
+import { SensorRow, SensorTableRow } from "@/components/sensor-row";
+import { SensorStatusBadge } from "@/components/sensor-status-badge";
+import { SensorTypeSelect } from "@/components/sensor-type-select";
+import { SignupErrorSummary } from "@/components/signup-error-summary";
+import { TabSoon } from "@/components/tab-soon";
 import styles from "./gallery.module.css";
 
 export const metadata: Metadata = { title: "컴포넌트 갤러리 · Lab_Stock" };
 
 const SAMPLE_SCHOOL = "샘플고등학교";
+
+/** 시안 1.26 17-mobile · 17-desktop 센서 예시 */
+const sampleSensors = [
+  { id: "s-1", name: "무선 온도 센서", type: "온도", maker: "버니어", model: "GDX-TMP", quantity: 3, locationText: "과학실 뒤 선반", slot: null, status: "ok" as const },
+  {
+    id: "s-2",
+    name: "무선 pH 센서",
+    type: "pH",
+    maker: "버니어",
+    model: "GDX-PH",
+    quantity: 2,
+    locationText: null,
+    slot: { cabinetNumber: 1, text: "1번 시약장 · 좌 1단" },
+    status: "check" as const,
+  },
+  { id: "s-3", name: "운동 센서", type: "운동(거리)", maker: "파스코", model: "PS-3219", quantity: 2, locationText: "준비실 서랍", slot: null, status: "broken" as const },
+];
+
+const SENSOR_COLUMNS = [
+  { key: "name", label: "이름", width: "20%" },
+  { key: "type", label: "종류", width: "11.8%" },
+  { key: "maker", label: "회사", width: "13.6%" },
+  { key: "model", label: "모델", width: "13.6%" },
+  { key: "qty", label: "수량", width: "9%" },
+  { key: "loc", label: "보관 위치", width: "22.6%" },
+  { key: "status", label: "상태", width: "9.4%" },
+];
 
 const usageRows = [
   { date: "2026.10.02", user: "김민지", amount: "5 g", selected: true },
@@ -1000,6 +1046,117 @@ export default function GalleryPage() {
           <Link href="/gallery/pre-login" className={styles.more}>
             로그인 전 상단 바 · 긴 랜딩 컴포넌트 · 둘러보기 사이드바 보기 (/gallery/pre-login)
           </Link>
+        </Item>
+
+        <Item name="inventory-switch · tab-soon (디자인 1.26 — 모바일 시약 탭 안 시약 | 센서, QR 스캔 준비 중)">
+          <InventorySwitch active="reagents" />
+          <InventorySwitch active="sensors" />
+          <div className={styles.row}>
+            <TabSoon />
+          </div>
+        </Item>
+
+        <Item name="list-select-toggle · select-checkbox · bulk-action-bar (시안 2-select · 2-bulk-delete)">
+          <div className={styles.row}>
+            <ListSelectToggle selecting={false} />
+            <ListSelectToggle selecting={false} variant="desktop" />
+            <ListSelectToggle selecting variant="desktop" />
+          </div>
+          <ListSelectToggle selecting count={5} />
+          <ListSelectToggle selecting count={100} capped />
+          <div className={styles.row}>
+            <SelectCheckbox checked={false} />
+            <SelectCheckbox checked />
+            <SelectCheckbox checked="mixed" />
+          </div>
+          <ReagentRow title="과산화수소" body="500 mL" caption="입고 2026.05.20" selected leading={<SelectCheckbox checked />} />
+          <ReagentRow title="과망가니즈산칼륨" body="25 g" caption="입고 2026.08.20" leading={<SelectCheckbox checked={false} />} />
+          <BulkActionBar count={5} fixed={false} />
+          <BulkDeleteConfirm kind="reagent" names={["과산화수소", "구리 가루", "글리세린", "나프탈렌", "녹말 가루"]} sheet={false} />
+          <BulkDeleteConfirm kind="sensor" names={["무선 pH 센서", "운동 센서"]} sheet={false} />
+        </Item>
+
+        <Item name="record-add (시안 10 — 기록 추가)">
+          <div className={styles.row}>
+            <RecordAdd />
+          </div>
+        </Item>
+
+        <Item name="signup-error-summary (시안 14-error)">
+          <SignupErrorSummary message="약관에 동의해 주세요" />
+          <SignupErrorSummary message="이름을 입력해 주세요" total={3} />
+        </Item>
+
+        <Item name="sensor-list · sensor-row · sensor-status-badge (시안 17-mobile)">
+          <div className={styles.row}>
+            <SensorStatusBadge status="ok" />
+            <SensorStatusBadge status="check" />
+            <SensorStatusBadge status="broken" />
+          </div>
+          <SensorList variant="mobile">
+            {sampleSensors.map((s) => (
+              <li key={s.id}>
+                <SensorRow sensor={s} href={`/sensors/${s.id}`} />
+              </li>
+            ))}
+            <li>
+              <SensorRow sensor={sampleSensors[0]} selectMode selected />
+            </li>
+          </SensorList>
+        </Item>
+
+        <Item name="sensor-list · sensor-row — 데스크톱 표 (시안 17-desktop)">
+          <SensorList variant="desktop">
+            <DeskTable label="센서 목록 예시" columns={SENSOR_COLUMNS}>
+              {sampleSensors.map((s, i) => (
+                <SensorTableRow key={s.id} sensor={s} href={`/sensors/${s.id}`} current={i === 1} />
+              ))}
+            </DeskTable>
+          </SensorList>
+        </Item>
+
+        <Item name="sensor-detail · sensor-delete · sensor-edit (시안 17-detail)">
+          <SensorDetail
+            sensor={{ ...sampleSensors[1], memo: "전극 보관액 교체 필요", createdOn: "2026-09-02" }}
+            titleAction={<SensorDelete name="무선 pH 센서" />}
+          />
+          <SensorEdit href="/sensors/s-2/edit" />
+          <SensorDelete name="무선 pH 센서" defaultOpen />
+          <SensorDeleteConfirm name="무선 pH 센서" sheet={false} />
+        </Item>
+
+        <Item name="sensor-form · sensor-type-select · sensor-maker-select (시안 17-form)">
+          <SensorTypeSelect value="온도" />
+          <SensorMakerSelect value="버니어" />
+          <SensorMakerSelect value="버니어" defaultOpen floating={false} />
+          <SensorForm
+            id="gallery-sensor-form"
+            submitInside
+            initial={{
+              id: null,
+              name: "무선 온도 센서",
+              type: "온도",
+              maker: "버니어",
+              model: "GDX-TMP",
+              quantity: 3,
+              locationText: "과학실 뒤 선반",
+              slotId: null,
+              status: "ok",
+              memo: null,
+            }}
+          />
+        </Item>
+
+        <Item name="sensor-add · sensor-alert-tile (시안 17-empty · 13)">
+          <div className={styles.row}>
+            <SensorAdd href="/sensors/new" />
+            <SensorAdd href="/sensors/new" label="등록" />
+          </div>
+          <EmptyStateCard variant="outlined" icon="sensor" iconTone="ink" fullActions title="아직 등록한 센서가 없어요" description="무선 센서와 현미경을 등록해 두면 수량과 상태를 한눈에 봐요">
+            <SensorAdd href="/sensors/new" fullWidth />
+          </EmptyStateCard>
+          <SensorAlertTile variant="desktop" counts={{ broken: 1, check: 1 }} />
+          <SensorAlertTile variant="mobile" counts={{ broken: 1, check: 1 }} />
         </Item>
 
         <Item name="tab-bar · tab-item">

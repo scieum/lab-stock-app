@@ -288,6 +288,56 @@ export function ShotUsageForm() {
   );
 }
 
+/** 담은 시약 예시 (시안 1.26 15-desktop shot-4) */
+const BATCH_ROWS = [
+  { name: "에탄올", stock: "1,200 mL", amount: "50", unit: "mL" },
+  { name: "페놀프탈레인 용액", stock: "120 mL", amount: "10", unit: "mL" },
+  { name: "수산화나트륨", stock: "500 g", amount: "5", unit: "g" },
+];
+
+/**
+ * 새 화면 4 조각 — 여러 시약 담기 + 수업 (디자인 1.26 landing_shot, 15-desktop "사용 기록" 섹션 shot-4):
+ * "담은 시약 3개" → 표(시약명 · 현재 재고 · 사용량 · 빼기) → 수업(학년 · 반 · 수업명) → 아래 줄 "담은 시약 3개" + "사용 기록 저장 · 3개"
+ */
+export function ShotUsageBatch() {
+  return (
+    <div className={styles.batch}>
+      <div className={styles.batchColumn}>
+        <span className={styles.batchHeading}>담은 시약 3개</span>
+        <div className={styles.batchTable}>
+          <div className={[styles.batchRow, styles.batchHead].join(" ")}>
+            <span>시약명</span>
+            <span>현재 재고</span>
+            <span>사용량</span>
+            <span />
+          </div>
+          {BATCH_ROWS.map((r) => (
+            <div key={r.name} className={styles.batchRow}>
+              <span className={styles.batchName}>{r.name}</span>
+              <span className={styles.batchMuted}>{r.stock}</span>
+              <span className={styles.batchAmount}>
+                <span className={styles.batchField}>{r.amount}</span>
+                <span className={styles.batchUnit}>{r.unit}</span>
+              </span>
+              <span className={styles.batchMuted}>빼기</span>
+            </div>
+          ))}
+        </div>
+        <div className={styles.batchClass}>
+          <span>수업</span>
+          <span className={styles.batchField}>1학년</span>
+          <span className={styles.batchField}>2반</span>
+          <span className={[styles.batchField, styles.batchWide].join(" ")}>통합과학</span>
+        </div>
+      </div>
+      <div className={styles.batchBar}>
+        <span className={styles.batchMuted}>담은 시약 3개</span>
+        <span className={styles.batchButton}>사용 기록 저장 · 3개</span>
+      </div>
+    </div>
+  );
+}
+
 /** 6-desktop 재주문 알림 카드 */
 export function ShotReorderAlert() {
   return (

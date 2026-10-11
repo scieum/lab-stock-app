@@ -1,0 +1,37 @@
+/* 여러 개 삭제 확인 (시안 2-bulk-delete ex-modal-card: 본문 15 · note 13 muted · actions 위 16, 버튼 반씩 사이 8) */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.text {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+}
+
+.note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-8);
+  padding-top: var(--space-16);
+}
+
+.button {
+  flex: 1;
+}

@@ -27,10 +27,13 @@ export function StockSummaryCard({
   lowStockCount,
   items,
   totalCount,
+  footer,
 }: {
   lowStockCount: number;
   items: LowStockItem[];
   totalCount: number;
+  /** 카드 맨 아래 줄 (디자인 1.26 13-mobile: 교사·admin 의 sensor-alert-tile) */
+  footer?: React.ReactNode;
 }) {
   return (
     <div className={styles.card}>
@@ -60,6 +63,7 @@ export function StockSummaryCard({
         <span className={styles.caption}>전체 시약</span>
         <span className={styles.value}>{totalCount}종</span>
       </div>
+      {footer}
     </div>
   );
 }

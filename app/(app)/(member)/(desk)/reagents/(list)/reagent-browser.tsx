@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { BulkDeleteFlow } from "@/components/bulk-action-bar/flow";
 import { ButtonOutline } from "@/components/button-outline";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { FilterChipRow } from "@/components/filter-chip-row";
+import { InventorySwitch } from "@/components/inventory-switch";
 import { ListFilterButton } from "@/components/list-filter-button";
 import { ListFilterSheet } from "@/components/list-filter-sheet";
+import { ListSelectToggle } from "@/components/list-select-toggle";
 import { ReagentRow } from "@/components/reagent-row";
+import { SelectCheckbox } from "@/components/select-checkbox";
 import { SegmentedControl, type SegmentOption } from "@/components/segmented-control";
 import { TextInput } from "@/components/text-input";
 import {
@@ -19,6 +23,8 @@ import {
   type ListFilter,
 } from "@/lib/reagent-list-filter";
 import type { ReagentListItem } from "@/lib/supabase/reagents-data";
+import { useBulkSelect } from "@/lib/use-bulk-select";
+import { archiveReagentsAction } from "../bulk-actions";
 import { MsdsBulk } from "./msds-bulk";
 import styles from "./reagents.module.css";
 
@@ -41,6 +47,10 @@ type Props = {
   detailBase?: string;
   /** true = 교사·admin — "MSDS 없는 시약만" 필터를 켜면 msds-bulk-banner 일괄 찾기 (d7 §20). 학생·둘러보기는 false */
   canFindMsds?: boolean;
+  /** true = 교사·admin — 선택 모드 · 여러 개 삭제 (d7 §25 bulk_delete, R5). 학생·둘러보기는 false */
+  canSelect?: boolean;
+  /** 맨 위 inventory-switch "시약 | 센서" 주소 앞머리 (둘러보기 "/demo") */
+  inventoryBase?: "" | "/demo";
 };
 
 /** 주소창(?filter·?q + 필터 시트 값)을 화면 상태와 맞춘다 — 새로고침·뒤로가기에도 같은 목록 */
@@ -71,6 +81,8 @@ export function ReagentBrowser({
   initialListFilter = EMPTY_LIST_FILTER,
   detailBase = "/reagents",
   canFindMsds = false,
+  canSelect = false,
+  inventoryBase = "",
 }: Props) {
   const [filter, setFilter] = useState<ReagentFilter>(initialFilter);
   const [query, setQuery] = useState(initialQuery);
@@ -80,12 +92,15 @@ export function ReagentBrowser({
   const sheetId = useId();
   const anchorRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const select = useBulkSelect();
+  const selecting = canSelect && select.selecting;
 
   const q = query.trim().toLowerCase();
   const base = useMemo(() => items.filter((r) => matchesBase(r, filter, q)), [items, filter, q]);
   const visible = useMemo(() => applyListFilter(base, applied), [base, applied]);
   const draftCount = useMemo(() => (open ? applyListFilter(base, draft).length : 0), [open, base, draft]);
   const chips = listFilterChips(applied, cabinets);
+  const selected = visible.filter((r) => select.ids.has(r.id)).map((r) => ({ id: r.id, name: r.name }));
   // d7 §20: 교사·admin 이 "MSDS 없는 시약만"을 켰을 때 — 지금 목록(다른 조건과 함께 거른 것)이 일괄 찾기 대상
   const msdsTargets = useMemo(
     () => (canFindMsds && applied.noMsds ? visible.filter((r) => !r.hasMsds).map((r) => ({ id: r.id, name: r.name, cas: r.casNo })) : []),
@@ -140,7 +155,24 @@ export function ReagentBrowser({
 
   return (
     <>
+      <div className={styles.switchRow}>
+        <InventorySwitch active="reagents" base={inventoryBase} />
+      </div>
       {canFindMsds && applied.noMsds ? <MsdsBulk targets={msdsTargets} /> : null}
+      {selecting ? (
+        <ListSelectToggle
+          selecting
+          count={selected.length}
+          capped={select.capped}
+          onCancel={select.cancel}
+          onSelectAll={() => select.selectAll(visible.map((r) => r.id))}
+        />
+      ) : (
+        <div className={styles.listHead} data-name="list-head">
+          <h1 className={styles.title}>{`시약 ${visible.length}종`}</h1>
+          {canSelect && items.length > 0 ? <ListSelectToggle selecting={false} onStart={select.start} disabled={visible.length === 0} /> : null}
+        </div>
+      )}
       <div className={styles.toolbar}>
         <div className={styles.segment}>
           <SegmentedControl options={FILTERS} value={filter} onChange={changeFilter} label="시약 필터" />
@@ -193,17 +225,32 @@ export function ReagentBrowser({
         <ul className={styles.list} aria-label="시약 목록">
           {visible.map((r) => (
             <li key={r.id}>
-              <ReagentRow
-                title={r.name}
-                body={r.stock}
-                caption={r.intake}
-                lowStock={r.lowStock}
-                href={`${detailBase}/${r.id}`}
-              />
+              {selecting ? (
+                <ReagentRow
+                  title={r.name}
+                  body={r.stock}
+                  caption={r.intake}
+                  lowStock={r.lowStock}
+                  selected={select.ids.has(r.id)}
+                  leading={<SelectCheckbox checked={select.ids.has(r.id)} />}
+                  onSelect={() => select.toggle(r.id)}
+                />
+              ) : (
+                <ReagentRow
+                  title={r.name}
+                  body={r.stock}
+                  caption={r.intake}
+                  lowStock={r.lowStock}
+                  href={`${detailBase}/${r.id}`}
+                />
+              )}
             </li>
           ))}
         </ul>
       )}
+      {canSelect ? (
+        <BulkDeleteFlow kind="reagent" selecting={selecting} selected={selected} run={archiveReagentsAction} onDone={select.cancel} />
+      ) : null}
     </>
   );
 }

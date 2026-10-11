@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { REAGENT_DELETE_TEXT, ReagentDelete, ReagentDeleteConfirm } from "@/components/reagent-delete";
 import { ReagentMoreMenu } from "@/components/reagent-more-menu";
 import { clearFlashToast, setFlashToast } from "@/lib/flash-toast";
@@ -25,6 +25,8 @@ export function ReagentDeleteFlow({ reagentId, name, listHref }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [pending, startTransition] = useTransition();
+  // 확인 모달을 닫으면(취소 · × · Esc) 포커스를 ⋯ 로 돌려준다 (d7 §25 QA 7)
+  const moreRef = useRef<HTMLButtonElement>(null);
 
   const confirm = () => {
     if (pending || done) return;
@@ -44,7 +46,7 @@ export function ReagentDeleteFlow({ reagentId, name, listHref }: Props) {
 
   return (
     <>
-      <ReagentMoreMenu label={`${name} 더보기`}>
+      <ReagentMoreMenu label={`${name} 더보기`} buttonRef={moreRef}>
         <ReagentDelete onSelect={() => setConfirming(true)} disabled={done} />
       </ReagentMoreMenu>
       {confirming ? (
@@ -58,6 +60,7 @@ export function ReagentDeleteFlow({ reagentId, name, listHref }: Props) {
               if (pending) return;
               setConfirming(false);
               setError(null);
+              window.requestAnimationFrame(() => moreRef.current?.focus({ preventScroll: true }));
             }}
             onConfirm={confirm}
           />

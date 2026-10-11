@@ -22,7 +22,6 @@ export default async function DemoReagentsPage({ searchParams }: Props) {
   return (
     <MobileOnly>
     <div className={styles.page}>
-      <h1 className={styles.title}>시약 목록</h1>
       <ReagentBrowser
         items={items}
         cabinets={cabinets}
@@ -30,6 +29,7 @@ export default async function DemoReagentsPage({ searchParams }: Props) {
         initialQuery={first(params.q) ?? ""}
         initialListFilter={parseListFilter(params, cabinets)}
         detailBase="/demo/reagents"
+        inventoryBase="/demo"
       />
     </div>
     </MobileOnly>

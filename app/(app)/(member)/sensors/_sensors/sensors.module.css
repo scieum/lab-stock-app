@@ -1,0 +1,239 @@
+/* 화면 17 센서 (디자인 1.26 17-mobile · 17-desktop)
+ * 모바일: content 사이 16 — switch-row → list-body(사이 12: list-head → search-row → sensor-list)
+ * 데스크톱: 목록 틀(desk frame) = [list 안쪽 32 · 사이 24][detail-drawer 480]
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+.listBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.listHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: var(--button-min-height);
+}
+
+.heading {
+  margin: 0;
+  min-width: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}
+
+.headActions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.searchRow {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.search {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.emptyArea {
+  padding: var(--space-48) 0;
+}
+
+/* ───── 데스크톱 목록 ───── */
+.deskBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  min-width: 0;
+}
+
+.pageHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.pageTitle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-24);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
+.count,
+.summary,
+.capped {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: var(--line-height-normal);
+}
+
+.count {
+  font-size: var(--font-size-12);
+  white-space: nowrap;
+}
+
+.summary {
+  font-size: var(--font-size-13);
+}
+
+.capped {
+  font-size: var(--font-size-12);
+}
+
+.pageActions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+/* 검색 320 (드로어가 열리면 240) */
+.deskSearch {
+  width: calc(var(--space-64) * 5);
+}
+
+:global([data-desk-frame]):has([data-component="detail-drawer"]) .deskSearch {
+  width: var(--sidebar-width);
+}
+
+.deskEmpty {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--space-48);
+}
+
+.deskEmpty > * {
+  width: calc(var(--space-48) * 9 + var(--space-8));
+}
+
+/* ───── 상세 · 폼 (모바일 전용 화면) ───── */
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  padding: var(--space-8) 0 var(--space-24);
+}
+
+/* 모바일 아래 고정 줄 (edit-bar · save-bar): tab-bar 바로 위, 위 hairline */
+.bottomBar {
+  position: fixed;
+  right: 0;
+  bottom: var(--tab-bar-height);
+  left: 0;
+  z-index: 12;
+  display: flex;
+  padding: var(--space-12) var(--space-16);
+  border-top: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.bottomBar > * {
+  flex: 1;
+}
+
+.bottomSpace {
+  height: calc(var(--control-height) + var(--space-24));
+}
+
+.deleteDialog {
+  display: contents;
+}
+
+/* ───── 필터 ───── */
+.filterBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.filterTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.filterActions {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.filterApply {
+  flex: 1;
+}
+
+.error {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+@media (min-width: 1024px) {
+  .deleteDialog {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: var(--sidebar-width);
+    z-index: 45;
+    display: grid;
+    place-items: center;
+    padding: var(--space-24);
+    pointer-events: none;
+  }
+
+  .deleteDialog > * {
+    width: calc(var(--space-48) * 9 + var(--space-8));
+    max-width: 100%;
+    pointer-events: auto;
+  }
+}

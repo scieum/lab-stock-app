@@ -18,6 +18,24 @@
   line-height: var(--line-height-normal);
 }
 
+/* 시안 1.26 2-mobile: switch-row(inventory-switch) → list-head("시약 42종" 18/700 + list-select-toggle) */
+.switchRow {
+  display: flex;
+  flex-direction: column;
+}
+
+.listHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: var(--button-min-height);
+}
+
+.listHead .title {
+  font-size: var(--font-size-18);
+}
+
 .toolbar {
   display: flex;
   flex-direction: column;
@@ -82,7 +100,7 @@
   }
 
   /* 제목 → list-body 24 (list-body 안은 12) */
-  .title {
+  .listHead {
     margin-bottom: var(--space-12);
   }
 

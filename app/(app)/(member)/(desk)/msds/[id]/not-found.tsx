@@ -1,29 +1,23 @@
 import { AppNav } from "@/app/(app)/app-shell";
-import { ButtonOutline } from "@/components/button-outline";
-import { DesktopOnly, MobileOnly } from "@/components/viewport-only";
-import { DeskNotFoundDrawer } from "../../_desk/desk-drawer";
+import { NotFoundCard } from "@/app/not-found-card";
+import styles from "@/app/not-found.module.css";
+import { MobileOnly } from "@/components/viewport-only";
 import { getServerSession } from "@/lib/supabase/server";
-import styles from "./msds.module.css";
 
-/** 없는 시약·다른 학교 시약 — 어느 쪽인지 구분하지 않는다. 셸이 이 경로에서 nav-pill 을 그리지 않아 여기서 그린다 */
+/**
+ * 없는 시약 · 다른 학교 시약 — 어느 쪽인지 구분하지 않는다. d7 §25: 앱 404 와 같은 카드.
+ * 셸이 이 경로(/msds/[id])에서 nav-pill 을 그리지 않아 모바일은 여기서 그린다. 데스크톱은 목록 옆 드로어 자리.
+ */
 export default async function MsdsNotFound() {
   const me = await getServerSession();
   return (
     <>
       <MobileOnly>
-      <div className={styles.page}>
-        {me.kind === "member" ? (
-          <AppNav schoolName={me.school.name} staff={me.role !== "student"} admin={me.role === "admin"} />
-        ) : null}
-        <div className={styles.column}>
-          <p className={styles.source}>시약을 찾을 수 없어요</p>
-          <ButtonOutline href="/reagents">시약 목록으로</ButtonOutline>
-        </div>
-      </div>
+        {me.kind === "member" ? <AppNav schoolName={me.school.name} staff={me.role !== "student"} admin={me.role === "admin"} /> : null}
       </MobileOnly>
-      <DesktopOnly>
-        <DeskNotFoundDrawer />
-      </DesktopOnly>
+      <div className={styles.drawerSlot}>
+        <NotFoundCard kind="app" />
+      </div>
     </>
   );
 }

@@ -44,7 +44,9 @@ export type IconName =
   | "file"
   | "quote"
   | "lock"
-  | "shield";
+  | "shield"
+  | "sensor"
+  | "compass";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   // 랜딩 15-desktop 문제 공감 카드 (icon-quote) · 안심 격자 (icon-lock · icon-shield)
@@ -279,6 +281,22 @@ const PATHS: Record<IconName, React.ReactNode> = {
     <>
       <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15Z" />
       <path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" />
+    </>
+  ),
+  // 화면 17 무선 센서 (시안 icon-sensor: 몸통 + 신호 + 받침)
+  sensor: (
+    <>
+      <path d="M9 6.5h6v9H9Z" />
+      <path d="M8.5 3.5a5 5 0 0 1 7 0" />
+      <path d="M6 18.5h12" />
+      <path d="M12 15.5v3" />
+    </>
+  ),
+  // 앱 404 (시안 icon-compass: 원 + 바늘)
+  compass: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="m14.8 9.2-1.6 4-4 1.6 1.6-4Z" />
     </>
   ),
 };

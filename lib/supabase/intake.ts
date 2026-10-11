@@ -21,6 +21,8 @@ const STAFF_ONLY = "입고·시약 등록은 교사·관리자만 할 수 있어
 const SIGNED_OUT = "다시 로그인해 주세요";
 const NOT_FOUND = "시약을 찾을 수 없어요";
 const SAVE_FAILED = "저장하지 못했어요. 잠시 후 다시 시도해 주세요";
+/** d7 §25 QA 2: 입고일 미래 금지 (lib/doc-intake-rules 서류 입고와 같은 문구) */
+const FUTURE_DATE = "입고일은 오늘 이후로 정할 수 없어요";
 
 /** 입고 화면의 시약 한 건 (components/stock-intake 의 IntakeReagent 와 같은 모양) */
 export type IntakeReagentOption = { id: string; name: string; stock: number; unit: string };
@@ -77,6 +79,7 @@ export async function recordIntake(input: RecordIntakeInput): Promise<RecordInta
   const checked = checkRecordIntake(input);
   if (!checked.ok) return checked;
   const { reagentId, amount, intakeDate } = checked.value;
+  if (intakeDate > SEOUL_DATE.format(new Date())) return { ok: false, error: FUTURE_DATE };
 
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
@@ -88,6 +91,7 @@ export async function recordIntake(input: RecordIntakeInput): Promise<RecordInta
     p_intake_date: intakeDate,
   });
   if (error) {
+    if (error.message === "intake date in the future") return { ok: false, error: FUTURE_DATE };
     switch (error.code) {
       case "22023":
         return { ok: false, error: "입고 수량과 입고일을 확인해 주세요" };
@@ -113,6 +117,7 @@ export async function registerReagent(input: RegisterReagentInput): Promise<Regi
   const checked = checkRegisterReagent(input);
   if (!checked.ok) return checked;
   const v = checked.value;
+  if (v.intakeDate > SEOUL_DATE.format(new Date())) return { ok: false, error: FUTURE_DATE };
 
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
@@ -127,6 +132,7 @@ export async function registerReagent(input: RegisterReagentInput): Promise<Regi
     ...(v.msdsUrl ? { p_msds_url: v.msdsUrl } : {}),
   });
   if (error) {
+    if (error.message === "intake date in the future") return { ok: false, error: FUTURE_DATE };
     switch (error.code) {
       case "23505":
         return { ok: false, error: "같은 이름의 시약이 이미 있어요. 기존 시약 입고를 이용해 주세요" };
@@ -172,6 +178,7 @@ export async function recordDocumentIntake(input: unknown): Promise<RecordDocume
     p_items: items as unknown as Json,
   });
   if (error) {
+    if (error.message === "intake date in the future") return { ok: false, error: FUTURE_DATE };
     switch (error.code) {
       case "23505":
         return { ok: false, error: "같은 이름의 시약이 이미 있어요. 그 품목은 우리 학교 시약으로 바꿔 주세요" };

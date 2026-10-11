@@ -2,7 +2,8 @@
   display: flex;
   align-items: stretch;
   height: var(--tab-bar-height);
-  padding: var(--space-8) 0;
+  /* 시안 1.26 tab-bar 안쪽 위 4 — 탭 위쪽 맞춤(QR 스캔 탭만 아래 tab-soon 이 붙어 더 길다) */
+  padding: var(--space-4) 0 0;
   border-top: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-tab-bar);
   background: var(--color-surface);
@@ -22,4 +23,10 @@
   .fixed {
     display: none;
   }
+}
+
+/* 탭 위쪽 맞춤 — 아이콘 줄이 같은 높이에 */
+.bar > [data-component="tab-item"] {
+  justify-content: flex-start;
+  padding-top: var(--space-4);
 }

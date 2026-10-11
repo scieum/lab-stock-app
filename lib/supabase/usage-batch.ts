@@ -2,13 +2,14 @@ import "server-only";
 import { getServerClient } from "./server";
 import { isUuid } from "./usage-entry";
 import { checkClassInfo, maxGradeForSchool } from "@/lib/class-info";
-import { USAGE_BATCH_MAX, overStockText, parseItemNumbers } from "@/lib/usage-batch-rules";
+import { USAGE_BATCH_MAX, USAGE_BATCH_TEXT, overStockText, parseItemNumbers } from "@/lib/usage-batch-rules";
 import { checkUsageMemo, checkUsedOn, seoulDate } from "@/lib/usage-history-rules";
 
 export type BatchFlag = { reagentId: string; message: string };
 
 export type RecordUsageBatchResult =
-  | { ok: true; count: number }
+  /** ids = 방금 저장한 기록 id (화면 10 으로 돌아가 새 행을 잠깐 표시 — d7 §25 record_add) */
+  | { ok: true; count: number; ids: string[] }
   | {
       ok: false;
       error: string;
@@ -47,7 +48,10 @@ export async function recordUsageBatch(input: unknown, schoolName: string): Prom
     if (typeof reagentId !== "string" || !isUuid(reagentId)) return { ok: false, error: SAVE_FAILED, field: "items" };
     const text = typeof amountRaw === "string" ? amountRaw.trim().replace(/,/g, "") : typeof amountRaw === "number" ? String(amountRaw) : "";
     const amount = AMOUNT_RE.test(text) ? Number(text) : NaN;
-    if (!Number.isFinite(amount) || amount <= 0) flags.push({ reagentId, message: "사용량을 적어 주세요" });
+    // d7 §25 QA 4: 0 · 음수 = "사용량은 0보다 커야 해요", 빈 값 · 숫자 아님 = "사용량을 적어 주세요"
+    if (/^-\d+(\.\d+)?$/.test(text) || (Number.isFinite(amount) && amount <= 0)) {
+      flags.push({ reagentId, message: USAGE_BATCH_TEXT.amountPositive });
+    } else if (!Number.isFinite(amount)) flags.push({ reagentId, message: "사용량을 적어 주세요" });
     if (items.some((i) => i.reagentId === reagentId)) flags.push({ reagentId, message: "같은 시약이 두 번 담겼어요" });
     items.push({ reagentId, amount });
   }
@@ -75,8 +79,24 @@ export async function recordUsageBatch(input: unknown, schoolName: string): Prom
   });
 
   if (!error) {
-    const count = Number((data as { count?: unknown } | null)?.count ?? items.length);
-    return { ok: true, count: Number.isFinite(count) ? count : items.length };
+    const raw = Number((data as { count?: unknown } | null)?.count ?? items.length);
+    const count = Number.isFinite(raw) ? raw : items.length;
+    // 방금 저장한 기록 id — 내 기록 중 이 시약들의 가장 최근 count 건 (RLS: 자기 학교)
+    const { data: claims } = await supabase.auth.getClaims();
+    const uid = typeof claims?.claims?.sub === "string" ? claims.claims.sub : null;
+    const fresh = uid
+      ? await supabase
+          .from("usage_logs")
+          .select("id")
+          .eq("user_id", uid)
+          .in(
+            "reagent_id",
+            items.map((i) => i.reagentId),
+          )
+          .order("used_at", { ascending: false })
+          .limit(count)
+      : { data: [] as { id: string }[] };
+    return { ok: true, count, ids: (fresh.data ?? []).map((r) => r.id) };
   }
 
   const at = parseItemNumbers(error.details).filter((n) => n < items.length);

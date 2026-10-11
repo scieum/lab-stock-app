@@ -28,10 +28,15 @@ type Props = {
    * (동작과 겹치지 않는 나란한 두 누름 요소).
    */
   action?: React.ReactNode;
+  /**
+   * 선택 모드 (디자인 1.26 bulk_delete — 화면 2): 행 왼쪽 select-checkbox, 누르면 고르기(onSelect, 상세로 가지 않음).
+   * 고른 행 = selected(highlight-soft). 화살표 · 체크 표시 없음
+   */
+  leading?: React.ReactNode;
 };
 
 /** 시약 목록·최근 사용 기록 행 (회색 바탕, radius 16) */
-export function ReagentRow({ title, body, caption, lowStock, badge, trailingCaption, href, selected, onSelect, action }: Props) {
+export function ReagentRow({ title, body, caption, lowStock, badge, trailingCaption, href, selected, onSelect, action, leading }: Props) {
   const cls = [styles.row, selected ? styles.selected : ""].join(" ").trim();
   if (action) {
     const mainContent = (
@@ -62,6 +67,32 @@ export function ReagentRow({ title, body, caption, lowStock, badge, trailingCapt
         {trailingCaption ? <span className={styles.trailing}>{trailingCaption}</span> : null}
         <div className={styles.action}>{action}</div>
       </div>
+    );
+  }
+  if (leading !== undefined) {
+    return (
+      <button
+        data-component="reagent-row"
+        type="button"
+        className={[cls, styles.selectable].join(" ")}
+        aria-pressed={Boolean(selected)}
+        onClick={onSelect}
+      >
+        {leading}
+        <div className={styles.main}>
+          <div className={styles.titleRow}>
+            <span className={styles.title}>{title}</span>
+            {lowStock ? <BadgeLowStock /> : null}
+            {badge}
+          </div>
+          {body || caption ? (
+            <div className={styles.meta}>
+              {body ? <span className={styles.body}>{body}</span> : null}
+              {caption ? <span className={styles.caption}>{caption}</span> : null}
+            </div>
+          ) : null}
+        </div>
+      </button>
     );
   }
   const content = (

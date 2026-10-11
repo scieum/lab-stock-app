@@ -11,7 +11,14 @@ import { SchoolSelectSchool } from "@/components/school-select-school";
 import { SchoolSelectSido } from "@/components/school-select-sido";
 import type { SelectOption } from "@/components/select-field";
 import { TextInput } from "@/components/text-input";
-import { DISPLAY_NAME_MAX, PASSWORD_MIN, signupProblem, type SignupFields } from "@/lib/auth/signup-rules";
+import { SignupErrorSummary } from "@/components/signup-error-summary";
+import {
+  DISPLAY_NAME_MAX,
+  PASSWORD_MIN,
+  signupFieldProblems,
+  type SignupField,
+  type SignupFields,
+} from "@/lib/auth/signup-rules";
 import { KIND_FIRST_TEXT, noSchoolText } from "@/lib/school-kinds";
 import { useSchoolSelect } from "./use-school-select";
 import styles from "./signup.module.css";
@@ -35,6 +42,25 @@ type TermKey = (typeof TERMS)[number]["key"];
 
 type Done = { email: string; needsEmailConfirm: boolean };
 
+/** 오류 칸으로 스크롤하고 포커스 (디자인 1.26 signup_error.scroll) */
+function focusField(form: HTMLFormElement, field: SignupField) {
+  let target: HTMLElement | null = null;
+  if (field === "school") {
+    const section = form.querySelector<HTMLElement>("[data-name='section-school']");
+    target =
+      section?.querySelector<HTMLElement>("select:not(:disabled), button:not(:disabled), input:not(:disabled)") ?? section ?? null;
+  } else if (field === "terms") {
+    target =
+      form.querySelector<HTMLInputElement>("[data-name='terms'] [data-term]:not(:checked)") ??
+      form.querySelector<HTMLElement>("[data-name='terms'] input");
+  } else {
+    target = form.querySelector<HTMLElement>(`[name='${field}']`);
+  }
+  if (!target) return;
+  target.scrollIntoView({ block: "center", behavior: "smooth" });
+  target.focus({ preventScroll: true });
+}
+
 export function SignupForm() {
   const router = useRouter();
   const sel = useSchoolSelect();
@@ -47,11 +73,24 @@ export function SignupForm() {
   const [openTerm, setOpenTerm] = useState<TermKey | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // 가입하기를 한 번 누른 뒤부터 칸별 오류를 보인다 (고치면 바로 사라진다)
+  const [tried, setTried] = useState(false);
   // 같은 프레임 안의 연속 클릭·Enter도 막는다 (state 갱신 전에 들어오는 두 번째 제출)
   const inFlight = useRef(false);
   const [done, setDone] = useState<Done | null>(null);
 
   const allAgreed = agree.terms && agree.privacy;
+  const current: SignupFields = {
+    neisCode: sel.school,
+    displayName,
+    email,
+    password,
+    passwordConfirm,
+    agreeTerms: agree.terms,
+    agreePrivacy: agree.privacy,
+  };
+  const problems = tried ? signupFieldProblems(current) : [];
+  const problemOf = (f: SignupField) => problems.find((p) => p.field === f)?.message;
   const toggleAll = () => setAgree({ terms: !allAgreed, privacy: !allAgreed });
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -66,9 +105,12 @@ export function SignupForm() {
       agreeTerms: agree.terms,
       agreePrivacy: agree.privacy,
     };
-    const problem = signupProblem(fields);
-    if (problem) {
-      setError(problem);
+    const found = signupFieldProblems(fields);
+    if (found.length > 0) {
+      // 첫 오류 칸으로 스크롤 · 포커스 + 버튼 위 signup-error-summary (d7 §25)
+      setTried(true);
+      setError(null);
+      focusField(e.currentTarget, found[0].field);
       return;
     }
     inFlight.current = true;
@@ -137,7 +179,7 @@ export function SignupForm() {
       variant="split"
       className={styles.card}
     >
-      <section className={styles.schoolBlock} aria-labelledby="signup-school-title">
+      <section className={styles.schoolBlock} aria-labelledby="signup-school-title" data-name="section-school">
         {/* 모바일 "학교" (14-mobile) / 데스크톱 번호 섹션 "1 학교 선택" (14-desktop section-head) */}
         <h2 id="signup-school-title" className={styles.sectionTitle}>
           <span className={styles.sectionNumber}>1</span>
@@ -190,6 +232,7 @@ export function SignupForm() {
               {sel.loadError}
             </p>
           ) : null}
+          {problemOf("school") ? <p className={styles.fieldError}>{problemOf("school")}</p> : null}
         </div>
       </section>
 
@@ -209,6 +252,7 @@ export function SignupForm() {
           maxLength={DISPLAY_NAME_MAX}
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
+          error={problemOf("displayName")}
         />
         <TextInput
           label="개인 이메일"
@@ -219,6 +263,7 @@ export function SignupForm() {
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          error={problemOf("email")}
         />
         <TextInput
           label="비밀번호"
@@ -230,6 +275,7 @@ export function SignupForm() {
           minLength={PASSWORD_MIN}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          error={problemOf("password")}
           trailing={
             <button
               type="button"
@@ -251,10 +297,11 @@ export function SignupForm() {
           autoComplete="new-password"
           value={passwordConfirm}
           onChange={(e) => setPasswordConfirm(e.target.value)}
+          error={problemOf("passwordConfirm")}
         />
       </section>
 
-      <fieldset className={styles.terms}>
+      <fieldset className={styles.terms} data-name="terms">
         <legend className={styles.srOnly}>약관 동의</legend>
         <label className={styles.termAll}>
           <input type="checkbox" className={styles.checkInput} checked={allAgreed} onChange={toggleAll} />
@@ -272,6 +319,7 @@ export function SignupForm() {
               <label className={styles.termLabelWrap}>
                 <input
                   type="checkbox"
+                  data-term={t.key}
                   className={styles.checkInput}
                   checked={agree[t.key]}
                   onChange={(e) => setAgree((a) => ({ ...a, [t.key]: e.target.checked }))}
@@ -304,6 +352,7 @@ export function SignupForm() {
             ) : null}
           </div>
         ))}
+        {problemOf("terms") ? <p className={styles.fieldError}>{problemOf("terms")}</p> : null}
       </fieldset>
 
       {error ? (
@@ -313,6 +362,7 @@ export function SignupForm() {
       ) : null}
 
       <div className={styles.actionBar}>
+        {problems.length > 0 ? <SignupErrorSummary message={problems[0].summary} total={problems.length} /> : null}
         <ButtonPrimary type="submit" fullWidth disabled={submitting} aria-busy={submitting}>
           {submitting ? "가입하는 중…" : "가입하기"}
         </ButtonPrimary>

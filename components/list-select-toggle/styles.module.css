@@ -1,0 +1,54 @@
+/* list-select-toggle (시안 2-select-mobile · 17-select-mobile: 취소 · N개 선택됨 · 전체 선택, 높이 44) */
+.start,
+.desktop {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: var(--button-min-height);
+}
+
+/* 조용한 글자 버튼 (15/400 ink) */
+.quiet {
+  min-height: var(--button-min-height);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+}
+
+.quiet:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.count {
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
+.capped {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+  text-align: right;
+}
