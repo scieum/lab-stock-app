@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ButtonPrimary } from "@/components/button-primary";
+import { nextOrHome } from "@/lib/auth/next-path";
 import { AuthFormCard } from "@/components/ex-auth-form-card";
 import { Icon } from "@/components/icons";
 import { TextInput } from "@/components/text-input";
@@ -42,7 +43,8 @@ export function LoginForm({ redirectTo, notice }: Props) {
         return;
       }
       // 세션 쿠키가 생겼으므로 전체 이동 (proxy가 새 세션을 본다)
-      window.location.assign(redirectTo);
+      // 정리·검사한 같은 origin 경로만 (열린 리다이렉트 금지 — lib/auth/next-path)
+      window.location.assign(nextOrHome(redirectTo));
     } catch {
       setError("서버에 연결하지 못했어요. 잠시 후 다시 시도하세요.");
       setSubmitting(false);

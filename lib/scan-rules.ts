@@ -1,4 +1,4 @@
-import { cabinetMeta, slotTitle, type DoorType, type SlotKey, type SlotSide } from "@/lib/cabinet-rules";
+import { cabinetMeta, slotTitle, type DoorType, type SlotKey, type SlotSide } from "./cabinet-rules";
 
 // 화면 12 QR 찾기 — 서버·클라이언트 공용 순수 규칙 (d7 §26). DB 조회는 lib/supabase/scan.ts.
 

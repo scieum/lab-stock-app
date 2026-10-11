@@ -24,9 +24,19 @@ export function safeNextPath(raw: unknown): string | null {
     return null;
   }
   if (u.origin !== BASE) return null;
+  // 점 경로(/.//x, /x/..//x)를 정리한 뒤의 결과를 다시 검사한다 — "//host" 나 역슬래시로 시작하면 다른 호스트로 해석된다
   const path = u.pathname;
+  if (!path.startsWith("/") || path.startsWith("//") || path.includes("\\")) return null;
   if (BLOCKED_ROOTS.some((p) => path === p || path.startsWith(p + "/"))) return null;
-  return `${path}${u.search}${u.hash}`;
+  const out = `${path}${u.search}${u.hash}`;
+  let again: URL;
+  try {
+    again = new URL(out, BASE);
+  } catch {
+    return null;
+  }
+  if (again.origin !== BASE || again.pathname !== path) return null;
+  return out;
 }
 
 /** 로그인 뒤 갈 곳 — 안전한 next, 없으면 "/" */
