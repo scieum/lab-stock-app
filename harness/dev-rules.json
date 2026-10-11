@@ -1,5 +1,5 @@
 {
-  "version": "1.16",
+  "version": "1.17",
   "supabase_project": "kammofjdizvtvmbadmma",
   "github": "https://github.com/scieum/lab-stock-app",
   "vercel": "https://vercel.com/hayeonkeems-projects/lab-stock-app-o97y",
@@ -18,7 +18,8 @@
     6,
     9,
     5,
-    16
+    16,
+    17
   ],
   "routes": {
     "15": "/",
@@ -39,7 +40,9 @@
     "2-guest": "/demo/reagents",
     "3-guest": "/demo/reagents/[id]",
     "16": "/msds/[id]",
-    "16-guest": "/demo/msds/[id]"
+    "16-guest": "/demo/msds/[id]",
+    "17": "/sensors",
+    "17-guest": "/demo/sensors"
   },
   "viewports": {
     "mobile": [
@@ -52,6 +55,25 @@
     ]
   },
   "components": {
+    "app-sidebar": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      13,
+      16,
+      17
+    ],
+    "auto-threshold-badge": [
+      3,
+      6
+    ],
     "badge-low-stock": [
       2,
       3,
@@ -62,7 +84,13 @@
     "badge-overlay": [
       5
     ],
+    "bulk-action-bar": [
+      2,
+      17
+    ],
     "button-outline": [
+      1,
+      2,
       3,
       5,
       6,
@@ -71,19 +99,24 @@
       9,
       10,
       11,
-      15
+      13,
+      15,
+      17
     ],
     "button-pill-soft": [
       1,
+      2,
       3,
       6,
       7,
       8,
       10,
-      13
+      13,
+      17
     ],
     "button-primary": [
       1,
+      2,
       3,
       4,
       5,
@@ -91,9 +124,12 @@
       7,
       8,
       9,
+      10,
       11,
+      13,
       14,
-      15
+      15,
+      17
     ],
     "cabinet-add": [
       11
@@ -119,6 +155,42 @@
       3,
       11
     ],
+    "class-filter": [
+      10
+    ],
+    "class-label": [
+      10
+    ],
+    "class-select": [
+      4
+    ],
+    "cta-band": [
+      15
+    ],
+    "data-table": [
+      2,
+      4,
+      8,
+      9,
+      10,
+      17
+    ],
+    "deleted-reagent-tag": [
+      10
+    ],
+    "detail-drawer": [
+      3,
+      9,
+      10,
+      16,
+      17
+    ],
+    "doc-intake-table": [
+      7
+    ],
+    "doc-upload": [
+      7
+    ],
     "ex-auth-form-card": [
       1,
       14
@@ -131,105 +203,9 @@
       10
     ],
     "ex-empty-state-card": [
-      2,
-      4,
-      6,
-      7,
-      8,
-      9,
-      10,
-      11,
-      16
-    ],
-    "msds-summary": [
-      16
-    ],
-    "ghs-pictogram": [
-      16
-    ],
-    "msds-original-link": [
-      16
-    ],
-    "msds-skeleton": [
-      16
-    ],
-    "web-header": [
       1,
-      14,
-      15
-    ],
-    "product-shot": [
-      15
-    ],
-    "landing-tabs": [
-      15
-    ],
-    "landing-section": [
-      15
-    ],
-    "step-flow": [
-      15
-    ],
-    "cta-band": [
-      15
-    ],
-    "web-footer": [
-      15
-    ],
-    "data-table": [
       2,
       4,
-      8,
-      9,
-      10
-    ],
-    "detail-drawer": [
-      3,
-      9,
-      10,
-      16
-    ],
-    "reagent-picker": [
-      4
-    ],
-    "reagent-add": [
-      4
-    ],
-    "usage-batch-list": [
-      4
-    ],
-    "usage-item-row": [
-      4
-    ],
-    "usage-over-stock": [
-      4
-    ],
-    "class-select": [
-      4
-    ],
-    "recent-class-chip": [
-      4
-    ],
-    "class-label": [
-      10
-    ],
-    "class-filter": [
-      10
-    ],
-    "deleted-reagent-tag": [
-      10
-    ],
-    "reagent-more-menu": [
-      3
-    ],
-    "reagent-delete": [
-      3
-    ],
-    "app-sidebar": [
-      2,
-      3,
-      4,
-      5,
       6,
       7,
       8,
@@ -237,23 +213,11 @@
       10,
       11,
       13,
-      16
-    ],
-    "sidebar-item": [
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8,
-      9,
-      10,
-      11,
-      13,
-      16
+      16,
+      17
     ],
     "ex-modal-card": [
+      2,
       3,
       6,
       8,
@@ -275,6 +239,12 @@
     "feature-card": [
       15
     ],
+    "filter-chip-row": [
+      2
+    ],
+    "ghs-pictogram": [
+      16
+    ],
     "guest-banner": [
       2,
       3,
@@ -291,17 +261,44 @@
     "home-summary": [
       13
     ],
+    "intake-mode": [
+      7
+    ],
+    "inventory-switch": [
+      2,
+      17
+    ],
     "landing-cta": [
       15
     ],
     "landing-hero": [
       15
     ],
+    "landing-section": [
+      15
+    ],
+    "landing-tabs": [
+      15
+    ],
+    "list-filter-button": [
+      2,
+      17
+    ],
+    "list-filter-sheet": [
+      2
+    ],
+    "list-select-toggle": [
+      2,
+      17
+    ],
     "location-edit": [
       3
     ],
     "location-picker": [
       3
+    ],
+    "location-suggest": [
+      7
     ],
     "manual-upload": [
       5,
@@ -311,12 +308,33 @@
       3,
       11
     ],
+    "msds-bulk-banner": [
+      2
+    ],
+    "msds-candidates": [
+      2,
+      3,
+      7
+    ],
     "msds-entry": [
       3,
       10
     ],
+    "msds-original-link": [
+      16
+    ],
     "msds-qr-tile": [
       3
+    ],
+    "msds-search": [
+      3,
+      7
+    ],
+    "msds-skeleton": [
+      16
+    ],
+    "msds-summary": [
+      16
     ],
     "nav-account-menu": [
       2,
@@ -329,7 +347,8 @@
       9,
       10,
       11,
-      13
+      13,
+      17
     ],
     "nav-pill": [
       1,
@@ -345,6 +364,16 @@
       11,
       13,
       14,
+      15,
+      17
+    ],
+    "new-reagent-fields": [
+      7
+    ],
+    "past-date-note": [
+      4
+    ],
+    "product-shot": [
       15
     ],
     "qr-label": [
@@ -359,11 +388,26 @@
     "quick-action": [
       13
     ],
+    "reagent-add": [
+      4
+    ],
+    "reagent-delete": [
+      3
+    ],
     "reagent-detail-card": [
       3
     ],
+    "reagent-link": [
+      7
+    ],
     "reagent-location": [
       3
+    ],
+    "reagent-more-menu": [
+      3
+    ],
+    "reagent-picker": [
+      4
     ],
     "reagent-register": [
       7
@@ -374,6 +418,12 @@
       11,
       13
     ],
+    "recent-class-chip": [
+      4
+    ],
+    "record-add": [
+      10
+    ],
     "reorder-alert-card": [
       6,
       13
@@ -381,13 +431,13 @@
     "reorder-threshold": [
       3
     ],
+    "school-select-kind": [
+      14
+    ],
     "school-select-region": [
       14
     ],
     "school-select-school": [
-      14
-    ],
-    "school-select-kind": [
       14
     ],
     "school-select-sido": [
@@ -399,7 +449,8 @@
       7,
       8,
       9,
-      10
+      10,
+      17
     ],
     "segmented-control-active": [
       2,
@@ -407,7 +458,63 @@
       7,
       8,
       9,
-      10
+      10,
+      17
+    ],
+    "select-checkbox": [
+      2,
+      17
+    ],
+    "sensor-add": [
+      17
+    ],
+    "sensor-alert-tile": [
+      13
+    ],
+    "sensor-delete": [
+      17
+    ],
+    "sensor-detail": [
+      17
+    ],
+    "sensor-edit": [
+      17
+    ],
+    "sensor-form": [
+      17
+    ],
+    "sensor-list": [
+      17
+    ],
+    "sensor-maker-select": [
+      17
+    ],
+    "sensor-row": [
+      17
+    ],
+    "sensor-status-badge": [
+      17
+    ],
+    "sensor-type-select": [
+      17
+    ],
+    "sidebar-item": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      13,
+      16,
+      17
+    ],
+    "signup-error-summary": [
+      14
     ],
     "slot-assign": [
       11
@@ -419,6 +526,9 @@
     "slot-sheet": [
       11
     ],
+    "step-flow": [
+      15
+    ],
     "stock-intake": [
       7
     ],
@@ -426,59 +536,10 @@
       2,
       11
     ],
-    "list-filter-button": [
-      2
-    ],
-    "list-filter-sheet": [
-      2
-    ],
-    "filter-chip-row": [
-      2
-    ],
-    "usage-date": [
-      4
-    ],
     "suggest-badge": [
       3,
       7,
       11
-    ],
-    "location-suggest": [
-      7
-    ],
-    "auto-threshold-badge": [
-      3,
-      6
-    ],
-    "msds-search": [
-      3,
-      7
-    ],
-    "msds-candidates": [
-      2,
-      3,
-      7
-    ],
-    "msds-bulk-banner": [
-      2
-    ],
-    "intake-mode": [
-      7
-    ],
-    "doc-upload": [
-      7
-    ],
-    "doc-intake-table": [
-      7
-    ],
-    "reagent-link": [
-      7
-    ],
-    "new-reagent-fields": [
-      7
-    ],
-    "past-date-note": [
-      4
     ],
     "tab-bar": [
       2,
@@ -491,7 +552,8 @@
       9,
       10,
       11,
-      13
+      13,
+      17
     ],
     "tab-item": [
       2,
@@ -504,7 +566,14 @@
       9,
       10,
       11,
-      13
+      13,
+      17
+    ],
+    "tab-soon": [
+      2,
+      10,
+      13,
+      17
     ],
     "text-input": [
       1,
@@ -516,10 +585,23 @@
       9,
       10,
       11,
-      14
+      14,
+      17
     ],
     "threshold-edit": [
       3
+    ],
+    "usage-batch-list": [
+      4
+    ],
+    "usage-date": [
+      4
+    ],
+    "usage-item-row": [
+      4
+    ],
+    "usage-over-stock": [
+      4
     ],
     "user-manage": [
       8
@@ -530,6 +612,14 @@
     "vendor-register": [
       6,
       9
+    ],
+    "web-footer": [
+      15
+    ],
+    "web-header": [
+      1,
+      14,
+      15
     ]
   },
   "components_source": "design/frames 노드 이름 ∩ (design.md 컴포넌트명 ∪ rules.json roles·screens_required·tab_bar)",
@@ -599,8 +689,25 @@
     ]
   },
   "desktop_shell_done": true,
-  "desktop_migrated_screens": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16],
-  "desktop_migrated_note": "데스크톱 재구성(design/rules.json 1.22 desktop_shell, d7 §23)이 끝난 화면 번호. C3 검사와 새 프레임(디자인 run 20261008-0936·1233·1610·1936) 대조는 여기 든 화면만 — 나머지 화면은 tests/fixtures/frames-pre-desktop/ 의 예전 프레임으로 본다. run 마다 늘려 마지막에 전부(1~16). 2026-10-08",
+  "desktop_migrated_screens": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    13,
+    14,
+    15,
+    16,
+    17
+  ],
+  "desktop_migrated_note": "데스크톱 재구성(design/rules.json 1.22 desktop_shell, d7 §23)이 끝난 화면 번호. C3 검사와 새 프레임(디자인 run 20261008-0936·1233·1610·1936) 대조는 여기 든 화면만 — 나머지 화면은 tests/fixtures/frames-pre-desktop/ 의 예전 프레임으로 본다. run 마다 늘려 마지막에 전부(1~16). 2026-10-08 · 2026-10-11 화면 17(센서) 추가 — 처음부터 데스크톱 셸",
   "test_rules": [
     "N1-db",
     "R-db",
@@ -723,13 +830,16 @@
     "5": "로그인 후 · 교사·admin만",
     "5_note": "학생이 /manual 에 오면 / 로 보낸다. 진입: 화면 6 의 manual-upload \"실험 매뉴얼 올리기\". 뒤로가기는 화면 6 (2026-10-05)",
     "home_quick_action": "홈(13) quick-action: 학생 = 사용 기록 입력·시약장 보기 / 교사 = 사용 기록 입력·입고·시약장 설정 / admin = 입고·사용자 관리·시약장 설정 (모바일 2+1). 2026-10-06 디자인 1.15 에서 정식 시안(app_exceptions quick-action-cabinet)",
-    "logout": "로그인 후 모든 화면의 nav-pill 학교명 옆 ▾ 를 누르면 열리는 메뉴의 \"로그아웃\" → POST /api/auth/logout → /login. 2026-10-06 디자인 1.15 에서 정식 시안: 메뉴 = nav-account-menu (data-component). 둘러보기·로그인 전·NoSchoolScreen 에는 없음"
+    "logout": "로그인 후 모든 화면의 nav-pill 학교명 옆 ▾ 를 누르면 열리는 메뉴의 \"로그아웃\" → POST /api/auth/logout → /login. 2026-10-06 디자인 1.15 에서 정식 시안: 메뉴 = nav-account-menu (data-component). 둘러보기·로그인 전·NoSchoolScreen 에는 없음",
+    "17": "로그인 후 · 모든 역할 (자기 학교 센서만, 쓰기는 교사·admin)",
+    "17-guest": "비로그인 (데모 학교 센서 읽기 전용)"
   },
   "guest_screens": [
     13,
     2,
     3,
-    16
+    16,
+    17
   ],
-  "components_note": "guest-banner·guest-lock 의 [2,3,13] 은 둘러보기(/demo) 버전 화면 · 화면 7: stock-intake 는 프레임(기존 시약 입고 갈래), reagent-register·ex-empty-state-card·ex-toast 는 프레임에 없는 상태(새 시약 등록 갈래·검색 0건·저장 직후)라 디자인 s2-spec 화면 7 기준 (2026-10-03) · 화면 10: ex-modal-card 는 프레임에 있는 기록 상세, ex-empty-state-card 는 프레임에 없는 상태(필터 결과 0건)라 s2-spec 화면 10 기준. 화면 4 는 시안의 \"메모\" 입력(text-input)을 추가 (2026-10-03) · 화면 8: user-manage 는 화면 본문 블록(홈 quick-action 의 진입은 entry 속성, 화면 13 기존 방식). 프레임은 역할 변경 시트가 열린 상태 — 초대 시트(segmented-control·button-pill-soft)·삭제 확인·검색 0건(ex-empty-state-card)·저장 직후(ex-toast)는 프레임에 없는 상태라 s2-spec 화면 8 기준 (2026-10-04) · 화면 11: 프레임 11(기본)·11-empty(시약장 0개: ex-empty-state-card + cabinet-add)·11-delete(삭제 확인: ex-modal-card + button-outline 2). 이름 바꾸기 시트(ex-modal-card·text-input)와 저장 직후(ex-toast)는 프레임에 없는 상태라 디자인 run 20261004-2256 s2-spec 화면 11 기준. cabinet-add 는 button-pill-soft 모양이지만 data-component 는 cabinet-add (2026-10-05) · 화면 6: 프레임은 알림 1건 + 판매처 연결 모달이 열린 상태. manual-upload 는 화면 6 의 안내 박스 + \"실험 매뉴얼 올리기\" 버튼(화면 5 는 다음 run 에서 — 그때 manual-upload 에 5 추가). vendor-register 는 화면 6 에서는 admin 에게만 보이는 \"판매처 등록\" 버튼, 화면 9 에서는 \"우리 학교 판매처\" 블록. 알림 0건(ex-empty-state-card)은 프레임에 없는 상태 · 화면 9: 프레임은 목록 + 저장 직후 토스트. 공통 목록 탭(ex-data-table-cell)·등록/수정 폼·삭제 확인(ex-modal-card·button-outline)·0건(ex-empty-state-card)은 프레임에 없는 상태라 s2-spec 화면 9 기준 (2026-10-05) · 화면 5: 프레임은 업로드 미리보기 + 처리 중 + 추출 결과 표가 함께 그려진 합성 상태. 실제 화면은 1단계(manual-upload 업로드 영역·badge-overlay 파일 이름·text-input 조 수·button-primary \"AI 추출\") → 처리 중 → 2단계(extraction-table: ex-data-table-cell 4열 + 사용량 text-input, button-outline \"다시 추출\", button-primary \"확인 후 저장\") → 저장 직후 ex-toast. 표의 \"우리 학교 시약\" 선택 칸은 시안에 없는 추가 열(사용자 결정, d7 §13) (2026-10-05) · 2026-10-06 디자인 1.15(run 20261006-1223): 화면 11 에 cabinet-number(전환 pill 이름 앞 번호)·qr-print(관리 줄)·slot-count(칸 안 시약 수), 상태 프레임 11-slot(slot-sheet·slot-assign·mix-warning), 11-print(qr-print-sheet·qr-label), 11-unsaved(ex-modal-card \"저장하지 않은 변경이 있어요\"). 화면 3 에 reagent-location(보관 위치 줄)·location-edit(위치 바꾸기, 교사·admin)·reorder-threshold(재주문 기준 줄)·threshold-edit(직접 입력, 교사·admin)·cabinet-number, 상태 프레임 3-location(location-picker + cabinet-switcher·cabinet-slot·slot-count·mix-warning). nav-account-menu 는 로그인 후 셸이 있는 모든 화면(화면 12 는 다음 run 에서 추가). 상태 프레임별 필수 컴포넌트는 design/rules.json variants. 화면 12·qr-result-sheet 는 다음 run · 2026-10-07 디자인 1.17(run 20261007-0002·0744): 화면 2 에 list-filter-button(검색 오른쪽)·filter-chip-row, 상태 프레임 2-filter(list-filter-sheet·storage-class-chip·filter-chip-row)·2-filter-empty(filter-chip-row·ex-empty-state-card). 화면 4 에 usage-date, 상태 프레임 4-past-date(usage-date·past-date-note). 화면 10 은 사용일 묶음·기록일 캡션(d7 §15). 화면 2-msds-bulk·3-msds·7-msds(msds-search·msds-candidates·msds-bulk-banner), 3-location·7-suggest 의 suggest-badge·location-suggest, 7-doc-upload·doc-review·doc-fail(intake-mode·doc-upload·doc-intake-table·reagent-link·new-reagent-fields)는 뒤 run 에서 — 그때 components 에 추가 · 2026-10-07 dev-rules 1.5: suggest-badge [3,7,11](3-location 피커 추천 칸, 11 칸 시트의 시약 넣기 목록, 7-suggest)·location-suggest [7](새 시약 등록 직후, 프레임 7-suggest) 추가 (d7 §17). 화면 7 의 intake-mode·doc-upload 등은 서류 입고 run 에서 · 2026-10-07 dev-rules 1.6: 화면 5·6·8·9 프레임 갱신(디자인 run 20261007-0848 — 개발 예외 1~6 반영, d7 §18). auto-threshold-badge [3,6](자동 재주문 기준 회색 pill, 화면 3 reorder-threshold 안·화면 6 reorder-alert-card 안) · 2026-10-07 dev-rules 1.7(디자인 1.18, run 20261007-1305): 화면 14 에 school-select-kind(학교급 3칸 segmented-control, 지역과 학교 사이), 상태 프레임 14-no-school(school-select-kind·school-select-school, 학교 0개 안내) — d7 §19 · 2026-10-07 dev-rules 1.8: MSDS 찾기(d7 §20) — msds-search [3,7](화면 3 MSDS 없는 시약·화면 7 새 시약 폼), msds-candidates [2,3,7](후보 시트, 상태 프레임 3-msds·7-msds·2-msds-bulk), msds-bulk-banner [2](MSDS 없는 시약 필터를 켠 교사·admin, 프레임 2-msds-bulk). 7-doc-review 의 msds-search 는 서류 입고 run 에서 · 2026-10-08 dev-rules 1.9: 서류로 입고(d7 §21) — intake-mode [7](화면 7 맨 위, 기본 = 서류로 입고, screens_required 7), doc-upload [7](7-doc-upload·7-doc-fail), doc-intake-table·reagent-link·new-reagent-fields [7](7-doc-review, 새 시약 행에 msds-search·suggest-badge), 7-suggest 의 location-suggest 여러 개. 기존 stock-intake·reagent-register 는 '직접 입력' 갈래 · 2026-10-08 dev-rules 1.10: 화면 16 MSDS 요약(d7 §22, 디자인 1.21 msds_summary, 프레임 16-mobile·16-desktop) — msds-summary·ghs-pictogram·msds-original-link·msds-skeleton [16], ex-empty-state-card 16(16-fail). 상태 16-loading·16-fail·16-no-summary 는 시안 2차 전까지 rules.json variants 16 기준. 데스크톱의 detail-drawer 안 배치는 데스크톱 재구성 run 에서 — 그 전까지 데스크톱도 전용 화면"
+  "components_note": "guest-banner·guest-lock 의 [2,3,13] 은 둘러보기(/demo) 버전 화면 · 화면 7: stock-intake 는 프레임(기존 시약 입고 갈래), reagent-register·ex-empty-state-card·ex-toast 는 프레임에 없는 상태(새 시약 등록 갈래·검색 0건·저장 직후)라 디자인 s2-spec 화면 7 기준 (2026-10-03) · 화면 10: ex-modal-card 는 프레임에 있는 기록 상세, ex-empty-state-card 는 프레임에 없는 상태(필터 결과 0건)라 s2-spec 화면 10 기준. 화면 4 는 시안의 \"메모\" 입력(text-input)을 추가 (2026-10-03) · 화면 8: user-manage 는 화면 본문 블록(홈 quick-action 의 진입은 entry 속성, 화면 13 기존 방식). 프레임은 역할 변경 시트가 열린 상태 — 초대 시트(segmented-control·button-pill-soft)·삭제 확인·검색 0건(ex-empty-state-card)·저장 직후(ex-toast)는 프레임에 없는 상태라 s2-spec 화면 8 기준 (2026-10-04) · 화면 11: 프레임 11(기본)·11-empty(시약장 0개: ex-empty-state-card + cabinet-add)·11-delete(삭제 확인: ex-modal-card + button-outline 2). 이름 바꾸기 시트(ex-modal-card·text-input)와 저장 직후(ex-toast)는 프레임에 없는 상태라 디자인 run 20261004-2256 s2-spec 화면 11 기준. cabinet-add 는 button-pill-soft 모양이지만 data-component 는 cabinet-add (2026-10-05) · 화면 6: 프레임은 알림 1건 + 판매처 연결 모달이 열린 상태. manual-upload 는 화면 6 의 안내 박스 + \"실험 매뉴얼 올리기\" 버튼(화면 5 는 다음 run 에서 — 그때 manual-upload 에 5 추가). vendor-register 는 화면 6 에서는 admin 에게만 보이는 \"판매처 등록\" 버튼, 화면 9 에서는 \"우리 학교 판매처\" 블록. 알림 0건(ex-empty-state-card)은 프레임에 없는 상태 · 화면 9: 프레임은 목록 + 저장 직후 토스트. 공통 목록 탭(ex-data-table-cell)·등록/수정 폼·삭제 확인(ex-modal-card·button-outline)·0건(ex-empty-state-card)은 프레임에 없는 상태라 s2-spec 화면 9 기준 (2026-10-05) · 화면 5: 프레임은 업로드 미리보기 + 처리 중 + 추출 결과 표가 함께 그려진 합성 상태. 실제 화면은 1단계(manual-upload 업로드 영역·badge-overlay 파일 이름·text-input 조 수·button-primary \"AI 추출\") → 처리 중 → 2단계(extraction-table: ex-data-table-cell 4열 + 사용량 text-input, button-outline \"다시 추출\", button-primary \"확인 후 저장\") → 저장 직후 ex-toast. 표의 \"우리 학교 시약\" 선택 칸은 시안에 없는 추가 열(사용자 결정, d7 §13) (2026-10-05) · 2026-10-06 디자인 1.15(run 20261006-1223): 화면 11 에 cabinet-number(전환 pill 이름 앞 번호)·qr-print(관리 줄)·slot-count(칸 안 시약 수), 상태 프레임 11-slot(slot-sheet·slot-assign·mix-warning), 11-print(qr-print-sheet·qr-label), 11-unsaved(ex-modal-card \"저장하지 않은 변경이 있어요\"). 화면 3 에 reagent-location(보관 위치 줄)·location-edit(위치 바꾸기, 교사·admin)·reorder-threshold(재주문 기준 줄)·threshold-edit(직접 입력, 교사·admin)·cabinet-number, 상태 프레임 3-location(location-picker + cabinet-switcher·cabinet-slot·slot-count·mix-warning). nav-account-menu 는 로그인 후 셸이 있는 모든 화면(화면 12 는 다음 run 에서 추가). 상태 프레임별 필수 컴포넌트는 design/rules.json variants. 화면 12·qr-result-sheet 는 다음 run · 2026-10-07 디자인 1.17(run 20261007-0002·0744): 화면 2 에 list-filter-button(검색 오른쪽)·filter-chip-row, 상태 프레임 2-filter(list-filter-sheet·storage-class-chip·filter-chip-row)·2-filter-empty(filter-chip-row·ex-empty-state-card). 화면 4 에 usage-date, 상태 프레임 4-past-date(usage-date·past-date-note). 화면 10 은 사용일 묶음·기록일 캡션(d7 §15). 화면 2-msds-bulk·3-msds·7-msds(msds-search·msds-candidates·msds-bulk-banner), 3-location·7-suggest 의 suggest-badge·location-suggest, 7-doc-upload·doc-review·doc-fail(intake-mode·doc-upload·doc-intake-table·reagent-link·new-reagent-fields)는 뒤 run 에서 — 그때 components 에 추가 · 2026-10-07 dev-rules 1.5: suggest-badge [3,7,11](3-location 피커 추천 칸, 11 칸 시트의 시약 넣기 목록, 7-suggest)·location-suggest [7](새 시약 등록 직후, 프레임 7-suggest) 추가 (d7 §17). 화면 7 의 intake-mode·doc-upload 등은 서류 입고 run 에서 · 2026-10-07 dev-rules 1.6: 화면 5·6·8·9 프레임 갱신(디자인 run 20261007-0848 — 개발 예외 1~6 반영, d7 §18). auto-threshold-badge [3,6](자동 재주문 기준 회색 pill, 화면 3 reorder-threshold 안·화면 6 reorder-alert-card 안) · 2026-10-07 dev-rules 1.7(디자인 1.18, run 20261007-1305): 화면 14 에 school-select-kind(학교급 3칸 segmented-control, 지역과 학교 사이), 상태 프레임 14-no-school(school-select-kind·school-select-school, 학교 0개 안내) — d7 §19 · 2026-10-07 dev-rules 1.8: MSDS 찾기(d7 §20) — msds-search [3,7](화면 3 MSDS 없는 시약·화면 7 새 시약 폼), msds-candidates [2,3,7](후보 시트, 상태 프레임 3-msds·7-msds·2-msds-bulk), msds-bulk-banner [2](MSDS 없는 시약 필터를 켠 교사·admin, 프레임 2-msds-bulk). 7-doc-review 의 msds-search 는 서류 입고 run 에서 · 2026-10-08 dev-rules 1.9: 서류로 입고(d7 §21) — intake-mode [7](화면 7 맨 위, 기본 = 서류로 입고, screens_required 7), doc-upload [7](7-doc-upload·7-doc-fail), doc-intake-table·reagent-link·new-reagent-fields [7](7-doc-review, 새 시약 행에 msds-search·suggest-badge), 7-suggest 의 location-suggest 여러 개. 기존 stock-intake·reagent-register 는 '직접 입력' 갈래 · 2026-10-08 dev-rules 1.10: 화면 16 MSDS 요약(d7 §22, 디자인 1.21 msds_summary, 프레임 16-mobile·16-desktop) — msds-summary·ghs-pictogram·msds-original-link·msds-skeleton [16], ex-empty-state-card 16(16-fail). 상태 16-loading·16-fail·16-no-summary 는 시안 2차 전까지 rules.json variants 16 기준. 데스크톱의 detail-drawer 안 배치는 데스크톱 재구성 run 에서 — 그 전까지 데스크톱도 전용 화면 · 2026-10-11 (1.17, 디자인 1.26): 화면 17 센서 새로, 2 선택 모드·여러 개 삭제·inventory-switch, 10 record-add, 13 sensor-alert-tile, 14 signup-error-summary, 1·13 404(ex-empty-state-card), 모바일 tab-soon. ex-modal-card [2]·ex-empty-state-card [1,13,17] 은 상태 프레임(2-bulk-delete, *-not-found, 17-empty) 기준"
 }

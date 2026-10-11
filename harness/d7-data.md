@@ -316,6 +316,21 @@
 | 시약 삭제 (화면 3) | 교사·admin(R5: 학생 reagent-more-menu·reagent-delete 0, 둘러보기 숨김). 진입 = 화면 3 만: 모바일 카드 오른쪽 위 ⋯ / 데스크톱 드로어 머리 × 왼쪽 ⋯ → "시약 삭제" → 확인 모달(rules reagent_delete.confirm 문구, 삭제 = 검정 button-primary) → 토스트 "시약을 삭제했어요" → 화면 2 |
 | 삭제 DB = 보관 | `reagents.deleted_at timestamptz null`(+ deleted_by). 함수 `archive_reagent(p_reagent_id)` — 교사·admin·자기 학교·데모 거부. 보관된 시약은 목록·상세(404 처럼)·시약장 칸·홈·재주문 알림·사용 기록 고르기·입고 고르기·MSDS 일괄·위치 추천에서 제외(조회 함수·RLS select 정책·뷰 중 안전한 방법), 칸 배치는 비움(slot_id null). 사용·입고 기록은 그대로 남고 화면 10 은 deleted-reagent-tag "삭제된 시약" + 시약명 회색 + 상세 링크 없음. 되돌리기 없음. 같은 이름 새 시약 등록은 허용(이름 중복 검사가 있다면 보관된 시약은 제외 — 바꾸려면 인덱스를 다시 만들어야 하면 보고) |
 
+## 25. 여러 개 삭제·앱 404·가입 오류·기록 추가·무선 센서 + QA 수정 (화면 1·2·10·13·14·15·17, 2026-10-11 결정 — design/rules.json 1.26 bulk_delete·not_found·signup_error·record_add·sensor·landing_shot·tab_bar.qr_pending)
+
+| 항목 | 결정 |
+|---|---|
+| 여러 개 삭제 (화면 2·17) | 교사·admin(R5: 학생 list-select-toggle·select-checkbox·bulk-action-bar 0, 둘러보기 숨김). "선택" → 선택 모드(행 누르면 체크, 상세 안 감) → bulk-action-bar "N개 선택됨 · 삭제" → 확인 모달(rules bulk_delete.confirm) → 토스트 "{시약\|센서} N개를 삭제했어요", 목록 그대로·선택 모드 끝. 전체 선택 = 지금 필터·검색 결과 전체(페이지 넘어서) 최대 100, 넘으면 "앞의 100개만 골랐어요" |
+| 여러 개 삭제 DB | 새 함수 `archive_reagents(p_reagent_ids uuid[])`·`archive_sensors(p_sensor_ids uuid[])` — 1~100개, 한 트랜잭션, 각 항목 archive_reagent 와 같은 검사(교사·admin·자기 학교·보관 안 됨·데모 거부), 하나라도 틀리면 전부 취소. 반환 = 보관한 수 |
+| QR 스캔 탭 (모바일) | 화면 12 전까지 tab-item 회색 + tab-soon "준비 중", 누르면 토스트 "준비 중이에요", `/scan` 으로 가지 않음. 데스크톱 사이드바 "QR 찾기"는 지금처럼 비활성 |
+| 앱 404 | 로그인 후 없는 주소 = 앱 셸 안 ex-empty-state-card "페이지를 찾을 수 없어요" + "홈으로"·"뒤로"(프레임 13-not-found). 로그인 전 = web-header/nav-pill + "처음으로"(→ /, 프레임 1-not-found). 다른 학교·삭제된 시약 404 도 같은 카드로 맞춘다 |
+| 가입 오류 (화면 14) | 가입하기 누르면 첫 오류 칸으로 스크롤·포커스 + 버튼 바로 위 signup-error-summary 한 줄(첫 오류, 여럿이면 "… 외 N개"), 두 폭 |
+| 기록 추가 (화면 10) | 페이지 머리 오른쪽 record-add button-primary "기록 추가"(모든 역할, 둘러보기는 기록 탭 잠금) → 빈 화면 4 → 저장하면 화면 10 으로 돌아오고 새 기록 행을 잠깐 highlight-soft. 화면 4 의 "들어온 화면으로 돌아가기"는 그대로(10 에서 들어오면 10) |
+| 무선 센서 (화면 17) | 보유 관리만(측정값·대여 없음). 경로 `/sensors`(데모 `/demo/sensors`). 데스크톱 사이드바 "센서"(모든 역할, 시약 아래), 모바일 = 시약 탭 안 inventory-switch "시약 \| 센서"(마지막 고른 쪽 기억, 화면 17 에서 시약 탭 활성). 목록·필터·상세·폼·빈 상태·상태 배지·회사 고르기 = rules sensor. 학생 보기만, 둘러보기 = 데모 센서 읽기 전용. 홈 sensor-alert-tile(교사·admin, 고장·점검 필요 ≥1 일 때만) |
+| 센서 DB | 새 표 `sensors`(id, school_id, name 1~40자, type text — rules sensor.types 중 하나, maker text — 목록 또는 직접 입력 1~30자, model text null, quantity int ≥0, location_text text null, slot_id null(시약장 칸, 선택), status text 정상\|점검 필요\|고장 — DB 값은 ok\|check\|broken, memo text null, created_at, created_by, deleted_at·deleted_by). RLS: 같은 학교 select(보관 제외), 쓰기는 함수만(교사·admin·자기 학교·데모 거부): `upsert_sensor`·`archive_sensor`·`archive_sensors`. 종류 ↔ 지능형 과학실 ON 센서타입 코드(TPR·ILM 등)는 코드 상수로만 둔다(화면엔 한국어). 데모 학교에 센서 4~6개 시드 |
+| 랜딩 그림 | 15-desktop "사용 기록" 섹션 product-shot = 새 화면 4(여러 시약 담기 + 수업) 조각 |
+| QA 수정 (디자인 없음) | (1) 화면 3 사용 기록 탭·홈 최근 기록은 기록 시각 대신 **사용일(used_on)** — 홈은 행과 날짜를 같은 출처에서 읽어 보관 시약 때문에 어긋나지 않게 (2) 입고일 미래 금지(record_intake·register_reagent·서류 입고, 입력 max = 오늘) (3) 최근 입고일 = 가장 늦은 입고일 유지(더 이른 날짜 입고로 뒤로 가지 않음, 2026-10-11 사용자 결정) (4) 사용량 0 = "사용량은 0보다 커야 해요", 음수도 같은 문구 (5) 기록 상세 라벨 두 폭 모두 "기록한 날"(데스크톱 표 머리 잘림 없게) (6) 초대 이메일 오류 문구 두 폭 같게 "이메일 주소를 확인해 주세요" (7) 삭제 확인 모달 Esc 뒤 포커스 ⋯ 로 복귀 (8) MSDS 없는 시약 기록 상세에 "MSDS 보기" 진입 없음(§22) |
+
 ## 10. 로그아웃 (2026-10-05 결정)
 
 - 로그인 후 모든 화면의 nav-pill 학교명을 누르면 작은 메뉴가 열리고 "로그아웃" 1개가 있다. 누르면 `POST /api/auth/logout` → `/login`.

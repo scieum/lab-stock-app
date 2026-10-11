@@ -1,5 +1,5 @@
 {
-  "version": "1.25",
+  "version": "1.26",
   "sources": [
     "docs/design.md",
     "docs/story-service.md",
@@ -25,7 +25,8 @@
     "2026-10-08 랜딩 긴 페이지 — 15-desktop 세로 프레임·랜딩 큰 글자·섹션 컴포넌트 (refs/uibowl-landing-hero-20261008.md)",
     "2026-10-08 푸터 = \"© 2026 사이음(sci_eum). 과학의 사이, 사람을 잇다.\" 한 줄",
     "2026-10-08 랜딩 섹션 리듬·반전 버튼·스크롤 동작 (승인 run 20261008-2144)",
-    "2026-10-10 여러 시약 한 번에 사용 기록·시약 삭제·수업 기록 (개발 세션 요청 6)"
+    "2026-10-10 여러 시약 한 번에 사용 기록·시약 삭제·수업 기록 (개발 세션 요청 6)",
+    "2026-10-11 여러 개 삭제·QR 탭 준비 중·앱 404·가입 오류 요약·랜딩 그림·기록 추가·무선 센서 화면 17 (개발 세션 요청 7)"
   ],
   "colors": {
     "allowed": [
@@ -177,7 +178,7 @@
       1440,
       900
     ],
-    "name_pattern": "^([1-9]|1[0-6])-(mobile|desktop)$",
+    "name_pattern": "^([1-9]|1[0-7])-(mobile|desktop)$",
     "keyscreens": {
       "default": [
         2,
@@ -205,11 +206,12 @@
       13,
       14,
       15,
-      16
+      16,
+      17
     ],
-    "guest_name_pattern": "^([1-9]|1[0-6])-guest-(mobile|desktop)$",
-    "variant_name_pattern": "^([1-9]|1[0-6])-(empty|delete|slot|print|unsaved|location|result|doc-upload|doc-review|doc-fail|suggest|msds|msds-bulk|filter|filter-empty|past-date|no-school|loading|fail|no-summary|picker|error)-(mobile|desktop)$",
-    "variant_note": "같은 화면의 다른 상태 프레임. input.json variants {\"11\": [\"empty\",\"delete\"]} 로 요청 (2026-10-04) · 2026-10-06 상태 추가: 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 상태 추가: 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk · 2026-10-07 상태 추가: 2-filter·2-filter-empty, 4-past-date · 2026-10-07 상태 추가: 14-no-school · 2026-10-08 상태 추가: 16-loading·16-fail·16-no-summary · 2026-10-10 상태 추가: 4-picker·4-empty·4-error, 3-delete",
+    "guest_name_pattern": "^([1-9]|1[0-7])-guest-(mobile|desktop)$",
+    "variant_name_pattern": "^([1-9]|1[0-7])-(empty|delete|slot|print|unsaved|location|result|doc-upload|doc-review|doc-fail|suggest|msds|msds-bulk|filter|filter-empty|past-date|no-school|loading|fail|no-summary|picker|error|select|bulk-delete|not-found|detail|form)-(mobile|desktop)$",
+    "variant_note": "같은 화면의 다른 상태 프레임. input.json variants {\"11\": [\"empty\",\"delete\"]} 로 요청 (2026-10-04) · 2026-10-06 상태 추가: 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 상태 추가: 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk · 2026-10-07 상태 추가: 2-filter·2-filter-empty, 4-past-date · 2026-10-07 상태 추가: 14-no-school · 2026-10-08 상태 추가: 16-loading·16-fail·16-no-summary · 2026-10-10 상태 추가: 4-picker·4-empty·4-error, 3-delete · 2026-10-11 상태 추가: 2-select·2-bulk-delete, 13-not-found·1-not-found, 14-error, 17-detail·17-form·17-empty·17-select",
     "tall": {
       "15-desktop": {
         "width": 1440,
@@ -264,10 +266,17 @@
         "msds-search",
         "msds-bulk-banner",
         "reagent-more-menu",
-        "reagent-delete"
+        "reagent-delete",
+        "list-select-toggle",
+        "select-checkbox",
+        "bulk-action-bar",
+        "sensor-add",
+        "sensor-edit",
+        "sensor-delete",
+        "sensor-alert-tile"
       ],
       "max": 0,
-      "source": "2026-10-02 화면 7 · 2026-10-06 threshold-edit(재주문 기준 고치기 = 시약 정보 입력) 추가 · 2026-10-07 doc-upload·msds-search·msds-bulk-banner 추가 · 2026-10-10 reagent-more-menu·reagent-delete(시약 삭제 = 교사·admin) 추가"
+      "source": "2026-10-02 화면 7 · 2026-10-06 threshold-edit(재주문 기준 고치기 = 시약 정보 입력) 추가 · 2026-10-07 doc-upload·msds-search·msds-bulk-banner 추가 · 2026-10-10 reagent-more-menu·reagent-delete(시약 삭제 = 교사·admin) 추가 · 2026-10-11 선택 모드·여러 개 삭제·센서 등록·수정·삭제·홈 센서 타일(교사·admin) 추가"
     },
     "R6": {
       "component": "user-manage",
@@ -305,7 +314,8 @@
         11,
         12,
         13,
-        16
+        16,
+        17
       ],
       "school_name_pattern": "[가-힣A-Za-z0-9]+(?:초등학교|중학교|고등학교)",
       "distinct_school_names": 1,
@@ -326,7 +336,8 @@
         11,
         12,
         13,
-        16
+        16,
+        17
       ],
       "school_name_scope_source": "2026-10-01 NEIS: 화면 1 학교 목록에는 여러 학교명이 정상",
       "school_select_levels": [
@@ -478,11 +489,18 @@
       "ghs-pictogram",
       "msds-original-link"
     ],
-    "source": "2026-10-02 story-service 결정 (화면별 필수 컴포넌트, 규칙 C1) · 15 랜딩 2026-10-03 · 2026-10-06 화면 3 보관 위치·재주문 기준, 화면 11 시약장 번호·QR 인쇄 · 2026-10-07 화면 7 intake-mode · 2026-10-07 화면 2 list-filter-button, 화면 4 usage-date · 2026-10-07 화면 14 school-select-kind · 2026-10-08 화면 16 MSDS 요약 · 2026-10-10 화면 4 여러 시약·수업, 화면 10 수업 표시·반 필터·삭제된 시약",
+    "source": "2026-10-02 story-service 결정 (화면별 필수 컴포넌트, 규칙 C1) · 15 랜딩 2026-10-03 · 2026-10-06 화면 3 보관 위치·재주문 기준, 화면 11 시약장 번호·QR 인쇄 · 2026-10-07 화면 7 intake-mode · 2026-10-07 화면 2 list-filter-button, 화면 4 usage-date · 2026-10-07 화면 14 school-select-kind · 2026-10-08 화면 16 MSDS 요약 · 2026-10-10 화면 4 여러 시약·수업, 화면 10 수업 표시·반 필터·삭제된 시약 · 2026-10-11 화면 10 record-add, 화면 17 센서",
     "10": [
       "class-label",
       "class-filter",
-      "deleted-reagent-tag"
+      "deleted-reagent-tag",
+      "record-add"
+    ],
+    "17": [
+      "sensor-list",
+      "sensor-row",
+      "sensor-status-badge",
+      "list-filter-button"
     ]
   },
   "cabinet": {
@@ -585,12 +603,15 @@
       11,
       12,
       13,
-      16
+      16,
+      17
     ],
     "source": "2026-10-02 사용자 결정: 하단 탭바 (refs/uibowl-home-nav-20261002.md)",
     "radius": 0,
     "shape_source": "2026-10-02 사용자 결정: 둥근 floating pill 말고 하단에 붙은 사각형",
-    "mobile_screens_note": "1 로그인·14 회원가입·15 랜딩 제외 (로그인 전 화면)"
+    "mobile_screens_note": "1 로그인·14 회원가입·15 랜딩 제외 (로그인 전 화면)",
+    "qr_pending": "화면 12 나오기 전까지: 'QR 스캔' tab-item = 회색(text-faint 아이콘·라벨) + 아이콘 아래 tab-soon '준비 중'(caption), 누르면 ex-toast '준비 중이에요'. 탭 4개 유지 (2026-10-11 사용자 결정 (개발 세션 요청 7) 2)",
+    "sensor_entry": "센서는 탭이 아니라 '시약' 탭 안: 화면 2·17 모바일 맨 위 inventory-switch(segmented-control '시약 | 센서'), 마지막 고른 쪽 기억. 화면 17 모바일에서 '시약' 탭이 활성 (2026-10-11 사용자 결정 (개발 세션 요청 7) 7)"
   },
   "auth": {
     "login_id": "개인 이메일",
@@ -604,7 +625,8 @@
       13,
       2,
       3,
-      16
+      16,
+      17
     ],
     "entry_screen": 15,
     "entry_component": "guest-entry",
@@ -643,11 +665,18 @@
       "msds-bulk-banner",
       "location-suggest",
       "reagent-more-menu",
-      "reagent-delete"
+      "reagent-delete",
+      "list-select-toggle",
+      "select-checkbox",
+      "bulk-action-bar",
+      "sensor-add",
+      "sensor-edit",
+      "sensor-delete",
+      "sensor-alert-tile"
     ],
     "source": "2026-10-03 사용자 결정: 비회원 둘러보기 (데모 학교 읽기 전용)",
     "sidebar_locks": 2,
-    "desktop": "로그인 후와 같은 app-sidebar(위 '데모 학교'), sidebar-item = 홈·시약 활성 + 기록·QR 찾기 guest-lock(2), 관리 메뉴 숨김. 본문 위 guest-banner",
+    "desktop": "로그인 후와 같은 app-sidebar(위 '데모 학교'), sidebar-item = 홈·시약 활성 + 기록·QR 찾기 guest-lock(2), 관리 메뉴 숨김. 본문 위 guest-banner · 2026-10-11 '센서'도 활성(데모 센서 읽기 전용)",
     "desktop_source": "2026-10-08 사용자 결정"
   },
   "variants": {
@@ -731,6 +760,15 @@
       "filter-empty": [
         "filter-chip-row",
         "ex-empty-state-card"
+      ],
+      "select": [
+        "list-select-toggle",
+        "select-checkbox",
+        "bulk-action-bar"
+      ],
+      "bulk-delete": [
+        "bulk-action-bar",
+        "ex-modal-card"
       ]
     },
     "4": {
@@ -755,6 +793,9 @@
       "no-school": [
         "school-select-kind",
         "school-select-school"
+      ],
+      "error": [
+        "signup-error-summary"
       ]
     },
     "16": {
@@ -770,7 +811,37 @@
         "msds-original-link"
       ]
     },
-    "source": "2026-10-04 여러 시약장: 빈 상태(교사 기준)·삭제 확인 상태 필수 컴포넌트 (C1) · 2026-10-06 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk, 3-location + suggest-badge · 2026-10-07 2-filter·2-filter-empty, 4-past-date · 2026-10-07 14-no-school · 2026-10-08 16-loading·16-fail·16-no-summary · 2026-10-10 4-picker·4-empty·4-error, 3-delete"
+    "source": "2026-10-04 여러 시약장: 빈 상태(교사 기준)·삭제 확인 상태 필수 컴포넌트 (C1) · 2026-10-06 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk, 3-location + suggest-badge · 2026-10-07 2-filter·2-filter-empty, 4-past-date · 2026-10-07 14-no-school · 2026-10-08 16-loading·16-fail·16-no-summary · 2026-10-10 4-picker·4-empty·4-error, 3-delete · 2026-10-11 2-select·2-bulk-delete, 13-not-found·1-not-found, 14-error, 17-detail·form·empty·select",
+    "13": {
+      "not-found": [
+        "ex-empty-state-card"
+      ]
+    },
+    "1": {
+      "not-found": [
+        "ex-empty-state-card"
+      ]
+    },
+    "17": {
+      "detail": [
+        "sensor-detail",
+        "sensor-status-badge"
+      ],
+      "form": [
+        "sensor-form",
+        "sensor-type-select",
+        "sensor-maker-select"
+      ],
+      "empty": [
+        "ex-empty-state-card",
+        "sensor-add"
+      ],
+      "select": [
+        "list-select-toggle",
+        "select-checkbox",
+        "bulk-action-bar"
+      ]
+    }
   },
   "reorder": {
     "threshold_edit": "화면 3 시약 상세에서 교사·admin이 재주문 기준(필요량)을 숫자로 직접 입력 (reorder-threshold 안 threshold-edit). 화면 5 AI 추출 값과 같은 칸을 덮어씀",
@@ -867,7 +938,8 @@
       11,
       12,
       13,
-      16
+      16,
+      17
     ],
     "forbidden_on_desktop": [
       "nav-pill"
@@ -894,12 +966,16 @@
       ],
       "4": [
         "data-table"
+      ],
+      "17": [
+        "data-table"
       ]
     },
     "menu": {
       "all": [
         "홈",
         "시약",
+        "센서",
         "기록",
         "시약장",
         "QR 찾기"
@@ -950,7 +1026,8 @@
       },
       "landing_sections": "15-desktop 순서: 히어로(landing-hero·product-shot·landing-cta·guest-entry) → landing-tabs(접는 선, 스크롤 시 고정) → 문제 공감 feature-card 3 → landing-section 4(좌우 번갈아, 꼬리표·제목·점 목록 3·승인 화면 조각) → step-flow 5단계 → 대상 탭(segmented-control 교사·학생·관리자) → 안심 2×2(hairline 격자, 운영 숫자 없음) → cta-band → web-footer 한 줄"
     },
-    "heavy_pages_source": "2026-10-10 사용자 결정: 화면 4 여러 시약 = 본문 페이지(드로어 아님)"
+    "heavy_pages_source": "2026-10-10 사용자 결정: 화면 4 여러 시약 = 본문 페이지(드로어 아님)",
+    "menu_source": "2026-10-11 사용자 결정 (개발 세션 요청 7) 7: 사이드바 '시약' 아래 '센서'(모든 역할). QR 찾기는 화면 12 전까지 비활성 '준비 중'"
   },
   "msds_summary": {
     "screen": 16,
@@ -1032,5 +1109,104 @@
     "label": "class-label 표기 = '{학년}학년 {반}반 · {수업명}', 있는 것만(예: '1학년', '통합과학'). 화면 10 모바일 행 caption muted, 데스크톱 data-table 열 '수업'(없으면 '—' text-faint), 드로어 '수업 | 값'",
     "filter": "class-filter: 화면 10 기록 목록 위 button-pill-soft '반: 전체 ▾' → 모바일 바텀시트·데스크톱 드롭다운: 학년(전체·1~) → 반(학년 전체·1~)",
     "source": "2026-10-10 사용자 결정 (개발 세션 요청 6) 3: 학년·반 고르기 + 자유 입력(선택)"
+  },
+  "bulk_delete": {
+    "screens": [
+      2,
+      17
+    ],
+    "roles": [
+      "교사",
+      "admin"
+    ],
+    "toggle": "list-select-toggle: 모바일 = 페이지 머리 오른쪽 button-pill-soft '선택', 데스크톱 = 페이지 머리 필터 옆 button-outline '선택'. 선택 모드 머리 = 조용한 '취소' · 'N개 선택됨' · '전체 선택'",
+    "checkbox": "select-checkbox: 20px 원(radius 9999). 안 고름 = canvas + 1px #adadad 테두리, 고름 = colors.highlight 채움 + 흰 체크. 고른 행 = colors.highlight-soft. 모바일 카드 왼쪽, 데스크톱 data-table 첫 열 + 머리 칸 = 전체 선택",
+    "select_all": "지금 필터·검색 결과 전체(페이지 넘어서), 최대 100개. 넘으면 caption muted '앞의 100개만 골랐어요'",
+    "row_tap": "선택 모드에서 행을 누르면 상세 대신 체크가 바뀜",
+    "bar": "bulk-action-bar: 1개 이상 고르면 나타남. colors.canvas + 위 1px hairline-soft, radius 0. 왼쪽 'N개 선택됨'(title), 오른쪽 button-primary '삭제'(검정). 모바일 = tab-bar 바로 위, 데스크톱 = 본문 아래 고정",
+    "confirm": "ex-modal-card: '{시약|센서} N개를 삭제할까요?' · 이름 3개 + '외 N개'(body-sm) · '목록·시약장·재주문 알림에서 사라져요. 사용·입고 기록은 남아요.'(센서는 '목록과 홈에서 사라져요.') · muted '되돌릴 수 없어요.' · button-outline '취소' + button-primary '삭제'(검정). 핑크 없음",
+    "after": "ex-toast '{시약|센서} N개를 삭제했어요', 목록 그대로, 선택 모드 끝",
+    "max": 100,
+    "source": "2026-10-11 사용자 결정 (개발 세션 요청 7) 1"
+  },
+  "not_found": {
+    "card": "ex-empty-state-card 재사용: 제목 '페이지를 찾을 수 없어요' · 본문 '주소가 바뀌었거나 없는 페이지예요.'",
+    "in_app": "로그인 후 = 앱 셸 안(모바일 tab-bar, 데스크톱 app-sidebar, 현재 메뉴 없음) + button-primary '홈으로' + button-outline '뒤로' → 프레임 13-not-found",
+    "pre_login": "로그인 전 = 데스크톱 web-header / 모바일 nav-pill, 탭바·사이드바 없음 + button-primary '처음으로'(→15) → 프레임 1-not-found",
+    "source": "2026-10-11 사용자 결정 (개발 세션 요청 7) 3"
+  },
+  "signup_error": {
+    "summary": "signup-error-summary: 화면 14 모바일 아래 고정 버튼 바로 위 한 줄 — 첫 오류 문구('약관에 동의해 주세요'), 여럿이면 '… 외 N개'. ink 글자 + 작은 안내 아이콘(text-muted), 핑크 없음. 데스크톱도 같은 줄을 버튼 위에",
+    "scroll": "'가입하기'를 누르면 첫 오류 칸으로 스크롤하고 포커스 (개발 쪽)",
+    "source": "2026-10-11 사용자 결정 (개발 세션 요청 7) 4"
+  },
+  "record_add": {
+    "component": "record-add",
+    "shape": "화면 10 페이지 머리 오른쪽 button-primary '기록 추가'(모바일은 높이 44 작은 pill). 떠 있는 버튼(FAB) 없음 — 그림자 금지·탭바와 겹침",
+    "roles": "모든 역할(사용 기록 권한과 같음). 둘러보기는 기록 탭 자체가 잠금",
+    "flow": "빈 화면 4로 → 저장하면 화면 10으로 돌아오고 새 기록 행을 잠깐 colors.highlight-soft로 표시",
+    "source": "2026-10-11 사용자 결정 (개발 세션 요청 7) 6"
+  },
+  "sensor": {
+    "screen": 17,
+    "entry": "데스크톱 사이드바 '센서'(모든 역할) · 모바일 '시약' 탭 안 inventory-switch '시약 | 센서'",
+    "list": "데스크톱 = 페이지 머리 '센서 N개' + 검색 + list-filter-button + list-select-toggle(교사·admin) + sensor-add button-primary '센서 등록'(교사·admin), sensor-list = data-table 열 이름 · 종류 · 회사 · 모델 · 수량 · 보관 위치 · 상태, 행 = sensor-row, 행 누르면 detail-drawer. 모바일 = inventory-switch 아래 같은 머리, sensor-row 카드(colors.canvas-soft, rounded.sm): 이름(title) · '온도 · 버니어 · GDX-TMP'(caption muted) · '3개 · 과학실 뒤 선반' · 오른쪽 sensor-status-badge",
+    "filter": "list-filter-sheet 모양: 종류 chip 여러 개 → 회사 chip 여러 개 → 상태 3개",
+    "detail": "sensor-detail: 모바일 전용 화면 / 데스크톱 detail-drawer. 제목 + sensor-status-badge → '항목 | 값' 종류·회사·모델·수량·보관 위치·메모·등록일 → sensor-edit button-outline '수정'(교사·admin) · 머리 ⋯ → sensor-delete '센서 삭제'(reagent_delete와 같은 모달, '목록과 홈에서 사라져요')",
+    "form": "sensor-form: 모바일 전용 화면 / 데스크톱 detail-drawer(짧은 폼). 이름 text-input(예: 무선 온도 센서) → 종류 sensor-type-select(chip 하나 고르기) → 회사 sensor-maker-select → 모델명(선택) → 수량 숫자 + '개' → 보관 위치 segmented '직접 입력 | 시약장 칸'(기본 직접 입력, 시약장 칸 = location-picker 재사용) → 상태 segmented-control 정상 · 점검 필요 · 고장(기본 정상) → 메모(선택) → button-primary '저장'. × 닫기",
+    "types": [
+      "온도",
+      "pH",
+      "힘",
+      "운동(거리)",
+      "전압",
+      "전류",
+      "조도",
+      "압력",
+      "CO₂",
+      "산소",
+      "습도",
+      "소리",
+      "심박",
+      "기타"
+    ],
+    "types_note": "지능형 과학실 ON 센서타입(TPR·ILM 등) 대응은 개발 쪽, 화면에는 한국어 이름만",
+    "makers": {
+      "센서": [
+        "버니어",
+        "사이언스큐브",
+        "이지메이커",
+        "고릴라셀",
+        "파스코",
+        "동원",
+        "브로콜리",
+        "플로우랩",
+        "이티보드",
+        "포켓랩",
+        "헥사보드",
+        "뉴로그",
+        "아텍",
+        "코드위즈"
+      ],
+      "현미경": [
+        "오선하이테크",
+        "씨앤에스에듀",
+        "오맥스",
+        "한국과학",
+        "마르시스에듀"
+      ],
+      "source": "지능형 과학실 ON 오픈API 센서 제품 브랜드 (2026-10-11 개발 세션 확인)"
+    },
+    "maker_select": "sensor-maker-select: 누르면 모바일 바텀시트 / 데스크톱 드롭다운. 맨 위 검색 text-input, 묶음 제목 '센서'·'현미경', 맨 끝 '직접 입력'(고르면 text-input). 고른 항목 colors.highlight-soft",
+    "status": "sensor-status-badge 무채색: 고장 = colors.ink 채움 pill + 흰 label, 점검 필요 = colors.canvas-soft pill + ink label, 정상 = 채움 없이 text-muted '정상'. 핑크·하늘색 금지",
+    "empty": "ex-empty-state-card '아직 등록한 센서가 없어요' + '무선 센서와 현미경을 등록해 두면 수량과 상태를 한눈에 봐요' + sensor-add(교사·admin, 학생은 글만)",
+    "delete": "보관 처리, 되돌리기 없음. 하나 = 상세 ⋯, 여러 개 = bulk_delete",
+    "home": "sensor-alert-tile: 교사·admin, 고장·점검 필요가 1개 이상일 때만. 데스크톱 '지금 처리할 것' 숫자 타일 '고장·점검 필요 센서 N', 모바일 home-summary 줄. 무채색",
+    "roles": "등록·수정·삭제 = 교사·admin, 학생 = 보기만, 둘러보기 = 데모 센서 읽기 전용",
+    "source": "2026-10-11 사용자 결정 (개발 세션 요청 7) 7: 보유 관리만(측정값·대여 없음), 상태 무채색, 모바일 시약 탭 안 전환"
+  },
+  "landing_shot": {
+    "usage_section": "15-desktop landing-section '사용 기록' 그림 = 승인된 4-desktop(여러 시약 담기 + 수업) 조각으로 교체",
+    "source": "2026-10-11 사용자 결정 (개발 세션 요청 7) 5"
   }
 }
