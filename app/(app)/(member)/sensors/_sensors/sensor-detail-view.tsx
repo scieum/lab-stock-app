@@ -27,14 +27,19 @@ function useSensorDelete(sensor: SensorItem, listHref: string) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [done, setDone] = useState(false);
-  const moreRef = useRef<HTMLButtonElement>(null);
+  // 폭마다 ⋯ 버튼이 따로 있다 (MobileOnly · DesktopOnly) — 하이드레이션 뒤 맞지 않는 폭 쪽은 빠지므로 지금 문서에 남은 쪽으로 돌려준다
+  const mobileMoreRef = useRef<HTMLButtonElement>(null);
+  const deskMoreRef = useRef<HTMLButtonElement>(null);
 
   const cancel = () => {
     if (pending) return;
     setConfirming(false);
     setError(null);
     // 확인 모달을 닫으면(취소 · × · Esc) 포커스를 ⋯ 로 돌려준다
-    window.requestAnimationFrame(() => moreRef.current?.focus({ preventScroll: true }));
+    window.requestAnimationFrame(() => {
+      const target = [deskMoreRef.current, mobileMoreRef.current].find((el) => el && el.isConnected && el.getClientRects().length > 0);
+      target?.focus({ preventScroll: true });
+    });
   };
 
   const confirm = () => {
@@ -53,7 +58,7 @@ function useSensorDelete(sensor: SensorItem, listHref: string) {
     });
   };
 
-  return { confirming, open: () => setConfirming(true), cancel, confirm, pending, error, done, moreRef };
+  return { confirming, open: () => setConfirming(true), cancel, confirm, pending, error, done, mobileMoreRef, deskMoreRef };
 }
 
 /**
@@ -66,15 +71,14 @@ export function SensorDetailView({ sensor, canEdit, base = "" }: Props) {
   const del = useSensorDelete(sensor, listHref);
   const editHref = sensorEditHref(sensor.id, sp);
 
-  const deleteMenu = canEdit ? (
-    <SensorDelete name={sensor.name} onSelect={del.open} disabled={del.done} buttonRef={del.moreRef} />
-  ) : undefined;
+  const deleteMenu = (ref: React.RefObject<HTMLButtonElement | null>) =>
+    canEdit ? <SensorDelete name={sensor.name} onSelect={del.open} disabled={del.done} buttonRef={ref} /> : undefined;
 
   return (
     <>
       <MobileOnly>
         <div className={styles.screen}>
-          <SensorDetail sensor={sensor} titleAction={deleteMenu} />
+          <SensorDetail sensor={sensor} titleAction={deleteMenu(del.mobileMoreRef)} />
           {canEdit ? (
             <>
               <div className={styles.bottomSpace} />
@@ -91,7 +95,7 @@ export function SensorDetailView({ sensor, canEdit, base = "" }: Props) {
           focusKey={sensor.id}
           title={SENSOR_TEXT.detailTitle}
           closeHref={listHref}
-          headActions={deleteMenu}
+          headActions={deleteMenu(del.deskMoreRef)}
           actions={canEdit ? <SensorEdit href={editHref} /> : undefined}
         >
           <SensorDetail sensor={sensor} />
