@@ -21,24 +21,26 @@ export const SENSOR_TYPES = [
 export type SensorType = (typeof SENSOR_TYPES)[number];
 
 /**
- * 종류 ↔ 지능형 과학실 ON 오픈API 센서타입 코드 (d7 §25: 코드 상수로만 두고 화면에는 쓰지 않는다).
- * TPR(온도) · ILM(조도)은 d7 §25 에 적힌 값. 나머지는 연동 run 에서 오픈API 문서로 확인해 고친다 (아직 쓰는 곳 없음).
+ * 종류 ↔ 지능형 과학실 ON 오픈API 센서타입 코드 (d7 §26: 코드 상수로만 두고 화면에는 쓰지 않는다).
+ * 출처: 지능형 과학실 ON 오픈API 정의서 2026-06-16 V1.2 별첨 2 (science-on.kosac.re.kr) 공식 코드 9개
+ * TPR 온도 · PRS 압력 · SUD 소리 · SPO 산소포화도 · VTG 전압 · CRT 전류 · ILM 조도 · POH pH · CDT 전기 전도도.
+ * SPO(산소포화도) · CDT(전기 전도도)는 아직 해당 종류가 없다. 공식 코드가 없는 종류는 null (임시 코드 금지).
  */
-export const SENSOR_TYPE_CODES: Record<SensorType, string> = {
+export const SENSOR_TYPE_CODES: Record<SensorType, string | null> = {
   온도: "TPR",
-  pH: "PH",
-  힘: "FRC",
-  "운동(거리)": "MTN",
-  전압: "VLT",
+  pH: "POH",
+  힘: null,
+  "운동(거리)": null,
+  전압: "VTG",
   전류: "CRT",
   조도: "ILM",
   압력: "PRS",
-  "CO₂": "CO2",
-  산소: "OXY",
-  습도: "HMD",
-  소리: "SND",
-  심박: "HRT",
-  기타: "ETC",
+  "CO₂": null,
+  산소: null,
+  습도: null,
+  소리: "SUD",
+  심박: null,
+  기타: null,
 };
 
 /** 회사 목록 (rules sensor.makers — 지능형 과학실 ON 센서 제품 브랜드). 맨 끝 "직접 입력"은 화면이 붙인다 */

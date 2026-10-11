@@ -142,7 +142,9 @@ import { SensorRow, SensorTableRow } from "@/components/sensor-row";
 import { SensorStatusBadge } from "@/components/sensor-status-badge";
 import { SensorTypeSelect } from "@/components/sensor-type-select";
 import { SignupErrorSummary } from "@/components/signup-error-summary";
-import { TabSoon } from "@/components/tab-soon";
+import { QrManualEntry } from "@/components/qr-manual-entry";
+import { QrResultSheet } from "@/components/qr-result-sheet";
+import { QrScan } from "@/components/qr-scan";
 import styles from "./gallery.module.css";
 
 export const metadata: Metadata = { title: "컴포넌트 갤러리 · Lab_Stock" };
@@ -881,7 +883,7 @@ export default function GalleryPage() {
             active="reagents"
             account={sidebarAccountLabel("김OO", "teacher")}
           />
-          <SidebarItem label="QR 찾기" icon="qr" />
+          <SidebarItem label="QR 찾기" icon="qr" href="/scan" />
           <Link href="/gallery/sidebar" className={styles.more}>
             역할별 사이드바 보기 — 학생 · 교사 · admin (/gallery/sidebar)
           </Link>
@@ -1047,12 +1049,29 @@ export default function GalleryPage() {
           </Link>
         </Item>
 
-        <Item name="inventory-switch · tab-soon (디자인 1.26 — 모바일 시약 탭 안 시약 | 센서, QR 스캔 준비 중)">
+        <Item name="inventory-switch (디자인 1.26 — 모바일 시약 탭 안 시약 | 센서)">
           <InventorySwitch active="reagents" />
           <InventorySwitch active="sensors" />
-          <div className={styles.row}>
-            <TabSoon />
-          </div>
+        </Item>
+
+        <Item name="qr-scan · qr-manual-entry · qr-result-sheet (디자인 1.26 화면 12 · 12-result — 카메라 없이 모양만)">
+          <QrScan />
+          <QrManualEntry variant="button" href="/gallery/scan" />
+          <QrResultSheet
+            variant="sheet"
+            inline
+            number={1}
+            title="1번 시약장"
+            caption="양문형 · 4단 · 시약 2개"
+            layoutHref="/gallery/cabinets"
+            closeHref="/gallery"
+          >
+            <ReagentRow title="염산" body="1병" caption="좌 1단" lowStock />
+            <ReagentRow title="에탄올" body="200 mL" caption="좌 2단" />
+          </QrResultSheet>
+          <Link href="/gallery/scan" className={styles.more}>
+            데스크톱 카드 · 번호 입력 · 결과 드로어 · 카메라 안내 (/gallery/scan)
+          </Link>
         </Item>
 
         <Item name="list-select-toggle · select-checkbox · bulk-action-bar (시안 2-select · 2-bulk-delete)">

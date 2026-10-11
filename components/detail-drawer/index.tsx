@@ -9,7 +9,12 @@ import styles from "./styles.module.css";
 
 type Props = {
   /** 제목 (20/700) — 시약명 · "사용 기록" · "MSDS · 질산은" · "판매처 등록" */
-  title: React.ReactNode;
+  title?: React.ReactNode;
+  /**
+   * 머리 줄 없는 드로어 (시안 12-result-desktop: 제목·× 가 안쪽 qr-result-sheet 의 sheet-head 에 있다).
+   * title 대신 안쪽 제목의 id 를 넘긴다 — 열릴 때 안쪽 [data-drawer-focus] 요소로 포커스를 옮긴다.
+   */
+  labelledBy?: string;
   /** 제목 아래 회색 한 줄 (12) — "에탄올 · 현재 1,200 mL" · 출처 줄 */
   caption?: React.ReactNode;
   /**
@@ -61,6 +66,7 @@ export function DetailDrawer({
   closeHref,
   onClose,
   closeLabel = "닫기",
+  labelledBy,
   actions,
   headActions,
   focusKey,
@@ -79,7 +85,8 @@ export function DetailDrawer({
     const active = document.activeElement;
     if (inline) return;
     if (active instanceof HTMLElement && active !== document.body && !rootRef.current?.contains(active)) opener.current = active;
-    titleRef.current?.focus({ preventScroll: true });
+    const target = titleRef.current ?? rootRef.current?.querySelector<HTMLElement>("[data-drawer-focus]");
+    target?.focus({ preventScroll: true });
   }, [focusKey, inline]);
 
   // 닫히면(드로어가 사라지면) 연 곳으로 포커스를 돌려준다 — 포커스가 갈 곳을 잃었을 때만
@@ -157,11 +164,11 @@ export function DetailDrawer({
       data-component="detail-drawer"
       role="dialog"
       aria-modal="false"
-      aria-labelledby={titleId}
+      aria-labelledby={title === undefined && labelledBy ? labelledBy : titleId}
       className={[styles.drawer, inline ? styles.inline : "", className ?? ""].filter(Boolean).join(" ")}
     >
       <div className={styles.body} data-name="drawer-body">
-        {back ? (
+        {title === undefined ? null : back ? (
           <>
             <div className={styles.headRow} data-name="drawer-nav">
               <Link href={back.href} scroll={false} prefetch={linkPrefetch(back.href)} className={styles.back} data-name="back-link">

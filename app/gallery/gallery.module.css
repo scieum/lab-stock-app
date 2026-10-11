@@ -78,3 +78,9 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* 화면 12 결과 표 예시 (/gallery/scan) */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}

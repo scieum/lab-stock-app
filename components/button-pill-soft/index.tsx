@@ -9,6 +9,8 @@ type Props = {
   href?: string;
   /** 오른쪽 아이콘 (하늘색) */
   icon?: Extract<IconName, "chevron-right" | "external">;
+  /** 왼쪽 아이콘 (하늘색) — 시안 12 "플래시" 의 icon-flash */
+  leadingIcon?: Extract<IconName, "flash">;
   /** muted = 회색 바탕(기본), white = 흰 바탕(회색 카드 위) */
   tone?: "muted" | "white";
   /** true = 가는 테두리(hairline-strong) — 시안 1.17 6 의 흰 pill (실험 매뉴얼 올리기 · 직접 열기) */
@@ -24,6 +26,7 @@ export function ButtonPillSoft({
   children,
   href,
   icon,
+  leadingIcon,
   tone = "muted",
   bordered = false,
   fullWidth,
@@ -46,6 +49,7 @@ export function ButtonPillSoft({
     .join(" ");
   const content = (
     <>
+      {leadingIcon ? <Icon name={leadingIcon} className={styles.icon} /> : null}
       <span>{children}</span>
       {icon ? <Icon name={icon} className={styles.icon} /> : null}
     </>

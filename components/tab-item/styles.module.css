@@ -81,8 +81,3 @@ button.item {
   left: calc(100% - var(--space-4));
 }
 
-/* 준비 중 탭 (디자인 1.26 tab_bar.qr_pending): 아이콘·라벨 text-faint, 아래 tab-soon */
-.soon,
-.soon .icon {
-  color: var(--color-text-placeholder);
-}

@@ -6,7 +6,7 @@ import type { IconName } from "@/components/icons";
  * - 교사·admin: + "관리" 묶음 = 입고 · 실험 매뉴얼 · 재주문 알림
  * - admin: + "학교 설정" 묶음 = 사용자 · 판매처
  * 묶음 제목(관리 · 학교 설정)은 시안 sidebar-group-title.
- * QR 찾기(화면 12)는 아직 없어 href 없음 = 비활성("준비 중") — 화면 12 run 에서 연결.
+ * QR 찾기 = 화면 12 `/scan` (d7 §26 — 툴팁 없는 정상 메뉴).
  */
 export type SidebarRole = "student" | "teacher" | "admin";
 
@@ -40,7 +40,7 @@ const ALL: SidebarEntry[] = [
   { key: "sensors", label: "센서", icon: "sensor", href: "/sensors" },
   { key: "records", label: "기록", icon: "record", href: "/usage" },
   { key: "cabinets", label: "시약장", icon: "cabinet", href: "/cabinets" },
-  { key: "scan", label: "QR 찾기", icon: "qr" },
+  { key: "scan", label: "QR 찾기", icon: "qr", href: "/scan" },
 ];
 
 const TEACHER_ADMIN: SidebarEntry[] = [

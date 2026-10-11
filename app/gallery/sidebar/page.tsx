@@ -54,10 +54,10 @@ export default function GallerySidebarPage() {
           />
         </Item>
 
-        <Item id="items" name="sidebar-item — 비활성 · 활성 · 준비 중(QR 찾기, 화면 12 전)">
+        <Item id="items" name="sidebar-item — 비활성 · 활성 · QR 찾기(화면 12)">
           <SidebarItem label="홈" icon="home" href="/" />
           <SidebarItem label="시약" icon="flask" href="/reagents" active />
-          <SidebarItem label="QR 찾기" icon="qr" />
+          <SidebarItem label="QR 찾기" icon="qr" href="/scan" />
         </Item>
       </div>
     </main>

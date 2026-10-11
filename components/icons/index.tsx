@@ -46,7 +46,8 @@ export type IconName =
   | "lock"
   | "shield"
   | "sensor"
-  | "compass";
+  | "compass"
+  | "flash";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   // 랜딩 15-desktop 문제 공감 카드 (icon-quote) · 안심 격자 (icon-lock · icon-shield)
@@ -299,6 +300,8 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <path d="m14.8 9.2-1.6 4-4 1.6 1.6-4Z" />
     </>
   ),
+  // 화면 12 플래시 (시안 icon-flash: 번개)
+  flash: <path d="M13 3 6.5 13H12l-1 8 6.5-10H12l1-8Z" />,
 };
 
 export function Icon({ name, ...rest }: { name: IconName } & SVGProps<SVGSVGElement>) {
