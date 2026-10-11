@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/lib/types/database";
 import { getSupabasePublicEnv } from "./env";
+import { nextOrHome } from "@/lib/auth/next-path";
 
 /** 로그인 없이 열리는 경로 (화면 1·14·비밀번호 찾기·확인 메일 링크·NEIS 중계·컴포넌트 갤러리·둘러보기 /demo) */
 const PUBLIC_ROOTS = ["/login", "/signup", "/forgot-password", "/auth", "/api", "/gallery", "/demo"];
@@ -100,6 +101,22 @@ export async function updateSession(request: NextRequest) {
     const rewrite = NextResponse.rewrite(to, { request });
     response.cookies.getAll().forEach((c) => rewrite.cookies.set(c));
     return rewrite;
+  }
+
+  // 로그인 상태로 /login → `/` (d7 §26 QA (1)). next 가 같은 origin 의 앱 경로면 그곳으로.
+  // 프로필을 읽지 못한(일시 오류) 세션은 앱 화면이 /login 으로 보내므로 그대로 둔다 — 되돌이 방지.
+  if (signedIn && pathname === "/login") {
+    const { error } = await supabase.from("profiles").select("user_id").eq("user_id", data!.claims.sub).maybeSingle();
+    if (!error) {
+      const dest = new URL(nextOrHome(request.nextUrl.searchParams.get("next")), request.nextUrl.origin);
+      const to = request.nextUrl.clone();
+      to.pathname = dest.pathname;
+      to.search = dest.search;
+      to.hash = "";
+      const redirect = NextResponse.redirect(to);
+      response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+      return redirect;
+    }
   }
 
   if (signedIn && isGuestOnlyPath(pathname)) {

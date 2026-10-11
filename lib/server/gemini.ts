@@ -1,6 +1,7 @@
 import "server-only";
 import type { DocExtraction } from "../doc-intake-rules";
 import { STORAGE_CLASSES } from "../intake-rules";
+import { STORAGE_CLASS_PROMPT_RULE } from "../storage-class-rules";
 import { aliasKey, type ChemicalGuess } from "../msds-aliases";
 import {
   parseChemicalGuessResponse,
@@ -223,7 +224,7 @@ const DOC_PROMPT = [
   "4. quantity: 산 개수(수량)를 숫자로 적습니다. 서류에 없으면 1.",
   "5. quantityUnit: 수량의 단위(예: \"병\", \"개\", \"EA\")를 적습니다. 없으면 null.",
   "6. isReagent: 화학 시약(산·염기·염·유기 용매·지시약·표준 용액 등)이면 true, 실험 기구·소모품·배송비·부가세·합계 줄처럼 시약이 아니면 false.",
-  `7. suggestedClass: 시약이면 보관 분류를 ${STORAGE_CLASSES.join("·")} 중 하나로 추천합니다. 모르겠거나 시약이 아니면 null.`,
+  `7. suggestedClass: 시약이면 보관 분류를 ${STORAGE_CLASSES.join("·")} 중 하나로 추천합니다. ${STORAGE_CLASS_PROMPT_RULE} 모르겠거나 시약이 아니면 null.`,
   "8. docDate: 서류의 작성일·거래일을 YYYY-MM-DD 로 적습니다. 없으면 null.",
   "9. 합계·소계·부가세·배송비 줄은 품목으로 뽑지 않습니다. 서류에 없는 품목을 추측해서 만들지 않습니다.",
   `10. 최대 ${DOC_ITEMS_LIMIT}개까지만 적습니다. 품목이 하나도 없거나 구매 서류가 아니면 items 를 빈 배열로 둡니다.`,

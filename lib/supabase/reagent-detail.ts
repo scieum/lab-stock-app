@@ -195,7 +195,7 @@ export async function getReagentDetail(id: string): Promise<ReagentDetailResult>
     // 위치 피커용 (교사·admin 일 때만 쓴다)
     supabase.from("cabinets").select("*").order("number").order("created_at").order("id"),
     supabase.from("cabinet_slots").select("*"),
-    supabase.from("reagents").select("id, slot_id, storage_class").not("slot_id", "is", null),
+    supabase.from("reagents").select("id, name, cas_no, slot_id, storage_class").not("slot_id", "is", null),
   ]);
   if (me.kind !== "member") return { kind: "signed-out" };
   const role = me.role;
@@ -213,7 +213,7 @@ export async function getReagentDetail(id: string): Promise<ReagentDetailResult>
   // 위치 추천 (d7 §17): 학교의 모든 칸 · 칸 안 시약(자기 자신 제외는 함수가 한다)
   const suggested = staff
     ? suggestLocation(
-        { id: r.id, storageClass: r.storage_class },
+        { id: r.id, storageClass: r.storage_class, name: r.name, cas: r.cas_no },
         toSuggestCabinets(cabinetsRes.data ?? [], slotsRes.data ?? [], placedRes.data ?? []),
       )
     : null;

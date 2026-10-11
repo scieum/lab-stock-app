@@ -6,6 +6,7 @@
 
 import { STORAGE_CLASSES, isIsoDate, type Checked, type StorageClass } from "./intake-rules";
 import { AMOUNT_MAX, amountInputText, formatAmountText, matchReagent, parseAmount } from "./manual-rules";
+import { suggestStorageClass } from "./storage-class-rules";
 
 /* ───────── 상수 · 문구 ───────── */
 
@@ -148,7 +149,8 @@ export function normalizeDocItem(raw: unknown): DocItem | null {
     quantityUnit: qtyUnit === "" ? null : qtyUnit,
     // 모르면 시약으로 본다 (사용자가 빼기로 뺄 수 있다)
     isReagent: raw.isReagent !== false,
-    suggestedClass: storageClassOf(raw.suggestedClass),
+    // 인화성이 유기보다 먼저 (d7 §26 QA (11)) — 위치 추천과 같은 규칙 (lib/storage-class-rules)
+    suggestedClass: suggestStorageClass(storageClassOf(raw.suggestedClass), { name }),
   };
 }
 
