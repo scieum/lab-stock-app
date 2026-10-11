@@ -18,6 +18,7 @@ import { ClassLabel } from "@/components/class-label";
 import { DeletedReagentTag } from "@/components/deleted-reagent-tag";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { MsdsEntry } from "@/components/msds-entry";
+import { RecordAdd } from "@/components/record-add";
 import { SegmentedControl } from "@/components/segmented-control";
 import { TextInput, TextInputSelect } from "@/components/text-input";
 import { msdsSummaryPath } from "@/lib/msds-summary";
@@ -32,8 +33,9 @@ const SCOPE_OPTIONS = [
 ];
 const PERIODS = USAGE_PERIOD_OPTIONS.map((o) => ({ value: o.value, label: o.label }));
 
-/* 시안 10-desktop(1.25) 열 폭 (표 안쪽 624 기준: 88 · 184 · 136 · 96 · 64 · 56) */
-const COLUMNS_W = { day: "14.1%", name: "29.5%", cls: "21.8%", user: "15.4%", amount: "10.2%", time: "9%" };
+/* 시안 10-desktop(1.25) 열 폭 (표 안쪽 624 기준: 88 · 184 · 136 · 96 · 64 · 56).
+ * d7 §25 QA 5: "기록 시각" 머리가 잘리지 않게 마지막 열을 넓히고(56 → 72) 시약명에서 덜어 낸다 */
+const COLUMNS_W = { day: "14.1%", name: "26.9%", cls: "21.8%", user: "15.4%", amount: "10.2%", time: "11.6%" };
 
 type Props = {
   filters: UsageFilters;
@@ -41,6 +43,8 @@ type Props = {
   truncated: boolean;
   /** 학교급별 최고 학년 (class-filter) */
   maxGrade: number;
+  /** 기록 추가 뒤 새 기록 행 (잠깐 highlight-soft) */
+  fresh?: ReadonlySet<string>;
 };
 
 /** 주소창만 바꾼다 (서버 조회 없음 — 열린 기록 · 쪽 · 정렬은 화면 상태). push = 뒤로가기로 되돌릴 수 있게 */
@@ -60,7 +64,7 @@ type Row = { kind: "group"; key: string; label: string } | { kind: "record"; rec
  * 행을 누르면 오른쪽 detail-drawer(모달 대신): 시약명 → 사용량(32/700) → 사용자 · 사용일 · 기록 시각 · 메모 → msds-entry → "닫기".
  * 열린 기록은 주소창 ?id= (새로고침·뒤로가기 유지), 쪽 ?page=, 사용일 정렬 ?order=asc(기본 최신순).
  */
-export function UsageHistoryDesk({ filters, groups, truncated, maxGrade }: Props) {
+export function UsageHistoryDesk({ filters, groups, truncated, maxGrade, fresh = new Set() }: Props) {
   const { pending, shown, text, changeText, sendQuery, changeScope, changePeriod, changeClass } = filters;
   const sp = useSearchParams();
   const openId = sp.get("id");
@@ -117,6 +121,7 @@ export function UsageHistoryDesk({ filters, groups, truncated, maxGrade }: Props
             <h1 className={styles.deskTitle}>기록</h1>
             <span className={styles.deskCount}>{total}건</span>
           </div>
+          <div className={styles.deskActions}>
           <TextInput
             className={styles.deskSearch}
             inputMode="search"
@@ -135,6 +140,9 @@ export function UsageHistoryDesk({ filters, groups, truncated, maxGrade }: Props
               }
             }}
           />
+          {/* 시안 1.26 10-desktop page-actions: 검색 + record-add "기록 추가" */}
+          <RecordAdd />
+          </div>
         </div>
 
         <div className={styles.deskToolbar} role="search" aria-label="사용 기록 필터" data-name="toolbar">
@@ -167,6 +175,7 @@ export function UsageHistoryDesk({ filters, groups, truncated, maxGrade }: Props
                     clickable
                     tall={row.record.recordedCaption !== null}
                     selected={row.record.id === selected?.id}
+                    fresh={fresh.has(row.record.id)}
                   >
                     <DataTableCell>{row.record.dayLabel}</DataTableCell>
                     <DataTableButtonCell
@@ -223,7 +232,8 @@ export function UsageHistoryDesk({ filters, groups, truncated, maxGrade }: Props
             <DrawerRow label="수업">
               <ClassLabel value={selected.classInfo} variant="value" />
             </DrawerRow>
-            <DrawerRow label="기록 시각">{selected.recordedCaption ? selected.recordedAt : selected.recordedTime}</DrawerRow>
+            {/* d7 §25 QA 5: 두 폭 같은 라벨 "기록한 날" (값 = 기록한 일시) */}
+            <DrawerRow label="기록한 날">{selected.recordedAt}</DrawerRow>
             <DrawerRow label="메모">{selected.memo ?? "-"}</DrawerRow>
           </DrawerRows>
           {/* d7 §24: 보관(삭제)된 시약은 시약 · MSDS 로 가는 링크 없음 — 태그만 */}
@@ -239,6 +249,8 @@ export function UsageHistoryDesk({ filters, groups, truncated, maxGrade }: Props
               summaryHref={msdsSummaryPath(selected.reagentId, { from: "usage" })}
               summaryIcon="chevron-right"
               notice="MSDS 링크가 아직 등록되지 않았어요"
+              // d7 §25 QA 8: MSDS 없는 시약은 "MSDS 보기" 진입 없이 안내만
+              missingAction={null}
             />
           )}
         </DetailDrawer>

@@ -18,7 +18,7 @@ import {
   roleChecks,
   routeOf,
   rules,
-  sel,
+  sel, tabItemLabels,
 } from "./screen-helpers";
 import { detailPath, seedSchoolOf, waitDetail } from "./screen-3-helpers";
 import { expectShell, expectShellHeader, isShellComponent, shellSchoolScope } from "./shell-helpers";
@@ -125,7 +125,24 @@ test(`[R-ui][S${SCREEN}] rules.json R5 = 학생 ${INTAKE}·${REGISTER} max 0 이
   for (const c of [INTAKE, REGISTER]) expect(devRules.components[c] ?? [], `dev-rules components ${c}`).toContain(SCREEN);
   // R5 의 나머지 컴포넌트 화면 소속 (dev-rules 1.9): threshold-edit [3] · msds-search [3,7] · msds-bulk-banner [2] · doc-upload [7](서류로 입고, d7 §21)
   // 1.25 (d7 §24 · rules reagent_delete.entry "화면 3에서만"): reagent-more-menu · reagent-delete = 화면 3
-  const R5_HOME: Record<string, number[]> = { "threshold-edit": [3], "msds-search": [3, SCREEN], "msds-bulk-banner": [2], "doc-upload": [SCREEN], "reagent-more-menu": [3], "reagent-delete": [3] };
+  // 1.26 (R5 source "2026-10-11 선택 모드·여러 개 삭제·센서 등록·수정·삭제·홈 센서 타일"): 선택 모드 = rules bulk_delete.screens, 센서 = rules sensor.screen, 홈 타일 = 13
+  const BULK_SCREENS = [...(rules as unknown as { bulk_delete: { screens: number[] } }).bulk_delete.screens].sort(); // 아래 비교와 같은 기본 정렬
+  const SENSOR_SCREEN = (rules as unknown as { sensor: { screen: number } }).sensor.screen;
+  const R5_HOME: Record<string, number[]> = {
+    "threshold-edit": [3],
+    "msds-search": [3, SCREEN],
+    "msds-bulk-banner": [2],
+    "doc-upload": [SCREEN],
+    "reagent-more-menu": [3],
+    "reagent-delete": [3],
+    "list-select-toggle": BULK_SCREENS,
+    "select-checkbox": BULK_SCREENS,
+    "bulk-action-bar": BULK_SCREENS,
+    "sensor-add": [SENSOR_SCREEN],
+    "sensor-edit": [SENSOR_SCREEN],
+    "sensor-delete": [SENSOR_SCREEN],
+    "sensor-alert-tile": [13],
+  };
   expect(R5_COMPONENTS, "1.17 R5 에 doc-upload").toContain("doc-upload");
   expect(devRules.components["doc-upload"] ?? [], "dev-rules 1.9 components 에 doc-upload").toContain(SCREEN);
   for (const c of R5_COMPONENTS.filter((x) => ![INTAKE, REGISTER].includes(x) && x in devRules.components)) {
@@ -646,7 +663,7 @@ for (const role of [...STAFF, "schoolB"] as Role[]) {
         await expect(bar).toBeVisible();
         const items = bar.locator(sel(tb.item));
         await expect(items, "tab-item 은 tab-bar 안에").toHaveCount(tb.items);
-        const labels = (await items.allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim());
+        const labels = (await tabItemLabels(items));
         expect(labels, "탭 라벨 순서").toEqual(tb.labels);
         // 활성 탭 = "시약" 하나
         const active = bar.locator(`${sel(tb.item)}[aria-current="page"]`);

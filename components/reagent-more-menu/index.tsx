@@ -12,6 +12,10 @@ type Props = {
   /** 갤러리 예시 — 처음부터 열린 메뉴 */
   defaultOpen?: boolean;
   className?: string;
+  /** 바깥 틀의 data-component (기본 reagent-more-menu). null = 붙이지 않음 (화면 17 센서 ⋯ — 바깥 sensor-delete 가 이름을 가진다) */
+  component?: string | null;
+  /** ⋯ 버튼 ref (확인 모달을 닫은 뒤 포커스를 돌려줄 곳) */
+  buttonRef?: React.RefObject<HTMLButtonElement | null>;
 };
 
 /**
@@ -20,10 +24,18 @@ type Props = {
  * 모바일 = reagent-detail-card 오른쪽 위, 데스크톱 = detail-drawer 머리 × 왼쪽.
  * 키보드: ↓↑ 로 항목 이동, Esc 로 메뉴만 닫고 버튼으로. 바깥을 누르면 닫힌다.
  */
-export function ReagentMoreMenu({ children, label = "더보기", defaultOpen = false, className }: Props) {
+export function ReagentMoreMenu({
+  children,
+  label = "더보기",
+  defaultOpen = false,
+  className,
+  component = "reagent-more-menu",
+  buttonRef: outerButtonRef,
+}: Props) {
   const [open, setOpen] = useState(defaultOpen);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const innerButtonRef = useRef<HTMLButtonElement>(null);
+  const buttonRef = outerButtonRef ?? innerButtonRef;
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
   const buttonId = `${menuId}-button`;
@@ -82,8 +94,8 @@ export function ReagentMoreMenu({ children, label = "더보기", defaultOpen = f
     list[next].focus({ preventScroll: true });
   };
 
-  return (
-    <div ref={wrapRef} data-component="reagent-more-menu" className={[styles.wrap, className ?? ""].filter(Boolean).join(" ")} onKeyDown={onKeyDown}>
+  const body = (
+    <>
       <button
         ref={buttonRef}
         id={buttonId}
@@ -111,6 +123,16 @@ export function ReagentMoreMenu({ children, label = "더보기", defaultOpen = f
           {children}
         </div>
       ) : null}
+    </>
+  );
+  const wrapClass = [styles.wrap, className ?? ""].filter(Boolean).join(" ");
+  return component === "reagent-more-menu" ? (
+    <div ref={wrapRef} data-component="reagent-more-menu" className={wrapClass} onKeyDown={onKeyDown}>
+      {body}
+    </div>
+  ) : (
+    <div ref={wrapRef} data-component={component ?? undefined} className={wrapClass} onKeyDown={onKeyDown}>
+      {body}
     </div>
   );
 }

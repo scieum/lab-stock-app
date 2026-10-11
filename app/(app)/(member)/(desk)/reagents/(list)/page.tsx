@@ -24,7 +24,6 @@ export default async function ReagentsPage({ searchParams }: Props) {
   return (
     <MobileOnly>
     <div className={styles.page}>
-      <h1 className={styles.title}>시약 목록</h1>
       <ReagentBrowser
         items={data.items}
         cabinets={data.cabinets}
@@ -32,6 +31,7 @@ export default async function ReagentsPage({ searchParams }: Props) {
         initialQuery={first(params.q) ?? ""}
         initialListFilter={parseListFilter(params, data.cabinets)}
         canFindMsds={data.role === "teacher" || data.role === "admin"}
+        canSelect={data.role === "teacher" || data.role === "admin"}
       />
     </div>
     </MobileOnly>

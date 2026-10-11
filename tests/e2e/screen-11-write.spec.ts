@@ -5,6 +5,7 @@
 // 공용 계정·학교 A·B·실사용 학교·데모 학교에는 쓰지 않는다 (screen-11-helpers 머리말). 테스트마다 일회용 학교를 비우고
 // DB 함수(일회용 admin 세션)로 필요한 상태를 만든 뒤, 브라우저(일회용 교사·학생 세션 쿠키)의 화면과 그 화면이 보낸 요청의 결과를 본다.
 // service role 은 준비·정리·대조 조회에만 쓴다. 한 워커에서 순서대로 돈다 (afterAll 정리가 다른 워커의 일회용 학교를 지우지 않게).
+import { adjustStaleMenu } from "../desktop-shell";
 import { test, expect, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { countComponent, rules, sel } from "./screen-helpers";
 import { detailPath } from "./screen-3-helpers";
@@ -237,7 +238,8 @@ test(`[C1][S${SCREEN}] 일회용 교사 · 시약장 0개: "${EMPTY_HEADING}" + 
     await expectEmptyHeading(page, "교사 0개");
     for (const c of VARIANTS.empty) expect(await countComponent(page, c), `variants.empty ${c}`).toBeGreaterThanOrEqual(1);
     const frame = frameCounts(`${SCREEN}-empty-${viewport}`);
-    for (const [name, n] of Object.entries(frame)) expect(await countComponent(page, name), `시안 11-empty ${name} = ${n}`).toBe(n);
+    // 1.26 사이드바 '센서'(rules desktop_shell.menu_source) — 1.26 전 시안 11-empty-desktop 에는 없어 sidebar-item +1
+    for (const [name, n] of Object.entries(adjustStaleMenu(`${SCREEN}-empty-${viewport}`, frame))) expect(await countComponent(page, name), `시안 11-empty ${name} = ${n}`).toBe(n);
     for (const c of [SWITCHER, SLOT, EDIT, MIX, ROW, MODAL, DOOR_SELECT, SHELF_SELECT, PRIMARY]) expect(await countComponent(page, c), `빈 상태 ${c}`).toBe(0);
     await expect(unassignedTitle(page), "빈 상태에 칸 없음 목록 없음").toHaveCount(0);
     const card = emptyCard(page);

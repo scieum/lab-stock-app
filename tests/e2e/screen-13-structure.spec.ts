@@ -13,7 +13,7 @@ import {
   guestOnlyComponents,
   roleChecks,
   rules,
-  sel,
+  sel, tabItemLabels,
 } from "./screen-helpers";
 
 const SCREEN = 13;
@@ -66,7 +66,7 @@ for (const role of ROLES) {
         await expect(page.locator(sel(tb.component))).toBeVisible();
         const items = page.locator(`${sel(tb.component)} ${sel(tb.item)}`);
         await expect(items, "tab-item 은 tab-bar 안에").toHaveCount(tb.items);
-        const labels = (await items.allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim());
+        const labels = (await tabItemLabels(items));
         expect(labels, "탭 라벨 순서").toEqual(tb.labels);
       }
     } finally {

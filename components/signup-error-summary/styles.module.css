@@ -1,0 +1,18 @@
+/* signup-error-summary (시안 14-error: icon-info 16 + 사이 8 + 글자 13 ink) */
+.summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.icon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}

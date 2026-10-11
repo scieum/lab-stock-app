@@ -3,10 +3,12 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { BadgeLowStock } from "@/components/badge-low-stock";
+import { BulkDeleteFlow } from "@/components/bulk-action-bar/flow";
 import { ButtonOutline } from "@/components/button-outline";
 import { CabinetNumber } from "@/components/cabinet-number";
 import {
   DataTable,
+  DataTableButtonCell,
   DataTableCell,
   DataTableLinkCell,
   DataTablePagination,
@@ -17,6 +19,8 @@ import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { FilterChipRow } from "@/components/filter-chip-row";
 import { ListFilterButton } from "@/components/list-filter-button";
 import { ListFilterSheet } from "@/components/list-filter-sheet";
+import { ListSelectToggle, SELECT_CAPPED_TEXT, selectedCountText } from "@/components/list-select-toggle";
+import { SelectCheckbox } from "@/components/select-checkbox";
 import { SegmentedControl, type SegmentOption } from "@/components/segmented-control";
 import { TextInput } from "@/components/text-input";
 import { locationText } from "@/lib/cabinet-rules";
@@ -34,6 +38,8 @@ import {
   type ListSort,
 } from "@/lib/reagent-list-filter";
 import type { ReagentListItem } from "@/lib/supabase/reagents-data";
+import { useBulkSelect } from "@/lib/use-bulk-select";
+import { archiveReagentsAction } from "../reagents/bulk-actions";
 import { MsdsBulk } from "../reagents/(list)/msds-bulk";
 import { useDeskBase } from "./desk-base";
 import styles from "./desk.module.css";
@@ -48,6 +54,8 @@ type Props = {
   cabinets: FilterCabinet[];
   /** 교사·admin — MSDS 한 번에 찾기 띠 (d7 §20) */
   canFindMsds: boolean;
+  /** 교사·admin — 선택 모드 · 여러 개 삭제 (d7 §25 bulk_delete, R5). 학생 · 둘러보기 false */
+  canSelect?: boolean;
 };
 
 /** 주소창 쿼리를 고친다 (Next 라우터와 함께 바뀐다 — useSearchParams 가 새 값을 준다). 목록 조건이 바뀌면 1쪽으로 */
@@ -59,6 +67,7 @@ function replaceQuery(edit: (p: URLSearchParams) => void, keepPage = false) {
 }
 
 /* 시안 2-desktop 열 폭 (표 안쪽 1104 기준 비율 — 드로어가 열린 3-desktop 의 624 에서도 같은 비율) */
+const W_SELECT = "4.4%";
 const W = { name: "18%", cls: "10.5%", loc: "23.5%", stock: "11%", status: "12.5%", intake: "15.5%", msds: "9%" };
 
 /**
@@ -68,7 +77,7 @@ const W = { name: "18%", cls: "10.5%", loc: "23.5%", stock: "11%", status: "12.5
  * data-table(시약명↑ · 보관 분류 · 보관 위치 · 재고 · 상태 · 최근 입고일 · MSDS, 10행씩) → pagination.
  * 행을 누르면 오른쪽 드로어(시약 상세)가 열린다 — 주소 /reagents/[id]?{목록 쿼리}. 목록 상태는 모두 주소창에 둔다.
  */
-export function ReagentDeskTable({ items, cabinets, canFindMsds }: Props) {
+export function ReagentDeskTable({ items, cabinets, canFindMsds, canSelect = false }: Props) {
   const pathname = usePathname();
   const sp = useSearchParams();
   const selectedId = deskSelectedId(pathname, sp);
@@ -93,6 +102,8 @@ export function ReagentDeskTable({ items, cabinets, canFindMsds }: Props) {
   const sheetId = useId();
   const anchorRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const select = useBulkSelect();
+  const selecting = canSelect && select.selecting;
 
   const q = query.trim().toLowerCase();
   const base = useMemo(
@@ -106,6 +117,8 @@ export function ReagentDeskTable({ items, cabinets, canFindMsds }: Props) {
   const draftCount = useMemo(() => (open ? applyListFilter(base, draft).length : 0), [open, base, draft]);
   const chips = listFilterChips(applied, cabinets);
   const { rows, page, pageCount } = paginate(visible, requestedPage, TABLE_PAGE_SIZE);
+  const selected = visible.filter((r) => select.ids.has(r.id)).map((r) => ({ id: r.id, name: r.name }));
+  const allPicked = selected.length > 0 && selected.length === Math.min(visible.length, 100);
 
   const lowCount = items.filter((r) => r.lowStock).length;
   const noMsdsCount = items.filter((r) => !r.hasMsds).length;
@@ -141,6 +154,22 @@ export function ReagentDeskTable({ items, cabinets, canFindMsds }: Props) {
   }, [open]);
 
   const columns: DataTableColumn[] = [
+    ...(selecting
+      ? [
+          {
+            key: "select",
+            label: "선택",
+            width: W_SELECT,
+            header: (
+              <SelectCheckbox
+                checked={allPicked ? true : selected.length > 0 ? "mixed" : false}
+                label="전체 선택"
+                onToggle={() => select.selectAll(visible.map((r) => r.id))}
+              />
+            ),
+          },
+        ]
+      : []),
     { key: "name", label: "시약명", width: W.name, sort: applied.sort === "name" ? "asc" : "none", onSort: () => setSort("name") },
     { key: "class", label: "보관 분류", width: W.cls },
     { key: "location", label: "보관 위치", width: W.loc },
@@ -175,11 +204,14 @@ export function ReagentDeskTable({ items, cabinets, canFindMsds }: Props) {
         <div className={styles.pageTitle}>
           <div className={styles.titleRow}>
             <h1 className={styles.title}>시약</h1>
-            <span className={styles.count}>{visible.length}종</span>
+            <span className={styles.count}>
+              {selecting ? `${visible.length}종 · ${selectedCountText(selected.length)}` : `${visible.length}종`}
+            </span>
           </div>
           <p className={styles.summary}>
             {guest ? `재고 부족 ${lowCount}` : `재고 부족 ${lowCount} · MSDS 없음 ${noMsdsCount}`}
           </p>
+          {selecting && select.capped ? <p className={styles.summary}>{SELECT_CAPPED_TEXT}</p> : null}
         </div>
         <div className={styles.pageActions}>
           <TextInput
@@ -196,6 +228,7 @@ export function ReagentDeskTable({ items, cabinets, canFindMsds }: Props) {
           />
           <div ref={anchorRef} className={styles.filterAnchor}>
             <ListFilterButton
+              variant="desktop"
               ref={buttonRef}
               count={chips.length}
               expanded={open}
@@ -218,6 +251,9 @@ export function ReagentDeskTable({ items, cabinets, canFindMsds }: Props) {
               />
             ) : null}
           </div>
+          {canSelect ? (
+            <ListSelectToggle variant="desktop" selecting={selecting} onStart={select.start} onCancel={select.cancel} disabled={visible.length === 0} />
+          ) : null}
         </div>
       </div>
 
@@ -254,10 +290,21 @@ export function ReagentDeskTable({ items, cabinets, canFindMsds }: Props) {
               const cab = r.slot ? cabinetById.get(r.slot.cabinetId) : undefined;
               const placed = Boolean(cab && r.slot);
               return (
-                <DataTableRow key={r.id} selected={current} clickable>
-                  <DataTableLinkCell href={reagentDetailHref(r.id, listQueryOf(page), hrefBase)} current={current}>
-                    {r.name}
-                  </DataTableLinkCell>
+                <DataTableRow key={r.id} selected={selecting ? select.ids.has(r.id) : current} clickable>
+                  {selecting ? (
+                    <DataTableCell>
+                      <SelectCheckbox checked={select.ids.has(r.id)} />
+                    </DataTableCell>
+                  ) : null}
+                  {selecting ? (
+                    <DataTableButtonCell onClick={() => select.toggle(r.id)} pressed={select.ids.has(r.id)}>
+                      {r.name}
+                    </DataTableButtonCell>
+                  ) : (
+                    <DataTableLinkCell href={reagentDetailHref(r.id, listQueryOf(page), hrefBase)} current={current}>
+                      {r.name}
+                    </DataTableLinkCell>
+                  )}
                   <DataTableCell tone={r.storageClass ? "default" : "muted"}>{r.storageClass ?? "-"}</DataTableCell>
                   <DataTableCell tone={placed ? "default" : "muted"}>
                     <span className={styles.location}>
@@ -282,6 +329,10 @@ export function ReagentDeskTable({ items, cabinets, canFindMsds }: Props) {
           onPage={(p) => replaceQuery((params) => (p > 1 ? params.set("page", String(p)) : params.delete("page")), true)}
         />
       )}
+
+      {canSelect ? (
+        <BulkDeleteFlow kind="reagent" selecting={selecting} selected={selected} run={archiveReagentsAction} onDone={select.cancel} />
+      ) : null}
     </div>
   );
 }

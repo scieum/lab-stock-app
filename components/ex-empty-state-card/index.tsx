@@ -16,6 +16,10 @@ type Props = {
   variant?: "muted" | "outlined";
   /** 문구 아래 자리 (화면 11: cabinet-add — 학생 화면에는 넘기지 않는다) */
   children?: React.ReactNode;
+  /** true = children 자리를 카드 폭 전체로 (시안 1.26 13-not-found card-actions · 17-empty sensor-add 전폭) */
+  fullActions?: boolean;
+  /** 아이콘 색 — ink = 검정 선 (시안 1.26 icon-compass) */
+  iconTone?: "highlight" | "ink";
 };
 
 /** 빈 상태 안내 카드 (하늘색 안내 아이콘 + 제목 + 보조 문구 + 선택 버튼). 화면 7 검색 0건 */
@@ -28,6 +32,8 @@ export function EmptyStateCard({
   icon = "info",
   variant = "muted",
   children,
+  fullActions = false,
+  iconTone = "highlight",
 }: Props) {
   return (
     <div
@@ -35,7 +41,7 @@ export function EmptyStateCard({
       role="status"
       className={[styles.card, variant === "outlined" ? styles.outlined : ""].filter(Boolean).join(" ")}
     >
-      <Icon name={icon} className={styles.icon} />
+      <Icon name={icon} className={[styles.icon, iconTone === "ink" ? styles.iconInk : ""].filter(Boolean).join(" ")} />
       <p className={styles.title}>{title}</p>
       {description ? <p className={styles.description}>{description}</p> : null}
       {actionLabel && (onAction || actionHref) ? (
@@ -45,7 +51,7 @@ export function EmptyStateCard({
           </ButtonPillSoft>
         </div>
       ) : null}
-      {children ? <div className={styles.action}>{children}</div> : null}
+      {children ? <div className={[styles.action, fullActions ? styles.actionFull : ""].filter(Boolean).join(" ")}>{children}</div> : null}
     </div>
   );
 }

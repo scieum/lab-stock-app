@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { test, expect } from "@playwright/test";
 import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
-import { PROFILE_ROLE, ROLE_NAME, browserClient, browserSession, countComponent, devRules, roleChecks, rules, sel } from "./screen-helpers";
+import { PROFILE_ROLE, ROLE_NAME, browserClient, browserSession, countComponent, devRules, roleChecks, rules, sel, tabItemLabels } from "./screen-helpers";
 import {
   ADD,
   EMPTY,
@@ -213,7 +213,7 @@ for (const role of ROLES) {
         expect(tb.labels.length, "rules.json tab_bar labels 수 = items").toBe(tb.items);
         const tabItems = page.locator(`${sel(tb.component)} ${sel(tb.item)}`);
         await expect(tabItems, "tab-item 은 tab-bar 안에").toHaveCount(tb.items);
-        const labels = (await tabItems.allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim());
+        const labels = (await tabItemLabels(tabItems));
         expect(labels, "탭 라벨 순서").toEqual(tb.labels);
         // rules usage_batch.save "맨 아래 고정 바(모바일 = 탭바 위)"
         const bar = (await saveButton(page).boundingBox())!;

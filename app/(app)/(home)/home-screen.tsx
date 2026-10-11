@@ -6,6 +6,7 @@ import { CabinetSummaryCard, HomeSummary, StockSummaryCard, SummaryEmptyCard } f
 import { QuickAction, type QuickActionItem } from "@/components/quick-action";
 import { ReagentRow } from "@/components/reagent-row";
 import { ReorderAlertCard } from "@/components/reorder-alert-card";
+import { SensorAlertTile } from "@/components/sensor-alert-tile";
 import { DesktopOnly, MobileOnly } from "@/components/viewport-only";
 import { getHomeData, type HomeData, type Role } from "@/lib/supabase/home-data";
 import { HomeDesk } from "./home-desk";
@@ -110,6 +111,12 @@ function HomeMobile({ data, role }: HomeViewProps) {
                 lowStockCount={data.lowStock.length}
                 totalCount={data.totalReagents}
                 items={data.lowStock.map((r) => ({ name: r.name, amount: r.amount, href: reagentHref(r.id) }))}
+                footer={
+                  // d7 §25: 고장 · 점검 필요 센서 (교사·admin, 1개 이상일 때만) — 시안 13-mobile home-summary 안 한 줄
+                  staff && data.sensorAlerts.broken + data.sensorAlerts.check > 0 ? (
+                    <SensorAlertTile variant="mobile" counts={data.sensorAlerts} />
+                  ) : undefined
+                }
               />
             </div>
             <div className={styles.cabinet}>

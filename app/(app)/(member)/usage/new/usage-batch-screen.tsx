@@ -169,7 +169,10 @@ export function UsageBatchScreen({ entry, returnHref }: Props) {
       if (res.ok) {
         setLeaving(true);
         setToast({ key: Date.now(), text: batchDoneText(res.count) });
-        setTimeout(() => router.push(returnHref), LEAVE_MS);
+        // d7 §25 record_add: 화면 10 에서 왔으면 돌아가서 새 기록 행을 잠깐 highlight-soft (?new=id,id)
+        const back =
+          returnHref === "/usage" && res.ids.length > 0 ? `/usage?new=${res.ids.map(encodeURIComponent).join(",")}` : returnHref;
+        setTimeout(() => router.push(back), LEAVE_MS);
         return;
       }
       if (res.stocks) {

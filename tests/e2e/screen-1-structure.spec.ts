@@ -21,6 +21,15 @@ import {
   type RoleCheck,
 } from "./screen-helpers";
 import { frameCount } from "./screen-14-helpers";
+import { readdirSync, readFileSync as readFrame } from "node:fs";
+import { NEW_FRAMES_DIR } from "../frames";
+
+/** 화면 1 프레임의 노드 이름: 기본(1-mobile · 1-desktop) / 상태(1-not-found-* 등) */
+const frameNamesOf = (files: string[]) =>
+  new Set(files.flatMap((f) => (JSON.parse(readFrame(join(NEW_FRAMES_DIR, f), "utf8")) as { frames: { nodes: { name: string }[] }[] }).frames[0].nodes.map((n) => n.name)));
+const SCREEN1_FILES = readdirSync(NEW_FRAMES_DIR).filter((f) => /^1-.*\.json$/.test(f));
+const BASE_NAMES = frameNamesOf(SCREEN1_FILES.filter((f) => /^1-(mobile|desktop)\.json$/.test(f)));
+const VARIANT_NAMES = frameNamesOf(SCREEN1_FILES.filter((f) => !/^1-(mobile|desktop)\.json$/.test(f)));
 
 const SCREEN = 1;
 const SIGNUP = Number((rules as unknown as { auth: { signup_screen: number } }).auth.signup_screen);
@@ -71,6 +80,11 @@ test(`[C1][S${SCREEN}] 화면 ${SCREEN} 시안 컴포넌트(dev-rules components
     // 데스크톱 재구성 run d (d7 §23, rules desktop_shell.pre_login): 1440 = nav-pill·app-sidebar 0, 390 = web-header·데스크톱 랜딩 전용 0
     if (preLoginZero(SCREEN, vp, name)) {
       await expect(page.locator(sel(name)), `${name} — 폭 ${vp} 에서 0 (pre_login)`).toHaveCount(0);
+      continue;
+    }
+    // 1.26 dev-rules: 상태 프레임(1-not-found — 404 카드 · web-header 버튼)에만 있는 컴포넌트는 로그인 화면 기본 상태에 없다 → not-found.spec.ts 에서 본다
+    if (!BASE_NAMES.has(name)) {
+      expect(VARIANT_NAMES.has(name), `${name}: 기본 프레임에 없으면 화면 ${SCREEN} 상태 프레임에는 있어야 함`).toBe(true);
       continue;
     }
     const want = Math.max(1, frameCount(SCREEN, vp, name));

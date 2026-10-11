@@ -14,16 +14,20 @@
   padding-bottom: var(--usage-sheet-space, var(--space-0));
 }
 
-/* 모바일에서는 nav-pill 의 제목이 대신한다 (화면에는 안 보이고 읽기 도구에는 남긴다) */
+/* 시안 1.26 10-mobile list-head: 제목 "사용 기록 N건"(18/700) + 오른쪽 record-add */
+.listHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: var(--button-min-height);
+}
+
 .title {
-  position: absolute;
-  width: var(--border-width);
-  height: var(--border-width);
+  min-width: 0;
   margin: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
   color: var(--color-text);
-  font-size: var(--font-size-28);
+  font-size: var(--font-size-18);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-normal);
   white-space: nowrap;
@@ -171,6 +175,14 @@
   width: var(--sidebar-width);
 }
 
+/* 시안 1.26 10-desktop page-actions: 검색 240 + record-add, 사이 8 */
+.deskActions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-8);
+}
+
 .deskToolbar {
   display: flex;
   align-items: center;
@@ -208,4 +220,9 @@
   color: var(--color-text-muted);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 기록 추가 뒤 새 기록 행 (d7 §25 record_add) — 잠깐 highlight-soft */
+.layout .fresh {
+  background: var(--color-highlight-soft);
 }

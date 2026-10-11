@@ -53,10 +53,16 @@ export function UsageItemRow({
   const [touched, setTouched] = useState(false);
   const errorId = useId();
   const check = checkAmount(amount, stock);
-  const emptyError = (touched || showEmptyError || Boolean(flagged)) && (check.kind === "empty" || check.kind === "invalid");
+  const emptyError =
+    (touched || showEmptyError || Boolean(flagged)) && (check.kind === "empty" || check.kind === "invalid" || check.kind === "nonpositive");
   const over = check.kind === "over";
   const invalid = emptyError || over || Boolean(flagged);
-  const errorText = check.kind === "invalid" ? USAGE_BATCH_TEXT.amountNumber : USAGE_BATCH_TEXT.amountRequired;
+  const errorText =
+    check.kind === "invalid"
+      ? USAGE_BATCH_TEXT.amountNumber
+      : check.kind === "nonpositive"
+        ? USAGE_BATCH_TEXT.amountPositive
+        : USAGE_BATCH_TEXT.amountRequired;
 
   const input = (
     <div

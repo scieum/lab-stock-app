@@ -201,6 +201,12 @@ export async function getReagentDetail(id: string): Promise<ReagentDetailResult>
   const role = me.role;
   const r = reagentRes.data;
   if (reagentRes.error || !r) return { kind: "not-found" };
+  // 사용 기록 탭의 사용일 — 같은 기록 id 에서 (reagent_usage 는 사용일을 돌려주지 않는다)
+  const usageIds = (usageRes.data ?? []).map((u) => u.id);
+  const usedOnRes =
+    usageIds.length > 0
+      ? await supabase.from("usage_logs").select("id, used_on").in("id", usageIds)
+      : { data: [] as { id: string; used_on: string }[] };
 
   const placement = toPlacement(r.slot as SlotJoin);
   const staff = role === "teacher" || role === "admin";
@@ -234,14 +240,33 @@ export async function getReagentDetail(id: string): Promise<ReagentDetailResult>
         ? buildPicker(r.id, cabinetsRes.data ?? [], slotsRes.data ?? [], placedRes.data ?? [])
         : null,
       suggestion: suggested ? { cabinetId: suggested.cabinetId, side: suggested.side, shelf: suggested.shelf } : null,
-      usage: (usageRes.data ?? []).map((u) => ({
-        id: u.id,
-        date: formatDateDots(SEOUL_DATE.format(new Date(u.used_at))),
-        user: recordUserName(u.user_name as string | null),
-        amount: formatStock(Number(u.amount), r.unit),
-      })),
+      usage: toUsageRows(usageRes.data ?? [], usedOnRes.data ?? [], r.unit, (u) => recordUserName(u.user_name as string | null)),
     },
   };
+}
+
+type UsageRpcRow = { id: string; used_at: string; amount: number | string; user_name: string | null };
+
+/**
+ * 화면 3 사용 기록 탭 행 (회원 · 둘러보기 공용). d7 §25 QA 1: 날짜 = 사용일(used_on) — 기록 시각이 아니라.
+ * 사용일 최신순(같은 날은 기록 시각 최신순). 사용일을 못 찾은 행은 기록 시각의 한국 날짜.
+ */
+export function toUsageRows<T extends UsageRpcRow>(
+  rows: readonly T[],
+  usedOn: readonly { id: string; used_on: string }[],
+  unit: string,
+  userOf: (u: T) => string,
+): ReagentUsageRow[] {
+  const byId = new Map(usedOn.map((u) => [u.id, u.used_on]));
+  return rows
+    .map((u) => ({ u, day: byId.get(u.id) ?? SEOUL_DATE.format(new Date(u.used_at)) }))
+    .sort((a, b) => (a.day === b.day ? b.u.used_at.localeCompare(a.u.used_at) : b.day.localeCompare(a.day)))
+    .map(({ u, day }) => ({
+      id: u.id,
+      date: formatDateDots(day),
+      user: userOf(u),
+      amount: formatStock(Number(u.amount), unit),
+    }));
 }
 
 /** reagents 행 → 재주문 기준 (화면 3 회원·둘러보기 공용, d7 §11-1) */
@@ -267,7 +292,7 @@ export function toThreshold(r: {
   };
 }
 
-function buildPicker(
+export function buildPicker(
   selfId: string,
   cabinets: { id: string; number?: number | null; label: string; door_type: string; shelves: number }[],
   slotRows: { id: string; cabinet_id: string; side: string; shelf: number; storage_class?: string | null; storage_classes?: string[] | null }[],

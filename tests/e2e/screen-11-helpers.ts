@@ -14,7 +14,7 @@ import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 import { expect, type Locator, type Page, type TestInfo } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { browserClient, devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
+import { browserClient, devRules, routeOf, rules, sel, type ViewportName, tabItemLabels } from "./screen-helpers";
 import { tempSchoolLike,
   addMember,
   clientFor,
@@ -486,7 +486,7 @@ export async function expectTabBar(page: Page, viewport: ViewportName, state: st
   await expect(bar).toBeVisible();
   const items = bar.locator(sel(tb.item));
   await expect(items, "tab-item 은 tab-bar 안에").toHaveCount(tb.items);
-  expect((await items.allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim()), `${state}: 탭 라벨 순서`).toEqual(tb.labels);
+  expect((await tabItemLabels(items)), `${state}: 탭 라벨 순서`).toEqual(tb.labels);
   const active = bar.locator(`${sel(tb.item)}[aria-current="page"]`);
   await expect(active, `${state}: 활성 tab-item 1개`).toHaveCount(1);
   await expect(active, `${state}: 활성 탭 "${ACTIVE_TAB_LABEL}"`).toHaveText(exact(ACTIVE_TAB_LABEL));

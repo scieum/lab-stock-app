@@ -29,7 +29,7 @@ import {
   waitNeis,
   waitSignupScreen,
 } from "./screen-14-helpers";
-import { framePath } from "../frames";
+import { framePath, preDesktopFramePath } from "../frames";
 import { expectPreLoginShell } from "./pre-login-helpers";
 
 const N1 = rules.never.N1;
@@ -60,6 +60,18 @@ function frameNodes(file: string): FrameNode[] {
 function frameText(file: string, name: string, inside?: string): string {
   const n = frameNodes(file).find((x) => x.name === name && x.text && (!inside || x.path.includes(inside)));
   if (!n?.text) throw new Error(`${file} 에 글자 노드 ${name}${inside ? ` (${inside} 안)` : ""} 없음`);
+  return n.text.characters;
+}
+/**
+ * 학교 시트(sheet-context · sheet-search)는 1.26 새 14 프레임에 더 그려지지 않는다 (14-mobile · 14-desktop = 시트 닫힌 상태).
+ * 시트 글자의 기대값 원본은 예전 프레임(tests/fixtures/frames-pre-desktop, tests/frames.ts preDesktopFramePath — "새 프레임에 더 그려지지 않는 상태")
+ */
+function sheetFrameText(file: string, name: string, inside?: string): string {
+  const inNew = frameNodes(file).some((x) => x.name === name && x.text && (!inside || x.path.includes(inside)));
+  if (inNew) return frameText(file, name, inside);
+  const old = (JSON.parse(readFileSync(preDesktopFramePath(file), "utf8")) as FrameFile).frames.find((x) => x.name === file)?.nodes ?? [];
+  const n = old.find((x) => x.name === name && x.text && (!inside || x.path.includes(inside)));
+  if (!n?.text) throw new Error(`${file} (새 · 예전 프레임) 에 글자 노드 ${name} 없음`);
   return n.text.characters;
 }
 
@@ -476,14 +488,14 @@ test(`[C1][S${SCREEN}] 학교 시트(모바일 하단)·드롭다운(데스크�
   await expect(selectBox(page, SCHOOL)).toHaveAttribute("aria-expanded", "true");
 
   // 맥락 한 줄: 시안 "충청북도 청주시 · 고등학교 38곳" 형식 = "{시/도} {지역} · {학교급} {n}곳"
-  const ctxFrame = frameText(`${SCREEN}-${vp}`, "sheet-context");
+  const ctxFrame = sheetFrameText(`${SCREEN}-${vp}`, "sheet-context");
   expect(ctxFrame, "시안 맥락 형식").toBe(`${rules.neis.default_sido} ${rules.neis.default_region} · ${DK} ${ctxFrame.match(/(\d+)곳$/)?.[1]}곳`);
   await expect(sheet, "맥락 한 줄").toContainText(`${FA} ${FA1} · ${DK} ${all.length}곳`);
 
   // 검색 칸 (시안 sheet-search placeholder)
   const search = sheet.locator('input[type="search"]');
   await expect(search).toHaveCount(1);
-  await expect(search).toHaveAttribute("placeholder", frameText(`${SCREEN}-${vp}`, "placeholder", "sheet-search"));
+  await expect(search).toHaveAttribute("placeholder", sheetFrameText(`${SCREEN}-${vp}`, "placeholder", "sheet-search"));
   await expect(search, "열면 검색 칸에 초점").toBeFocused();
 
   // 줄 = 학교 이름, 아래 회색 "시/도 지역" (data-sub)

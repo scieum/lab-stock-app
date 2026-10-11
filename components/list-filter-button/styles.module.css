@@ -55,3 +55,10 @@
   font-variant-numeric: tabular-nums;
   box-sizing: border-box;
 }
+
+/* 데스크톱 틀 (시안 2-desktop · 17-desktop list-filter-button > button-pill-soft) */
+.wrap {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-self: stretch;
+}

@@ -2,7 +2,7 @@ import type { IconName } from "@/components/icons";
 
 /**
  * 데스크톱 app-sidebar 메뉴 (design/rules.json 1.22 desktop_shell.menu, d7 §23 셸 run a).
- * - 모두: 홈 · 시약 · 기록 · 시약장 · QR 찾기
+ * - 모두: 홈 · 시약 · 센서 · 기록 · 시약장 · QR 찾기
  * - 교사·admin: + "관리" 묶음 = 입고 · 실험 매뉴얼 · 재주문 알림
  * - admin: + "학교 설정" 묶음 = 사용자 · 판매처
  * 묶음 제목(관리 · 학교 설정)은 시안 sidebar-group-title.
@@ -13,6 +13,7 @@ export type SidebarRole = "student" | "teacher" | "admin";
 export type SidebarKey =
   | "home"
   | "reagents"
+  | "sensors"
   | "records"
   | "cabinets"
   | "scan"
@@ -35,6 +36,8 @@ export type SidebarGroup = { title?: string; items: SidebarEntry[] };
 const ALL: SidebarEntry[] = [
   { key: "home", label: "홈", icon: "home", href: "/" },
   { key: "reagents", label: "시약", icon: "flask", href: "/reagents" },
+  // 2026-10-11 디자인 1.26 desktop_shell.menu: 시약 아래 "센서" (모든 역할, 화면 17)
+  { key: "sensors", label: "센서", icon: "sensor", href: "/sensors" },
   { key: "records", label: "기록", icon: "record", href: "/usage" },
   { key: "cabinets", label: "시약장", icon: "cabinet", href: "/cabinets" },
   { key: "scan", label: "QR 찾기", icon: "qr" },
@@ -70,6 +73,7 @@ function under(pathname: string, base: string) {
 export function sidebarActiveKey(pathname: string): SidebarKey | undefined {
   if (pathname === "/") return "home";
   if (under(pathname, "/reagents") || under(pathname, "/msds")) return "reagents";
+  if (under(pathname, "/sensors")) return "sensors";
   if (under(pathname, "/usage")) return "records";
   if (under(pathname, "/cabinets")) return "cabinets";
   if (under(pathname, "/scan")) return "scan";
@@ -91,6 +95,8 @@ export function guestSidebarMenu(): SidebarGroup[] {
       items: [
         { key: "home", label: "홈", icon: "home", href: "/demo" },
         { key: "reagents", label: "시약", icon: "flask", href: "/demo/reagents" },
+        // 2026-10-11 rules guest.desktop: "센서"도 활성 (데모 센서 읽기 전용)
+        { key: "sensors", label: "센서", icon: "sensor", href: "/demo/sensors" },
         { key: "records", label: "기록", icon: "record", locked: true },
         { key: "scan", label: "QR 찾기", icon: "qr", locked: true },
       ],
@@ -102,6 +108,7 @@ export function guestSidebarMenu(): SidebarGroup[] {
 export function guestSidebarActiveKey(pathname: string): SidebarKey | undefined {
   if (pathname === "/demo" || pathname === "/demo/") return "home";
   if (under(pathname, "/demo/reagents") || under(pathname, "/demo/msds")) return "reagents";
+  if (under(pathname, "/demo/sensors")) return "sensors";
   return undefined;
 }
 

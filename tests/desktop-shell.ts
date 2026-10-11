@@ -126,3 +126,22 @@ export function deskOnlyComponents(): string[] {
   }
   return req.filter((n) => !mobileNames.has(n));
 }
+
+/** rules desktop_shell.menu_source "사이드바 '시약' 아래 '센서'(모든 역할)" — 1.26 에 더한 사이드바 메뉴 */
+export const MENU_ADDED = ((): string => {
+  const m = /'([^']+)' 아래 '([^']+)'/.exec((DESKTOP_SHELL as unknown as { menu_source?: string }).menu_source ?? "");
+  if (!m) throw new Error("rules desktop_shell.menu_source 에서 더한 메뉴를 읽지 못함");
+  return m[2];
+})();
+
+/**
+ * 1.26 전에 그려진 데스크톱 프레임(사이드바에 MENU_ADDED 없음)의 sidebar-item 개수를 지금 메뉴에 맞춘다 (+1).
+ * 프레임 이름이 -desktop 이 아니거나 사이드바가 없으면 그대로.
+ */
+export function adjustStaleMenu(frame: string, counts: Record<string, number>): Record<string, number> {
+  const item = DESKTOP_SHELL.item;
+  if (!counts[item]) return counts;
+  const labels = frameSidebarItems(frame.replace(/^.*[\/]/, "").replace(/\.json$/, "")).map((i) => i.label);
+  if (labels.includes(MENU_ADDED)) return counts;
+  return { ...counts, [item]: counts[item] + 1 };
+}

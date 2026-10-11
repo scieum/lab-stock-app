@@ -1,0 +1,36 @@
+/* 바가 떠 있는 동안 목록 끝이 바에 가리지 않게 (바 높이 68 = 44 + 12 × 2) */
+.barSpace {
+  height: calc(var(--button-min-height) + var(--space-24));
+}
+
+.dialog {
+  display: contents;
+}
+
+@media (max-width: 1023px) {
+  .underSheet [data-component="bulk-action-bar"] {
+    display: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* 시안 2-bulk-delete-desktop: 본문(사이드바 오른쪽) 가운데 카드 440, 딤 없음 */
+  .dialog {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: var(--sidebar-width);
+    z-index: 45;
+    display: grid;
+    place-items: center;
+    padding: var(--space-24);
+    pointer-events: none;
+  }
+
+  .dialog > * {
+    width: calc(var(--space-48) * 9 + var(--space-8));
+    max-width: 100%;
+    pointer-events: auto;
+  }
+}

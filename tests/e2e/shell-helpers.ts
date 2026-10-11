@@ -28,7 +28,9 @@ export const RULE_ROLE: Record<Role, string> = { student: "학생", teacher: "�
  * (rules.json tab_bar · 1.22 desktop_shell). 화면 본문·예전 프레임 대조에서는 빼고, 셸은 expectShell(C2·C3)로 폭별 개수를 본다.
  * (nav-account-menu 는 두 셸 모두에 1개 — 본문 대조에 그대로 둔다)
  */
-export const SHELL_COMPONENTS: string[] = ["nav-pill", rules.tab_bar.component, rules.tab_bar.item, rules.desktop_shell.component, rules.desktop_shell.item];
+/** 1.26 tab_bar.qr_pending: 'QR 스캔' tab-item 안 "준비 중" — 탭바(셸) 일부 (로그인 후 모바일 탭바에만, 둘러보기는 잠금) */
+export const TAB_SOON = "tab-soon";
+export const SHELL_COMPONENTS: string[] = ["nav-pill", rules.tab_bar.component, rules.tab_bar.item, TAB_SOON, rules.desktop_shell.component, rules.desktop_shell.item];
 export const isShellComponent = (name: string): boolean => SHELL_COMPONENTS.includes(name);
 
 /** dev-rules.json components 의 모든 컴포넌트 이름 */
@@ -302,6 +304,7 @@ export async function expectShell(page: Page, viewport: ViewportName, screen: nu
     await expect(page.locator(sel("nav-pill")), `${when}: nav-pill`).toHaveCount(1);
     await expect(page.locator(sel(tb.component)), `${when}: ${viewport} ${tb.component}`).toHaveCount(shown ? 1 : 0);
     await expect(page.locator(sel(tb.item)), `${when}: ${viewport} ${tb.item}`).toHaveCount(shown ? tb.items : 0);
+    await expect(page.locator(`${sel(tb.component)} ${sel(TAB_SOON)}`), `${when}: ${viewport} ${TAB_SOON} (QR 스캔 준비 중)`).toHaveCount(shown ? 1 : 0);
     await expect(page.locator(sel(ds.component)), `${when}: ${viewport} ${ds.component}`).toHaveCount(0);
     await expect(page.locator(sel(ds.item)), `${when}: ${viewport} ${ds.item}`).toHaveCount(0);
     return;
@@ -314,6 +317,7 @@ export async function expectShell(page: Page, viewport: ViewportName, screen: nu
   }
   await expect(page.locator(sel(tb.component)), `${when}: ${viewport} ${tb.component}`).toHaveCount(0);
   await expect(page.locator(sel(tb.item)), `${when}: ${viewport} ${tb.item}`).toHaveCount(0);
+  await expect(page.locator(sel(TAB_SOON)), `${when}: ${viewport} ${TAB_SOON}`).toHaveCount(0);
 }
 
 /** dev-rules.json components 이름별 DOM 개수 (scope 안) */

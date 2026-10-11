@@ -17,7 +17,7 @@ import {
   roleChecks,
   routeOf,
   rules,
-  sel,
+  sel, tabItemLabels,
 } from "./screen-helpers";
 import { framePath } from "../frames";
 import { SHELL_COMPONENTS, expectShell, isShellComponent } from "./shell-helpers";
@@ -32,6 +32,10 @@ const BADGE = "badge-low-stock";
 function frameNames(name: string): Set<string> {
   const j = JSON.parse(readFileSync(framePath(`${name}`), "utf8")) as { frames: { nodes: { name: string }[] }[] };
   return new Set(j.frames[0].nodes.map((n) => n.name).filter((n) => devRules.components[n]));
+}
+/** 프레임 노드 (이름 + 조상 경로) */
+function frameNodesOf(name: string): { name: string; path: string[] }[] {
+  return (JSON.parse(readFileSync(framePath(`${name}`), "utf8")) as { frames: { nodes: { name: string; path: string[] }[] }[] }).frames[0].nodes;
 }
 /** rules.json variants[2] (디자인 1.17: filter · filter-empty · msds-bulk) */
 const VARIANTS2 = (rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants[String(SCREEN)] ?? {};
@@ -84,7 +88,10 @@ for (const role of ROLES) {
     // msds-bulk-banner 는 기본 프레임 2-{폭}(교사 시안)에도 있지만 d7 §20 상 교사·admin 이 "MSDS 없는 시약만"(?nomsds=1)을 켰을 때만 → 아래 MSDS_BANNER.
     const baseFrame = frameNames(`${SCREEN}-${info.project.name}`);
     const variantOnly = [...new Set(Object.values(VARIANTS2).flat())].filter((n) => fromDev.includes(n) && !baseFrame.has(n));
-    expect(variantOnly.sort(), "variants[2] 에만 있는 화면 2 컴포넌트").toEqual(["ex-empty-state-card", "filter-chip-row", "list-filter-sheet", "msds-candidates", "storage-class-chip"]);
+    // 1.26: variants[2].select · bulk-delete (선택 모드 · 확인 모달) — 기본 상태 0, 선택 모드는 screen-2-bulk-delete.spec 에서 본다
+    expect(variantOnly.sort(), "variants[2] 에만 있는 화면 2 컴포넌트").toEqual(["bulk-action-bar", "ex-empty-state-card", "ex-modal-card", "filter-chip-row", "list-filter-sheet", "msds-candidates", "select-checkbox", "storage-class-chip"]);
+    // 역할로 금지된 것 (R5 학생: list-select-toggle 등) — 그 역할 화면에서는 0 (screen-2 R-ui 와 같은 기준)
+    const forbidden = new Set(roleChecks(SCREEN, ROLE_NAME[role as keyof typeof ROLE_NAME]).filter((c) => c.op === "max" && c.value === 0).map((c) => c.component));
     expect(VARIANTS2["msds-bulk"] ?? [], "variants[2].msds-bulk 에 msds-bulk-banner").toContain(MSDS_BANNER);
     const staff = role !== "student";
 
@@ -104,7 +111,8 @@ for (const role of ROLES) {
       // 1440 = data-table(reagent-row 0) / 390 = reagent-row(data-table 0) — 폭마다 다른 쪽은 0
       const deskOnly = deskOnlyComponents();
       const mobileOnly = mobileOnlyOf(SCREEN, SHELL_COMPONENTS);
-      expect(mobileOnly, "새 프레임: 화면 2 모바일 전용 = reagent-row").toEqual(["reagent-row"]);
+      // 1.26: inventory-switch "시약 | 센서" 는 모바일 전용 (데스크톱 = 사이드바 '센서', 프레임 2-desktop 에 없음)
+      expect(mobileOnly, "새 프레임: 화면 2 모바일 전용 = inventory-switch · reagent-row").toEqual(["inventory-switch", "reagent-row"]);
       for (const name of fromDev) {
         // 셸(탭바·nav-pill·사이드바)은 위 expectShell 에서 폭별 기대값으로 봤다
         if (isShellComponent(name)) continue;
@@ -131,6 +139,22 @@ for (const role of ROLES) {
         }
         if (variantOnly.includes(name) || name === MSDS_BANNER) {
           expect(await countComponent(page, name), `${name} 기본 상태(필터 없음·시트 닫힘) 0`).toBe(0);
+          continue;
+        }
+        if (forbidden.has(name)) {
+          expect(await countComponent(page, name), `${name} (roles 상 ${ROLE_LABEL[role]} 0)`).toBe(0);
+          continue;
+        }
+        // 1.26: 기본 프레임 2-{폭} 에 없는 컴포넌트 = 상태 프레임(2-select · 2-bulk-delete 등) 소속 → 기본 상태 0
+        // (예: 모바일 button-outline = 확인 모달의 '취소'). 선택 모드 · 모달은 screen-2-bulk-delete.spec 에서 본다
+        if (!baseFrame.has(name)) {
+          expect(await countComponent(page, name), `${name}: 기본 프레임 ${SCREEN}-${viewport} 에 없음 → 기본 상태 0`).toBe(0);
+          continue;
+        }
+        // 기본 프레임(교사 시안)에서 역할로 금지된 컴포넌트 안에만 있는 것 (예: 데스크톱 button-outline = list-select-toggle '선택') → 그 역할 0
+        const occurrences = frameNodesOf(`${SCREEN}-${viewport}`).filter((n) => n.name === name);
+        if (occurrences.length > 0 && occurrences.every((n) => n.path.some((p) => forbidden.has(p)))) {
+          expect(await countComponent(page, name), `${name}: 시안에서 ${ROLE_LABEL[role]} 금지 컴포넌트 안에만 → 0`).toBe(0);
           continue;
         }
         expect(await countComponent(page, name), `${name}`).toBeGreaterThanOrEqual(1);
@@ -184,7 +208,7 @@ for (const role of ROLES) {
         await expect(page.locator(sel(tb.component))).toBeVisible();
         const items = page.locator(`${sel(tb.component)} ${sel(tb.item)}`);
         await expect(items, "tab-item 은 tab-bar 안에").toHaveCount(tb.items);
-        const labels = (await items.allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim());
+        const labels = (await tabItemLabels(items));
         expect(labels, "탭 라벨 순서").toEqual(tb.labels);
         // 활성 탭 표시: rules.json tab_bar 에 활성 기준 항목이 없어 검사하지 않는다
       }

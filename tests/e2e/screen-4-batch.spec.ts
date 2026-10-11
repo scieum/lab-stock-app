@@ -8,6 +8,7 @@
 //   service role(준비)로 그 시약의 재고를 줄여 실제 DB 거절을 만든다 (동시에 다른 사람이 쓴 상황).
 // 데이터: 일회용 학교(admin·교사·학생 — service role 로 생성)의 임시 시약에만 쓴다. 판정은 화면과 그 계정 세션(RLS) / 대조 조회(service role).
 //   정리: usage_logs → 시약 → 시약장 → 프로필 → 계정 → 학교, 잔여물 0. 공용 학교 A·B·데모 불변.
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { test, expect, type Page, type TestInfo } from "@playwright/test";
@@ -64,6 +65,8 @@ import {
 
 test.describe.configure({ mode: "default" });
 
+/** d7 §25 QA (4): 사용량 0 = "사용량은 0보다 커야 해요", 음수도 같은 문구 */
+const AMOUNT_POSITIVE = (/\(4\) 사용량 0 = "([^"]+)"/.exec(readFileSync(join(process.cwd(), "harness", "d7-data.md"), "utf8")) ?? [])[1];
 const GROUP = "s4batch";
 const DRAWER_NAME = "detail-drawer";
 const LIST_NAME = "usage-batch-list";
@@ -325,13 +328,15 @@ test.describe("일회용 학교", () => {
       await amountOf(page, y.name).fill("120");
       await expect(over, "재고와 같은 양 = 초과 아님").toHaveCount(0);
       await expect(saveButton(page)).toBeEnabled();
-      // 0 · 빈 값 = 입력 칸 오류 "사용량을 적어 주세요" (칸을 떠난 뒤)
+      // 0 = 입력 칸 오류 — d7 §25 QA (4) 가 rules usage_batch.errors 의 0 문구를 바꿨다: "사용량은 0보다 커야 해요" (빈 값은 그대로 "사용량을 적어 주세요")
       await amountOf(page, z.name).fill("0");
       await amountOf(page, z.name).blur();
-      await expect(page.locator("main").getByText(EMPTY_AMOUNT, { exact: true }), `"${EMPTY_AMOUNT}"`).toHaveCount(1);
+      await expect(page.locator("main").getByText(AMOUNT_POSITIVE, { exact: true }), `0 → "${AMOUNT_POSITIVE}"`).toHaveCount(1);
       await expect(amountOf(page, z.name), "0 칸 aria-invalid").toHaveAttribute("aria-invalid", "true");
       await expect(saveButton(page), "0 → 비활성").toBeDisabled();
       await amountOf(page, z.name).fill("");
+      await amountOf(page, z.name).blur();
+      await expect(page.locator("main").getByText(EMPTY_AMOUNT, { exact: true }), `빈 값 → "${EMPTY_AMOUNT}"`).toHaveCount(1);
       await expect(saveButton(page), "빈 값 → 비활성").toBeDisabled();
       // 빼기 → 개수 줄어듦
       await removeOf(page, z.name).click();

@@ -1,0 +1,89 @@
+/* sensor-form (시안 17-form: 칸 사이 16(모바일) · 12(데스크톱 드로어), 모델명 + 수량 120 한 줄 사이 8) */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.pair {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-8);
+}
+
+.model {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.quantity {
+  flex: 0 0 calc(var(--space-24) * 5);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.label {
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.slotBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  width: 100%;
+  min-height: var(--button-min-height);
+  padding: var(--space-12) var(--space-16);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-input);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+  text-align: left;
+  cursor: pointer;
+}
+
+.slotBox:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.slotValue {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.slotPlaceholder {
+  color: var(--color-text-placeholder);
+}
+
+.slotIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex-shrink: 0;
+  color: var(--color-highlight);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+@media (min-width: 1024px) {
+  .form {
+    gap: var(--space-12);
+  }
+}

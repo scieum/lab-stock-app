@@ -1,7 +1,7 @@
 import { ShotHome, ShotReagentTable } from "./shots";
 import styles from "./styles.module.css";
 
-export { Shot, ShotCabinet, ShotCabinetQr, ShotFilter, ShotHome, ShotIntake, ShotRecentUsage, ShotReagentTable, ShotReorderAlert, ShotReorderDrawer, ShotSignup, ShotUsageForm } from "./shots";
+export { Shot, ShotCabinet, ShotCabinetQr, ShotFilter, ShotHome, ShotIntake, ShotRecentUsage, ShotReagentTable, ShotReorderAlert, ShotReorderDrawer, ShotSignup, ShotUsageBatch, ShotUsageForm } from "./shots";
 
 /** 히어로 표 카드에 보이는 세 줄 (시안 15-desktop product-shot/data-table) */
 const HERO_ROWS = [

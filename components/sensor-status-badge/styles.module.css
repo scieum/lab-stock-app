@@ -1,0 +1,35 @@
+/* sensor-status-badge (시안 17: pill 안쪽 4/8 · 글자 12/600, 정상 = 글자 13/400 회색) */
+.badge {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
+.broken {
+  padding: var(--space-4) var(--space-8);
+  background: var(--color-text);
+  color: var(--color-on-primary);
+}
+
+.check {
+  padding: var(--space-4) var(--space-8);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+/* 회색 카드 위 — 흰 바탕 + 테두리 */
+.onCard {
+  border: var(--border-width) solid var(--color-border-strong);
+  background: var(--color-surface);
+}
+
+.ok {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+}

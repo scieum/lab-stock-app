@@ -1,0 +1,46 @@
+/* bulk-action-bar (시안 2-select · 17-select: 높이 68 · 안쪽 12/16 (데스크톱 12/32) · canvas + 위 hairline-soft) */
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  box-sizing: border-box;
+  padding: var(--space-12) var(--space-16);
+  border-top: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-none);
+  background: var(--color-surface);
+}
+
+/* 모바일: tab-bar 바로 위 */
+.fixed {
+  position: fixed;
+  right: 0;
+  bottom: var(--tab-bar-height);
+  left: 0;
+  z-index: 20;
+}
+
+.count {
+  min-width: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+}
+
+.delete {
+  flex-shrink: 0;
+}
+
+@media (min-width: 1024px) {
+  .bar {
+    padding: var(--space-12) var(--space-32);
+  }
+
+  /* 데스크톱: 본문 아래 고정 (사이드바 240 오른쪽) */
+  .fixed {
+    bottom: 0;
+    left: var(--sidebar-width);
+  }
+}

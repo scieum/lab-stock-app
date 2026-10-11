@@ -77,7 +77,11 @@ test(`[K1][S13] ${GALLERY}: 둘러보기 ${DESKTOP_SHELL.component} — 위 "${r
   await expect(sb, "둘러보기 사이드바 1").toHaveCount(1);
   await expect(sb.getByText(rules.guest.school_name, { exact: true })).toHaveCount(1);
   const want = frameOf("13-guest-desktop").nodes.filter((n) => n.type === "TEXT" && n.path.includes(DESKTOP_SHELL.item)).map((n) => n.text!.characters.trim());
-  expect((await sb.locator(sel(DESKTOP_SHELL.item)).allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim()), "메뉴 = 시안").toEqual(want);
+  // rules guest.desktop "2026-10-11 '센서'도 활성" — 1.26 전 시안(13-guest-desktop)에 없으면 '시약' 바로 아래에 더한다 (rules desktop_shell.menu.all 순서)
+  const added = /'([^']+)'도 활성/.exec((rules.guest as unknown as { desktop: string }).desktop)?.[1];
+  expect(added, "rules guest.desktop 더한 메뉴").toBe("센서");
+  if (!want.includes(added!)) want.splice(want.indexOf("시약") + 1, 0, added!);
+  expect((await sb.locator(sel(DESKTOP_SHELL.item)).allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim()), "메뉴 = 시안 (+ 1.26 '센서')").toEqual(want);
   await expect(sb.locator(sel(rules.guest.lock)), `잠금 ${GUEST_LOCKS}`).toHaveCount(GUEST_LOCKS);
   await expect(sb.locator(`button:has(${sel(rules.guest.lock)})`), "잠금은 버튼 안").toHaveCount(GUEST_LOCKS);
   for (const t of frameTextsIn("13-guest-desktop", "sidebar-account")) await expect(sb, `아래 "${t}"`).toContainText(t);

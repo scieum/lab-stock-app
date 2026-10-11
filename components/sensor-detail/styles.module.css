@@ -1,0 +1,64 @@
+/* sensor-detail (시안 17-detail: 제목 줄 → detail-rows, 사이 16) */
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: var(--button-min-height);
+  min-width: 0;
+}
+
+.heading {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.titleAction {
+  display: inline-flex;
+  margin-left: auto;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-16);
+  padding: var(--space-12) 0;
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.key {
+  flex: 0 0 calc(var(--space-48) * 2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.value {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+}
+
+.muted {
+  color: var(--color-text-placeholder);
+}

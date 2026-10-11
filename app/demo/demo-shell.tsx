@@ -27,6 +27,8 @@ function activeTab(pathname: string): TabKey | undefined {
   if (pathname === "/demo") return "home";
   if (isActive(pathname, "/demo/reagents")) return "reagents";
   if (isDemoMsdsPath(pathname)) return "reagents";
+  // 화면 17g 센서: "시약" 탭 안 inventory-switch
+  if (isActive(pathname, "/demo/sensors")) return "reagents";
   return undefined;
 }
 
@@ -37,7 +39,7 @@ function isDemoMsdsPath(pathname: string) {
 
 /** 데스크톱 목록 + 드로어 화면 (2g · 3g · 16g) — 여백은 목록 틀(desk frame)이 둔다 */
 function isDemoDeskPath(pathname: string) {
-  return /^\/demo\/(reagents(\/[^/]+)?|msds\/[^/]+)\/?$/.test(pathname);
+  return /^\/demo\/(reagents(\/[^/]+)?|msds\/[^/]+|sensors(\/[^/]+)?)\/?$/.test(pathname);
 }
 
 type Props = { schoolName: string; children: React.ReactNode };
@@ -66,6 +68,7 @@ export function DemoNav(props: DemoNavProps) {
 function MobileDemoNav({ schoolName, page }: DemoNavProps) {
   const pathname = usePathname();
   const detail = /^\/demo\/reagents\/[^/]+\/?$/.test(pathname);
+  const sensorDetail = /^\/demo\/sensors\/[^/]+\/?$/.test(pathname);
   const links: NavLinkItem[] = LINKS.map((l) => ({
     ...l,
     active: !l.locked && (page ? l.href === page.activeHref : isActive(pathname, l.href)),
@@ -75,8 +78,8 @@ function MobileDemoNav({ schoolName, page }: DemoNavProps) {
       <NavPill
         schoolName={schoolName}
         links={links}
-        title={page ? page.title : detail ? "시약 상세" : undefined}
-        backHref={page ? page.backHref : detail ? "/demo/reagents" : undefined}
+        title={page ? page.title : detail ? "시약 상세" : sensorDetail ? "센서 상세" : undefined}
+        backHref={page ? page.backHref : detail ? "/demo/reagents" : sensorDetail ? "/demo/sensors" : undefined}
         desktopWordmark={page ? true : undefined}
       />
       <GuestBanner signupHref="/signup" className={styles.banner} />

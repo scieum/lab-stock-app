@@ -18,6 +18,7 @@ import {
   ShotReorderAlert,
   ShotReorderDrawer,
   ShotSignup,
+  ShotUsageBatch,
   ShotUsageForm,
 } from "@/components/product-shot";
 import { StepFlow, type Step } from "@/components/step-flow";
@@ -196,8 +197,9 @@ export function LandingDesktop() {
             </Shot>
           }
           overlay={
+            // 디자인 1.26 landing_shot: 새 화면 4 조각 (여러 시약 담기 + 수업)
             <Shot label="사용 기록 입력 화면 예시">
-              <ShotUsageForm />
+              <ShotUsageBatch />
             </Shot>
           }
         />

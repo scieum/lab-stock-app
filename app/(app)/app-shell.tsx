@@ -39,6 +39,8 @@ function activeTab(pathname: string): TabKey | undefined {
   // s2-spec 화면 8: 모바일 활성 탭 = "홈" (홈 quick-action "사용자 관리"로 들어온다)
   if (isActive(pathname, "/users")) return "home";
   if (isActive(pathname, "/reagents")) return "reagents";
+  // 화면 17 센서: "시약" 탭 안 inventory-switch (rules tab_bar.sensor_entry — 시약 탭 활성)
+  if (isActive(pathname, "/sensors")) return "reagents";
   // 화면 16 MSDS 요약: 시약 섹션 (시안 16-mobile 활성 탭 = "시약")
   if (isMsdsPath(pathname)) return "reagents";
   // s2-spec 화면 7: 모바일 활성 탭 = "시약"
@@ -57,6 +59,8 @@ function activeTab(pathname: string): TabKey | undefined {
 type SubPage = {
   title: string;
   backHref: string;
+  /** 뒤로 아이콘 — close = × (화면 17 센서 등록 · 수정 폼) */
+  backIcon?: "back" | "close";
   links?: { label: string; href: string; active?: boolean }[];
   /**
    * true = 데스크톱 nav 는 최상위 화면처럼 워드마크 + 주 메뉴(현재 섹션 표시), 뒤로가기·제목은 본문 page-header 가 맡는다
@@ -68,6 +72,11 @@ type SubPage = {
 /** 하위 화면 (시안: nav-pill = 뒤로가기 + 제목 + 학교명. 화면 4 데스크톱은 링크 2개) */
 function subPage(pathname: string, staff: boolean): SubPage | undefined {
   if (/^\/reagents\/[^/]+\/?$/.test(pathname)) return { title: "시약 상세", backHref: "/reagents", mainNav: true };
+  // 화면 17 (시안 17-detail-mobile · 17-form-mobile): 상세 = ‹ "센서 상세", 폼 = × "센서 등록" · "센서 수정"
+  if (/^\/sensors\/new\/?$/.test(pathname)) return { title: "센서 등록", backHref: "/sensors", backIcon: "close" };
+  const edit = /^\/sensors\/([^/]+)\/edit\/?$/.exec(pathname);
+  if (edit) return { title: "센서 수정", backHref: `/sensors/${edit[1]}`, backIcon: "close" };
+  if (/^\/sensors\/[^/]+\/?$/.test(pathname)) return { title: "센서 상세", backHref: "/sensors" };
   if (/^\/usage\/new\/?$/.test(pathname)) {
     // 시안 4-desktop nav-links: 시약 목록(활성) · 재주문 알림 (재주문 알림은 교사·admin 만 — 학생 nav 에는 없다)
     return {
@@ -173,6 +182,7 @@ function MobileNav({ schoolName, staff = false, admin = false, page }: AppNavPro
       links={links}
       title={sub?.title}
       backHref={sub?.backHref}
+      backIcon={sub?.backIcon}
       desktopWordmark={sub?.mainNav}
       sectionTitle={sub ? undefined : sectionTitle(pathname)}
       onLogout={logout}
@@ -187,7 +197,7 @@ function MobileNav({ schoolName, staff = false, admin = false, page }: AppNavPro
  * (화면 4 /usage/new 는 2026-10-10 디자인 1.25 부터 본문 페이지 — heavy_pages)
  */
 function isDeskPath(pathname: string): boolean {
-  return /^\/(reagents(\/[^/]+)?|msds\/[^/]+|usage|users|vendors)\/?$/.test(pathname);
+  return /^\/(reagents(\/[^/]+)?|msds\/[^/]+|usage|users|vendors|sensors(\/[^/]+(\/edit)?)?)\/?$/.test(pathname);
 }
 
 /**

@@ -14,7 +14,7 @@ import { landingSampleNames } from "./pre-login-helpers";
 import { test, expect, type Browser, type BrowserContext, type Page, type TestInfo } from "@playwright/test";
 import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
-import { PROFILE_ROLE, browserSession, countComponent, roleChecks, routeOf, rules, screenOfPath, sel, type ViewportName } from "./screen-helpers";
+import { PROFILE_ROLE, browserSession, countComponent, roleChecks, routeOf, rules, screenOfPath, sel, type ViewportName, tabItemLabels } from "./screen-helpers";
 import { detailPath, seedReagents, seedSchoolOf } from "./screen-3-helpers";
 import {
   ALL_COMPONENTS,
@@ -263,7 +263,7 @@ for (const { start, target } of SKELETON_MOVES) {
         // 셸은 규칙 개수 그대로
         await expectShell(page, viewport, target, "응답 전");
         if (viewport === "mobile") {
-          const labels = (await page.locator(`${sel(tb.component)} ${sel(tb.item)}`).allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim());
+          const labels = (await tabItemLabels(page.locator(`${sel(tb.component)} ${sel(tb.item)}`)));
           expect(labels, "응답 전 탭 라벨 순서").toEqual(tb.labels);
         }
         // 화면 전체: 학교명은 자기 학교 하나, 역할 상한 유지

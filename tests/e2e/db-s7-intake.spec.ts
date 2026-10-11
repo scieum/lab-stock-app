@@ -184,7 +184,9 @@ for (const role of ["teacher", "admin"] as Role[]) {
 
       const after = await readReagent(s, id);
       expect(Number(after?.stock), "stock 은 정확히 amount 만큼 증가").toBe(before + amount);
-      expect(after?.intake_date).toBe(date);
+      // d7 §25 QA (3): 최근 입고일 = 가장 늦은 입고일 유지 — 임시 시약의 첫 입고일(오늘)보다 이른 날짜 입고는 intake_date 를 뒤로 돌리지 않는다
+      const latest = [String(r.intake_date), date].sort().pop();
+      expect(after?.intake_date, `intake_date = 더 늦은 날짜 (${r.intake_date} vs 입고일 ${date})`).toBe(latest);
       // 직접 넣은 임시 시약(min_stock 0)은 자동 기준(d7 §11-1) → 입고하면 기준 = 이번 입고량 × 20%
       expect(r.min_stock_source, "전제: min_stock 0 으로 직접 넣은 시약은 자동 기준").toBe("auto");
       expect([Number(after?.min_stock), after?.min_stock_source, after?.min_stock_auto_basis], "입고 뒤 자동 기준").toEqual([
@@ -213,7 +215,7 @@ for (const role of ["teacher", "admin"] as Role[]) {
       expect(res2.error, `record_intake 2회차: ${res2.error?.message}`).toBeNull();
       const after2 = await readReagent(s, id);
       expect(Number(after2?.stock)).toBe(before + amount + 1);
-      expect(after2?.intake_date).toBe(date2);
+      expect(after2?.intake_date, `두 번째 입고 뒤 intake_date = 더 늦은 날짜 (d7 §25 QA 3)`).toBe([String(after?.intake_date), date2].sort().pop());
       expect(Number(after2?.min_stock), "자동 기준 = 마지막(두 번째) 입고량 × 20% — 합이 아니다").toBe(autoFromIntake(1));
       expect(await logsOf(s, id)).toHaveLength(2);
     } finally {

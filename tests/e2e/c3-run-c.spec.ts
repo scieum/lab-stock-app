@@ -147,8 +147,10 @@ const DOC = {
 const HOME = {
   subtitle: ftext("13-desktop", (n) => n.name === "subtitle" && n.path.includes("page-title"), "부제"),
   todo: ftext("13-desktop", (n) => n.name === "section-title" && n.path.includes("todo-section"), "지금 처리할 것"),
-  tileCaptions: ftexts("13-desktop", (n) => n.name === "caption" && n.path.includes("tile-row")),
-  tileNotes: ftexts("13-desktop", (n) => n.name === "note" && n.path.includes("tile-row")),
+  // sensor-alert-tile 은 조건부 타일(rules sensor.home: 교사·admin, 고장·점검 필요 ≥1 일 때만) — 늘 있는 타일과 따로 센다
+  tileCaptions: ftexts("13-desktop", (n) => n.name === "caption" && n.path.includes("tile-row") && !n.path.includes("sensor-alert-tile")),
+  tileNotes: ftexts("13-desktop", (n) => n.name === "note" && n.path.includes("tile-row") && !n.path.includes("sensor-alert-tile")),
+  sensorTile: ftexts("13-desktop", (n) => n.name === "caption" && n.path.includes("sensor-alert-tile")),
   widgetTitles: ftexts("13-desktop", (n) => n.name === "widget-title" && n.path.includes("widget-grid")),
   more: ftexts("13-desktop", (n) => n.name === "label" && n.path.includes("widget-head") && n.path.includes("button-pill-soft")),
   heads: ftexts("13-desktop", (n) => n.path.includes("table-head") && n.path.includes("data-table") && (n.name === "label" || n.name === "head-cell")),
@@ -196,7 +198,8 @@ test(`[C3][S*] 기대값 원본 (run c): desktop_migrated_screens ⊇ 5·6·7·1
   expect(barLabels("5-desktop"), "5 bottom-bar (결과)").toHaveLength(2);
   expect(DOC.uploadButtons, "7-desktop doc-upload 버튼 = 파일 선택 1개 (촬영하기 없음)").toEqual([PICK_FILE]);
   expect(DOC.uploadButtons).not.toContain(CAMERA);
-  expect(HOME.tileCaptions.length, "13-desktop 타일 3").toBe(3);
+  expect(HOME.tileCaptions.length, "13-desktop 타일 3 (+ 조건부 sensor-alert-tile)").toBe(3);
+  expect(HOME.sensorTile.length, "13-desktop 조건부 sensor-alert-tile 1 (학교 A 는 센서 0 → 화면에는 없음, screen-13-sensor-alert 에서 봄)").toBe(1);
   expect(REORDER.guideMobile, "6 안내 문구 두 폭 같음").toBe(REORDER.guide);
 });
 

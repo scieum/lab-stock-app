@@ -177,7 +177,7 @@ test(`[C1][S${SCREEN}] 기대값 원본: 프레임 5 의 문구·4행·조 수�
   expect((rules as unknown as { app_exceptions: Record<string, string> }).app_exceptions, "rules app_exceptions nav-account-menu").toHaveProperty("nav-account-menu");
   // 1.22: 데스크톱 셸 app-sidebar · sidebar-item (rules desktop_shell, dev-rules 1.11) 도 로그인 후 셸 화면 모두에 더해졌다
   const ds = (rules as unknown as { desktop_shell: { component: string; item: string } }).desktop_shell;
-  expect(screenComponents().sort(), "dev-rules 화면 5 컴포넌트").toEqual([OVERLAY, OUTLINE, PRIMARY, CELL, TOAST, TABLE, UPLOAD, "nav-pill", "nav-account-menu", "tab-bar", "tab-item", ds.component, ds.item, INPUT].sort());
+  expect(screenComponents().sort(), "dev-rules 화면 5 컴포넌트").toEqual([OVERLAY, OUTLINE, PRIMARY, CELL, TOAST, TABLE, UPLOAD, "nav-pill", "nav-account-menu", "tab-bar", "tab-item", "tab-soon", ds.component, ds.item, INPUT].sort()); // tab-soon: dev-rules 1.18 (탭바 있는 모든 모바일 화면)
   expect(BOTTOM_GAP, "시안 bottom-actions 아래 여백").toBeGreaterThan(0);
 });
 
