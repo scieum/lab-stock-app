@@ -167,8 +167,6 @@ export function UsageBatchScreen({ entry, returnHref }: Props) {
     }
     addIds([id]);
     setSessionIds((cur) => new Set(cur).add(id));
-    // d7 §26 QA (4): 시약을 고르면 검색 칸을 비우고 드롭다운을 닫는다
-    closeDropdown();
   };
 
   const submit = (e?: React.FormEvent) => {
