@@ -1,0 +1,8 @@
+{
+  "passed": [],
+  "retries": 0,
+  "screens_passed": [],
+  "stage": "aborted",
+  "baseline_hash": "30e804ed442563292d9c42c2686bdabdeada3d1912b854c2be3ff8fab99bee5a",
+  "note": "판정 전 중단: dev-rules tab-soon 화면 목록 오류(탭바 있는 모든 화면에 나옴) 수정을 위해 run 20261011 다음 run 으로 이어감. builder 커밋 e2f68af·32c5251 은 같은 브랜치에 그대로"
+}
