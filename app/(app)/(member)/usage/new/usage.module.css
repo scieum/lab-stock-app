@@ -6,6 +6,10 @@
  */
 
 .page {
+  /* 저장 바 위 안내 줄이 없을 때 0 (길이 단위가 있는 0 — calc 덧셈용) */
+  --bar-past-extra: calc(var(--space-4) * 0);
+  --bar-hint-extra: calc(var(--space-4) * 0);
+
   display: flex;
   flex-direction: column;
   gap: var(--space-16);
@@ -17,15 +21,29 @@
   flex-direction: column;
   gap: var(--space-16);
   min-width: 0;
-  /* 고정된 저장 바(12 + 48 + 12 + 테두리)만큼 비워 둔다 */
-  padding-bottom: calc(var(--space-12) * 2 + var(--control-height) + var(--border-width));
+  /* 고정된 저장 바(12 + 48 + 12 + 테두리)만큼 비워 둔다 (+ 버튼 위 안내 줄) */
+  padding-bottom: calc(
+    var(--space-12) * 2 + var(--control-height) + var(--border-width) + var(--bar-past-extra) + var(--bar-hint-extra)
+  );
 }
 
 /* past-date-note 한 줄(13 × 줄 높이) + 사이 8 만큼 더 */
-.page[data-past] .mobileColumn {
-  padding-bottom: calc(
-    var(--space-12) * 2 + var(--control-height) + var(--border-width) + var(--font-size-13) * var(--line-height-normal) + var(--space-8)
-  );
+.page[data-past] {
+  --bar-past-extra: calc(var(--font-size-13) * var(--line-height-normal) + var(--space-8));
+}
+
+/* 사용량 helper 한 줄(12 × 줄 높이) + 사이 8 만큼 더 */
+.page[data-hint] {
+  --bar-hint-extra: calc(var(--font-size-12) * var(--line-height-normal) + var(--space-8));
+}
+
+/* d7 §26 QA (5): 저장 버튼 위 helper "사용량을 적어 주세요" (caption 12 · text-muted) */
+.amountHint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
 }
 
 .mobileBar {
@@ -115,5 +133,10 @@
 
   .saveButton {
     width: auto;
+  }
+
+  /* 저장 바가 helper 한 줄만큼 높아지면 본문 아래 여백도 그만큼 (바 80 + 줄 + 사이 8) */
+  .page[data-hint] :global([data-name="page-column"]) {
+    padding-bottom: calc(var(--space-64) + var(--space-16) + var(--bar-hint-extra));
   }
 }
