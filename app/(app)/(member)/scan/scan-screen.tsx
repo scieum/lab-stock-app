@@ -29,6 +29,8 @@ const MODES: SegmentOption[] = [
 ];
 
 const TOAST_MS = 4000;
+/** 토스트 뒤 다른 코드 없이 이만큼 지나면 같은 코드를 다시 받는다 (과도한 반복만 막기) */
+const REPEAT_RESET_MS = 2500;
 const SCAN_PATH = "/scan";
 
 /** 탭이 보이는가 (다른 탭·앱으로 가면 카메라를 끈다) */
@@ -72,6 +74,25 @@ export function ScanScreen({ initialResult, initialToast }: Props) {
   const toastSeq = useRef(1);
   const desktopEntryRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  /** useQrScanner 의 resetRepeat (onCode 가 훅보다 먼저 만들어져 ref 로 잇는다) */
+  const resetRepeatRef = useRef<() => void>(() => {});
+  const repeatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearRepeatTimer = useCallback(() => {
+    if (repeatTimer.current) clearTimeout(repeatTimer.current);
+    repeatTimer.current = null;
+  }, []);
+
+  /** 토스트를 띄운 QR 은 잠시 뒤 다시 받을 수 있게 (그 사이 다른 코드를 읽으면 거르개가 알아서 바뀐다) */
+  const scheduleRepeatReset = useCallback(() => {
+    clearRepeatTimer();
+    repeatTimer.current = setTimeout(() => {
+      repeatTimer.current = null;
+      resetRepeatRef.current();
+    }, REPEAT_RESET_MS);
+  }, [clearRepeatTimer]);
+
+  useEffect(() => clearRepeatTimer, [clearRepeatTimer]);
 
   /** 세션이 끝났으면 로그인 뒤 /scan 으로 돌아온다 */
   const toLogin = useCallback(() => router.push(`/login?next=${encodeURIComponent(SCAN_PATH)}`), [router]);
@@ -96,32 +117,43 @@ export function ScanScreen({ initialResult, initialToast }: Props) {
     replaceAddress(cabinet.id);
   }, []);
 
+  // 닫으면 새 스캔 세션 — 같은 시약장 QR 을 다시 비추면 다시 열린다
   const closeResult = useCallback(() => {
+    clearRepeatTimer();
+    resetRepeatRef.current();
     setResult(null);
     replaceAddress(null);
-  }, []);
+  }, [clearRepeatTimer]);
 
   // QR 읽기 (같은 코드 연속은 useQrScanner 의 반복 거르개가 한 번만 넘긴다)
   const onCode = useCallback(
     (text: string) => {
       const cabinetId = parseCabinetQr(text, window.location.origin);
+      clearRepeatTimer();
       if (!cabinetId) {
         showToast(SCAN_TEXT.notCabinetQr);
+        scheduleRepeatReset();
         return;
       }
       startTransition(async () => {
         const r: ScanFindResult = await findCabinetAction({ by: "qr", cabinetId });
         if (r.kind === "found") openResult(r.cabinet);
         else if (r.kind === "signed-out") toLogin();
-        else showToast(r.text);
+        else {
+          showToast(r.text);
+          scheduleRepeatReset();
+        }
       });
     },
-    [openResult, showToast, toLogin],
+    [openResult, showToast, toLogin, clearRepeatTimer, scheduleRepeatReset],
   );
 
   // 카메라: 폭을 안 뒤(하이드레이션 뒤) · 결과 닫힘 · 탭 보임 · (모바일) QR 스캔 탭일 때만
   const cameraOn = desktop !== null && visible && result === null && (desktop || mode === "scan");
-  const { videoRef, status, torchOn, torchSupported, toggleTorch } = useQrScanner({ active: cameraOn, onCode });
+  const { videoRef, status, torchOn, torchSupported, toggleTorch, resetRepeat } = useQrScanner({ active: cameraOn, onCode });
+  useEffect(() => {
+    resetRepeatRef.current = resetRepeat;
+  }, [resetRepeat]);
   const unavailable = status === "unavailable";
 
   const submitNumber = (raw: string) => {
@@ -198,7 +230,7 @@ export function ScanScreen({ initialResult, initialToast }: Props) {
             focusKey={result.id}
           >
             {result.rows.map((r) => (
-              <ReagentRow key={r.id} title={r.name} body={r.stock} caption={r.slot} lowStock={r.lowStock} href={`/reagents/${r.id}`} />
+              <ReagentRow key={r.id} title={r.name} body={r.stock} caption={r.slot} lowStock={r.lowStock} href={`/reagents/${r.id}`} chevron={false} />
             ))}
           </QrResultSheet>
         ) : null}
