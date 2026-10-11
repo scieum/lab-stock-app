@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { Toast } from "@/components/ex-toast";
 import { DesktopOnly, MobileOnly } from "@/components/viewport-only";
@@ -45,22 +46,44 @@ const TOAST_MS = 4000;
  * 삭제 확인(ex-modal-card)은 비모달이다 — 닫기: Esc · "취소". 학교·호출자 역할 값은 보내지 않는다.
  */
 export function VendorsScreen({ vendors: serverVendors, common: serverCommon }: Props) {
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>("school");
   /**
    * 즐겨찾기 (d7 §12-1): 별표를 누르면 바로 바꿔 보여 주고 저장한다. 실패하면 되돌리고 토스트.
    * 판매처 id → 누른 뒤의 값. 서버가 새 목록을 내려 주면 비운다(서버 값이 맞다).
    */
   const [favoriteOverride, setFavoriteOverride] = useState<Map<string, boolean>>(() => new Map());
+  /**
+   * 저장·삭제 응답을 목록에 바로 반영한다 (d7 §26 화면 9 — 새 목록 props 가 늦게 와도 옛 연락처가 남지 않게).
+   * 판매처 id → 저장한 행(수정·새 등록) 또는 null(삭제). 서버가 새 목록을 내려 주면 비운다.
+   */
+  const [rowOverride, setRowOverride] = useState<Map<string, VendorRegisterVendor | null>>(() => new Map());
   const [seenLists, setSeenLists] = useState({ serverVendors, serverCommon });
   if (seenLists.serverVendors !== serverVendors || seenLists.serverCommon !== serverCommon) {
     setSeenLists({ serverVendors, serverCommon });
     setFavoriteOverride(new Map());
+    setRowOverride(new Map());
   }
   const withFavorite = <T extends { id: string; favorite?: boolean }>(list: T[]): T[] =>
     favoriteOverride.size === 0
       ? list
       : list.map((v) => (favoriteOverride.has(v.id) ? { ...v, favorite: favoriteOverride.get(v.id) } : v));
-  const vendors = withFavorite(serverVendors);
+  const withRows = (list: VendorRegisterVendor[]): VendorRegisterVendor[] => {
+    if (rowOverride.size === 0) return list;
+    const known = new Set(list.map((v) => v.id));
+    const merged: VendorRegisterVendor[] = [];
+    for (const v of list) {
+      if (!rowOverride.has(v.id)) merged.push(v);
+      else {
+        const row = rowOverride.get(v.id);
+        // 즐겨찾기는 저장 응답에 없다 — 목록 값을 그대로 둔다
+        if (row) merged.push({ ...v, ...row, favorite: v.favorite });
+      }
+    }
+    for (const [id, row] of rowOverride) if (row && !known.has(id)) merged.push(row);
+    return merged.sort((a, b) => a.name.localeCompare(b.name, "ko"));
+  };
+  const vendors = withFavorite(withRows(serverVendors));
   const common = withFavorite(serverCommon);
   /** 판매처마다 마지막 요청 번호 — 늦게 온 이전 응답이 새 상태를 되돌리지 않게 */
   const favoriteSeq = useRef(new Map<string, number>());
@@ -136,6 +159,9 @@ export function VendorsScreen({ vendors: serverVendors, common: serverCommon }: 
           return;
         }
         const saved = res.vendor;
+        // 목록에 바로 합친다 (새 등록은 추가, 수정은 덮어쓰기) — 서버 목록은 router.refresh 로 다시 받는다
+        setRowOverride((m) => new Map(m).set(saved.id, { ...saved, favorite: false }));
+        router.refresh();
         // 등록 시트·카드(시안 1.17 9)를 닫고 목록으로 — 방금 저장한 행을 강조하고 토스트
         setForm(null);
         setResetKey((k) => k + 1);
@@ -174,6 +200,8 @@ export function VendorsScreen({ vendors: serverVendors, common: serverCommon }: 
           setDeleteError(res.error);
           return;
         }
+        setRowOverride((m) => new Map(m).set(id, null));
+        router.refresh();
         setDeletingId(null);
         setForm((f) => (f?.mode === "edit" && f.vendor.id === id ? null : f));
         setFormError(null);
