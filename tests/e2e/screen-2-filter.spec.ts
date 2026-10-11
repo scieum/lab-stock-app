@@ -48,7 +48,8 @@ const SECTION_ORDER = ["정렬", "보관 분류", "보관 위치"];
 
 // ---------- 화면 locator ----------
 const main = (page: Page) => page.locator("main");
-const button = (page: Page) => main(page).locator(sel("list-filter-button"));
+/** list-filter-button 의 누르는 버튼 — 데스크톱은 1.26 시안대로 바깥 틀(list-filter-button) 안 button-pill-soft 버튼, 모바일은 틀 자체가 버튼 */
+const button = (page: Page) => main(page).locator(`button${sel("list-filter-button")}, ${sel("list-filter-button")} button`).first();
 const sheet = (page: Page) => page.locator(sel("list-filter-sheet"));
 const chipRow = (page: Page) => main(page).locator(sel("filter-chip-row"));
 const emptyCard = (page: Page) => main(page).locator(sel("ex-empty-state-card"));

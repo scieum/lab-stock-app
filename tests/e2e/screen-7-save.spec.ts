@@ -254,6 +254,8 @@ test(`[C1][S${SCREEN}] ${ROLE_LABEL.teacher} 입고일을 바꿔 저장: intake_
   try {
     await waitIntake(page, "intake");
     const temp = await createTempReagent(page, name, START_STOCK, UNITS[1]);
+    const beforeDate = (await dbReagent(page, temp.id))?.intake_date;
+    expect(beforeDate, "임시 시약 입고일").toBeTruthy();
     await page.goto(intakePath({ reagent: temp.id }));
     await waitIntake(page, "intake");
     await expectSelected(page, name);
@@ -268,7 +270,8 @@ test(`[C1][S${SCREEN}] ${ROLE_LABEL.teacher} 입고일을 바꿔 저장: intake_
     expect(data ?? [], "intake_logs 1행").toHaveLength(1);
     expect(data![0].intake_date, "intake_logs.intake_date").toBe(picked);
     const after = await dbReagent(page, temp.id);
-    expect(after?.intake_date, "reagents.intake_date").toBe(picked);
+    // d7 §25 QA (3): 최근 입고일 = 가장 늦은 입고일 유지 (고른 날짜가 더 이르면 그대로)
+    expect(after?.intake_date, `reagents.intake_date = 더 늦은 날짜 (${beforeDate} vs ${picked})`).toBe([String(beforeDate), picked].sort().pop());
     expect(after?.stock, "stock +1").toBe(START_STOCK + 1);
   } finally {
     const left = await dropTempReagents(page, name).catch(() => -1);
