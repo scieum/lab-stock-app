@@ -70,20 +70,23 @@ export function InventorySwitch({ active, base = "", className }: Props) {
     { kind: "sensors", label: "센서" },
   ];
   return (
-    <nav
+    <div
       data-component="inventory-switch"
+      role="tablist"
       aria-label="시약 · 센서 전환"
       className={[styles.track, className ?? ""].filter(Boolean).join(" ")}
     >
       {items.map((it) =>
         it.kind === active ? (
-          <SegmentedControlActive key={it.kind} role="link" aria-current="page" aria-selected={undefined} onClick={() => rememberInventory(it.kind)}>
+          <SegmentedControlActive key={it.kind} onClick={() => rememberInventory(it.kind)}>
             {it.label}
           </SegmentedControlActive>
         ) : (
           <Link
             key={it.kind}
             href={inventoryHref(it.kind, base)}
+            role="tab"
+            aria-selected="false"
             className={styles.option}
             onClick={() => rememberInventory(it.kind)}
           >
@@ -92,6 +95,6 @@ export function InventorySwitch({ active, base = "", className }: Props) {
           </Link>
         ),
       )}
-    </nav>
+    </div>
   );
 }

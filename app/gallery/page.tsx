@@ -126,14 +126,13 @@ import { sampleFilterCabinets } from "./filter/sample";
 import { sampleMsdsCandidates } from "./msds/sample";
 import { SAMPLE_TODAY as DOC_TODAY, sampleDocReagents, sampleDocRows } from "./intake/sample";
 import { BulkActionBar } from "@/components/bulk-action-bar";
-import { BulkDeleteConfirm } from "@/components/bulk-action-bar/confirm";
 import { InventorySwitch } from "@/components/inventory-switch";
 import { ListSelectToggle } from "@/components/list-select-toggle";
 import { RecordAdd } from "@/components/record-add";
 import { SelectCheckbox } from "@/components/select-checkbox";
 import { SensorAdd } from "@/components/sensor-add";
 import { SensorAlertTile } from "@/components/sensor-alert-tile";
-import { SensorDelete, SensorDeleteConfirm } from "@/components/sensor-delete";
+import { SensorDelete } from "@/components/sensor-delete";
 import { SensorDetail } from "@/components/sensor-detail";
 import { SensorEdit } from "@/components/sensor-edit";
 import { SensorForm } from "@/components/sensor-form";
@@ -1072,8 +1071,9 @@ export default function GalleryPage() {
           <ReagentRow title="과산화수소" body="500 mL" caption="입고 2026.05.20" selected leading={<SelectCheckbox checked />} />
           <ReagentRow title="과망가니즈산칼륨" body="25 g" caption="입고 2026.08.20" leading={<SelectCheckbox checked={false} />} />
           <BulkActionBar count={5} fixed={false} />
-          <BulkDeleteConfirm kind="reagent" names={["과산화수소", "구리 가루", "글리세린", "나프탈렌", "녹말 가루"]} sheet={false} />
-          <BulkDeleteConfirm kind="sensor" names={["무선 pH 센서", "운동 센서"]} sheet={false} />
+          <Link href="/gallery/sensors" className={styles.more}>
+            여러 개 삭제 · 센서 삭제 확인 카드 보기 (/gallery/sensors)
+          </Link>
         </Item>
 
         <Item name="record-add (시안 10 — 기록 추가)">
@@ -1122,7 +1122,6 @@ export default function GalleryPage() {
           />
           <SensorEdit href="/sensors/s-2/edit" />
           <SensorDelete name="무선 pH 센서" defaultOpen />
-          <SensorDeleteConfirm name="무선 pH 센서" sheet={false} />
         </Item>
 
         <Item name="sensor-form · sensor-type-select · sensor-maker-select (시안 17-form)">

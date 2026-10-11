@@ -30,7 +30,7 @@ type Props = {
 export function SensorDelete({ name, onSelect, disabled, buttonRef, defaultOpen }: Props) {
   return (
     <div data-component="sensor-delete" className={styles.wrap}>
-      <ReagentMoreMenu component="more-menu" label={`${name} 더보기`} buttonRef={buttonRef} defaultOpen={defaultOpen}>
+      <ReagentMoreMenu component={null} label={`${name} 더보기`} buttonRef={buttonRef} defaultOpen={defaultOpen}>
         <button type="button" role="menuitem" className={styles.item} onClick={onSelect} disabled={disabled}>
           {SENSOR_TEXT.deleteItem}
         </button>

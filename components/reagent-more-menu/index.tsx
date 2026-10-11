@@ -12,8 +12,8 @@ type Props = {
   /** 갤러리 예시 — 처음부터 열린 메뉴 */
   defaultOpen?: boolean;
   className?: string;
-  /** 바깥 틀의 data-component (기본 reagent-more-menu — 화면 17 센서 ⋯ 는 sensor-delete 안의 more-menu) */
-  component?: string;
+  /** 바깥 틀의 data-component (기본 reagent-more-menu). null = 붙이지 않음 (화면 17 센서 ⋯ — 바깥 sensor-delete 가 이름을 가진다) */
+  component?: string | null;
   /** ⋯ 버튼 ref (확인 모달을 닫은 뒤 포커스를 돌려줄 곳) */
   buttonRef?: React.RefObject<HTMLButtonElement | null>;
 };
@@ -131,7 +131,7 @@ export function ReagentMoreMenu({
       {body}
     </div>
   ) : (
-    <div ref={wrapRef} data-component={component} className={wrapClass} onKeyDown={onKeyDown}>
+    <div ref={wrapRef} data-component={component ?? undefined} className={wrapClass} onKeyDown={onKeyDown}>
       {body}
     </div>
   );
