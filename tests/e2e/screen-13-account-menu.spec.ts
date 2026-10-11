@@ -2,6 +2,7 @@
 // 로그인 후 셸이 있는 화면(dev-rules components["nav-account-menu"])마다 정확히 1개 · 로그인 전·둘러보기에는 0. C1 · R-ui
 // 공용 계정은 메뉴를 열고 닫기만 한다 — "로그아웃" 은 누르지 않는다 (로그아웃 흐름은 shell-logout.spec.ts 의 일회용 계정).
 // NoSchoolScreen(프로필 없는 세션)의 0 은 shell-no-school.spec.ts 에서 본다.
+import { newFrame } from "./desk-helpers";
 import { test, expect, type Page } from "@playwright/test";
 import { openAs } from "./auth-state";
 import { ROLE_LABEL, SCHOOL_A_ROLES } from "./db-helpers";
@@ -34,10 +35,12 @@ async function pathOf(page: Page, screen: number): Promise<string> {
   return routeOf(3).replace(/\[[^\]]+\]/, one.data!.id as string);
 }
 
-test(`[C1][S${SCREEN}] 기대값 원본: rules.json app_exceptions["${MENU}"] = 학교명 옆 ▾ · "${LOGOUT}" 1개 · dev-rules components["${MENU}"] = 로그인 후 셸 화면 (2~11·13, 화면 12 는 다음 run)`, () => {
+test(`[C1][S${SCREEN}] 기대값 원본: rules.json app_exceptions["${MENU}"] = 학교명 옆 ▾ · "${LOGOUT}" 1개 · dev-rules components["${MENU}"] = 로그인 후 셸 화면 (2~11·13·17, 화면 12 는 다음 run · 16 은 dev-rules 에 없음)`, () => {
   expect(EXCEPTION).toMatch(/▾/);
   expect(EXCEPTION).toContain(`'${LOGOUT}' 1개`);
-  expect(SCREENS, "셸 화면").toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13]);
+  // 1.26: 화면 17 센서도 로그인 후 셸 (프레임 17-mobile · 17-desktop 에 nav-account-menu)
+  expect(SCREENS, "셸 화면").toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 17]);
+  for (const f of ["17-mobile", "17-desktop"]) expect(newFrame(f).filter((n) => n.name === MENU).length, `프레임 ${f} ${MENU} 1`).toBe(1);
   for (const s of [1, 14, 15]) expect(SCREENS, `로그인 전 화면 ${s} 에 없음`).not.toContain(s);
   expect(ROUTE_AUTH.logout, "route_auth.logout: 둘러보기·로그인 전·NoSchoolScreen 에는 없음").toMatch(/둘러보기·로그인 전·NoSchoolScreen 에는 없음/);
 });

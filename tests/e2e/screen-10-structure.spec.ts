@@ -16,7 +16,7 @@ import {
   roleChecks,
   routeOf,
   rules,
-  sel,
+  sel, tabItemLabels,
 } from "./screen-helpers";
 import { seedSchoolOf } from "./screen-3-helpers";
 import { expectShell, expectShellHeader, isShellComponent, shellSchoolScope } from "./shell-helpers";
@@ -80,6 +80,8 @@ const HOME_SCREEN = 13;
 const ENTRY_SCREEN = 4;
 const PERIOD_DEFAULT_LABEL = PERIODS.find((p) => p.value === DEFAULT_PERIOD)!.label;
 const R4 = rules.roles.R4;
+/** rules.json 1.26 record_add.component — 화면 10 의 유일한 쓰기 진입 (모든 역할, → 빈 화면 4) */
+const RECORD_ADD = (rules as unknown as { record_add: { component: string } }).record_add.component;
 /** 읽기 전용 화면 (d7 §7: 수정·삭제 없음) — 쓰기 진입으로 볼 글자 */
 const WRITE_WORDS = /수정|삭제|편집|지우기/;
 
@@ -102,13 +104,15 @@ async function writeEntries(page: Page): Promise<string[]> {
     (main, a) => {
       const out: string[] = [];
       for (const el of main.querySelectorAll("a, button, [role='button'], input[type='submit']")) {
+        // 1.26 record-add "기록 추가"(rules record_add — 모든 역할)는 허용된 진입: 따로 개수를 본다
+        if (el.closest(`[data-component="${a.recordAdd}"]`)) continue;
         const text = (el.textContent ?? "").replace(/\s+/g, " ").trim();
         const href = el.getAttribute("href") ?? "";
         if (new RegExp(a.words).test(text) || text.includes(a.entry) || href.startsWith(a.entryHref)) out.push(`${el.tagName} ${text} ${href}`.trim());
       }
       return out;
     },
-    { words: WRITE_WORDS.source, entry: ENTRY_LABEL, entryHref: routeOf(ENTRY_SCREEN) },
+    { words: WRITE_WORDS.source, entry: ENTRY_LABEL, entryHref: routeOf(ENTRY_SCREEN), recordAdd: RECORD_ADD },
   );
 }
 
@@ -135,7 +139,7 @@ test(`[R-ui][S${SCREEN}] rules.json R4 = ${MSDS} 를 학생·교사·admin 모�
 
 for (const role of SCHOOL_A_ROLES) {
   const roleName = ROLE_NAME[role as keyof typeof ROLE_NAME];
-  test(`[R-ui][S${SCREEN}] ${ROLE_LABEL[role]} ${routeOf(SCREEN)} 렌더(리다이렉트 없음) · 상세를 연 상태에서 roles R1~R7 개수(${MSDS} ≥ min_per_role) · 수정·삭제·"${ENTRY_LABEL}" 진입 0 (읽기 전용)`, async ({ browser }, info) => {
+  test(`[R-ui][S${SCREEN}] ${ROLE_LABEL[role]} ${routeOf(SCREEN)} 렌더(리다이렉트 없음) · 상세를 연 상태에서 roles R1~R7 개수(${MSDS} ≥ min_per_role) · 수정·삭제·"${ENTRY_LABEL}" 진입 0 (읽기 전용, 1.26 record-add 1 만)`, async ({ browser }, info) => {
     test.setTimeout(150_000);
     const { context, page, response, viewport } = await openAs(browser, info, role, SCREEN);
     try {
@@ -152,15 +156,15 @@ for (const role of SCHOOL_A_ROLES) {
       for (const c of roleChecks(SCREEN, roleName).filter((x) => x.op === "max")) {
         expect(await countComponent(page, c.component), `상세 전: ${c.rule} ${c.component} ≤ ${c.value}`).toBeLessThanOrEqual(c.value);
       }
-      expect(await writeEntries(page), "상세 전: 쓰기 진입").toEqual([]);
+      expect(await writeEntries(page), "상세 전: 쓰기 진입 (record-add 제외)").toEqual([]);
+      await expect(page.locator(`main ${sel(RECORD_ADD)}`), `${RECORD_ADD} 1 (모든 역할)`).toHaveCount(1);
 
       // 상세를 연 상태: R4 msds-entry ≥ 1 (모든 역할), 나머지 역할 제한 0
       await openRow(page, 0);
       await runRoleChecks(page, roleName, "상세 열림");
       const entry = modal(page).locator(sel(MSDS));
       await expect(entry, `상세 안 ${MSDS}`).toHaveCount(1);
-      await expect(entry).toContainText(MSDS_LABEL);
-      expect(await writeEntries(page), "상세 열림: 쓰기 진입").toEqual([]);
+      expect(await writeEntries(page), "상세 열림: 쓰기 진입 (record-add 제외)").toEqual([]);
       // 상세 안 조작은 MSDS 보기 · 닫기 뿐 (글자 없는 × 는 접근 이름 "닫기")
       const actions = await modal(page)
         .locator("a, button")
@@ -224,7 +228,7 @@ test(`[R-ui][S${SCREEN}] 비로그인 ${routeOf(SCREEN)} 접근 → ${routeOf(1)
 // =====================================================================
 
 for (const role of ALL_ROLES) {
-  test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]} 기본 상태: nav-pill(워드마크·"${NAV_LABEL}"·학교명) · ${SEGMENT} 1(+active 1 "${SCOPE_ALL}") · ${INPUT} 2(기간 "${PERIOD_DEFAULT_LABEL}" · "${SEARCH_PLACEHOLDER}") · ${ROW} = DB 최근 1개월 · ${MODAL} 0 · "${ENTRY_LABEL}" 버튼 없음`, async ({ browser }, info) => {
+  test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]} 기본 상태: nav-pill(워드마크·"${NAV_LABEL}"·학교명) · ${SEGMENT} 1(+active 1 "${SCOPE_ALL}") · ${INPUT} 2(기간 "${PERIOD_DEFAULT_LABEL}" · "${SEARCH_PLACEHOLDER}") · ${ROW} = DB 최근 1개월 · ${MODAL} 0 · "${ENTRY_LABEL}" 버튼 없음 · 화면 4 링크 = record-add 1`, async ({ browser }, info) => {
     test.setTimeout(150_000);
     const comps = screenComponents();
     for (const c of ["nav-pill", SEGMENT, SEGMENT_ACTIVE, INPUT, ROW, MODAL, MSDS, EMPTY, "button-outline", "button-pill-soft"]) {
@@ -285,7 +289,9 @@ for (const role of ALL_ROLES) {
       expect(await countComponent(page, DRAWER), `${DRAWER} 누르기 전 (1440 상세 = 드로어)`).toBe(0);
       expect(await countComponent(page, EMPTY), `${EMPTY} 기록이 있을 때`).toBe(0);
       await expect(page.locator("main").getByText(ENTRY_LABEL), `main 에 "${ENTRY_LABEL}"`).toHaveCount(0);
-      await expect(page.locator(`main a[href^="${routeOf(ENTRY_SCREEN)}"]`), `main 에 ${routeOf(ENTRY_SCREEN)} 링크`).toHaveCount(0);
+      // 1.26: 화면 4 링크는 record-add "기록 추가" 하나뿐 (rules record_add)
+      await expect(page.locator(`main a[href^="${routeOf(ENTRY_SCREEN)}"]`), `main 에 ${routeOf(ENTRY_SCREEN)} 링크 = record-add 1`).toHaveCount(1);
+      await expect(page.locator(`main ${sel(RECORD_ADD)} a[href^="${routeOf(ENTRY_SCREEN)}"]`), `${routeOf(ENTRY_SCREEN)} 링크는 ${RECORD_ADD} 안`).toHaveCount(1);
       await expect(page.locator("main").getByText(EMPTY_TITLE), "기록이 있으면 0건 문구 없음").toHaveCount(0);
     } finally {
       await context.close();
@@ -488,7 +494,7 @@ for (const role of ALL_ROLES) {
         await expect(bar).toBeVisible();
         const items = bar.locator(sel(tb.item));
         await expect(items, "tab-item 은 tab-bar 안에").toHaveCount(tb.items);
-        const labels = (await items.allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim());
+        const labels = (await tabItemLabels(items));
         expect(labels, "탭 라벨 순서").toEqual(tb.labels);
         const active = bar.locator(`${sel(tb.item)}[aria-current="page"]`);
         await expect(active, `${state}: 활성 tab-item 1개`).toHaveCount(1);

@@ -41,9 +41,16 @@ export const titleOf = (viewport: ViewportName) => (viewport === "desktop" ? DES
 export const DRAWER = "detail-drawer";
 export const detailOf = (page: Page) => (isDeskPage(page) ? DRAWER : MODAL);
 /** 1440 드로어 정보 줄 라벨 (새 프레임 10-desktop detail-drawer info-row row-label 순서) */
+/** d7 §25 QA (5): 기록 상세 라벨 두 폭 모두 "기록한 날" — 시안 10-desktop 드로어의 "기록 시각" 을 이 라벨로 읽는다 (데스크톱 표 머리는 그대로) */
+export const RECORDED_LABEL = (() => {
+  const d7 = readFileSync(join(process.cwd(), "harness", "d7-data.md"), "utf8");
+  const m = /\(5\) 기록 상세 라벨 두 폭 모두 "([^"]+)"/.exec(d7);
+  if (!m) throw new Error("d7 §25 QA (5) 라벨을 읽지 못함");
+  return m[1];
+})();
 export const DESK_DETAIL_LABELS = newFrame("10-desktop")
   .filter((n) => n.name === "row-label" && n.path.includes(DRAWER) && n.text)
-  .map((n) => n.text!.characters);
+  .map((n) => (n.text!.characters === "기록 시각" ? RECORDED_LABEL : n.text!.characters));
 export const SCOPE_ALL = "전체";
 export const SCOPE_MINE = "내 기록";
 export const SEARCH_PLACEHOLDER = "시약명 검색";
@@ -635,15 +642,9 @@ export async function expectDetail(page: Page, r: HistoryRow): Promise<void> {
     expect(d.fields["사용일"], "상세 사용일 = used_on").toBe(r.used_on);
     expect(d.fields["사용일"], "사용일 형식 YYYY-MM-DD").toMatch(/^\d{4}-\d{2}-\d{2}$/);
     const cap = captionOf(r);
-    if (desk) {
-      // 1440 드로어 "기록 시각"(시안 10-desktop): 같은 날 = "HH:mm", 기록한 날이 사용일과 다르면 날짜까지 "YYYY-MM-DD HH:mm" (d7 §15 기록한 날)
-      const at = d.fields["기록 시각"];
-      expect(cap ? [detailDateTime(r.used_at), `${detailDateTime(r.used_at)} ${cap}`] : [recordedTime(r.used_at)], `드로어 기록 시각 (${at})`).toContain(at);
-    } else {
-      // 기록한 날 칸: 기록 시각, 기록한 날이 사용일과 다르면 그 뒤에 캡션이 붙을 수 있다
-      const recorded = d.fields["기록한 날"];
-      expect([detailDateTime(r.used_at), ...(cap ? [`${detailDateTime(r.used_at)} ${cap}`] : [])], `상세 기록한 날 (${recorded})`).toContain(recorded);
-    }
+    // 기록한 날 칸 (d7 §25 QA 5: 두 폭 같은 라벨 "기록한 날"): 기록한 일시, 기록한 날이 사용일과 다르면 그 뒤에 캡션이 붙을 수 있다
+    const recorded = d.fields[RECORDED_LABEL];
+    expect([detailDateTime(r.used_at), ...(cap ? [`${detailDateTime(r.used_at)} ${cap}`] : [])], `상세 ${RECORDED_LABEL} (${recorded})`).toContain(recorded);
     // 상세의 캡션: d7 §15 "행·상세" + "데스크톱 상세는 시안대로"(10-desktop 은 캡션 없이 '기록한 날' 칸) — 다를 때 캡션은 있어도 없어도 되지만
     // 같은 날이면 없어야 하고, 있다면 기록한 날의 문구여야 한다
     const caps = d.texts.filter((t) => CAPTION_RE.test(t));
@@ -664,8 +665,9 @@ export async function expectDetail(page: Page, r: HistoryRow): Promise<void> {
   const entry = modal(page).locator(sel(MSDS));
   await expect(entry, `상세 안 ${MSDS} 1개`).toHaveCount(1);
   await expect(entry).toBeVisible();
-  // 1.17 시안: msds-entry 자체가 pill (예전 시안의 안쪽 button-pill-soft 는 요구하지 않는다) — "MSDS 보기" 누를 것 1개
-  await expect(entry.locator("a, button").filter({ hasText: MSDS_LABEL }), `${MSDS} 안 "${MSDS_LABEL}" (링크·버튼)`).toHaveCount(1);
+  // 1.17 시안: msds-entry 자체가 pill (예전 시안의 안쪽 button-pill-soft 는 요구하지 않는다) — "MSDS 보기" 누를 것 1개.
+  // d7 §25 QA (8): MSDS 없는 시약(msds_url null)의 기록 상세에는 "MSDS 보기" 진입이 없다 (msds-entry 는 R4 대로 남고 안내만)
+  await expect(entry.locator("a, button").filter({ hasText: MSDS_LABEL }), `${MSDS} 안 "${MSDS_LABEL}" (링크·버튼) — msds_url ${r.msds_url ? "있음" : "없음"}`).toHaveCount(r.msds_url ? 1 : 0);
   await expect(closeButton(page), `button-outline "${CLOSE_LABEL}"`).toHaveCount(1);
   await expect(closeButton(page)).toBeVisible();
 }

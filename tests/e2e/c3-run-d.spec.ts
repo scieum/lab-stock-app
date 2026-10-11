@@ -9,9 +9,11 @@
 //   2g/3g/16g = data-table + 드로어(주소 /demo/…, 읽기 전용)
 // - 390 은 변경 없음 (모바일 그대로)
 // 기대값은 규칙 파일과 새 프레임(design/frames)에서만 읽는다. 비로그인 컨텍스트만 쓴다 (공용 데이터 읽기만).
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { DESKTOP_SHELL, frameSidebarItems } from "../desktop-shell";
-import { desktopMigratedScreens } from "../frames";
+import { NEW_FRAMES_DIR, desktopMigratedScreens } from "../frames";
 import { DRAWER, DRAWER_W, SIDEBAR_W, TABLE, drawer, drawerClose, drawerTitle, waitDrawer, waitWidthSettled } from "./desk-helpers";
 import { GUEST, demoReagents, guestDetailPath, guestRouteOf, openGuest } from "./guest-helpers";
 import {
@@ -36,6 +38,31 @@ const REQ15 = PRE.desktop_required[String(LANDING)] ?? [];
 const DISPLAY = R.typography.display_sizes;
 const GUEST_DESK = GUEST as unknown as typeof GUEST & { sidebar_locks: number; desktop: string };
 const SIDEBAR_LOCKS = GUEST_DESK.sidebar_locks;
+
+/** rules guest.desktop "2026-10-11 '센서'도 활성(데모 센서 읽기 전용)" — 1.26 에 더한 둘러보기 메뉴 */
+const GUEST_MENU_ADDED = (() => {
+  const m = /'([^']+)'도 활성/.exec(GUEST_DESK.desktop);
+  if (!m) throw new Error("rules guest.desktop 에서 더한 메뉴를 읽지 못함");
+  return m[1];
+})();
+/** 둘러보기 화면 중 시안 프레임이 있는 것 (17g 는 design/frames 에 없음 — 구조만 본다, dev-rules 1.18) */
+const hasGuestFrame = (g: number, vp: ViewportName) => existsSync(join(NEW_FRAMES_DIR, `${g}-guest-${vp}.json`));
+/** 17g 처럼 프레임이 없는 둘러보기 화면의 사이드바 셸 기준 = 2-guest-desktop (같은 셸, 활성만 다름) */
+const SHELL_BASE_GUEST = 2;
+/**
+ * 둘러보기 사이드바 기대값: 시안 {g}-guest-desktop(없으면 2-guest-desktop) 메뉴 + 1.26 에 더한 '센서'(시안에 없으면 '시약' 바로 아래).
+ * 활성 = 시안(프레임 없는 17g 는 '센서').
+ */
+function guestMenuWant(g: number): { label: string; active: boolean }[] {
+  const own = hasGuestFrame(g, "desktop");
+  const base = frameSidebarItems(`${own ? g : SHELL_BASE_GUEST}-guest-desktop`).map((w) => ({ label: w.label, active: w.active }));
+  if (!base.some((w) => w.label === GUEST_MENU_ADDED)) {
+    const i = base.findIndex((w) => w.label === "시약");
+    base.splice(i + 1, 0, { label: GUEST_MENU_ADDED, active: false });
+  }
+  if (!own) for (const w of base) w.active = w.label === GUEST_MENU_ADDED;
+  return base;
+}
 
 /** 화면 글자 정리 */
 const norm = (s: string) => s.replace(/\s+/g, " ").trim();
@@ -102,7 +129,9 @@ test(`[C3][S*] 기대값 원본 (run d): pre_login.screens ${PRE.screens.join("�
   const bands = frameBandFills();
   for (const b of bands) expect(bandHex, `시안 띠 ${b}`).toContain(b);
   // 둘러보기 사이드바 잠금: 시안 4장 모두 사이드바 안 guest-lock = sidebar_locks
-  for (const s of GUEST.screens) {
+  expect(GUEST.screens.filter((g) => !hasGuestFrame(g, "desktop")), "시안 프레임이 없는 둘러보기 화면 = 17 (dev-rules 1.18: 17g 는 구조만)").toEqual([17]);
+  expect(GUEST_MENU_ADDED, "rules guest.desktop 1.26 더한 메뉴").toBe("센서");
+  for (const s of GUEST.screens.filter((g) => hasGuestFrame(g, "desktop"))) {
     const locks = frameOf(`${s}-guest-desktop`).nodes.filter((n) => n.name === GUEST.lock && n.path.includes(DESKTOP_SHELL.component)).length;
     expect(locks, `시안 ${s}-guest-desktop 사이드바 잠금`).toBe(SIDEBAR_LOCKS);
   }
@@ -654,6 +683,7 @@ async function guestPaths(): Promise<Record<number, string>> {
     2: guestRouteOf(2),
     3: guestDetailPath(demo.id),
     16: guestRouteOf(16).replace(/\[[^\]]+\]/, demo.id),
+    17: guestRouteOf(17),
   };
 }
 
@@ -673,7 +703,8 @@ for (const g of GUEST.screens) {
         await expect(page.locator(sel(rules.tab_bar.component)), "390 tab-bar 1").toHaveCount(1);
         return;
       }
-      const frame = `${g}-guest-desktop`;
+      // 17g 는 시안 프레임이 없다 — 셸(브랜드 · 계정 · 배너 문구)은 같은 셸의 2-guest-desktop, 메뉴는 guestMenuWant, 본문은 구조만
+      const frame = `${hasGuestFrame(g, "desktop") ? g : SHELL_BASE_GUEST}-guest-desktop`;
       const sb = sidebar(page);
       await expect(sb, `${DESKTOP_SHELL.component} 1`).toHaveCount(1);
       const b = await box(sb, DESKTOP_SHELL.component);
@@ -687,7 +718,7 @@ for (const g of GUEST.screens) {
       expect(sbText.startsWith(`${brand[0]} ${brand[1]}`), `사이드바 위 = ${brand.join(" · ")}`).toBe(true);
       await expect(sb.getByText(GUEST.school_name, { exact: true }), "학교명 1").toHaveCount(1);
       // 메뉴 = 시안 (글자·순서·활성)
-      const want = frameSidebarItems(frame);
+      const want = guestMenuWant(g);
       const items = sb.locator(sel(DESKTOP_SHELL.item));
       await expect(items, `${DESKTOP_SHELL.item} = 시안 ${want.length}`).toHaveCount(want.length);
       expect((await items.allInnerTexts()).map(norm), "메뉴 글자 순서 = 시안").toEqual(want.map((w) => w.label));
@@ -748,9 +779,18 @@ for (const g of GUEST.screens) {
       for (const n of GUEST.hidden_components) await expect(page.locator(sel(n)), `hidden ${n} 0`).toHaveCount(0);
       // 구조 컴포넌트 = 시안 (데이터와 무관한 것)
       const structural = [DESKTOP_SHELL.component, DESKTOP_SHELL.item, GUEST.lock, GUEST.banner, TABLE, DRAWER, "home-summary", "quick-action", "list-filter-button", "text-input", "msds-entry", "msds-qr-tile", "reagent-location", "reorder-threshold", "msds-original-link"];
-      for (const n of structural) {
-        const fc = frameNodes(frame, n).length;
-        await expect(page.locator(sel(n)), `${n} = 시안 ${frame} ${fc}`).toHaveCount(fc);
+      if (hasGuestFrame(g, "desktop")) {
+        for (const n of structural) {
+          // 1.26 '센서' 메뉴는 시안({g}-guest-desktop, 1.26 전)에 없다 — 메뉴 수는 위 guestMenuWant 로 본다
+          const fc = n === DESKTOP_SHELL.item ? want.length : frameNodes(frame, n).length;
+          await expect(page.locator(sel(n)), `${n} = 시안 ${frame} ${fc}`).toHaveCount(fc);
+        }
+      } else {
+        // 17g 구조 (rules screens_required 17 + 데스크톱 표, 쓰기 없음)
+        await expect(page.locator(sel(TABLE)), "17g data-table 1").toHaveCount(1);
+        await expect(page.locator(sel(DRAWER)), "17g 드로어 0 (목록)").toHaveCount(0);
+        for (const n of rules.screens_required["17"] as string[]) await expect(page.locator(`main ${sel(n)}`).first(), `17g ${n}`).toBeAttached();
+        await expect(page.locator(sel(GUEST.lock)), `잠금 = sidebar_locks ${SIDEBAR_LOCKS}`).toHaveCount(SIDEBAR_LOCKS);
       }
       if (frameNodes(frame, DRAWER).length > 0) {
         const d = await waitDrawer(page);
@@ -867,6 +907,19 @@ for (const g of GUEST.screens) {
       await expect(page.locator(sel(GUEST.banner)).first()).toBeVisible({ timeout: 30_000 });
       await waitWidthSettled(page);
       const frame = `${g}-guest-${viewport}`;
+      if (!hasGuestFrame(g, viewport)) {
+        // 17g: design/frames 에 프레임 없음 (dev-rules 1.18) — 프레임 대조 없이 구조만
+        expect(g, "프레임 없는 둘러보기 화면 = 17").toBe(17);
+        if (viewport === "desktop") {
+          for (const n of [DESKTOP_SHELL.component, TABLE]) await expect(page.locator(sel(n)), `17g 1440 ${n} 1`).toHaveCount(1);
+          return;
+        }
+        for (const n of ["nav-pill", rules.tab_bar.component, GUEST.banner, "inventory-switch", ...(rules.screens_required["17"] as string[])]) await expect(page.locator(sel(n)).first(), `17g 390 ${n}`).toBeAttached();
+        await expect(page.locator(sel(rules.tab_bar.item)), "tab-item").toHaveCount(rules.tab_bar.items);
+        await expect(page.locator(`${sel(rules.tab_bar.component)} ${sel(GUEST.lock)}`), `탭바 잠금 ${GUEST.tab_locks}`).toHaveCount(GUEST.tab_locks);
+        for (const n of [DESKTOP_SHELL.component, TABLE, DRAWER, HEADER]) await expect(page.locator(sel(n)), `390 ${n} 0`).toHaveCount(0);
+        return;
+      }
       if (viewport === "desktop") {
         for (const n of [DESKTOP_SHELL.component, TABLE]) await expect(page.locator(sel(n)), `${n} = 시안 ${frame}`).toHaveCount(frameNodes(frame, n).length);
         return;

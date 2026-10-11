@@ -23,7 +23,7 @@ import {
 import { openAs } from "./auth-state";
 import { ROLE_LABEL } from "./db-helpers";
 import { demoReagents, guestDetailPath } from "./guest-helpers";
-import { browserClient, browserSession, devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
+import { browserClient, browserSession, devRules, routeOf, rules, sel, type ViewportName, tabItemLabels } from "./screen-helpers";
 import { HAS_SERVICE, forgetSession, openTemp, sweep, tempSchool, NO_RESIDUE } from "./screen-8-helpers";
 import { anonContext, expectShell, shellAccountButton, shellAccountLabel } from "./shell-helpers";
 import { newFrame } from "./desk-helpers";
@@ -43,6 +43,13 @@ const READY_TOOLTIP = (() => {
   const m = /"([^"]+)" 툴팁/.exec(sec);
   if (!m) throw new Error('d7 §23 에서 "…" 툴팁 문구를 읽지 못함');
   return m[1];
+})();
+
+/** rules desktop_shell.menu_source "사이드바 '시약' 아래 '센서'(모든 역할)" — 1.26 에 더한 메뉴 */
+const MENU_ADDED = (() => {
+  const m = /'([^']+)' 아래 '([^']+)'/.exec((DS as unknown as { menu_source: string }).menu_source);
+  if (!m) throw new Error("rules desktop_shell.menu_source 에서 더한 메뉴를 읽지 못함");
+  return m[2];
 })();
 
 /** 아직 만들지 않은 화면(desktop_shell.screens 중 mvp 밖 = 12)의 메뉴 글자 — 새 프레임 {N}-desktop 의 활성 메뉴 */
@@ -170,8 +177,12 @@ test(`[C3][S*] 기대값 원본: dev-rules desktop_shell_done · desktop_shell.s
     expect(sb.cornerRadius, `${frame} app-sidebar radius`).toBe(DS.radius);
     const fi = frameSidebarItems(frame);
     expect(fi.filter((i) => i.active), `${frame} 활성 1`).toHaveLength(1);
-    const role: ShellRole = fi.length === sidebarMenuOf("admin").length ? "admin" : "teacher";
-    expect(fi.map((i) => i.label), `${frame} 메뉴 문구·순서 = rules menu (${role})`).toEqual(sidebarMenuOf(role));
+    // 1.26 이전에 그려진 프레임에는 menu_source 로 더한 메뉴('센서')가 없다 — 그 프레임은 더하기 전 메뉴와 같아야 한다
+    const stale = !fi.some((i) => i.label === MENU_ADDED);
+    const expected = (r: ShellRole) => sidebarMenuOf(r).filter((l) => !stale || l !== MENU_ADDED);
+    const role: ShellRole = fi.length === expected("admin").length ? "admin" : "teacher";
+    expect(fi.map((i) => i.label), `${frame} 메뉴 문구·순서 = rules menu (${role}${stale ? `, 1.26 '${MENU_ADDED}' 더하기 전 프레임` : ""})`).toEqual(expected(role));
+    if (s === 17) expect(stale, "화면 17 프레임에는 '센서' 메뉴").toBe(false);
   }
   expect(sidebarMenuOf("student").length).toBeGreaterThanOrEqual(DS.min_items);
   expect(GROUP_TITLES.teacher.length).toBeGreaterThan(0);
@@ -218,6 +229,15 @@ for (const screen of SHELL_SCREENS) {
                 info.annotations.push({ type: "C3 범위", description: `${where}: 이 시약은 MSDS 요약 ${hit.join("·")} 상태 — msds-summary 는 c3-run-b 갤러리에서` });
                 continue;
               }
+              // 화면 17: 공용 학교 A 에는 센서가 없다 → 빈 상태(rules variants 17.empty, 프레임 17-empty-desktop 에는 data-table 없음).
+              // 센서가 있는 학교의 data-table 은 screen-17-sensors.spec.ts [C3][S17] (일회용 학교)에서 본다
+              if (screen === 17 && (await page.locator(`main ${sel("sensor-row")}`).count()) === 0) {
+                const empty = rules.variants["17"].empty.filter((c) => role !== "student" || c !== "sensor-add");
+                for (const c of empty) await expect(page.locator(`main ${sel(c)}`).first(), `${where}: 센서 0개 → variants 17.empty ${c}`).toBeVisible();
+                expect(newFrame("17-empty-desktop").some((n) => n.name === name), `17-empty-desktop 프레임에 ${name} 없음`).toBe(false);
+                info.annotations.push({ type: "C3 범위", description: `${where}: 학교 A 센서 0개 — data-table 은 screen-17-sensors [C3][S17]` });
+                continue;
+              }
               await expect(page.locator(sel(name)).first(), `${where}: desktop_required ${name}`).toBeVisible();
             }
           } else {
@@ -226,7 +246,7 @@ for (const screen of SHELL_SCREENS) {
         } else {
           await expectShell(page, viewport, screen, where);
           expect(TB.mobile_screens, `tab_bar.mobile_screens 에 ${screen}`).toContain(screen);
-          const tabs = (await page.locator(`${sel(TB.component)} ${sel(TB.item)}`).allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim());
+          const tabs = (await tabItemLabels(page.locator(`${sel(TB.component)} ${sel(TB.item)}`)));
           expect(tabs, `${where}: 탭 라벨`).toEqual(TB.labels);
         }
       } finally {

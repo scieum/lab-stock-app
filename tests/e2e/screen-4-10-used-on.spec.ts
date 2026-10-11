@@ -26,7 +26,7 @@ import {
   recordedCaption,
   recordedTime,
   rows,
-  waitHistory,
+  waitHistory, RECORDED_LABEL,
 } from "./screen-10-helpers";
 import { framePath } from "../frames";
 
@@ -222,7 +222,7 @@ test.describe("일회용 학교", () => {
         await expectDetail(page, snap.shown[idx]);
         const d = await readDetail(page);
         expect(d.fields["사용일"], "상세 사용일").toBe(past);
-        expect(d.fields[isDeskPage(page) ? "기록 시각" : "기록한 날"].startsWith(today), "상세 기록한 날 = 오늘 (1440 드로어 기록 시각)").toBe(true);
+        expect(d.fields[RECORDED_LABEL] /* d7 §25 QA 5: 두 폭 "기록한 날" */.startsWith(today), "상세 기록한 날 = 오늘 (1440 드로어 기록 시각)").toBe(true);
         // 최근 1개월(기본)에는 없다 — 기간도 사용일 기준
         const one = await gotoAndMatch(page, { q: name });
         expect(one.shown.some((r) => r.id === added[0].id), "최근 1개월에는 40일 전 사용일 기록 없음").toBe(false);
@@ -292,7 +292,7 @@ test.describe("일회용 학교", () => {
       const d = await readDetail(page);
       expect(d.fields["사용일"]).toBe(daysAgo(1));
       // 390 상세 "기록한 날" / 1440 드로어 "기록 시각"(새 프레임 10-desktop — 다른 날 기록이면 날짜까지)
-      expect(d.fields[isDeskPage(page) ? "기록 시각" : "기록한 날"].startsWith(today), "기록한 날 = 오늘 시각").toBe(true);
+      expect(d.fields[RECORDED_LABEL] /* d7 §25 QA 5: 두 폭 "기록한 날" */.startsWith(today), "기록한 날 = 오늘 시각").toBe(true);
       expect(d.fields["메모"]).toBe("어제를 오늘 기록");
       // 기본 기간(최근 1개월)은 사용일 기준: 35일 전 사용일 기록은 빠진다
       const one = await gotoAndMatch(page, { q: name });

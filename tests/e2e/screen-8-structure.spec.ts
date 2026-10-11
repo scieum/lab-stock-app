@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { test, expect, type Page } from "@playwright/test";
 import { ROLE_LABEL, SCHOOL_A_ROLES } from "./db-helpers";
 import { openAs } from "./auth-state";
-import { PROFILE_ROLE, ROLE_NAME, browserClient, browserSession, countComponent, devRules, roleChecks, routeOf, rules, sel } from "./screen-helpers";
+import { PROFILE_ROLE, ROLE_NAME, browserClient, browserSession, countComponent, devRules, roleChecks, routeOf, rules, sel, tabItemLabels } from "./screen-helpers";
 import { DESKTOP_SHELL, frameActiveLabel } from "../desktop-shell";
 import { newFrame, waitWidthSettled } from "./desk-helpers";
 import { expectShellHeader, shellSchoolScope } from "./shell-helpers";
@@ -738,7 +738,7 @@ test(`[C2][S${SCREEN}] 학교A admin: 탭바 = rules.json tab_bar (390 표시·�
       await expect(bar).toBeVisible();
       const items = bar.locator(sel(tb.item));
       await expect(items, "tab-item 은 tab-bar 안에").toHaveCount(tb.items);
-      const labels = (await items.allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim());
+      const labels = (await tabItemLabels(items));
       expect(labels, "탭 라벨 순서").toEqual(tb.labels);
       const active = bar.locator(`${sel(tb.item)}[aria-current="page"]`);
       await expect(active, `${state}: 활성 tab-item 1개`).toHaveCount(1);

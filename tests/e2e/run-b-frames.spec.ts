@@ -83,6 +83,8 @@ async function settle(page: Page, viewport: ViewportName): Promise<void> {
 }
 const DESKTOP_SIDEBAR = "app-sidebar";
 
+import { RECORDED_LABEL } from "./screen-10-helpers";
+
 // =====================================================================
 // 화면 2
 // =====================================================================
@@ -93,7 +95,8 @@ test(`[C1][S2] 학교A 교사 /reagents 새 프레임 대조: 1440 = 2-desktop p
   try {
     await settle(page, viewport);
     const f = `2-${viewport}`;
-    const segLabels = txt(f, (n) => n.name === "label" && (n.path.includes("segmented-control-active") || n.path.includes("segmented-control-option")) && !n.path.includes("list-filter-sheet"));
+    const segLabels = txt(f, (n) => n.name === "label" && (n.path.includes("segmented-control-active") || n.path.includes("segmented-control-option")) && !n.path.includes("list-filter-sheet") && !n.path.includes("inventory-switch"));
+    // 1.26: 2-mobile 맨 위 inventory-switch "시약 | 센서" 도 segmented-control 모양이지만 범위 탭이 아니다 (inventory-tab-soon.spec.ts 에서 본다)
     const seg = page.locator(`main ${sel("segmented-control")}`).first();
     await expect(seg).toBeVisible({ timeout: 45_000 });
     expect((await seg.locator('[role="tab"]').allInnerTexts()).map(squash), `${f} 범위 탭`).toEqual(segLabels);
@@ -356,7 +359,8 @@ test(`[C1][S10] 학교A 학생 /usage 새 프레임 대조: 1440 = 10-desktop(�
     expect(rows.length, "학교 A 최근 기록").toBeGreaterThan(0);
     await page.goto(`${routeOf(10)}?id=${rows[0].id}`);
     await waitDrawer(page);
-    expect(await shownDrawerLabels(page), "드로어 정보 줄 = 시안 10-desktop").toEqual(drawerLabels(f));
+    // d7 §25 QA (5): 기록 상세 라벨은 두 폭 모두 "기록한 날" — 시안 10-desktop 의 "기록 시각" 줄을 이 라벨로 (나머지 줄 · 순서는 시안 그대로)
+    expect(await shownDrawerLabels(page), "드로어 정보 줄 = 시안 10-desktop (+ QA 5)").toEqual(drawerLabels(f).map((l) => (l === "기록 시각" ? RECORDED_LABEL : l)));
     await expect(drawer(page).locator(sel("msds-entry")), "드로어 안 msds-entry").toHaveCount(1);
     expect(await shownActions(page), "drawer-actions = 시안").toEqual(actionLabels(f));
   } finally {

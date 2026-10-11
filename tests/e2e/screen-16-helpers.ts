@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type Locator, type Page, type Response } from "@playwright/test";
-import { devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
+import { devRules, routeOf, rules, sel, type ViewportName, tabItemLabels } from "./screen-helpers";
 import { framePath } from "../frames";
 import { drawer, isDeskPage, newFrame, waitWidthSettled } from "./desk-helpers";
 
@@ -259,7 +259,7 @@ export async function expectTabBar(page: Page, viewport: ViewportName, what: str
   await expect(page.locator(sel(TAB.item)), `${what}: ${viewport} ${TAB.item}`).toHaveCount(shown ? TAB.items : 0);
   if (!shown) return;
   const items = page.locator(`${sel(TAB.component)} ${sel(TAB.item)}`);
-  expect((await items.allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim()), `${what}: 탭 라벨`).toEqual(TAB.labels);
+  expect((await tabItemLabels(items)), `${what}: 탭 라벨`).toEqual(TAB.labels);
   expect(FRAME.activeTab, "시안 16 활성 탭").not.toBe("");
   const active = page.locator(`${sel(TAB.component)} ${sel(TAB.item)}[aria-current="page"]`);
   await expect(active, `${what}: 활성 탭 1`).toHaveCount(1);

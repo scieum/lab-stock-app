@@ -3,7 +3,7 @@
 // - 계정 값은 db-helpers.ts 의 .env.local 로딩을 그대로 쓴다 (파일에 값을 쓰지 않는다).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { expect, type Page, type TestInfo } from "@playwright/test";
+import { expect, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import "./db-helpers"; // .env.local 로딩 (계정·공개 키 환경변수)
 import { type Role } from "./db-helpers";
@@ -291,4 +291,19 @@ export function seedRows(table: string): Record<string, string>[] {
   }
   if (out.length === 0) throw new Error(`seed.sql ${table} 행 0개`);
   return out;
+}
+
+/**
+ * 탭바 tab-item 의 라벨 글자 (rules.json tab_bar.labels 와 비교).
+ * 디자인 1.26 tab_bar.qr_pending: 'QR 스캔' tab-item 안에는 별도 컴포넌트 tab-soon "준비 중" 이 붙는다 — 그 글자는 라벨이 아니므로 뺀다
+ * (tab-soon 자체는 inventory-tab-soon.spec.ts 가 rules 문구 · 위치 · 동작으로 본다).
+ */
+export async function tabItemLabels(items: Locator): Promise<string[]> {
+  return items.evaluateAll((els) =>
+    els.map((el) => {
+      let t = (el as HTMLElement).innerText;
+      for (const s of Array.from(el.querySelectorAll('[data-component="tab-soon"]'))) t = t.replace((s as HTMLElement).innerText, "");
+      return t.replace(/\s+/g, " ").trim();
+    }),
+  );
 }

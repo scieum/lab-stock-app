@@ -14,7 +14,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type BrowserContext, type Locator, type Page } from "@playwright/test";
-import { devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
+import { devRules, routeOf, rules, sel, type ViewportName, tabItemLabels } from "./screen-helpers";
 import { service } from "./screen-8-helpers";
 import { exact, hydrated, type Fx } from "./screen-6-9-helpers";
 import { framePath } from "../frames";
@@ -518,7 +518,7 @@ export async function expectTabBar(page: Page, viewport: ViewportName, state: st
   await expect(bar).toBeVisible();
   const items = bar.locator(sel(tb.item));
   await expect(items, "tab-item 은 tab-bar 안에").toHaveCount(tb.items);
-  expect((await items.allInnerTexts()).map(squash), `${state}: 탭 라벨 순서`).toEqual(tb.labels);
+  expect((await tabItemLabels(items)), `${state}: 탭 라벨 순서`).toEqual(tb.labels);
   const active = bar.locator(`${sel(tb.item)}[aria-current="page"]`);
   await expect(active, `${state}: 활성 tab-item 1개`).toHaveCount(1);
   await expect(active, `${state}: 활성 탭 "${ACTIVE_TAB_LABEL}"`).toHaveText(exact(ACTIVE_TAB_LABEL));
