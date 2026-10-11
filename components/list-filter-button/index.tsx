@@ -9,6 +9,11 @@ type Props = {
   expanded?: boolean;
   /** 시트 id (aria-controls) */
   controls?: string;
+  /**
+   * desktop = 시안 2-desktop · 17-desktop: list-filter-button 틀 안에 button-pill-soft(실제 버튼).
+   * 기본(모바일 2 · 17) = list-filter-button 자체가 pill 버튼
+   */
+  variant?: "default" | "desktop";
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children">;
 
 /**
@@ -16,9 +21,39 @@ type Props = {
  * 회색 pill + 하늘색 필터 아이콘 + "필터"(15/600) + 적용 개수 배지(연하늘 채움 · 하늘색 테두리 · 기본색 글자 12/600).
  */
 export const ListFilterButton = forwardRef<HTMLButtonElement, Props>(function ListFilterButton(
-  { count = 0, expanded = false, controls, className, type = "button", ...rest },
+  { count = 0, expanded = false, controls, className, type = "button", variant = "default", ...rest },
   ref,
 ) {
+  const content = (
+    <>
+      <Icon name="filter" className={styles.icon} />
+      <span className={styles.label}>필터</span>
+      {count > 0 ? (
+        <span className={styles.count} data-name="filter-count">
+          {count}
+        </span>
+      ) : null}
+    </>
+  );
+  if (variant === "desktop") {
+    return (
+      <span data-component="list-filter-button" className={[styles.wrap, className ?? ""].filter(Boolean).join(" ")}>
+        <button
+          ref={ref}
+          data-component="button-pill-soft"
+          type={type}
+          aria-haspopup="dialog"
+          aria-expanded={expanded}
+          aria-controls={controls}
+          aria-label={count > 0 ? `필터 ${count}개 적용됨` : "필터"}
+          className={styles.button}
+          {...rest}
+        >
+          {content}
+        </button>
+      </span>
+    );
+  }
   return (
     <button
       ref={ref}

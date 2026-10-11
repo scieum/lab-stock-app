@@ -174,6 +174,7 @@ export function SensorDesk({ items, canEdit, base = "" }: Props) {
             }}
           />
           <ListFilterButton
+              variant="desktop"
             ref={buttonRef}
             count={filterCount}
             expanded={open}

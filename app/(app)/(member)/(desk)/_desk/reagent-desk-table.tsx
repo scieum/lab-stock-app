@@ -228,6 +228,7 @@ export function ReagentDeskTable({ items, cabinets, canFindMsds, canSelect = fal
           />
           <div ref={anchorRef} className={styles.filterAnchor}>
             <ListFilterButton
+              variant="desktop"
               ref={buttonRef}
               count={chips.length}
               expanded={open}
