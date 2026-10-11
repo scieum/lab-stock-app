@@ -69,6 +69,12 @@ function replaceQuery(edit: (p: URLSearchParams) => void, keepPage = false) {
 /* 시안 2-desktop 열 폭 (표 안쪽 1104 기준 비율 — 드로어가 열린 3-desktop 의 624 에서도 같은 비율) */
 const W_SELECT = "4.4%";
 const W = { name: "18%", cls: "10.5%", loc: "23.5%", stock: "11%", status: "12.5%", intake: "15.5%", msds: "9%" };
+/*
+ * 드로어가 열린 동안 (d7 §26 QA (3)): 시약명 칸은 폭을 정하지 않아 남는 폭을 모두 받고(1440 에서 약 27%),
+ * 다른 칸을 줄인다. 1440 보다 좁으면 desk.module.css 가 MSDS · 보관 분류 열을 숨겨 시약명 칸 폭을 지킨다.
+ * 시약명이 잘리면 말줄임 + title(전체 이름).
+ */
+const W_DRAWER = { name: undefined, cls: "10%", loc: "21%", stock: "10%", status: "12%", intake: "13%", msds: "7%" };
 
 /**
  * 데스크톱 시약 목록 (디자인 1.24 2-desktop, d7 §23 run b) — /reagents · /reagents/[id] · /msds/[id] · /usage/new 공통 왼쪽 본문.
@@ -81,6 +87,9 @@ export function ReagentDeskTable({ items, cabinets, canFindMsds, canSelect = fal
   const pathname = usePathname();
   const sp = useSearchParams();
   const selectedId = deskSelectedId(pathname, sp);
+  // 목록(/reagents · /demo/reagents) 말고는 오른쪽 드로어가 열린 주소 (/reagents/[id] · /msds/[id] · /usage/new)
+  const drawerOpen = !/\/reagents\/?$/.test(pathname);
+  const w = drawerOpen ? W_DRAWER : W;
   // 둘러보기(/demo) 데스크톱: 행 주소 앞머리 /demo, 머리 줄 요약은 "재고 부족 n" 만 (시안 2-guest-desktop)
   const hrefBase = useDeskBase();
   const guest = hrefBase === "/demo";
@@ -170,13 +179,13 @@ export function ReagentDeskTable({ items, cabinets, canFindMsds, canSelect = fal
           },
         ]
       : []),
-    { key: "name", label: "시약명", width: W.name, sort: applied.sort === "name" ? "asc" : "none", onSort: () => setSort("name") },
-    { key: "class", label: "보관 분류", width: W.cls },
-    { key: "location", label: "보관 위치", width: W.loc },
-    { key: "stock", label: "재고", width: W.stock, sort: applied.sort === "stock" ? "asc" : "none", onSort: () => setSort("stock") },
-    { key: "status", label: "상태", width: W.status },
-    { key: "intake", label: "최근 입고일", width: W.intake, sort: applied.sort === "intake" ? "desc" : "none", onSort: () => setSort("intake") },
-    { key: "msds", label: "MSDS", width: W.msds },
+    { key: "name", label: "시약명", width: w.name, sort: applied.sort === "name" ? "asc" : "none", onSort: () => setSort("name") },
+    { key: "class", label: "보관 분류", width: w.cls, className: styles.colNarrowHide },
+    { key: "location", label: "보관 위치", width: w.loc },
+    { key: "stock", label: "재고", width: w.stock, sort: applied.sort === "stock" ? "asc" : "none", onSort: () => setSort("stock") },
+    { key: "status", label: "상태", width: w.status },
+    { key: "intake", label: "최근 입고일", width: w.intake, sort: applied.sort === "intake" ? "desc" : "none", onSort: () => setSort("intake") },
+    { key: "msds", label: "MSDS", width: w.msds, className: styles.colNarrowHide },
   ];
 
   let empty: React.ReactNode = null;
@@ -282,7 +291,7 @@ export function ReagentDeskTable({ items, cabinets, canFindMsds, canSelect = fal
         ) : null}
       </div>
 
-      <DataTable label="시약 목록" columns={columns} empty={empty}>
+      <DataTable label="시약 목록" columns={columns} empty={empty} className={drawerOpen ? styles.drawerTable : undefined}>
         {empty
           ? null
           : rows.map((r) => {
@@ -297,15 +306,15 @@ export function ReagentDeskTable({ items, cabinets, canFindMsds, canSelect = fal
                     </DataTableCell>
                   ) : null}
                   {selecting ? (
-                    <DataTableButtonCell onClick={() => select.toggle(r.id)} pressed={select.ids.has(r.id)}>
+                    <DataTableButtonCell onClick={() => select.toggle(r.id)} pressed={select.ids.has(r.id)} title={r.name}>
                       {r.name}
                     </DataTableButtonCell>
                   ) : (
-                    <DataTableLinkCell href={reagentDetailHref(r.id, listQueryOf(page), hrefBase)} current={current}>
+                    <DataTableLinkCell href={reagentDetailHref(r.id, listQueryOf(page), hrefBase)} current={current} title={r.name}>
                       {r.name}
                     </DataTableLinkCell>
                   )}
-                  <DataTableCell tone={r.storageClass ? "default" : "muted"}>{r.storageClass ?? "-"}</DataTableCell>
+                  <DataTableCell tone={r.storageClass ? "default" : "muted"} className={styles.colNarrowHide}>{r.storageClass ?? "-"}</DataTableCell>
                   <DataTableCell tone={placed ? "default" : "muted"}>
                     <span className={styles.location}>
                       {placed && cab ? <CabinetNumber number={cab.number} /> : null}
@@ -315,7 +324,7 @@ export function ReagentDeskTable({ items, cabinets, canFindMsds, canSelect = fal
                   <DataTableCell>{r.stock}</DataTableCell>
                   <DataTableCell>{r.lowStock ? <BadgeLowStock /> : null}</DataTableCell>
                   <DataTableCell tone={r.intakeDate ? "default" : "muted"}>{r.intakeDate ?? "-"}</DataTableCell>
-                  <DataTableCell tone={r.hasMsds ? "default" : "muted"}>{r.hasMsds ? "있음" : "없음"}</DataTableCell>
+                  <DataTableCell tone={r.hasMsds ? "default" : "muted"} className={styles.colNarrowHide}>{r.hasMsds ? "있음" : "없음"}</DataTableCell>
                 </DataTableRow>
               );
             })}

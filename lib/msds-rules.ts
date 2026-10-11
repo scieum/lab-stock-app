@@ -69,6 +69,8 @@ export const MSDS_TEXT = {
   directConfirm: "이 주소로",
   backToList: "목록으로",
   saved: "MSDS를 넣었어요",
+  /** 일괄 찾기를 끝까지 모두 건너뛰었을 때 (d7 §26 QA (7)) */
+  bulkNone: "MSDS를 연결하지 않았어요",
   noKey: "MSDS 찾기를 쓸 수 없어요(서버 설정)",
   upstream: "MSDS를 찾지 못했어요. 잠시 뒤 다시 해 주세요",
   badQuery: `검색어를 1~${MSDS_QUERY_MAX}자로 입력해 주세요`,
