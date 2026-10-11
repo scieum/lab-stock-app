@@ -235,8 +235,8 @@ const sheet117 = (() => {
 // 프레임의 컴포넌트 개수 (dev-rules components 이름만, nav-pill·tab-bar 는 갤러리 예시 구역 밖이라 뺀다)
 const componentNames = Object.keys(dev.components);
 // 데스크톱 셸(rules 1.22 desktop_shell app-sidebar · sidebar-item)은 dev-rules 가 화면마다 더하지만 /gallery/sidebar 에 있다
-// tab-soon = QR 스캔 tab-item 안 "준비 중"(rules tab_bar.qr_pending) — 탭바(셸) 일부라 함께 뺀다
-const SHELL = ["nav-pill", rules.tab_bar.component, rules.tab_bar.item, "tab-soon", ...DESKTOP_SHELL_NAMES];
+// 탭바(셸)는 뺀다 (tab-soon 은 d7 §26 · dev-rules 1.19 에서 지워졌다)
+const SHELL = ["nav-pill", rules.tab_bar.component, rules.tab_bar.item, ...DESKTOP_SHELL_NAMES];
 const countByName = (nodes: FrameNode[]) => {
   const out: Record<string, number> = {};
   for (const n of nodes) {

@@ -28,9 +28,16 @@ export const RULE_ROLE: Record<Role, string> = { student: "학생", teacher: "�
  * (rules.json tab_bar · 1.22 desktop_shell). 화면 본문·예전 프레임 대조에서는 빼고, 셸은 expectShell(C2·C3)로 폭별 개수를 본다.
  * (nav-account-menu 는 두 셸 모두에 1개 — 본문 대조에 그대로 둔다)
  */
-/** 1.26 tab_bar.qr_pending: 'QR 스캔' tab-item 안 "준비 중" — 탭바(셸) 일부 (로그인 후 모바일 탭바에만, 둘러보기는 잠금) */
-export const TAB_SOON = "tab-soon";
-export const SHELL_COMPONENTS: string[] = ["nav-pill", rules.tab_bar.component, rules.tab_bar.item, TAB_SOON, rules.desktop_shell.component, rules.desktop_shell.item];
+/**
+ * d7 §26 (dev-rules 1.19): 화면 12 가 생겨 rules tab_bar.qr_pending 이 끝났다 — tab-soon 컴포넌트는 지웠다(어디에도 0개).
+ * 로그인 후 모바일 'QR 스캔' tab-item 은 화면 12 경로(dev-rules routes "12") 정상 링크, 데스크톱 sidebar-item 'QR 찾기' 도 같은 경로.
+ */
+export const REMOVED_TAB_SOON = "tab-soon";
+/** rules tab_bar.labels 의 QR 탭 라벨 · desktop_shell.menu.all 의 QR 메뉴 라벨 (화면 12 로 가는 셸 항목) */
+export const QR_TAB_LABEL = rules.tab_bar.labels.find((l) => l.startsWith("QR"))!;
+export const QR_MENU_LABEL = rules.desktop_shell.menu.all.find((l) => l.startsWith("QR"))!;
+export const SCAN_ROUTE = devRules.routes["12"];
+export const SHELL_COMPONENTS: string[] = ["nav-pill", rules.tab_bar.component, rules.tab_bar.item, rules.desktop_shell.component, rules.desktop_shell.item];
 export const isShellComponent = (name: string): boolean => SHELL_COMPONENTS.includes(name);
 
 /** dev-rules.json components 의 모든 컴포넌트 이름 */
@@ -304,7 +311,12 @@ export async function expectShell(page: Page, viewport: ViewportName, screen: nu
     await expect(page.locator(sel("nav-pill")), `${when}: nav-pill`).toHaveCount(1);
     await expect(page.locator(sel(tb.component)), `${when}: ${viewport} ${tb.component}`).toHaveCount(shown ? 1 : 0);
     await expect(page.locator(sel(tb.item)), `${when}: ${viewport} ${tb.item}`).toHaveCount(shown ? tb.items : 0);
-    await expect(page.locator(`${sel(tb.component)} ${sel(TAB_SOON)}`), `${when}: ${viewport} ${TAB_SOON} (QR 스캔 준비 중)`).toHaveCount(shown ? 1 : 0);
+    await expect(page.locator(sel(REMOVED_TAB_SOON)), `${when}: ${viewport} ${REMOVED_TAB_SOON} 0 (d7 §26 qr_pending 끝)`).toHaveCount(0);
+    if (shown) {
+      const qr = page.locator(`${sel(tb.component)} ${sel(tb.item)}`).filter({ hasText: QR_TAB_LABEL });
+      await expect(qr, `${when}: '${QR_TAB_LABEL}' tab-item 1`).toHaveCount(1);
+      await expect(qr, `${when}: '${QR_TAB_LABEL}' → ${SCAN_ROUTE} (d7 §26)`).toHaveAttribute("href", SCAN_ROUTE);
+    }
     await expect(page.locator(sel(ds.component)), `${when}: ${viewport} ${ds.component}`).toHaveCount(0);
     await expect(page.locator(sel(ds.item)), `${when}: ${viewport} ${ds.item}`).toHaveCount(0);
     return;
@@ -317,7 +329,7 @@ export async function expectShell(page: Page, viewport: ViewportName, screen: nu
   }
   await expect(page.locator(sel(tb.component)), `${when}: ${viewport} ${tb.component}`).toHaveCount(0);
   await expect(page.locator(sel(tb.item)), `${when}: ${viewport} ${tb.item}`).toHaveCount(0);
-  await expect(page.locator(sel(TAB_SOON)), `${when}: ${viewport} ${TAB_SOON}`).toHaveCount(0);
+  await expect(page.locator(sel(REMOVED_TAB_SOON)), `${when}: ${viewport} ${REMOVED_TAB_SOON}`).toHaveCount(0);
 }
 
 /** dev-rules.json components 이름별 DOM 개수 (scope 안) */
