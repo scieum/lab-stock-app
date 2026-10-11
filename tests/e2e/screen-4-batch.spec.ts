@@ -336,7 +336,9 @@ test.describe("일회용 학교", () => {
       await expect(saveButton(page), "0 → 비활성").toBeDisabled();
       await amountOf(page, z.name).fill("");
       await amountOf(page, z.name).blur();
-      await expect(page.locator("main").getByText(EMPTY_AMOUNT, { exact: true }), `빈 값 → "${EMPTY_AMOUNT}"`).toHaveCount(1);
+      // 칸 아래 오류 1 (목록 안) + d7 §26 QA (5) 저장 버튼 위 helper 1 (고정 바 안) — 같은 문구
+      await expect(list(page).getByText(EMPTY_AMOUNT, { exact: true }), `빈 값 → 칸 아래 "${EMPTY_AMOUNT}"`).toHaveCount(1);
+      await expect(saveBar(page).getByText(EMPTY_AMOUNT, { exact: true }), `빈 값 → 저장 버튼 위 helper "${EMPTY_AMOUNT}" (d7 §26 QA 5)`).toHaveCount(1);
       await expect(saveButton(page), "빈 값 → 비활성").toBeDisabled();
       // 빼기 → 개수 줄어듦
       await removeOf(page, z.name).click();
@@ -554,7 +556,9 @@ test.describe("일회용 학교", () => {
       await expect(page.locator(`main ${sel(OVER)}`)).toHaveText(exact(overText(x.stock, x.unit)));
       await amountOf(page, x.name).fill("");
       await amountOf(page, x.name).blur();
-      await expect(page.locator("main").getByText(firstText(`4-error-${vp}`, (n) => n.name === "field-error", "빈 값"), { exact: true })).toHaveCount(1);
+      // 칸 아래 오류(목록 안) 1 — 고정 바의 helper(d7 §26 QA 5, 같은 문구)는 따로 센다
+      await expect(list(page).getByText(firstText(`4-error-${vp}`, (n) => n.name === "field-error", "빈 값"), { exact: true })).toHaveCount(1);
+      await expect(saveBar(page).getByText(firstText(`4-error-${vp}`, (n) => n.name === "field-error", "빈 값"), { exact: true }), "고정 바 helper 1 (d7 §26 QA 5)").toHaveCount(1);
     } finally {
       await t.context.close();
     }
@@ -617,6 +621,10 @@ test.describe("일회용 학교 C3", () => {
       expect(Math.round(pb.width), "드롭다운 폭 = 시안 4-picker-desktop").toBe(fnode("4-picker-desktop", PICKER).width);
       await pickerRow(page, y.name).click();
       await page.keyboard.press("Escape");
+      // 시안 4-desktop save-bar = 사용량을 채운 상태 (빈 칸이면 d7 §26 QA (5) helper 가 버튼 위에 더해진다)
+      await amountOf(page, x.name).fill("1");
+      await amountOf(page, y.name).fill("1");
+      await expect(saveBar(page).getByText(EMPTY_AMOUNT, { exact: true }), "모두 채움 → helper 0").toHaveCount(0);
       // 저장 바
       const bar = saveBar(page);
       expect(await bar.evaluate((el) => getComputedStyle(el).position), "저장 바 고정").toBe("fixed");
