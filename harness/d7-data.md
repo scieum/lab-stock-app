@@ -331,6 +331,32 @@
 | 랜딩 그림 | 15-desktop "사용 기록" 섹션 product-shot = 새 화면 4(여러 시약 담기 + 수업) 조각 |
 | QA 수정 (디자인 없음) | (1) 화면 3 사용 기록 탭·홈 최근 기록은 기록 시각 대신 **사용일(used_on)** — 홈은 행과 날짜를 같은 출처에서 읽어 보관 시약 때문에 어긋나지 않게 (2) 입고일 미래 금지(record_intake·register_reagent·서류 입고, 입력 max = 오늘) (3) 최근 입고일 = 가장 늦은 입고일 유지(더 이른 날짜 입고로 뒤로 가지 않음, 2026-10-11 사용자 결정) (4) 사용량 0 = "사용량은 0보다 커야 해요", 음수도 같은 문구 (5) 기록 상세 라벨 두 폭 모두 "기록한 날"(데스크톱 표 머리 잘림 없게) (6) 초대 이메일 오류 문구 두 폭 같게 "이메일 주소를 확인해 주세요" (7) 삭제 확인 모달 Esc 뒤 포커스 ⋯ 로 복귀 (8) MSDS 없는 시약 기록 상세에 "MSDS 보기" 진입 없음(§22) |
 
+## 26. QR 스캔 화면 12 · 판매처 수정 버그 · QA 개선 · ON 센서 코드 (화면 1·2·3·4·8·9·12·14·15·17, 2026-10-11 결정 — design/rules.json 1.26 그대로, 새 디자인 요청은 요청 8)
+
+| 항목 | 결정 |
+|---|---|
+| 화면 12 경로·권한 | `/scan`, 로그인 후 모든 역할(학생 포함, 읽기만). 둘러보기는 지금처럼 잠금(탭바 QR guest-lock, /demo 에 화면 12 없음). 비로그인으로 `/scan?cabinet=…` 이 열리면 `/login` 으로 보내고 로그인 뒤 같은 주소로 돌아온다(휴대폰 기본 카메라로 QR 을 찍은 경우) |
+| 화면 12 모양 | 시안 12·12-result 그대로. 모바일 = nav-pill(nav-close → 들어온 화면, 없으면 /) + segmented-control "QR 스캔 \| 번호로 찾기" + qr-scan(camera-preview·scan-frame·scan-guide·scan-help·scan-caption·button-pill-soft "플래시") + qr-manual-entry + tab-bar(QR 스캔 활성). 데스크톱 = app-sidebar("QR 찾기" 활성) + page-head "QR 찾기" + find-cards(scan-card qr-scan · qr-manual-entry 카드: text-input "예: 1" + button-primary "찾기") |
+| 탭·사이드바 | 화면 12 가 생기면 rules tab_bar.qr_pending 끝: 모바일 tab-item "QR 스캔" 정상(회색·tab-soon 없음) → `/scan`, 데스크톱 sidebar-item "QR 찾기" → `/scan`(툴팁 없음). tab-soon 컴포넌트·"준비 중이에요" 토스트는 지운다 |
+| 카메라 | 브라우저 getUserMedia(후면 카메라 우선, HTTPS). 읽기 = 브라우저 BarcodeDetector(qr_code) 가 있으면 그것, 없으면(iOS Safari 등) 클라이언트 라이브러리 `jsqr` 로 프레임 해석. 서버로 영상·사진을 보내지 않는다. 플래시 = 트랙 torch 지원 때만 켜기/끄기, 없으면 버튼 비활성. 화면을 떠나거나 "번호로 찾기"로 바꾸면 카메라를 끈다. 권한 거부·카메라 없음 = camera-preview 자리에 안내 "카메라를 쓸 수 없어요. 시약장 번호로 찾아 주세요" + 번호로 찾기로 전환하는 button-outline(시안에 없는 상태 — 개발 예외, ex 계열 글자 스타일) |
+| QR 해석 | lib/cabinet-rules `parseCabinetQr`(같은 origin · `/scan?cabinet={uuid}`) 그대로. 우리 학교 시약장 = 결과 시트. 시약장 QR 이지만 다른 학교·삭제된 시약장 = ex-toast "{학교명} 시약장 QR이 아니에요"(§14). 시약장 QR 이 아닌 코드 = ex-toast "시약장 QR이 아니에요". 같은 코드를 연달아 읽어도 토스트·시트는 한 번 |
+| 번호로 찾기 | 정수(1~9999) → 우리 학교 `cabinets.number`. 없으면 입력 아래 오류 "{n}번 시약장이 없어요", 숫자가 아니면 "시약장 번호를 숫자로 적어 주세요" |
+| 결과 (12-result) | 모바일 qr-result-sheet 바텀시트 / 데스크톱 detail-drawer 안 qr-result-sheet. 머리 = cabinet-number + 시약장 이름 + 캡션 "{문 종류} · {N}단 · 시약 {k}개"(화면 11 과 같은 글자). 목록 = 그 시약장 칸에 있는 보관 안 된 시약(모바일 reagent-row: 이름 · badge-low-stock(재고 부족일 때) · 재고 · 칸 위치 "좌 1단" / 데스크톱 result-table: 시약명 · 칸 위치 · 재고 · 상태), 칸 순서(문·단). 행 누르면 화면 3. button-pill-soft "배치도 보기" → `/cabinets?c={id}`. 시약 0개면 시트 안 "이 시약장에는 아직 시약이 없어요". 닫기(× · Esc · 시트 바깥) = 스캔으로 돌아가 카메라 다시 켬. 주소창 `/scan?cabinet={id}` = 결과 열린 상태(새로고침·QR 링크 진입 같은 화면) |
+| 화면 12 데이터 | 새 표·함수 없음. 기존 RLS(같은 학교 select) 로 cabinets·slots·reagents 읽기. 다른 학교 id 는 0행 → "아니에요" 토스트용 학교명은 로그인 사용자 학교명 |
+| 판매처 수정 버그 (화면 9) | 원인: save() 가 await 뒤 토스트·강조를 먼저 보이고, revalidatePath 로 새 props 가 늦게 오면 목록에 옛 연락처가 잠깐 남음(run 20261010-1659·20261011-1713 D4 간헐 실패). 고침: 저장 응답의 행(res.vendor)을 목록 로컬 덮어쓰기에 바로 합치고(즐겨찾기 덮어쓰기와 같은 방식, 새 props 가 오면 버림) router.refresh. 등록·삭제도 같은 방식(삭제는 바로 빼기). 테스트는 UI 읽기를 다시 시도(expect.poll) — 저장 토스트 직후 한 번 읽기 금지 |
+| QA 개선 (1) | 로그인 상태로 `/login`·`/signup` = `/` 로 보낸다 |
+| QA 개선 (3) | 데스크톱 시약 data-table 드로어가 열려도 시약명 칸 최소 폭 유지(다른 칸을 줄임), 잘리면 말줄임 + title 속성으로 전체 이름 |
+| QA 개선 (4) | 화면 4 데스크톱 시약 검색에서 시약을 고르면 검색칸 비우고 드롭다운 닫기 |
+| QA 개선 (5) | 화면 4 사용량 빈 칸으로 저장 비활성일 때 버튼 위 helper "사용량을 적어 주세요"(text-muted caption, 두 폭) |
+| QA 개선 (6) | 화면 4 사용일에 미래 날짜를 넣으면 입력 즉시 칸 아래 오류(저장 때와 같은 문구) + 저장 비활성 |
+| QA 개선 (7) | MSDS 일괄 찾기에서 모두 건너뛰면 ex-toast "MSDS를 연결하지 않았어요", 일부만 연결하면 지금 결과 토스트 |
+| QA 개선 (8) | 데모 시약 MSDS 주소를 KOSHA 실제 상세 주소로 바꾼다(CAS 로 KOSHA API 조회, 마이그레이션으로 seed 갱신). 둘러보기 화면 16 요약 체험 가능 |
+| QA 개선 (9) | 홈 최근 사용 기록 두 폭 모두 사용일(§25 QA (1) 로 고쳤는지 테스트로 확인만) |
+| QA 개선 (11) | 보관 분류 추천: 인화성(GHS 인화성 액체 H225·H226 또는 학교 상용 표)이 유기보다 먼저 — 아세톤·에탄올·메탄올 = 인화성. 서류 입고·위치 추천 같은 함수 |
+| QA 개선 (13) | 데스크톱 랜딩 스크롤 등장 효과는 `@media print` 에서 끈다(모든 섹션 보임). 화면 모양 변화 없음 |
+| 디자인 요청 8 로 보낸 것 | 센서 종류 확장 + 파스코 모델 카탈로그, QA (2) 권한 없는 화면 안내, QA (10) 초대 취소, QA (12) 모바일 랜딩 Lab_Stock 두 번 — 규칙을 가져온 뒤 다음 run |
+| ON 센서 코드 | 지능형 과학실 ON 오픈API 정의서 2026-06-16 V1.2 별첨 2 공식 코드 9개: TPR 온도 · PRS 압력 · SUD 소리 · SPO 산소포화도 · VTG 전압 · CRT 전류 · ILM 조도 · POH pH · CDT 전기 전도도 (출처 science-on.kosac.re.kr). lib/sensor-rules `SENSOR_TYPE_CODES` 를 이 값으로 고치고, 공식 코드가 없는 종류는 null(임시 3글자 금지). 화면에는 여전히 쓰지 않는다 |
+
 ## 10. 로그아웃 (2026-10-05 결정)
 
 - 로그인 후 모든 화면의 nav-pill 학교명을 누르면 작은 메뉴가 열리고 "로그아웃" 1개가 있다. 누르면 `POST /api/auth/logout` → `/login`.
