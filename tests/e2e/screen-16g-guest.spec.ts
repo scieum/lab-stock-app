@@ -1,8 +1,10 @@
 // 화면 16g (둘러보기 MSDS 요약, dev-rules.json routes["16-guest"] · route_auth 16-guest "비로그인 (데모 학교 시약만)") — 비로그인 컨텍스트.
-// 기준: harness/d7-data.md §22 "둘러보기"(데모 seed 의 msds_url 이 공단 상세 주소가 아니면 16-no-summary) · design/rules.json guest·tab_bar·variants 16 ·
+// 기준: harness/d7-data.md §22 "둘러보기"(데모 seed 의 msds_url 이 공단 상세 주소가 아니면 16-no-summary) · §26 QA 개선 (8)(데모 시약 MSDS 주소 = 공단 실제 상세 주소,
+//       마이그레이션 20261011230000_demo_msds_kosha_urls 로 seed 갱신 → 둘러보기 화면 16 요약 체험 가능) · design/rules.json guest·tab_bar·variants 16 ·
 //       harness/dev-rules.json guest_screens · routes 16-guest.
 // [GM-ui][S16g] 데모 시약 /demo/msds/{id} 200 · guest-banner · hidden_components 0 · 학교명 = 데모 학교만 · 쓰기 요청 0 · 탭바(390) · 로그인 사용자 → /
-// [C1][S16g]    화면 3g "MSDS 보기" → /demo/msds/{id} (같은 창) · 16-no-summary(원문 보기만, href = 데모 msds_url, 새 창 noopener) · 뒤로 = 3g
+// [C1][S16g]    화면 3g "MSDS 보기" → /demo/msds/{id} (같은 창) · 데모 msds_url = 공단 상세 주소(마이그레이션 적용 후) → 출처 줄 + 요약(KOSHA_MSDS_API_KEY 있음)
+//               또는 16-fail(키 없음 — 이 환경) · 원문 보기 href = 데모 msds_url · 뒤로 = 3g
 // [N1-ui][S16g] 데모가 아닌 시약 id(학교 A·B)·없는 id·형식이 틀린 id → 404 (이름·주소 미노출)
 // 데이터 비교는 anon 클라이언트(RLS). 공용 데이터는 읽기만.
 import { join } from "node:path";
@@ -30,6 +32,8 @@ import {
   guestMsdsPath,
   guestReagentPath,
   koshaUrl,
+  EMPTY,
+  FAIL_TEXT,
   originalLink,
   redPaint,
   visibleBack,
@@ -59,7 +63,10 @@ async function pick(): Promise<DemoMsds> {
   return [...withMsds].sort((a, b) => b.name.length - a.name.length)[0];
 }
 
-/** 데모 seed 의 msds_url 이 공단 상세 주소면 서버가 실제 공단을 부른다 — 이 테스트는 공단 주소가 아닌 시약으로만 연다 (d7 §22 둘러보기) */
+/** 서버에 공단 키가 있으면 요약, 없으면 16-fail (d7 §22 상태) */
+const HAS_KOSHA_KEY = Boolean(process.env.KOSHA_MSDS_API_KEY?.trim());
+
+/** 공단 상세 주소인가 (d7 §22 요약 대상) — §26 (8) 마이그레이션 적용 후 데모 시약은 모두 공단 상세 주소 */
 function isKoshaDetail(url: string | null): boolean {
   if (!url) return false;
   const base = koshaUrl("").split("?")[0];
@@ -79,10 +86,13 @@ test(`[GM-ui][${TAG}] rules.json guest.screens 에 화면 ${SCREEN} · dev-rules
   expect(VARIANTS["no-summary"]).toEqual([ORIGINAL]);
 });
 
-test(`[GM-ui][C1][${TAG}] 데모 시약 MSDS 요약: 200 · ${GUEST.banner} 1(가입 → 회원가입) · hidden_components 0 · 학교명 = "${GUEST.school_name}" 만 · 16-no-summary(공단 상세 주소 아님: ${VARIANTS["no-summary"]?.join("·")} 만) · ‹ "MSDS · {시약명}" · 뒤로 = 3g · 쓰기 요청 0 · N2 0`, async ({ browser }, info) => {
+test(`[GM-ui][C1][${TAG}] 데모 시약 MSDS 요약 (마이그레이션 적용 후 — 공단 상세 주소): 200 · ${GUEST.banner} 1(가입 → 회원가입) · hidden_components 0 · 학교명 = "${GUEST.school_name}" 만 · 출처 줄 "${FRAME.source}" · 공단 키 있음 = ${SUMMARY} / 없음 = 16-fail(${VARIANTS["fail"]?.join("·")} · "${FAIL_TEXT}") · ‹ "MSDS · {시약명}" · 뒤로 = 3g · 쓰기 요청 0 · N2 0`, async ({ browser }, info) => {
   test.setTimeout(120_000);
+  const all = await demoMsds();
+  const notKosha = all.filter((x) => x.msds_url && !isKoshaDetail(x.msds_url)).map((x) => `${x.name}: ${x.msds_url}`);
+  expect(notKosha, "데모 시약 msds_url 은 모두 공단 상세 주소 (d7 §26 (8) 마이그레이션 적용 후)").toEqual([]);
   const r = await pick();
-  expect(isKoshaDetail(r.msds_url), `데모 seed ${r.name} 의 msds_url 은 공단 상세 주소가 아님 (d7 §22 둘러보기 = 16-no-summary)`).toBe(false);
+  expect(isKoshaDetail(r.msds_url), `데모 ${r.name} 의 msds_url 은 공단 상세 주소`).toBe(true);
   const { context, page, viewport, response } = await openGuest(browser, info, guestMsdsPath(r.id));
   const writes: string[] = [];
   page.on("request", (q) => {
@@ -98,9 +108,15 @@ test(`[GM-ui][C1][${TAG}] 데모 시약 MSDS 요약: 200 · ${GUEST.banner} 1(�
     await checkSchoolName(page, html);
     await checkLocksAreButtons(page);
     await expectHeader(page, r.name, guestReagentPath(r.id), "16g", GUEST.school_name);
-    await expect(visibleText(page, FRAME.source), "공단 출처 줄 없음 (요약 없음)").toHaveCount(0);
-    for (const c of VARIANTS["no-summary"]) expect(await countComponent(page, c), `${c} (variants no-summary)`).toBeGreaterThanOrEqual(1);
-    for (const c of [SUMMARY, GHS, SKELETON]) expect(await countComponent(page, c), `${c} 0`).toBe(0);
+    await expect(visibleText(page, FRAME.source), "공단 출처 줄 1 (공단 상세 주소)").toHaveCount(1);
+    expect(await countComponent(page, SKELETON), `${SKELETON} 0 (불러오기 끝)`).toBe(0);
+    if (HAS_KOSHA_KEY) {
+      expect(await countComponent(page, SUMMARY), `${SUMMARY} ≥ 1 (공단 키 있음 = 요약)`).toBeGreaterThanOrEqual(1);
+    } else {
+      for (const c of VARIANTS["fail"]) expect(await countComponent(page, c), `${c} (variants fail — 공단 키 없음)`).toBeGreaterThanOrEqual(1);
+      await expect(page.locator(sel(EMPTY)).filter({ visible: true }), `"${FAIL_TEXT}"`).toContainText(FAIL_TEXT);
+      for (const c of [SUMMARY, GHS]) expect(await countComponent(page, c), `${c} 0 (16-fail)`).toBe(0);
+    }
     await expectOriginal(page, viewport, r.msds_url!, "16g");
     expect(await foreignOnPage(page, allowed()), "화면 16 밖 컴포넌트 0").toEqual({});
     expect((await redPaint(page)).outside, "GHS 빨강은 ghs-pictogram 밖에 없음").toEqual([]);
@@ -209,7 +225,7 @@ test(`[GM-ui][${TAG}] 로그인 학생이 ${devRules.routes[`${SCREEN}-guest`]} 
 });
 
 // ---------- V1 (보고용 스크린샷, 실패 조건 아님) ----------
-test(`[V1][${TAG}] 화면 16g 스크린샷 저장 (데모 시약 — 16-no-summary)`, async ({ browser }, info) => {
+test(`[V1][${TAG}] 화면 16g 스크린샷 저장 (데모 시약 — 공단 상세 주소: 요약 또는 16-fail)`, async ({ browser }, info) => {
   test.setTimeout(120_000);
   const r = await pick();
   const { context, page, viewport } = await openGuest(browser, info, guestMsdsPath(r.id));
