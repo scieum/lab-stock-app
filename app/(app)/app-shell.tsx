@@ -84,6 +84,10 @@ function subPage(pathname: string, staff: boolean, scanReturn = "/"): SubPage | 
   if (/^\/reagents\/[^/]+\/?$/.test(pathname)) return { title: "시약 상세", backHref: "/reagents", mainNav: true };
   // 화면 17 (시안 17-detail-mobile · 17-form-mobile): 상세 = ‹ "센서 상세", 폼 = × "센서 등록" · "센서 수정"
   if (/^\/sensors\/new\/?$/.test(pathname)) return { title: "센서 등록", backHref: "/sensors", backIcon: "close" };
+  // 화면 17 서류로 등록 (시안 17-doc-*: × + "서류로 등록")
+  if (/^\/sensors\/doc\/?$/.test(pathname)) return { title: "서류로 등록", backHref: "/sensors", backIcon: "close" };
+  // 화면 17 서류로 등록 (시안 17-doc-*: × + "서류로 등록")
+  if (/^\/sensors\/doc\/?$/.test(pathname)) return { title: "서류로 등록", backHref: "/sensors", backIcon: "close" };
   const edit = /^\/sensors\/([^/]+)\/edit\/?$/.exec(pathname);
   if (edit) return { title: "센서 수정", backHref: `/sensors/${edit[1]}`, backIcon: "close" };
   if (/^\/sensors\/[^/]+\/?$/.test(pathname)) return { title: "센서 상세", backHref: "/sensors" };
@@ -228,16 +232,18 @@ function MobileNav({ schoolName, staff = false, admin = false, page }: AppNavPro
  * (화면 4 /usage/new 는 2026-10-10 디자인 1.25 부터 본문 페이지 — heavy_pages)
  */
 function isDeskPath(pathname: string): boolean {
+  if (/^\/sensors\/doc\/?$/.test(pathname)) return false;
+  if (/^\/sensors\/doc\/?$/.test(pathname)) return false;
   return /^\/(reagents(\/[^/]+)?|msds\/[^/]+|usage|users|vendors|scan|sensors(\/[^/]+(\/edit)?)?)\/?$/.test(pathname);
 }
 
 /**
  * 데스크톱 재구성 run c(d7 §23): 본문 페이지 — 시안 main 안쪽 32 · 블록 사이 24 (page-head → page-column, 아래 고정 bottom-bar).
- * 13 / · 5 /manual · 6 /reorder · 7 /intake · 11 /cabinets · 4 /usage/new(d7 §24). 제목은 각 페이지의 page-head 가 그린다 (run a 의 셸 page-head 대신).
+ * 13 / · 5 /manual · 6 /reorder · 7 /intake · 11 /cabinets · 4 /usage/new(d7 §24) · 17 /sensors/doc(d7 §28). 제목은 각 페이지의 page-head 가 그린다 (run a 의 셸 page-head 대신).
  * 오른쪽 detail-drawer(11 QR 인쇄)가 열리면 본문 + 드로어 가로 배치.
  */
 function isPagePath(pathname: string): boolean {
-  return /^\/(manual|reorder|intake|cabinets|usage\/new)?\/?$/.test(pathname);
+  return /^\/(manual|reorder|intake|cabinets|usage\/new|sensors\/doc)?\/?$/.test(pathname);
 }
 
 /**
