@@ -24,8 +24,11 @@ const SAVE_FAILED = "저장하지 못했어요. 잠시 후 다시 시도해 주�
 /** d7 §25 QA 2: 입고일 미래 금지 (lib/doc-intake-rules 서류 입고와 같은 문구) */
 const FUTURE_DATE = "입고일은 오늘 이후로 정할 수 없어요";
 
-/** 입고 화면의 시약 한 건 (components/stock-intake 의 IntakeReagent 와 같은 모양) */
-export type IntakeReagentOption = { id: string; name: string; stock: number; unit: string };
+/**
+ * 입고 화면의 시약 한 건 (components/stock-intake 의 IntakeReagent 와 같은 모양).
+ * casNo = reagents.cas_no — 서류로 입고 자동 연결에서 추출한 CAS 와 견준다 (d7 §27)
+ */
+export type IntakeReagentOption = { id: string; name: string; stock: number; unit: string; casNo?: string | null };
 
 export type IntakeEntry = {
   role: Role;
@@ -59,13 +62,19 @@ export async function getIntakeEntry(): Promise<IntakeEntryResult> {
   if (role === "student") return { kind: "forbidden" };
 
   const supabase = await getServerClient();
-  const { data } = await supabase.from("reagents").select("id, name, stock, unit").order("name");
+  const { data } = await supabase.from("reagents").select("id, name, cas_no, stock, unit").order("name");
   return {
     kind: "ok",
     data: {
       role,
       today: SEOUL_DATE.format(new Date()),
-      reagents: (data ?? []).map((r) => ({ id: r.id, name: r.name, stock: Number(r.stock), unit: r.unit })),
+      reagents: (data ?? []).map((r) => ({
+        id: r.id,
+        name: r.name,
+        stock: Number(r.stock),
+        unit: r.unit,
+        casNo: r.cas_no ?? null,
+      })),
     },
   };
 }

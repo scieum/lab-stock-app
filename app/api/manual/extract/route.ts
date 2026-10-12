@@ -42,14 +42,27 @@ export type ManualExtractCode =
   | "blocked"
   | "parse";
 
+/** 응답 한 줄 (d7 §13·§27): name = 한국어 시약명, originalName = 문서 표기(없으면 null), cas = 문서에 보인 CAS(없으면 null) */
+export type ManualExtractItem = {
+  name: string;
+  originalName: string | null;
+  cas: string | null;
+  amount: number | null;
+  unit: string;
+};
+
 export type ManualExtractResponse =
-  | { ok: true; items: ExtractedUsage[] }
+  | { ok: true; items: ManualExtractItem[] }
   | { ok: false; error: string; code: ManualExtractCode };
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
 function fail(status: number, code: ManualExtractCode, error: string, headers: Record<string, string> = {}) {
   return NextResponse.json<ManualExtractResponse>({ ok: false, error, code }, { status, headers: { ...NO_STORE, ...headers } });
+}
+
+function toResponseItem(it: ExtractedUsage): ManualExtractItem {
+  return { name: it.name, originalName: it.originalName ?? null, cas: it.cas ?? null, amount: it.amount, unit: it.unit };
 }
 
 /** 파일 앞머리가 그 형식이 맞는가 (확장자만 바꾼 파일을 AI 에 보내지 않는다) */
@@ -68,7 +81,8 @@ function hasMagic(bytes: Uint8Array, mime: string): boolean {
 /**
  * POST /api/manual/extract — 화면 5 "AI 추출" (d7 §13)
  * 요청: multipart/form-data — file(PDF·JPG·PNG 1개, 4MB 이하), groups(조 수 1~20)
- * 응답: { ok: true, items: [{ name, amount(숫자 | null), unit }] } / { ok: false, error, code }
+ * 응답: { ok: true, items: [{ name(한국어), originalName(문서 표기 | null), cas(CAS | null), amount(숫자 | null), unit }] }
+ *       / { ok: false, error, code } (d7 §13·§27)
  *       시약을 못 찾으면 200 + items [] (화면이 0행 상태를 보여 준다).
  * 순서: 로그인(401) → 역할(학생 403 — 본문을 읽기 전에) → 학교·데모(403) → 본문 크기(413) → 파일(400·413)
  *       → 조 수(400) → 키 설정(503) → 호출 제한(429) → Gemini(502·504·422).
@@ -125,7 +139,9 @@ export async function POST(req: NextRequest) {
   }
 
   const result = await extractManualUsage({ bytes, mimeType: mime });
-  if (result.ok) return NextResponse.json<ManualExtractResponse>({ ok: true, items: result.items }, { headers: NO_STORE });
+  if (result.ok) {
+    return NextResponse.json<ManualExtractResponse>({ ok: true, items: result.items.map(toResponseItem) }, { headers: NO_STORE });
+  }
 
   switch (result.code) {
     case "empty":

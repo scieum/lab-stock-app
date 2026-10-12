@@ -18,6 +18,8 @@ export type IntakeReagent = {
   stock: number;
   /** 병 · mL · g */
   unit: string;
+  /** reagents.cas_no — 서류로 입고 자동 연결용 (d7 §27, 없으면 null·생략) */
+  casNo?: string | null;
 };
 
 export type StockIntakeValues = {

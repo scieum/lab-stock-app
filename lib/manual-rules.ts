@@ -1,6 +1,8 @@
 // 화면 5 실험 매뉴얼 규칙 (harness/d7-data.md §13). 클라이언트·서버 공용 순수 함수.
 // 서버(추출 API·DB 함수 save_reorder_basis)가 같은 검사를 다시 한다 — 여기는 화면 안내와 추출 결과 정리용.
 
+import { localizeReagentName } from "./reagent-name-ko";
+
 /* ───────── 파일 ───────── */
 
 export const MANUAL_FILE_MAX_BYTES = 4 * 1024 * 1024;
@@ -204,6 +206,8 @@ export type ManualReagent = {
    * 없으면 기존 규칙(더 큰 값만)으로 본다.
    */
   source?: "auto" | "basis" | "manual";
+  /** reagents.cas_no (d7 §27 CAS 연결). 없으면 null·생략 */
+  casNo?: string | null;
 };
 
 /*
@@ -320,42 +324,82 @@ function concKey(name: string): string {
  *         "황산" ↔ "황산구리", "황산구리(II)" ↔ "황산구리(I)", "산화구리" ↔ "산화구리(II)" 는 연결하지 않음)
  * 3순위 없음: null. (포함 관계만으로는 연결하지 않는다)
  *
+ * d7 §27 (영문 문서): hints 로 CAS·원문 이름을 받으면 순서를 넓힌다 —
+ *   ① 한국어 name 열쇠 일치 → ② hints.cas 가 우리 학교 시약 casNo 와 같음 → ③ hints.originalName 열쇠 일치
+ *   (우리 학교 시약 이름이 영어인 경우) → ④ name 핵심 이름 일치 → ⑤ originalName 핵심 이름 일치.
+ *   hints 가 없으면 ①·④ 만 (예전과 같다).
+ *
  * 같은 순위에 후보가 여럿이면 가장 가까운 것:
  *   ① 농도까지 같은 이름(공백·대소문자만 무시) → ② 농도 표기가 같은 것 → ③ 꾸밈말 차이가 적은 것(열쇠 길이 차이)
  *   → ④ 이름 가나다순 → ⑤ id 순.
  */
-export function matchReagent<T extends Pick<ManualReagent, "id" | "name">>(name: string, reagents: readonly T[]): T | null {
+export type MatchHints = {
+  /** 문서에 보인 CAS (형식·검사 숫자를 이미 본 값) */
+  cas?: string | null;
+  /** 문서 표기 이름 (영어 문서) */
+  originalName?: string | null;
+};
+
+export function matchReagent<T extends Pick<ManualReagent, "id" | "name"> & { casNo?: string | null }>(
+  name: string,
+  reagents: readonly T[],
+  hints: MatchHints = {},
+): T | null {
+  const keyed = reagents.map((r) => ({ r, k: reagentNameKey(r.name) })).filter((c) => c.k !== "");
+  const original = typeof hints.originalName === "string" ? hints.originalName.trim() : "";
+  const cas = typeof hints.cas === "string" ? hints.cas.trim() : "";
+
+  const exact = matchByName(name, keyed, "exact");
+  if (exact) return exact;
+  if (cas !== "") {
+    const byCas = keyed.filter((c) => typeof c.r.casNo === "string" && c.r.casNo.trim() === cas);
+    const hit = pickClosest(name, byCas);
+    if (hit) return hit;
+  }
+  if (original !== "") {
+    const hit = matchByName(original, keyed, "exact");
+    if (hit) return hit;
+  }
+  const core = matchByName(name, keyed, "core");
+  if (core) return core;
+  return original !== "" ? matchByName(original, keyed, "core") : null;
+}
+
+/** name 의 열쇠(exact) 또는 핵심 이름(core)이 같은 후보 중 가장 가까운 것 */
+function matchByName<T extends Pick<ManualReagent, "id" | "name">>(
+  name: string,
+  keyed: readonly { r: T; k: string }[],
+  mode: "exact" | "core",
+): T | null {
   const key = reagentNameKey(name);
   if (key === "") return null;
-  const raw = rawNameKey(name);
-  const conc = concKey(name);
-
-  const pick = (candidates: { r: T; k: string }[]): T | null => {
-    if (candidates.length === 0) return null;
-    const sorted = [...candidates].sort((a, b) => {
-      const ra = rawNameKey(a.r.name) === raw ? 0 : 1;
-      const rb = rawNameKey(b.r.name) === raw ? 0 : 1;
-      if (ra !== rb) return ra - rb;
-      const ca = concKey(a.r.name) === conc ? 0 : 1;
-      const cb = concKey(b.r.name) === conc ? 0 : 1;
-      if (ca !== cb) return ca - cb;
-      const da = Math.abs(a.k.length - key.length);
-      const db = Math.abs(b.k.length - key.length);
-      if (da !== db) return da - db;
-      const byName = a.r.name.localeCompare(b.r.name, "ko");
-      if (byName !== 0) return byName;
-      return a.r.id < b.r.id ? -1 : a.r.id > b.r.id ? 1 : 0;
-    });
-    return sorted[0].r;
-  };
-
-  const keyed = reagents.map((r) => ({ r, k: reagentNameKey(r.name) })).filter((c) => c.k !== "");
-  const exact = pick(keyed.filter((c) => c.k === key));
-  if (exact) return exact;
-
+  if (mode === "exact") return pickClosest(name, keyed.filter((c) => c.k === key));
   const core = coreNameKey(name);
   if (core === "") return null;
-  return pick(keyed.filter((c) => coreNameKey(c.r.name) === core));
+  return pickClosest(name, keyed.filter((c) => coreNameKey(c.r.name) === core));
+}
+
+/** 후보 중 name 에 가장 가까운 것 (위 "같은 순위에 후보가 여럿이면" 순서) */
+function pickClosest<T extends Pick<ManualReagent, "id" | "name">>(name: string, candidates: readonly { r: T; k: string }[]): T | null {
+  const key = reagentNameKey(name);
+  const raw = rawNameKey(name);
+  const conc = concKey(name);
+  if (candidates.length === 0) return null;
+  const sorted = [...candidates].sort((a, b) => {
+    const ra = rawNameKey(a.r.name) === raw ? 0 : 1;
+    const rb = rawNameKey(b.r.name) === raw ? 0 : 1;
+    if (ra !== rb) return ra - rb;
+    const ca = concKey(a.r.name) === conc ? 0 : 1;
+    const cb = concKey(b.r.name) === conc ? 0 : 1;
+    if (ca !== cb) return ca - cb;
+    const da = Math.abs(a.k.length - key.length);
+    const db = Math.abs(b.k.length - key.length);
+    if (da !== db) return da - db;
+    const byName = a.r.name.localeCompare(b.r.name, "ko");
+    if (byName !== 0) return byName;
+    return a.r.id < b.r.id ? -1 : a.r.id > b.r.id ? 1 : 0;
+  });
+  return sorted[0].r;
 }
 
 /* ───────── 추출 결과 → 확인 표의 행 ───────── */
@@ -364,12 +408,16 @@ export const EXTRACTION_ROWS_MAX = 50;
 export const EXTRACTION_NAME_MAX = 80;
 
 /** AI 가 준 한 줄 (형식을 믿지 않는다) */
-export type ExtractedItem = { name?: unknown; amount?: unknown; unit?: unknown };
+export type ExtractedItem = { name?: unknown; amount?: unknown; unit?: unknown; originalName?: unknown; cas?: unknown };
 
 export type ExtractionRow = {
   id: string;
-  /** 추출한 시약명 (고치지 않는다) */
+  /** 추출한 시약명 (고치지 않는다) — d7 §27: 한국어 시약명 */
   name: string;
+  /** 문서 표기 (영어 문서처럼 name 과 다를 때만, 아니면 null) — 화면의 "원문: …" 줄 (d7 §27) */
+  originalName?: string | null;
+  /** 문서에 보인 CAS (형식·검사 숫자가 맞을 때만, 아니면 null) — 자동 연결에 쓴다 (d7 §27) */
+  cas?: string | null;
   /** 1조 사용량 입력값 (사용자가 고치는 문자열) */
   perGroup: string;
   /** 처음 추출한 1조 사용량 (환산 후). 못 읽었으면 null — perGroup 과 다르면 "고친 칸" */
@@ -395,21 +443,31 @@ export function mergedRowsText(row: Pick<ExtractionRow, "mergedCount">): string 
  * 추출 결과 정리: 이름이 빈 줄은 버리고(이름은 80자까지), 단위를 병·mL·g 로 정리·환산하고,
  * 우리 학교 시약과 자동 연결한다. 최대 50행. 행 id 는 "row-1" 부터.
  *
- * 중복 합치기 (d7 §13): 시약명 열쇠(reagentNameKey)와 정리한 단위가 같은 행은 한 줄로 합친다.
+ * 중복 합치기 (d7 §13·§27): 한국어 시약명 열쇠(reagentNameKey)와 정리한 단위가 같은 행은 한 줄로 합친다.
  *   - 1조 사용량 = 수량이 있는 행들의 합 (수량을 못 읽은 행은 합에서 빠지지만 행은 흡수된다).
  *     모두 수량이 없으면 null. 합이 상한(1,000,000)을 넘으면 null (사용자가 채운다).
- *   - 이름·연결 시약은 처음 나온 행의 것, 순서도 처음 나온 순서.
+ *   - 이름·원문·CAS·연결 시약은 처음 나온 행의 것, 순서도 처음 나온 순서.
  *   - 단위가 다르거나 단위가 미확정("")이면 합치지 않는다. 열쇠가 빈 이름도 합치지 않는다.
  *   - 합친 행 수는 mergedCount 에 남긴다.
  */
 export function normalizeExtraction(items: readonly ExtractedItem[], reagents: readonly ManualReagent[]): ExtractionRow[] {
-  type Acc = { name: string; unit: ManualUnit | ""; scaled: number | null; count: number; reagentId: string | null };
+  type Acc = {
+    name: string;
+    originalName: string | null;
+    cas: string | null;
+    unit: ManualUnit | "";
+    scaled: number | null;
+    count: number;
+    reagentId: string | null;
+  };
   const groups: Acc[] = [];
   const byKey = new Map<string, Acc>();
   for (const item of items) {
     if (!item || typeof item !== "object") continue;
-    const name = typeof item.name === "string" ? item.name.replace(/\s+/g, " ").trim().slice(0, EXTRACTION_NAME_MAX) : "";
-    if (name === "") continue;
+    const rawName = typeof item.name === "string" ? item.name.replace(/\s+/g, " ").trim().slice(0, EXTRACTION_NAME_MAX) : "";
+    if (rawName === "") continue;
+    // d7 §27: 서버가 이미 정리했어도 한 번 더 (같은 결과) — 합치기 열쇠는 한국어 name
+    const { name, originalName, cas } = localizeReagentName(rawName, item.originalName, item.cas, EXTRACTION_NAME_MAX);
     const { amount, unit } = normalizeUnit(item.amount, item.unit);
     const nameKey = reagentNameKey(name);
     const mergeKey = nameKey !== "" && unit !== "" ? `${nameKey}\u0000${unit}` : null;
@@ -422,10 +480,12 @@ export function normalizeExtraction(items: readonly ExtractedItem[], reagents: r
     if (groups.length >= EXTRACTION_ROWS_MAX) continue;
     const acc: Acc = {
       name,
+      originalName,
+      cas,
       unit,
       scaled: amount === null ? null : toScaled(amount),
       count: 1,
-      reagentId: matchReagent(name, reagents)?.id ?? null,
+      reagentId: matchReagent(name, reagents, { cas, originalName })?.id ?? null,
     };
     groups.push(acc);
     if (mergeKey) byKey.set(mergeKey, acc);
@@ -435,6 +495,8 @@ export function normalizeExtraction(items: readonly ExtractedItem[], reagents: r
     return {
       id: `row-${i + 1}`,
       name: g.name,
+      originalName: g.originalName,
+      cas: g.cas,
       perGroup: amountInputText(amount),
       extractedPerGroup: amount,
       unit: g.unit,

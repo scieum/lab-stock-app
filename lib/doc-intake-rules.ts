@@ -1,12 +1,14 @@
 // 화면 7 서류로 입고 규칙 (harness/d7-data.md §21). 클라이언트·서버 공용 순수 함수 — 환경변수·네트워크를 쓰지 않는다.
 // - 추출 응답 정리(normalizeDocExtraction): 서버(lib/server/gemini-response)와 화면이 같은 함수로 모양을 맞춘다.
-// - 자동 연결: lib/manual-rules matchReagent (§13 과 같은 규칙) — 품명에 붙은 규격("500mL")만 떼고 견준다.
+// - 자동 연결: lib/manual-rules matchReagent (§13·§27 과 같은 규칙) — 품명에 붙은 규격("500mL")만 떼고 견준다.
+//   한국어 품명 → CAS ↔ 우리 학교 cas_no → 원문 품명(originalName) → 핵심 이름 순.
 // - 입고량: 시약 단위 mL/g 이고 규격이 같은 계열이면 specAmount(L→mL, kg→g ×1000) × 수량, "병"이면 수량, 그 밖은 null.
 // - 저장 항목(planDocIntake): DB 함수 record_document_intake(p_intake_date, p_items) 의 항목. DB 가 같은 검사를 다시 한다.
 
 import { STORAGE_CLASSES, isIsoDate, type Checked, type StorageClass } from "./intake-rules";
 import { AMOUNT_MAX, amountInputText, formatAmountText, matchReagent, parseAmount } from "./manual-rules";
 import { suggestStorageClass } from "./storage-class-rules";
+import { localizeReagentName } from "./reagent-name-ko";
 
 /* ───────── 상수 · 문구 ───────── */
 
@@ -65,8 +67,12 @@ export function docIntakeDoneText(count: number): string {
 
 /** 서류 품목 1개 (d7 §21 구조화 출력) */
 export type DocItem = {
-  /** 서류 표기 그대로의 품명 (80자까지) */
+  /** 품명 (80자까지) — d7 §27: 한국어 품명 (한국어 서류면 표기 그대로) */
   name: string;
+  /** 서류 표기 그대로의 품명 (영어 서류처럼 name 과 다를 때만, 아니면 null) — d7 §27 */
+  originalName?: string | null;
+  /** 서류에 보인 CAS 번호 (형식·검사 숫자가 맞을 때만, 아니면 null) — d7 §27 */
+  cas?: string | null;
   /** 규격 표기 ("500 mL"), 없으면 null */
   spec: string | null;
   /** 규격 숫자 (500), 없으면 null */
@@ -133,20 +139,46 @@ function storageClassOf(v: unknown): StorageClass | null {
     : null;
 }
 
-/** AI 가 준 품목 하나 → DocItem (이름이 비면 null — 버린다) */
+/** 수량 단위 영문 표기 → 한국어 (d7 §27: bottle → 병, ea → 개). 키는 소문자·공백·마침표 없는 표기 */
+const QTY_UNIT_TABLE: Record<string, string> = {
+  bottle: "병",
+  bottles: "병",
+  btl: "병",
+  btls: "병",
+  ea: "개",
+  each: "개",
+  pc: "개",
+  pcs: "개",
+  piece: "개",
+  pieces: "개",
+};
+
+/** 수량 단위 정리: bottle·EA 같은 영문 표기는 병·개로, 그 밖은 그대로 (빈 값은 null) */
+export function normalizeQuantityUnit(v: unknown): string | null {
+  const t = cleanText(v, DOC_QTY_UNIT_MAX);
+  if (t === "") return null;
+  return QTY_UNIT_TABLE[t.normalize("NFKC").toLowerCase().replace(/[\s.]/g, "")] ?? t;
+}
+
+/**
+ * AI 가 준 품목 하나 → DocItem (이름이 비면 null — 버린다).
+ * d7 §27: originalName·cas 검사, 한글 없는 영문 품명은 상용 이름 표·CAS 로 한국어 품명을 찾는다(못 찾으면 그대로).
+ */
 export function normalizeDocItem(raw: unknown): DocItem | null {
   if (!isRecord(raw)) return null;
-  const name = cleanText(raw.name, DOC_NAME_MAX);
-  if (name === "") return null;
+  const rawName = cleanText(raw.name, DOC_NAME_MAX);
+  if (rawName === "") return null;
+  const { name, originalName, cas } = localizeReagentName(rawName, raw.originalName, raw.cas, DOC_NAME_MAX);
   const spec = cleanText(raw.spec, DOC_SPEC_MAX);
-  const qtyUnit = cleanText(raw.quantityUnit, DOC_QTY_UNIT_MAX);
   return {
     name,
+    originalName,
+    cas,
     spec: spec === "" ? null : spec,
     specAmount: positive(raw.specAmount),
     specUnit: normalizeSpecUnit(raw.specUnit),
     quantity: positive(raw.quantity) ?? 1,
-    quantityUnit: qtyUnit === "" ? null : qtyUnit,
+    quantityUnit: normalizeQuantityUnit(raw.quantityUnit),
     // 모르면 시약으로 본다 (사용자가 빼기로 뺄 수 있다)
     isReagent: raw.isReagent !== false,
     // 인화성이 유기보다 먼저 (d7 §26 QA (11)) — 위치 추천과 같은 규칙 (lib/storage-class-rules)
@@ -260,8 +292,16 @@ export function guessDocUnit(item: Pick<DocItem, "specUnit">): DocUnit {
 
 /* ───────── 확인 표의 행 ───────── */
 
-/** 우리 학교 시약 (연결 후보) */
-export type DocReagent = { id: string; name: string; unit: string };
+/** 우리 학교 시약 (연결 후보). casNo = reagents.cas_no (d7 §27 CAS 연결, 없으면 null) */
+export type DocReagent = { id: string; name: string; unit: string; casNo?: string | null };
+
+/** 품목 → 우리 학교 시약 자동 연결 (d7 §13·§21·§27) — 규격 표기를 뗀 한국어 품명 · CAS · 원문 품명 */
+export function matchDocReagent<T extends DocReagent>(item: Pick<DocItem, "name" | "originalName" | "cas">, reagents: readonly T[]): T | null {
+  return matchReagent(docReagentName(item.name), reagents, {
+    cas: item.cas ?? null,
+    originalName: item.originalName ? docReagentName(item.originalName) : null,
+  });
+}
 
 export type DocLink =
   | { kind: "reagent"; reagentId: string }
@@ -332,7 +372,7 @@ export function refreshDocRow(row: DocRow, reagents: readonly DocReagent[]): Doc
 export function buildDocRows(extraction: DocExtraction, reagents: readonly DocReagent[]): DocRow[] {
   let firstNew = true;
   return extraction.items.slice(0, DOC_ITEMS_MAX).map((item, i) => {
-    const match = item.isReagent ? matchReagent(docReagentName(item.name), reagents) : null;
+    const match = item.isReagent ? matchDocReagent(item, reagents) : null;
     const link: DocLink = !item.isReagent ? { kind: "none" } : match ? { kind: "reagent", reagentId: match.id } : { kind: "new" };
     const base: DocRow = {
       id: `doc-${i + 1}`,
@@ -386,7 +426,7 @@ export function patchDocRow(row: DocRow, patch: DocRowPatch, reagents: readonly 
     next.isReagent = patch.isReagent;
     // "시약으로 넣기": 자동 연결이 있으면 그 시약, 없으면 새 시약
     if (patch.isReagent && next.link.kind === "none" && patch.link === undefined) {
-      const match = matchReagent(docReagentName(next.item.name), reagents);
+      const match = matchDocReagent(next.item, reagents);
       next.link = match ? { kind: "reagent", reagentId: match.id } : { kind: "new" };
       next.autoReagentId = match?.id ?? null;
       if (!match) next.expanded = true;
