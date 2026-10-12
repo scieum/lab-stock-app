@@ -1,7 +1,7 @@
 // 파스코 센서 카탈로그 (design/rules.json 1.28 sensor.catalog, d7 §28). 코드 상수 — DB·관리 화면 없음.
 // 출처: 디자인하네스-요청서-2026-10-11-8.md "부록 — 파스코 카탈로그 요약" (pasco.com, 2026-10-11 확인).
 // 부록의 종류 이름은 rules sensor.types 27종으로 맞췄다 (부록 "심박" · "생체" → "심박·생체").
-// 부록에 한국어 이름이 없는 모델은 "{종류} 센서", 설명만 있는 모델("4채널" 등)은 설명 + 종류로 이름을 붙였다.
+// 부록에 한국어 이름이 없던 모델은 pasco.com(2026-10-11) 조사 결과 이름을 쓴다 (판매 중단은 discontinued 로만 표시).
 // 순수 함수 — 서버·클라이언트 공용.
 
 import type { SensorType } from "@/lib/sensor-rules";
@@ -26,80 +26,80 @@ export const PASCO_CATALOG: readonly PascoModel[] = [
   { model: "PS-3222", nameKo: "무선 온도 링크", type: "온도" },
   { model: "PS-4256", nameKo: "무선 열전대", type: "온도" },
   { model: "PS-3239", nameKo: "무선 녹는점 측정기", type: "온도" },
-  { model: "PS-2125", nameKo: "온도 센서", type: "온도" },
-  { model: "PS-2143", nameKo: "4채널 온도", type: "온도" },
-  { model: "PS-2134", nameKo: "K형 온도", type: "온도" },
-  { model: "PS-2151", nameKo: "수온약층 온도", type: "온도" },
-  { model: "CI-6605", nameKo: "온도 센서", type: "온도" },
+  { model: "PS-2125", nameKo: "패스포트 온도 센서", type: "온도" },
+  { model: "PS-2143", nameKo: "4채널 온도 센서", type: "온도" },
+  { model: "PS-2134", nameKo: "K형 열전대 온도 센서", type: "온도" },
+  { model: "PS-2151", nameKo: "수온약층 센서", type: "온도" },
+  { model: "CI-6605", nameKo: "온도 센서(아날로그)", type: "온도" },
   // pH
   { model: "PS-3204", nameKo: "무선 pH", type: "pH" },
   { model: "PS-4204", nameKo: "무선 pH(디스플레이)", type: "pH" },
   { model: "PS-7914", nameKo: "평면 pH 프로브", type: "pH" },
-  { model: "PS-2102", nameKo: "pH 센서", type: "pH" },
+  { model: "PS-2102", nameKo: "패스포트 pH 센서", type: "pH" },
   // 힘
   { model: "PS-3202", nameKo: "무선 힘·가속도", type: "힘" },
   { model: "PS-3216", nameKo: "무선 로드셀·가속도계", type: "힘" },
   { model: "PS-3229", nameKo: "무선 힘 측정판", type: "힘" },
   { model: "PS-3230", nameKo: "무선 2축 힘 측정판", type: "힘" },
   { model: "PS-3253", nameKo: "무선 악력계", type: "힘" },
-  { model: "PS-2104", nameKo: "힘 센서", type: "힘" },
-  { model: "PS-2189", nameKo: "고분해능 힘", type: "힘" },
+  { model: "PS-2104", nameKo: "패스포트 힘 센서", type: "힘" },
+  { model: "PS-2189", nameKo: "고분해능 힘 센서", type: "힘" },
   { model: "PS-2141", nameKo: "힘 측정판", type: "힘" },
-  { model: "PS-2142", nameKo: "힘 측정판", type: "힘" },
-  { model: "PS-2199", nameKo: "로드셀", type: "힘" },
-  { model: "PS-2206", nameKo: "로드셀", type: "힘" },
-  { model: "CI-6537", nameKo: "힘 센서", type: "힘" },
+  { model: "PS-2142", nameKo: "2축 힘 측정판", type: "힘" },
+  { model: "PS-2199", nameKo: "로드셀 세트", type: "힘" },
+  { model: "PS-2206", nameKo: "로드셀 이중 앰프 세트", type: "힘" },
+  { model: "CI-6537", nameKo: "힘 센서(아날로그)", type: "힘" },
   // 운동(거리)
   { model: "PS-3219", nameKo: "무선 운동", type: "운동(거리)" },
   { model: "PS-3225", nameKo: "무선 스마트 게이트", type: "운동(거리)" },
-  { model: "ME-1240", nameKo: "스마트 카트", type: "운동(거리)" },
-  { model: "ME-1241", nameKo: "스마트 카트", type: "운동(거리)" },
-  { model: "PS-2103", nameKo: "운동 센서", type: "운동(거리)" },
+  { model: "ME-1240", nameKo: "스마트 카트(빨강)", type: "운동(거리)" },
+  { model: "ME-1241", nameKo: "스마트 카트(파랑)", type: "운동(거리)" },
+  { model: "PS-2103", nameKo: "패스포트 운동 센서", type: "운동(거리)" },
   { model: "PS-2204", nameKo: "변위 센서", type: "운동(거리)" },
   { model: "PS-2180", nameKo: "스마트 게이트", type: "운동(거리)" },
-  { model: "CI-6742", nameKo: "운동 센서", type: "운동(거리)" },
+  { model: "CI-6742", nameKo: "운동 센서 II", type: "운동(거리)" },
   // 가속도
   { model: "PS-3223", nameKo: "무선 가속도·고도계", type: "가속도" },
   // 회전
   { model: "PS-3220", nameKo: "무선 회전 운동", type: "회전" },
   { model: "PS-2120", nameKo: "회전 운동 센서", type: "회전" },
-  { model: "PS-2137", nameKo: "각도계", type: "회전" },
-  { model: "CI-6538", nameKo: "회전 운동 센서", type: "회전" },
+  { model: "PS-2137", nameKo: "각도계 센서", type: "회전" },
+  { model: "CI-6538", nameKo: "회전 운동 센서(아날로그)", type: "회전" },
   // 전압
   { model: "PS-3211", nameKo: "무선 전압", type: "전압" },
   { model: "PS-4254", nameKo: "무선 전압·전류", type: "전압" },
   { model: "PS-3240", nameKo: "무선 전하", type: "전압" },
-  { model: "PS-2115", nameKo: "전압 센서", type: "전압" },
+  { model: "PS-2115", nameKo: "전압·전류 센서", type: "전압" },
   // 전류
   { model: "PS-3212", nameKo: "무선 전류", type: "전류" },
   { model: "EM-3534", nameKo: "무선 전류 모듈", type: "전류" },
   { model: "PS-2160", nameKo: "검류계", type: "전류" },
   // 자기장
   { model: "PS-3221", nameKo: "무선 자기장", type: "자기장" },
-  { model: "PS-2162", nameKo: "2축 자기장", type: "자기장" },
+  { model: "PS-2162", nameKo: "2축 자기장 센서", type: "자기장" },
   { model: "PS-2112", nameKo: "자기장 센서", type: "자기장" },
-  { model: "CI-6520", nameKo: "자기장 센서", type: "자기장" },
+  { model: "CI-6520", nameKo: "자기장 센서(아날로그)", type: "자기장" },
   // 조도
   { model: "PS-3248", nameKo: "무선 빛·색", type: "조도" },
   { model: "PS-3213", nameKo: "무선 빛(구형)", type: "조도" },
   { model: "OS-8441", nameKo: "무선 회절 스캐너", type: "조도" },
-  { model: "PS-2150", nameKo: "빛 센서", type: "조도" },
-  { model: "PS-2176", nameKo: "빛 센서", type: "조도" },
-  { model: "CI-6504", nameKo: "빛 센서", type: "조도" },
-  { model: "CI-6604", nameKo: "빛 센서", type: "조도" },
+  { model: "PS-2150", nameKo: "광대역 빛 센서", type: "조도" },
+  { model: "PS-2176", nameKo: "고감도 빛 센서", type: "조도" },
+  { model: "CI-6504", nameKo: "빛 센서(아날로그)", type: "조도" },
+  { model: "CI-6604", nameKo: "고감도 빛 센서(아날로그)", type: "조도" },
   // 소리
   { model: "PS-3227", nameKo: "무선 소리", type: "소리" },
-  { model: "UI-5101", nameKo: "소리 센서", type: "소리" },
+  { model: "UI-5101", nameKo: "소리 센서(마이크 포함)", type: "소리" },
   // 압력
   { model: "PS-3203", nameKo: "무선 압력", type: "압력" },
   { model: "PS-4257", nameKo: "무선 절대압력·온도", type: "압력" },
   { model: "PS-4255", nameKo: "무선 기압계", type: "압력" },
-  { model: "PS-2107", nameKo: "압력 센서", type: "압력" },
-  { model: "PS-2146", nameKo: "압력 센서", type: "압력" },
-  { model: "PS-2181", nameKo: "이중 압력", type: "압력" },
+  { model: "PS-2107", nameKo: "절대압력 센서", type: "압력" },
+  { model: "PS-2146", nameKo: "절대압력·온도 센서", type: "압력" },
+  { model: "PS-2181", nameKo: "이중 압력 센서", type: "압력" },
   // 방사선
   { model: "PS-3238", nameKo: "무선 가이거 계수기", type: "방사선" },
-  { model: "NU-3345", nameKo: "방사선 센서(시료 홀더 포함)", type: "방사선" },
+  { model: "NU-3345", nameKo: "무선 가이거 계수기(시료 홀더 포함)", type: "방사선" },
   // 전도도
   { model: "PS-3210", nameKo: "무선 전도도", type: "전도도" },
   { model: "PS-4210", nameKo: "무선 전도도(디스플레이)", type: "전도도" },
@@ -125,10 +125,10 @@ export const PASCO_CATALOG: readonly PascoModel[] = [
   { model: "PS-2179", nameKo: "수질 비색계", type: "색·탁도" },
   // CO₂
   { model: "PS-3208", nameKo: "무선 이산화탄소", type: "CO₂" },
-  { model: "PS-2110", nameKo: "이산화탄소 센서", type: "CO₂", discontinued: true },
+  { model: "PS-2110", nameKo: "패스포트 이산화탄소 센서", type: "CO₂", discontinued: true },
   // 산소
   { model: "PS-3217", nameKo: "무선 산소 기체", type: "산소" },
-  { model: "PS-2126", nameKo: "산소 기체 센서", type: "산소", discontinued: true },
+  { model: "PS-2126", nameKo: "패스포트 산소 기체 센서", type: "산소", discontinued: true },
   // 심박·생체 (부록 "심박" + "생체")
   { model: "PS-3206", nameKo: "손잡이형 심박", type: "심박·생체" },
   { model: "PS-3207", nameKo: "운동용 심박", type: "심박·생체" },
@@ -144,9 +144,9 @@ export const PASCO_CATALOG: readonly PascoModel[] = [
   { model: "PS-3226", nameKo: "무선 대기질", type: "기상" },
   // 인터페이스
   { model: "PS-3200", nameKo: "AirLink 인터페이스", type: "인터페이스" },
-  { model: "PS-2011", nameKo: "SPARKlink Air 인터페이스", type: "인터페이스" },
-  { model: "UI-5001", nameKo: "550 인터페이스", type: "인터페이스" },
-  { model: "UI-5000", nameKo: "850 인터페이스", type: "인터페이스" },
+  { model: "PS-2011", nameKo: "SPARKlink Air", type: "인터페이스" },
+  { model: "UI-5001", nameKo: "550 유니버설 인터페이스", type: "인터페이스" },
+  { model: "UI-5000", nameKo: "850 유니버설 인터페이스", type: "인터페이스" },
   { model: "PS-3600", nameKo: "SPARK LXi2", type: "인터페이스" },
   { model: "PS-3620", nameKo: "SPARK LX", type: "인터페이스" },
   // 코딩 보드
@@ -156,9 +156,9 @@ export const PASCO_CATALOG: readonly PascoModel[] = [
   { model: "PS-4252", nameKo: "무선 에탄올", type: "기타" },
   { model: "PS-3214", nameKo: "무선 드롭 카운터", type: "기타" },
   { model: "PS-2194", nameKo: "에탄올 센서", type: "기타" },
-  { model: "PS-2117", nameKo: "드롭 카운터", type: "기타" },
-  { model: "PS-2225", nameKo: "유량 센서", type: "기타" },
-  { model: "PS-2226", nameKo: "유량 센서", type: "기타" },
+  { model: "PS-2117", nameKo: "고정밀 드롭 카운터", type: "기타" },
+  { model: "PS-2225", nameKo: "유량 센서(벤투리관)", type: "기타" },
+  { model: "PS-2226", nameKo: "유량 센서(피토관)", type: "기타" },
 ];
 
 /** 후보 최대 줄 수 (rules sensor.catalog.suggest — 최대 6줄) */
