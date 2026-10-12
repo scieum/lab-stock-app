@@ -5,7 +5,9 @@
   flex-shrink: 0;
 }
 
-.outline {
+/* 시안 17-desktop sensor-doc-add button-outline = 44 높이 (기본 button-outline 48 보다 낮게) */
+.wrap .outline {
+  height: var(--button-min-height);
   gap: var(--space-4);
   padding-left: var(--space-12);
 }

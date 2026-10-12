@@ -149,18 +149,21 @@ type InviteRowProps = {
   caption: string;
   /** 오른쪽 상태 글자 (예: "대기") */
   status: string;
+  /** 상태 뒤 (시안 1.28 8-mobile invite-more-menu ⋯ — admin 초대 취소) */
+  end?: React.ReactNode;
 };
 
 /** 초대 대기 행 (화면 8): 이메일 · 초대일 · 상태. 누를 수 없다 */
-export function DataInviteRow({ email, caption, status }: InviteRowProps) {
+export function DataInviteRow({ email, caption, status, end }: InviteRowProps) {
   return (
-    <div data-component="ex-data-table-cell" className={styles.entry}>
+    <div data-component="ex-data-table-cell" className={[styles.entry, end ? styles.entryWithEnd : ""].filter(Boolean).join(" ")}>
       <span className={[styles.entryMain, styles.entryEmail].join(" ")}>{email}</span>
       <span className={styles.entrySub}>
         <span className={styles.entryNote}>{caption}</span>
       </span>
       <span className={styles.entryEnd}>
         <span className={styles.entryStatus}>{status}</span>
+        {end}
       </span>
     </div>
   );

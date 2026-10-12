@@ -109,6 +109,23 @@ export default function SensorCatalogGalleryPage() {
             }}
           />
         </Item>
+        <Item id="new-sensor-fields-slot" name="new-sensor-fields — 보관 위치 '시약장 칸' 고름 (시약장 없음 → 비활성 상자 + 안내)">
+          <NewSensorFields
+            itemName="무선 편광계"
+            floating={false}
+            value={{
+              name: "무선 편광계",
+              type: "편광",
+              maker: "파스코",
+              model: "PS-3237",
+              quantity: "1",
+              locationMode: "slot",
+              locationText: "",
+              slotId: null,
+              status: "ok",
+            }}
+          />
+        </Item>
       </div>
     </main>
   );

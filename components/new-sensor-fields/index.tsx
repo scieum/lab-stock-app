@@ -25,7 +25,7 @@ type Props = {
   itemName: string;
   value: NewSensorDraft;
   onChange?: (patch: NewSensorPatch) => void;
-  /** 시약장 칸 고르기 (location-picker 는 부르는 쪽이 연다). 없으면 "시약장 칸" 을 고를 수 없다 */
+  /** 시약장 칸 고르기 (location-picker 는 부르는 쪽이 연다). 없어도 "시약장 칸" 칸은 보이고, 고르면 비활성 상자 + 안내 */
   onPickSlot?: () => void;
   /** 고른 칸 글자 "1번 시약장 · 좌 1단" */
   slotText?: string | null;
@@ -139,14 +139,16 @@ export function NewSensorFields({ itemName, value, onChange, onPickSlot, slotTex
           <div className={styles.locationBody}>
             <SegmentedControl
               label="보관 위치"
-              options={canPickSlot ? LOCATION_OPTIONS : LOCATION_OPTIONS.slice(0, 1)}
+              options={LOCATION_OPTIONS}
               value={value.locationMode}
               disabled={disabled}
               onChange={(v) => onChange?.({ locationMode: v === "slot" ? "slot" : "text" })}
             />
             {value.locationMode === "slot" ? (
-              <button type="button" className={styles.slotBox} disabled={disabled} onClick={onPickSlot}>
-                <span className={slotText ? styles.slotValue : styles.slotPlaceholder}>{slotText || "시약장 칸을 골라 주세요"}</span>
+              <button type="button" className={styles.slotBox} disabled={disabled || !canPickSlot} onClick={onPickSlot}>
+                <span className={slotText ? styles.slotValue : styles.slotPlaceholder}>
+                  {slotText || (canPickSlot ? "시약장 칸을 골라 주세요" : "등록한 시약장이 없어요 — 직접 입력해 주세요")}
+                </span>
                 <Icon name="chevron-right" className={styles.slotIcon} />
               </button>
             ) : (
