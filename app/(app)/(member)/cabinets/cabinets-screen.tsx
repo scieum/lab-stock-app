@@ -334,6 +334,15 @@ export function CabinetsScreen({ canManage, schoolName, origin, cabinets, active
     setSlotError(null);
   };
 
+  /**
+   * 칸 시트 닫기 (× · Esc · 바깥): 넣기·빼기 저장 중에도 닫는다. 저장 결과는 화면 토스트로 알리고,
+   * 저장 뒤 서버 값 다시 그리기(revalidate)가 끝날 때까지 pending 이 남아 있어 × 가 무시되던 것을 막는다.
+   */
+  const closeSlotSheet = () => {
+    setOpen(null);
+    setSlotError(null);
+  };
+
   const rename = (label: string) => {
     if (pending) return;
     if (label === active.label) {
@@ -544,7 +553,7 @@ export function CabinetsScreen({ canManage, schoolName, origin, cabinets, active
               const r = slotSaved?.reagents.find((x) => x.id === id);
               if (r) place(r, null);
             }}
-            onClose={closeSheet}
+            onClose={closeSlotSheet}
           >
             {slotSaved?.slotId ? (
               <SlotAssign
