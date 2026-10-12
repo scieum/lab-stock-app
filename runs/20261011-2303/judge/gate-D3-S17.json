@@ -1,0 +1,24 @@
+{
+  "gate": "gate-D3-S17",
+  "pass": true,
+  "exit": 0,
+  "violations": [],
+  "logs": {},
+  "report": {
+    "V1": {
+      "screenshots": [
+        "test-results/v1-17-desktop.png",
+        "test-results/v1-17-detail-desktop.png",
+        "test-results/v1-17-detail-mobile.png",
+        "test-results/v1-17-empty-desktop.png",
+        "test-results/v1-17-empty-mobile.png",
+        "test-results/v1-17-form-desktop.png",
+        "test-results/v1-17-form-mobile.png",
+        "test-results/v1-17-mobile.png",
+        "test-results/v1-17g-desktop.png",
+        "test-results/v1-17g-mobile.png"
+      ],
+      "figma_page": "https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2"
+    }
+  }
+}
