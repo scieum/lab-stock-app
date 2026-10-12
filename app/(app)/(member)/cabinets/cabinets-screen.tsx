@@ -125,7 +125,8 @@ export function CabinetsScreen({ canManage, schoolName, origin, cabinets, active
   const [slotError, setSlotError] = useState<string | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ key: number; text: string } | null>(null);
+  /** tone: done(기본, 저장 완료) · info(칸 시트를 닫은 뒤 넣기·빼기 실패 안내 — 체크 아이콘 대신 info) */
+  const [toast, setToast] = useState<{ key: number; text: string; tone?: "done" | "info" } | null>(null);
   const [op, setOp] = useState<Op | null>(null);
   const [placingId, setPlacingId] = useState<string | null>(null);
   const [assignRound, setAssignRound] = useState(0);
@@ -153,6 +154,12 @@ export function CabinetsScreen({ canManage, schoolName, origin, cabinets, active
   }
   // 시트는 연 시약장에만 속한다 — 다른 시약장으로 바꾸면 닫힌 것으로 본다
   const shown = open && open.forId === activeId ? open : null;
+  // 지금 열린 칸 시트 (넣기·빼기 저장이 끝났을 때 그 시트가 아직 열려 있는지 본다)
+  const openSlotId = shown?.kind === "slot" && activeId ? `${activeId}-${slotId(shown.key)}` : null;
+  const openSlotRef = useRef<string | null>(openSlotId);
+  useEffect(() => {
+    openSlotRef.current = openSlotId;
+  }, [openSlotId]);
   // 칸 시트는 편집을 막지 않는다 (시안 11-slot: 시트 뒤 화면 그대로). 이름·삭제·인쇄·확인 카드는 막는다
   const locked = pending || (shown !== null && shown.kind !== "slot");
 
@@ -234,7 +241,7 @@ export function CabinetsScreen({ canManage, schoolName, origin, cabinets, active
     ) : undefined;
 
   const toastNode = toast ? (
-    <Toast key={toast.key} floating>
+    <Toast key={toast.key} floating tone={toast.tone}>
       {toast.text}
     </Toast>
   ) : null;
@@ -405,15 +412,21 @@ export function CabinetsScreen({ canManage, schoolName, origin, cabinets, active
     if (!canManage || pending) return;
     setSlotError(null);
     setPlacingId(reagent.id);
+    const from = openSlotRef.current;
+    // 실패 안내: 그 칸 시트가 열려 있으면 시트 안, 저장 중에 닫았으면(또는 다른 칸으로 바꿨으면) 화면 토스트
+    const fail = (text: string) => {
+      if (from !== null && openSlotRef.current === from) setSlotError(text);
+      else setToast({ key: Date.now(), text, tone: "info" });
+    };
     run("place", async () => {
       try {
         const res = await placeReagentAction({ reagentId: reagent.id, slotId: target }).catch(() => null);
         if (!res) {
-          setSlotError("저장하지 못했어요. 잠시 후 다시 시도해 주세요");
+          fail("저장하지 못했어요. 잠시 후 다시 시도해 주세요");
           return;
         }
         if (!res.ok) {
-          setSlotError(res.error);
+          fail(res.error);
           return;
         }
         if (target) setAssignRound((n) => n + 1);

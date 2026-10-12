@@ -86,8 +86,6 @@ function subPage(pathname: string, staff: boolean, scanReturn = "/"): SubPage | 
   if (/^\/sensors\/new\/?$/.test(pathname)) return { title: "센서 등록", backHref: "/sensors", backIcon: "close" };
   // 화면 17 서류로 등록 (시안 17-doc-*: × + "서류로 등록")
   if (/^\/sensors\/doc\/?$/.test(pathname)) return { title: "서류로 등록", backHref: "/sensors", backIcon: "close" };
-  // 화면 17 서류로 등록 (시안 17-doc-*: × + "서류로 등록")
-  if (/^\/sensors\/doc\/?$/.test(pathname)) return { title: "서류로 등록", backHref: "/sensors", backIcon: "close" };
   const edit = /^\/sensors\/([^/]+)\/edit\/?$/.exec(pathname);
   if (edit) return { title: "센서 수정", backHref: `/sensors/${edit[1]}`, backIcon: "close" };
   if (/^\/sensors\/[^/]+\/?$/.test(pathname)) return { title: "센서 상세", backHref: "/sensors" };
@@ -232,7 +230,6 @@ function MobileNav({ schoolName, staff = false, admin = false, page }: AppNavPro
  * (화면 4 /usage/new 는 2026-10-10 디자인 1.25 부터 본문 페이지 — heavy_pages)
  */
 function isDeskPath(pathname: string): boolean {
-  if (/^\/sensors\/doc\/?$/.test(pathname)) return false;
   if (/^\/sensors\/doc\/?$/.test(pathname)) return false;
   return /^\/(reagents(\/[^/]+)?|msds\/[^/]+|usage|users|vendors|scan|sensors(\/[^/]+(\/edit)?)?)\/?$/.test(pathname);
 }
