@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Toast } from "@/components/ex-toast";
+import { INVITE_CANCEL_TEXT, InviteCancelConfirm } from "@/components/invite-cancel";
 import { DesktopOnly, MobileOnly } from "@/components/viewport-only";
 import {
   DeleteConfirm,
@@ -14,7 +15,7 @@ import {
   type UserManageMember,
 } from "@/components/user-manage";
 import type { Role } from "@/lib/types";
-import { changeMemberRoleAction, inviteMembersAction, removeMemberAction } from "./actions";
+import { cancelInviteAction, changeMemberRoleAction, inviteMembersAction, removeMemberAction } from "./actions";
 import { UsersDesk } from "./users-desk";
 import styles from "./users.module.css";
 
@@ -28,7 +29,13 @@ type Props = {
 };
 
 /** 열려 있는 시트 — 한 번에 하나 */
-type Sheet = { kind: "invite" } | { kind: "role"; id: string } | { kind: "delete"; id: string } | null;
+type Sheet =
+  | { kind: "invite" }
+  | { kind: "role"; id: string }
+  | { kind: "delete"; id: string }
+  /** 초대 취소 확인 (rules 1.28 invite_cancel.confirm) — id = 초대 id */
+  | { kind: "cancel-invite"; id: string }
+  | null;
 
 /** 저장 후 토스트를 보여 주는 시간 */
 const TOAST_MS = 4000;
@@ -78,9 +85,11 @@ export function UsersScreen({ schoolName, members, counts, invites }: Props) {
   /** 시트를 연 요소 (멤버 행 · "초대") — 닫으면 포커스를 돌려준다 */
   const opener = useRef<HTMLElement | null>(null);
 
-  // 시트 대상 멤버 — 목록에서 사라졌으면(삭제됨 등) 시트도 닫힌 것으로 본다
-  const target = sheet && sheet.kind !== "invite" ? (members.find((m) => m.id === sheet.id) ?? null) : null;
-  const open: Sheet = sheet && sheet.kind !== "invite" && !target ? null : sheet;
+  // 시트 대상 멤버 · 초대 — 목록에서 사라졌으면(삭제됨 · 취소됨 등) 시트도 닫힌 것으로 본다
+  const memberSheet = sheet && (sheet.kind === "role" || sheet.kind === "delete") ? sheet : null;
+  const target = memberSheet ? (members.find((m) => m.id === memberSheet.id) ?? null) : null;
+  const inviteTarget = sheet?.kind === "cancel-invite" ? (invites.find((v) => v.id === sheet.id) ?? null) : null;
+  const open: Sheet = (memberSheet && !target) || (sheet?.kind === "cancel-invite" && !inviteTarget) ? null : sheet;
   const openKey = open ? (open.kind === "invite" ? "invite" : `${open.kind}:${open.id}`) : null;
 
   useEffect(() => {
@@ -144,7 +153,7 @@ export function UsersScreen({ schoolName, members, counts, invites }: Props) {
 
   const toggleMember = (m: UserManageMember) => {
     if (busy) return;
-    if (open && open.kind !== "invite" && open.id === m.id) {
+    if (open && (open.kind === "role" || open.kind === "delete") && open.id === m.id) {
       close();
       return;
     }
@@ -233,6 +242,32 @@ export function UsersScreen({ schoolName, members, counts, invites }: Props) {
     });
   };
 
+  /** 초대 대기 행 ⋯ → "초대 취소" (admin 만 — 이 화면은 admin 전용) → 확인 모달. 닫으면 ⋯ 로 포커스를 돌려준다 */
+  const askCancelInvite = (v: UserManageInvite) => {
+    if (busy) return;
+    const el = document.activeElement;
+    const more = el instanceof HTMLElement ? el.closest('[data-component="invite-more-menu"]')?.querySelector("button") : null;
+    if (more instanceof HTMLElement) opener.current = more;
+    // 앞 토스트(예: "1명을 초대했어요")가 확인 시트를 가리지 않게
+    setToast(null);
+    setError(null);
+    setSheet({ kind: "cancel-invite", id: v.id });
+  };
+
+  const confirmCancelInvite = () => {
+    if (busy || !inviteTarget) return;
+    const inviteId = inviteTarget.id;
+    setError(null);
+    startTransition(async () => {
+      const res = await cancelInviteAction({ inviteId });
+      if (res.ok) {
+        // 행이 빠지므로 ⋯ 대신 "초대" 버튼 쪽으로 포커스를 두지 않고 그냥 닫는다
+        opener.current = null;
+        done(INVITE_CANCEL_TEXT.done);
+      } else setError(res.error);
+    });
+  };
+
   /** 데스크톱 page-head 의 "초대 링크 복사" — 결과 문구를 돌려준다 */
   const copyLinkText = async (): Promise<string> => {
     const url = `${window.location.origin}${SIGNUP_PATH}`;
@@ -260,6 +295,7 @@ export function UsersScreen({ schoolName, members, counts, invites }: Props) {
             selectedId={target && open ? target.id : null}
             onInvite={toggleInvite}
             onSelectMember={toggleMember}
+            onCancelInvite={askCancelInvite}
           />
         </div>
 
@@ -307,6 +343,10 @@ export function UsersScreen({ schoolName, members, counts, invites }: Props) {
           ) : null}
         </div>
       </div>
+
+      {open?.kind === "cancel-invite" && inviteTarget ? (
+        <InviteCancelConfirm key={inviteTarget.id} email={inviteTarget.email} pending={busy} error={error} onCancel={close} onConfirm={confirmCancelInvite} />
+      ) : null}
 
       {toast ? (
         <Toast key={toast.key} floating>

@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { GuestBanner } from "@/components/guest-banner";
 import { GuestToastProvider } from "@/components/guest-lock/toast";
+import { MobileMenu } from "@/components/mobile-menu-sheet/menu";
 import { NavPill, type NavLinkItem } from "@/components/nav-pill";
 import { TabBar, type TabKey } from "@/components/tab-bar";
 import { guestSidebarActiveKey, guestSidebarMenu } from "@/lib/sidebar-menu";
@@ -81,6 +82,9 @@ function MobileDemoNav({ schoolName, page }: DemoNavProps) {
         title={page ? page.title : detail ? "시약 상세" : sensorDetail ? "센서 상세" : undefined}
         backHref={page ? page.backHref : detail ? "/demo/reagents" : sensorDetail ? "/demo/sensors" : undefined}
         desktopWordmark={page ? true : undefined}
+        // rules 1.28 mobile_menu.guest: 둘러보기도 같은 ☰ 시트(데모 학교 · 홈·시약·센서 · 기록·QR 잠금 · 관리 없음 · '가입하기').
+        // 센서 상세(화면 17 하위 화면 ‹)에는 없음 — 로그인 후 셸과 같은 규칙
+        menu={sensorDetail ? undefined : <MobileMenu guest={{ signupHref: "/signup" }} schoolName={schoolName} />}
       />
       <GuestBanner signupHref="/signup" className={styles.banner} />
     </>

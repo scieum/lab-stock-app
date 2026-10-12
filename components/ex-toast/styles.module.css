@@ -27,3 +27,62 @@
   flex-shrink: 0;
   color: var(--color-highlight);
 }
+
+/* info (rules 1.28 no_access, 시안 13-no-access ex-toast): 흰 pill · border-strong 1 · 안쪽 4·4·4·16 · 사이 8, 13 ink, 핑크 없음 */
+.info {
+  padding: var(--space-4) var(--space-4) var(--space-4) var(--space-16);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+}
+
+/* 모바일: 본문 폭(좌우 16) 그대로 (시안 13-no-access-mobile 358) */
+.info.floating {
+  box-sizing: border-box;
+  width: calc(100% - var(--space-32));
+}
+
+.infoIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+}
+
+.close {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.close:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.closeIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+}
+
+/* 데스크톱: 글자 폭만큼 (시안 13-no-access-desktop 293) */
+@media (min-width: 1024px) {
+  .info.floating {
+    width: auto;
+  }
+}

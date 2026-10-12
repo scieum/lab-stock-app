@@ -1,4 +1,4 @@
-/* 시안 15-mobile landing-hero: 세로 스택 · gap 8, 머리말 15/400 회색 · 제목 28/700 · 부제 17/300 회색 */
+/* 시안 15-mobile landing-hero: 세로 스택 · gap 8, 꼬리표 caption 12/400 text-muted(1.28 landing_hero_mark) · 제목 28/700 · 부제 17/300 회색 */
 .hero {
   display: flex;
   flex-direction: column;
@@ -8,7 +8,7 @@
 .lead {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: var(--font-size-15);
+  font-size: var(--font-size-12);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-normal);
 }

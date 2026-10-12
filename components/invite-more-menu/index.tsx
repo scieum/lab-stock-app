@@ -23,7 +23,8 @@ type Props = {
 export function InviteMoreMenu({ email, children, defaultOpen, buttonRef, className }: Props) {
   return (
     <div data-component="invite-more-menu" className={[styles.wrap, className ?? ""].filter(Boolean).join(" ")}>
-      <ReagentMoreMenu component={null} label={`${email} 초대 더보기`} defaultOpen={defaultOpen} buttonRef={buttonRef}>
+      {/* 표 틀(데스크톱) · 목록(모바일)이 모서리를 자르므로 메뉴는 화면 기준(fixed). 갤러리의 처음부터 열린 메뉴는 제자리 */}
+      <ReagentMoreMenu component={null} label={`${email} 초대 더보기`} defaultOpen={defaultOpen} buttonRef={buttonRef} fixed={!defaultOpen}>
         {children}
       </ReagentMoreMenu>
     </div>
