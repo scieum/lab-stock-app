@@ -230,3 +230,38 @@ export async function removeMember(input: { userId: unknown }): Promise<RemoveMe
   }
   return { ok: true, userId: input.userId };
 }
+
+export type CancelInviteResult = { ok: true; inviteId: string; email: string } | { ok: false; error: string };
+
+const INVITE_NOT_FOUND = "초대를 찾을 수 없어요. 이미 가입했거나 취소된 초대예요";
+
+/**
+ * 초대 취소 (d7 §28 · rules invite_cancel) — DB 함수 public.cancel_invite 하나만 호출한다.
+ * admin · 자기 학교 · 아직 가입 안 한 초대만 · 데모 거부는 DB 함수가 본다 (42501 · P0002).
+ * 취소한 이메일로 가입하면 초대 역할 없이 student (§8 — register_profile 이 대기 초대를 못 찾는다).
+ */
+export async function cancelInvite(input: { inviteId: unknown }): Promise<CancelInviteResult> {
+  if (!isUserId(input.inviteId)) return { ok: false, error: INVITE_NOT_FOUND };
+
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  if (!claims?.claims?.sub) return { ok: false, error: SIGNED_OUT };
+
+  const { data, error } = await supabase.rpc("cancel_invite", { p_invite_id: input.inviteId });
+  if (error) {
+    switch (error.code) {
+      case "P0002":
+        return { ok: false, error: INVITE_NOT_FOUND };
+      case "42501":
+        return { ok: false, error: error.message === "not authenticated" ? SIGNED_OUT : ADMIN_ONLY };
+      default:
+        return { ok: false, error: SAVE_FAILED };
+    }
+  }
+  const obj = data && typeof data === "object" && !Array.isArray(data) ? (data as Record<string, unknown>) : {};
+  return {
+    ok: true,
+    inviteId: typeof obj.invite_id === "string" ? obj.invite_id : input.inviteId,
+    email: typeof obj.email === "string" ? obj.email : "",
+  };
+}

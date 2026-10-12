@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { changeMemberRole, inviteMembers, removeMember } from "@/lib/supabase/users";
+import { cancelInvite, changeMemberRole, inviteMembers, removeMember } from "@/lib/supabase/users";
 
 export type InviteActionResult = { ok: true; count: number } | { ok: false; error: string };
 export type MemberActionResult = { ok: true } | { ok: false; error: string };
@@ -42,5 +42,16 @@ export async function removeMemberAction(input: unknown): Promise<MemberActionRe
   const result = await removeMember({ userId: field(input, "userId") });
   if (!result.ok) return { ok: false, error: result.error };
   revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/**
+ * 초대 취소 (d7 §28). inviteId 만 꺼내 형식을 보고, admin · 자기 학교 · 미가입 초대 · 데모 검사는 DB 함수 cancel_invite 가 한다.
+ * 초대는 화면 8 의 "초대 대기" 목록만 바꾼다.
+ */
+export async function cancelInviteAction(input: unknown): Promise<MemberActionResult> {
+  const result = await cancelInvite({ inviteId: field(input, "inviteId") });
+  if (!result.ok) return { ok: false, error: result.error };
+  revalidatePath("/users");
   return { ok: true };
 }

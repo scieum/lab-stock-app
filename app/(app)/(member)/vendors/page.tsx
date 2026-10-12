@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { deniedHomePath } from "@/lib/no-access";
 import { getVendorScreen } from "@/lib/supabase/vendors";
 import { VendorsScreen } from "./vendors-screen";
 
@@ -17,7 +18,7 @@ export const metadata: Metadata = { title: "판매처 설정 · Lab_Stock" };
 export default async function VendorsPage() {
   const result = await getVendorScreen();
   if (result.kind === "signed-out") redirect("/login");
-  if (result.kind !== "ok") redirect("/");
+  if (result.kind !== "ok") redirect(result.kind === "forbidden" ? deniedHomePath("admin") : "/");
 
   const { vendors, common } = result.data;
   return <VendorsScreen vendors={vendors} common={common} />;
