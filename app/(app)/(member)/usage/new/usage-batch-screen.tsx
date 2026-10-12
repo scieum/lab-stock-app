@@ -23,7 +23,7 @@ import {
   canSaveBatch,
   type BatchStock,
 } from "@/lib/usage-batch-rules";
-import { USAGE_MEMO_MAX, pastDateNoteText } from "@/lib/usage-history-rules";
+import { USAGE_MEMO_MAX, checkUsedOn, pastDateNoteText } from "@/lib/usage-history-rules";
 import { recordUsageBatchAction } from "./actions";
 import styles from "./usage.module.css";
 
@@ -99,8 +99,13 @@ export function UsageBatchScreen({ entry, returnHref }: Props) {
     const s = stocks.get(i.id);
     return s ? [{ id: i.id, name: s.name, stock: s.stock, unit: s.unit, amount: i.amount, flagged: i.flagged }] : [];
   });
-  const canSave = !busy && canSaveBatch(items.map((i) => ({ reagentId: i.id, amount: i.amount })), stocks);
+  // d7 §26 QA (6): 사용일이 오늘 이후면 입력 즉시 칸 아래 오류(저장 때와 같은 문구) + 저장 비활성
+  const usedOnCheck = usedOn === "" ? null : checkUsedOn(usedOn, entry.today);
+  const liveDateError = usedOnCheck && !usedOnCheck.ok ? usedOnCheck.error : undefined;
+  const canSave = !busy && !liveDateError && canSaveBatch(items.map((i) => ({ reagentId: i.id, amount: i.amount })), stocks);
   const past = usedOn !== "" && usedOn < entry.today;
+  // d7 §26 QA (5): 빈 사용량 행이 하나라도 있어 저장할 수 없으면 버튼 위 helper "사용량을 적어 주세요"
+  const amountHint = !busy && items.some((i) => i.amount.trim() === "");
   const saveLabel = pending ? "저장 중…" : batchSaveLabel(items.length);
 
   const clearErrors = () => {
@@ -141,6 +146,18 @@ export function UsageBatchScreen({ entry, returnHref }: Props) {
     if (busy) return;
     if (!dropOpen) setSessionIds(new Set());
     setDropOpen(true);
+  };
+
+  /** 드롭다운을 닫고 검색 칸을 비운 뒤 포커스를 검색 칸으로 (포커스로 다시 열리지 않게) */
+  const closeDropdown = () => {
+    setDropOpen(false);
+    setQuery("");
+    skipFocusOpen.current = true;
+    searchRef.current?.focus({ preventScroll: true });
+    // 이미 포커스가 있어 focus 이벤트가 오지 않았으면 표시를 지운다
+    window.requestAnimationFrame(() => {
+      skipFocusOpen.current = false;
+    });
   };
 
   const toggleFromDropdown = (id: string) => {
@@ -192,7 +209,7 @@ export function UsageBatchScreen({ entry, returnHref }: Props) {
     });
   };
 
-  const dateError = fieldError?.field === "date" ? fieldError.message : undefined;
+  const dateError = liveDateError ?? (fieldError?.field === "date" ? fieldError.message : undefined);
   const memoError = fieldError?.field === "memo" ? fieldError.message : undefined;
   const classError = fieldError?.field === "class" ? fieldError.message : null;
 
@@ -218,8 +235,21 @@ export function UsageBatchScreen({ entry, returnHref }: Props) {
     </ButtonPrimary>
   );
 
+  const hint = amountHint ? (
+    <p className={styles.amountHint} data-name="amount-hint">
+      {USAGE_BATCH_TEXT.amountRequired}
+    </p>
+  ) : null;
+
   return (
-    <form id={formId} className={styles.page} onSubmit={submit} noValidate data-past={past ? "" : undefined}>
+    <form
+      id={formId}
+      className={styles.page}
+      onSubmit={submit}
+      noValidate
+      data-past={past ? "" : undefined}
+      data-hint={amountHint ? "" : undefined}
+    >
       <PageHead title={USAGE_BATCH_TEXT.title} subtitle={USAGE_BATCH_TEXT.caption} />
 
       {/* 모바일 (4-mobile): 담은 시약 카드 → 사용일 → 수업 → 메모, 저장 바는 tab-bar 위 */}
@@ -254,6 +284,7 @@ export function UsageBatchScreen({ entry, returnHref }: Props) {
         </div>
         <BottomBar className={styles.mobileBar}>
           {past ? <PastDateNote>{pastDateNoteText(usedOn)}</PastDateNote> : null}
+          {hint}
           {saveButton}
         </BottomBar>
         {sheetOpen ? (
@@ -313,16 +344,7 @@ export function UsageBatchScreen({ entry, returnHref }: Props) {
                 query={query}
                 sessionIds={sessionIds}
                 onToggle={toggleFromDropdown}
-                onClose={() => {
-                  setDropOpen(false);
-                  setQuery("");
-                  skipFocusOpen.current = true;
-                  searchRef.current?.focus({ preventScroll: true });
-                  // 이미 포커스가 있어 focus 이벤트가 오지 않았으면 표시를 지운다
-                  window.requestAnimationFrame(() => {
-                    skipFocusOpen.current = false;
-                  });
-                }}
+                onClose={closeDropdown}
               />
             ) : null}
           </div>
@@ -369,6 +391,7 @@ export function UsageBatchScreen({ entry, returnHref }: Props) {
               <span className={styles.summary}>{batchHeading(items.length)}</span>
             )
           }
+          note={hint}
         >
           {saveButton}
         </BottomBar>

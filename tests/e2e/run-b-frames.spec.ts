@@ -96,7 +96,7 @@ test(`[C1][S2] 학교A 교사 /reagents 새 프레임 대조: 1440 = 2-desktop p
     await settle(page, viewport);
     const f = `2-${viewport}`;
     const segLabels = txt(f, (n) => n.name === "label" && (n.path.includes("segmented-control-active") || n.path.includes("segmented-control-option")) && !n.path.includes("list-filter-sheet") && !n.path.includes("inventory-switch"));
-    // 1.26: 2-mobile 맨 위 inventory-switch "시약 | 센서" 도 segmented-control 모양이지만 범위 탭이 아니다 (inventory-tab-soon.spec.ts 에서 본다)
+    // 1.26: 2-mobile 맨 위 inventory-switch "시약 | 센서" 도 segmented-control 모양이지만 범위 탭이 아니다 (inventory-qr-tab.spec.ts 에서 본다)
     const seg = page.locator(`main ${sel("segmented-control")}`).first();
     await expect(seg).toBeVisible({ timeout: 45_000 });
     expect((await seg.locator('[role="tab"]').allInnerTexts()).map(squash), `${f} 범위 탭`).toEqual(segLabels);

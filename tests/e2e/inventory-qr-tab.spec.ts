@@ -1,32 +1,39 @@
-// 모바일 QR 스캔 탭 "준비 중"(tab-soon) · 시약 탭 안 inventory-switch "시약 | 센서" — C2 · C1 (390 · 1440).
-// 기준(구현이 아니라 여기서 도출): harness/d7-data.md §25 "QR 스캔 탭 (모바일)" · "무선 센서 (화면 17)"(모바일 = 시약 탭 안 inventory-switch,
-//   마지막 고른 쪽 기억, 화면 17 에서 시약 탭 활성), design/rules.json 1.26 tab_bar(qr_pending · sensor_entry · labels · items ·
-//   mobile_screens) · desktop_shell.menu, harness/dev-rules.json 1.18 components tab-soon · inventory-switch (tab-soon = 탭바가 있는 모든 모바일 화면).
+// 모바일 'QR 스캔' 탭 · 데스크톱 'QR 찾기' (qr_pending 끝 — 화면 12 연결) · 시약 탭 안 inventory-switch "시약 | 센서" — C2 · C1 · GM-ui (390 · 1440).
+// 기준(구현이 아니라 여기서 도출): harness/d7-data.md §26 "화면 12 경로·권한" · "탭·사이드바"(화면 12 가 생기면 rules tab_bar.qr_pending 끝:
+//   모바일 tab-item "QR 스캔" 정상(회색·tab-soon 없음) → /scan, 데스크톱 sidebar-item "QR 찾기" → /scan 툴팁 없음, tab-soon 컴포넌트 ·
+//   "준비 중이에요" 토스트는 지운다, 둘러보기는 탭바 QR guest-lock 그대로), §25 "무선 센서 (화면 17)"(모바일 = 시약 탭 안 inventory-switch,
+//   마지막 고른 쪽 기억, 화면 17 에서 시약 탭 활성), design/rules.json 1.26 tab_bar(labels · items · mobile_screens · sensor_entry) ·
+//   desktop_shell.menu · guest, harness/dev-rules.json 1.19 (mvp_screens 에 12 · routes 12 = /scan · components 에 tab-soon 없음).
+// 화면 12(/scan) 본문은 D3 [S12] 에서 본다 — 여기서는 다른 화면의 셸 항목이 /scan 으로 이어지는지만 (눌러서 /scan 을 열지 않는다).
 // 공용 학교 A admin 계정으로 읽기만 한다 (쓰기 없음).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { openAs } from "./auth-state";
 import { devRules, routeOf, rules, sel } from "./screen-helpers";
 import { seedReagents, seedSchoolOf } from "./screen-3-helpers";
 import { newFrame } from "./desk-helpers";
-import { quotes } from "./sensor-helpers";
 
-type TabBarRules = typeof rules.tab_bar & { qr_pending: string; sensor_entry: string };
+type TabBarRules = typeof rules.tab_bar & { sensor_entry: string };
 const TAB = rules.tab_bar as TabBarRules;
-/** qr_pending: "… tab-soon '준비 중'(caption), 누르면 ex-toast '준비 중이에요'" */
-const [SOON_LABEL, SOON_TOAST] = (() => {
-  const q = quotes(TAB.qr_pending);
-  return [q.find((x) => x === "준비 중")!, q.find((x) => x === "준비 중이에요")!];
-})();
-/** 준비 중 탭 = qr_pending 의 'QR 스캔' */
-const SOON_TAB = quotes(TAB.qr_pending).find((x) => TAB.labels.includes(x))!;
+type GuestRules = { lock: string; locked_tabs: string[] };
+const GUEST = (rules as unknown as { guest: GuestRules }).guest;
+/** 'QR 스캔' 탭 = tab_bar.labels 의 QR · 'QR 찾기' = desktop_shell.menu.all 의 QR */
+const QR_TAB = TAB.labels.find((l) => l.startsWith("QR"))!;
+const QR_MENU = rules.desktop_shell.menu.all.find((l) => l.startsWith("QR"))!;
+const SCAN = routeOf(12);
+/** 지운 컴포넌트 · 글자 (d7 §26) */
+const REMOVED = "tab-soon";
+const REMOVED_TEXTS = ["준비 중", "준비 중이에요"];
 const MVP = new Set(devRules.mvp_screens);
-const SCREENS = TAB.mobile_screens.filter((s) => MVP.has(s));
-const D7_QR =
-  readFileSync(join(process.cwd(), "harness", "d7-data.md"), "utf8")
-    .split(/\r?\n/)
-    .find((l) => l.startsWith("| QR 스캔 탭 (모바일)")) ?? "";
+/** 탭바가 있는 모바일 화면 ∩ MVP — 화면 12 자체는 D3 [S12] */
+const SCREENS = TAB.mobile_screens.filter((s) => MVP.has(s) && s !== 12);
+const D7_26 = (() => {
+  const d7 = readFileSync(join(process.cwd(), "harness", "d7-data.md"), "utf8");
+  const at = d7.indexOf("## 26.");
+  return d7.slice(at, d7.indexOf("\n## ", at + 1));
+})();
+const d7Row = (head: string) => D7_26.split(/\r?\n/).find((l) => l.startsWith(`| ${head} |`)) ?? "";
 
 /** 화면 경로 ([id] = 학교 A seed 시약) */
 function pathOf(screen: number): string {
@@ -37,29 +44,44 @@ function pathOf(screen: number): string {
   return r.replace(/\[[^\]]+\]/, own[0].id);
 }
 
-const soonItem = (page: Page) => page.locator(`${sel("tab-bar")} ${sel("tab-item")}`).filter({ hasText: SOON_TAB });
-
-test(`[C2][S*] 기대값 원본: tab_bar.qr_pending '${SOON_TAB}' + tab-soon '${SOON_LABEL}' · 토스트 '${SOON_TOAST}' · d7 §25 /scan 으로 가지 않음 · dev-rules components tab-soon = 탭바 모바일 화면 ∩ MVP (${SCREENS.join("·")})`, () => {
-  expect(SOON_TAB, "준비 중 탭 = tab_bar.labels 의 QR 스캔").toBe("QR 스캔");
-  expect(SOON_LABEL).toBe("준비 중");
-  expect(SOON_TOAST).toBe("준비 중이에요");
-  expect(D7_QR, "d7 §25").toMatch(/`\/scan` 으로 가지 않음/);
-  expect([...devRules.components["tab-soon"]].sort((a, b) => a - b), "dev-rules components tab-soon").toEqual([...SCREENS].sort((a, b) => a - b));
+test(`[C2][S*] 기대값 원본: d7 §26 qr_pending 끝 — '${QR_TAB}' → ${SCAN} · '${QR_MENU}' → ${SCAN} 툴팁 없음 · ${REMOVED} · 토스트 지움 · 둘러보기 QR guest-lock / dev-rules 1.19 mvp 12 · components 에 ${REMOVED} 없음 · 프레임 12 tab-bar 라벨 = rules`, () => {
+  expect(QR_TAB, "tab_bar.labels 의 QR 탭").toBe("QR 스캔");
+  expect(QR_MENU, "desktop_shell.menu.all 의 QR 메뉴").toBe("QR 찾기");
+  expect(SCAN, "dev-rules routes 12").toBe("/scan");
+  expect(MVP.has(12), "dev-rules mvp_screens 에 12").toBe(true);
+  expect(TAB.mobile_screens, "rules tab_bar.mobile_screens 에 12").toContain(12);
+  const tabs = d7Row("탭·사이드바");
+  expect(tabs, "d7 §26 탭·사이드바 줄").toContain("qr_pending 끝");
+  expect(tabs).toContain(`tab-item "${QR_TAB}" 정상(회색·${REMOVED} 없음) → \`${SCAN}\``);
+  expect(tabs).toContain(`sidebar-item "${QR_MENU}" → \`${SCAN}\`(툴팁 없음)`);
+  expect(tabs).toContain(`${REMOVED} 컴포넌트·"${REMOVED_TEXTS[1]}" 토스트는 지운다`);
+  expect(d7Row("화면 12 경로·권한"), "d7 §26 둘러보기 = 탭바 QR guest-lock").toContain("탭바 QR guest-lock");
+  expect(Object.keys(devRules.components), `dev-rules components 에 ${REMOVED} 없음`).not.toContain(REMOVED);
+  expect(GUEST.locked_tabs, "rules guest.locked_tabs 에 QR 스캔 (둘러보기 잠금 유지)").toContain(QR_TAB);
   expect(TAB.items, "탭 4개 유지").toBe(TAB.labels.length);
-  const frameSoon = newFrame("13-mobile").filter((n) => n.name === "tab-soon" && n.text).map((n) => n.text!.characters);
-  expect(frameSoon, "프레임 13-mobile tab-soon 글자").toEqual([SOON_LABEL]);
+  for (const f of ["12-mobile", "12-result-mobile"]) {
+    const labels = newFrame(f).filter((n) => n.name === "label" && n.text && n.path.includes(TAB.item)).map((n) => n.text!.characters);
+    expect(labels, `${f} tab-bar 라벨 = rules tab_bar.labels`).toEqual(TAB.labels);
+    expect(newFrame(f).filter((n) => n.name === REMOVED).length, `${f} 프레임 ${REMOVED} 0`).toBe(0);
+  }
 });
 
 for (const screen of SCREENS) {
-  test(`[C2][S${screen}] 390: tab-bar 1 · tab-item ${TAB.items} (라벨 순서 rules) · '${SOON_TAB}' 안 tab-soon '${SOON_LABEL}' 1 · 링크 아님 · 누르면 ex-toast '${SOON_TOAST}' · 주소 그대로 / 1440: tab-bar · tab-soon 0`, async ({ browser }, info) => {
+  test(`[C2][S${screen}] 390: tab-bar 1 · tab-item ${TAB.items} (라벨 순서 rules) · '${QR_TAB}' = ${SCAN} 링크 · ${REMOVED} 0 · '준비 중' 글자 0 / 1440: tab-bar · ${REMOVED} 0 · 사이드바 '${QR_MENU}' = ${SCAN} 링크`, async ({ browser }, info) => {
     test.setTimeout(180_000);
     const { page, context } = await openAs(browser, info, "admin", screen, pathOf(screen));
     try {
       await page.waitForLoadState("load");
       if (info.project.name === "desktop") {
-        await expect(page.locator(sel("app-sidebar")), "1440 사이드바").toHaveCount(1, { timeout: 45_000 });
+        const sb = page.locator(sel("app-sidebar"));
+        await expect(sb, "1440 사이드바").toHaveCount(1, { timeout: 45_000 });
         await expect(page.locator(sel("tab-bar")), "1440 tab-bar 0").toHaveCount(0, { timeout: 45_000 });
-        await expect(page.locator(sel("tab-soon")), "1440 tab-soon 0").toHaveCount(0);
+        await expect(page.locator(sel(REMOVED)), `1440 ${REMOVED} 0`).toHaveCount(0);
+        const qr = sb.locator(sel("sidebar-item")).filter({ has: page.getByText(QR_MENU, { exact: true }) });
+        await expect(qr, `사이드바 '${QR_MENU}' 1`).toHaveCount(1);
+        await expect(qr, `'${QR_MENU}' → ${SCAN}`).toHaveAttribute("href", SCAN);
+        await expect(qr, "aria-disabled 없음").not.toHaveAttribute("aria-disabled", /.*/);
+        for (const t of REMOVED_TEXTS) await expect(sb.getByText(t, { exact: true }), `사이드바 '${t}' 0`).toHaveCount(0);
         return;
       }
       const bar = page.locator(sel("tab-bar"));
@@ -67,28 +89,51 @@ for (const screen of SCREENS) {
       await expect(page.locator(sel("app-sidebar")), "폭 정리").toHaveCount(0, { timeout: 45_000 });
       const items = bar.locator(sel("tab-item"));
       await expect(items, `tab-item ${TAB.items}`).toHaveCount(TAB.items);
-      for (const [i, label] of TAB.labels.entries()) await expect(items.nth(i), `탭 ${i + 1} 라벨`).toContainText(label);
-      await expect(page.locator(sel("tab-soon")), "tab-soon 1 (탭바 안)").toHaveCount(1);
-      const soon = soonItem(page);
-      await expect(soon.locator(sel("tab-soon")), `'${SOON_TAB}' 안 tab-soon`).toHaveText(SOON_LABEL);
-      expect(await soon.getAttribute("href"), "준비 중 탭은 링크가 아님").toBeNull();
-      await expect(bar.locator('a[href="/scan"], a[href^="/scan?"]'), "/scan 링크 0").toHaveCount(0);
-      const before = new URL(page.url()).pathname;
-      await page.waitForFunction(() => {
-        const el = document.querySelector('[data-component="tab-bar"]');
-        return !!el && Object.keys(el).some((k) => k.startsWith("__react"));
-      });
-      await expect(async () => {
-        await soon.click({ timeout: 3_000 });
-        await expect(page.locator(sel("ex-toast")).filter({ hasText: SOON_TOAST }), `토스트 '${SOON_TOAST}'`).toBeVisible({ timeout: 3_000 });
-      }).toPass({ timeout: 20_000 });
-      await page.waitForTimeout(500);
-      expect(new URL(page.url()).pathname, "주소 그대로 (/scan 으로 가지 않음)").toBe(before);
+      const labels = (await items.allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim());
+      expect(labels, "탭 라벨 = rules tab_bar.labels (덧붙은 글자 없음)").toEqual(TAB.labels);
+      await expect(page.locator(sel(REMOVED)), `${REMOVED} 0`).toHaveCount(0);
+      const qr = items.nth(TAB.labels.indexOf(QR_TAB));
+      expect(await qr.evaluate((el) => el.tagName), `'${QR_TAB}' 은 링크`).toBe("A");
+      await expect(qr, `'${QR_TAB}' → ${SCAN}`).toHaveAttribute("href", SCAN);
+      await expect(qr, "aria-disabled 없음").not.toHaveAttribute("aria-disabled", /.*/);
+      await expect(qr.locator(sel(GUEST.lock)), "로그인 후 QR 탭 guest-lock 0").toHaveCount(0);
+      for (const t of REMOVED_TEXTS) await expect(bar.getByText(t, { exact: true }), `탭바 '${t}' 0`).toHaveCount(0);
     } finally {
       await context.close();
     }
   });
 }
+
+test(`[GM-ui][S13g] 둘러보기 /demo: 390 '${QR_TAB}' tab-item = ${GUEST.lock} 1 · 링크 아님 · ${SCAN} 링크 0 · ${REMOVED} 0 / 1440 사이드바 '${QR_MENU}' = ${GUEST.lock} · ${SCAN} 링크 0 (d7 §26 둘러보기 잠금 유지)`, async ({ browser }, info) => {
+  test.setTimeout(120_000);
+  const vp = devRules.viewports[info.project.name as "mobile" | "desktop"];
+  const ctx = await browser.newContext({ baseURL: info.project.use.baseURL, viewport: { width: vp[0], height: vp[1] } });
+  try {
+    const page = await ctx.newPage();
+    await page.goto(devRules.routes["13-guest"]);
+    await page.waitForLoadState("load");
+    if (info.project.name === "desktop") {
+      const sb = page.locator(sel("app-sidebar"));
+      await expect(sb, "사이드바").toHaveCount(1, { timeout: 45_000 });
+      await expect(page.locator(sel(REMOVED)), `${REMOVED} 0`).toHaveCount(0);
+      const qr = sb.locator(sel("sidebar-item")).filter({ has: page.getByText(QR_MENU, { exact: true }) });
+      await expect(qr, `'${QR_MENU}' 1`).toHaveCount(1);
+      await expect(qr.locator(sel(GUEST.lock)), `'${QR_MENU}' ${GUEST.lock}`).toHaveCount(1);
+      await expect(sb.locator(`a[href="${SCAN}"], a[href^="${SCAN}?"]`), `사이드바 ${SCAN} 링크 0`).toHaveCount(0);
+      return;
+    }
+    const bar = page.locator(sel("tab-bar"));
+    await expect(bar, "tab-bar 1").toHaveCount(1, { timeout: 45_000 });
+    await expect(page.locator(sel(REMOVED)), `${REMOVED} 0`).toHaveCount(0);
+    const qr = bar.locator(sel("tab-item")).filter({ hasText: QR_TAB });
+    await expect(qr, `'${QR_TAB}' 1`).toHaveCount(1);
+    await expect(qr.locator(sel(GUEST.lock)), `'${QR_TAB}' ${GUEST.lock} 1`).toHaveCount(1);
+    expect(await qr.getAttribute("href"), "잠금 탭은 링크가 아님").toBeNull();
+    await expect(bar.locator(`a[href="${SCAN}"], a[href^="${SCAN}?"]`), `탭바 ${SCAN} 링크 0`).toHaveCount(0);
+  } finally {
+    await ctx.close();
+  }
+});
 
 test(`[C1][S2] [C1][S17] [C2][S17] 390 inventory-switch '시약 | 센서': /reagents 시약 활성 → '센서' → /sensors(센서 활성 · 탭바 '시약' 활성) → 홈 → '시약' 탭 = /sensors(마지막 고른 쪽 기억) → '시약' → /reagents → 홈 → '시약' 탭 = /reagents / 1440 inventory-switch 0 · 사이드바 '센서'(시약 아래) → /sensors`, async ({ browser }, info) => {
   test.setTimeout(240_000);

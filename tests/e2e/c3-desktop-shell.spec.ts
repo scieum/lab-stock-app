@@ -4,7 +4,7 @@
 // - 화면별 본문(desktop_required · 새 프레임 대조)·둘러보기·로그인 전 C3 는 dev-rules desktop_migrated_screens 에 든 화면만 —
 //   아직 이전하지 않은 화면은 "예전 셸이 그대로"(로그인 전·둘러보기 nav-pill)를 확인하고, 이전되면 자동으로 새 규칙을 본다.
 // - 기대값: rules.json desktop_shell(menu·width·radius·forbidden_on_desktop·min_items) · tab_bar, 새 프레임 design/frames/{N}-desktop
-//   (활성 메뉴 = 시안이 칠한 sidebar-item, 색 = 시안 fills, 묶음 제목), d7 §23 문구("준비 중" 툴팁).
+//   (활성 메뉴 = 시안이 칠한 sidebar-item, 색 = 시안 fills, 묶음 제목), d7 §26 탭·사이드바(QR 찾기 = /scan 정상 메뉴, 툴팁 없음 — §23 "준비 중" 툴팁 끝).
 // - 계정: 공용 학교 A 학생·교사·admin(보기만) · 로그아웃은 일회용 학교 admin(테스트마다 새 세션) — service role 은 준비·정리에만.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -36,14 +36,17 @@ const LOGOUT_LABEL = "로그아웃";
 const LOGOUT_API = "/api/auth/logout";
 const GROUP = "c3shell";
 
-/** d7 §23 의 비활성 메뉴 툴팁 문구 ("준비 중" 툴팁) */
-const READY_TOOLTIP = (() => {
+/** d7 §26 "탭·사이드바" 줄: 화면 12 가 생기면 qr_pending 끝 — 데스크톱 sidebar-item "QR 찾기" → `/scan`(툴팁 없음) */
+const D7_TABS = (() => {
   const d7 = readFileSync(join(process.cwd(), "harness", "d7-data.md"), "utf8");
-  const sec = d7.slice(d7.indexOf("## 23."));
-  const m = /"([^"]+)" 툴팁/.exec(sec);
-  if (!m) throw new Error('d7 §23 에서 "…" 툴팁 문구를 읽지 못함');
-  return m[1];
+  const sec = d7.slice(d7.indexOf("## 26."));
+  const row = sec.split(/\r?\n/).find((l) => l.startsWith("| 탭·사이드바 |"));
+  if (!row) throw new Error("d7 §26 탭·사이드바 줄을 읽지 못함");
+  return row;
 })();
+/** QR 찾기 메뉴 (rules desktop_shell.menu.all) · 화면 12 경로 (dev-rules routes) */
+const QR_MENU = DS.menu.all.find((l) => l.startsWith("QR"))!;
+const SCAN_ROUTE = routeOf(12);
 
 /** rules desktop_shell.menu_source "사이드바 '시약' 아래 '센서'(모든 역할)" — 1.26 에 더한 메뉴 */
 const MENU_ADDED = (() => {
@@ -52,8 +55,6 @@ const MENU_ADDED = (() => {
   return m[2];
 })();
 
-/** 아직 만들지 않은 화면(desktop_shell.screens 중 mvp 밖 = 12)의 메뉴 글자 — 새 프레임 {N}-desktop 의 활성 메뉴 */
-const NOT_BUILT_LABELS = PENDING_SCREENS.map((s) => frameActiveLabel(s));
 
 const hexToRgb = (hex: string) => {
   const h = hex.replace("#", "");
@@ -165,11 +166,18 @@ async function expectDesktopShell(page: Page, role: ShellRole, screen: number, w
 // 기대값 원본
 // =====================================================================
 
-test(`[C3][S*] 기대값 원본: dev-rules desktop_shell_done · desktop_shell.screens(${DS.screens.join("·")}) 중 만든 화면 ${SHELL_SCREENS.join("·")} (아직 없음 ${PENDING_SCREENS.join("·")}) · 새 프레임 {N}-desktop 의 app-sidebar 폭·radius·메뉴 문구 = rules desktop_shell · 활성 메뉴 1 · 비활성 툴팁 "${READY_TOOLTIP}"`, () => {
+test(`[C3][S*] 기대값 원본: dev-rules desktop_shell_done · desktop_shell.screens(${DS.screens.join("·")}) 중 만든 화면 ${SHELL_SCREENS.join("·")} (아직 없음 ${PENDING_SCREENS.join("·") || "0"}) · 새 프레임 {N}-desktop 의 app-sidebar 폭·radius·메뉴 문구 = rules desktop_shell · 활성 메뉴 1 · d7 §26 '${QR_MENU}' = ${SCAN_ROUTE} 툴팁 없음`, () => {
   expect(SHELL_SCREENS.length, "desktop_shell_done 이면 셸 화면 있음").toBeGreaterThan(0);
   expect(SHELL_SCREENS, "dev-rules app-sidebar 화면 = 만든 셸 화면").toEqual(devRules.components[DS.component].slice().sort((a, b) => a - b));
   expect(devRules.components[DS.item].slice().sort((a, b) => a - b)).toEqual(SHELL_SCREENS);
-  expect(NOT_BUILT_LABELS, "아직 없는 화면 메뉴 (QR 찾기)").toEqual(["QR 찾기"]);
+  // dev-rules 1.19: 화면 12 가 mvp_screens 에 들어와 desktop_shell.screens 전부가 만든 화면 (비활성 메뉴 없음)
+  expect(PENDING_SCREENS, "아직 없는 셸 화면 0 (화면 12 포함)").toEqual([]);
+  expect(SHELL_SCREENS, "셸 화면에 12").toContain(12);
+  expect(QR_MENU, "rules desktop_shell.menu.all 의 QR 메뉴").toBe("QR 찾기");
+  expect(frameActiveLabel(12), "12-desktop 프레임 활성 메뉴 = QR 찾기").toBe(QR_MENU);
+  expect(SCAN_ROUTE, "dev-rules routes 12").toBe("/scan");
+  expect(D7_TABS, "d7 §26 QR 찾기 → /scan").toContain(`"${QR_MENU}" → \`${SCAN_ROUTE}\``);
+  expect(D7_TABS, "d7 §26 툴팁 없음").toContain("툴팁 없음");
   for (const s of DS.screens) {
     const frame = `${s}-desktop`;
     const sb = frameNode(frame, DS.component);
@@ -260,14 +268,14 @@ for (const screen of SHELL_SCREENS) {
 // 사이드바로 이동 · 아직 없는 화면(QR 찾기) 비활성
 // =====================================================================
 
-test(`[C3][S13] 학교A 교사: 1440 사이드바 메뉴를 누르면 그 화면으로(같은 문서) · 활성 메뉴가 따라 바뀜 · 아직 없는 화면 메뉴(${NOT_BUILT_LABELS.join("·")})는 링크가 아닌 버튼(aria-disabled) — 눌러도 이동·요청 없음 · 올리거나 포커스하면 툴팁 "${READY_TOOLTIP}" / 390 = 사이드바 메뉴 0`, async ({ browser }, info) => {
+test(`[C3][S13] 학교A 교사: 1440 사이드바 메뉴를 누르면 그 화면으로(같은 문서) · 활성 메뉴가 따라 바뀜 · '${QR_MENU}' = ${SCAN_ROUTE} 링크(aria-disabled 없음 · 올리거나 포커스해도 툴팁 0, d7 §26) / 390 = 사이드바 메뉴 0`, async ({ browser }, info) => {
   test.setTimeout(180_000);
   const { context, page, viewport } = await openAs(browser, info, "teacher", 13);
   try {
     await waitBody(page);
     if (viewport === "mobile") {
       await expectShell(page, viewport, 13, "390");
-      for (const l of NOT_BUILT_LABELS) await expect(page.getByText(l, { exact: true }), `390: 사이드바 메뉴 "${l}" 없음`).toHaveCount(0);
+      await expect(page.locator(sel(DS.item)), "390: 사이드바 메뉴 0").toHaveCount(0);
       return;
     }
     await expectDesktopShell(page, "teacher", 13, "홈");
@@ -284,38 +292,19 @@ test(`[C3][S13] 학교A 교사: 1440 사이드바 메뉴를 누르면 그 화면
       await expect(sidebar(page).locator(`${sel(DS.item)}[aria-current="page"]`), `화면 ${screen}: 활성 = "${label}"`).toHaveText(exact(label));
       expect(await page.evaluate(() => (window as unknown as { __c3?: boolean }).__c3 === true), `화면 ${screen}: 문서를 다시 받지 않았다`).toBe(true);
     }
-    // 아직 없는 화면 메뉴
-    const requests: string[] = [];
-    page.on("request", (r) => requests.push(new URL(r.url()).pathname));
-    for (const label of NOT_BUILT_LABELS) {
-      const it = itemByLabel(page, label);
-      await expect(it, `"${label}" 1`).toHaveCount(1);
-      expect(await it.evaluate((el) => el.tagName), `"${label}" 은 버튼`).toBe("BUTTON");
-      await expect(it, `"${label}" href 없음`).not.toHaveAttribute("href", /.*/);
-      await expect(it).toHaveAttribute("aria-disabled", "true");
-      const tip = page.getByRole("tooltip").filter({ hasText: exact(READY_TOOLTIP) });
-      await expect(tip, "툴팁은 평소 숨김").toBeHidden();
-      await it.hover();
-      await expect(tip, `올리면 툴팁 "${READY_TOOLTIP}"`).toBeVisible();
-      const describedBy = await it.getAttribute("aria-describedby");
-      expect(describedBy, "툴팁이 버튼 설명 (aria-describedby)").toBeTruthy();
-      expect(await tip.getAttribute("id")).toBe(describedBy);
-      const before = page.url();
-      const n = requests.length;
-      // aria-disabled 는 Playwright 가 "누를 수 없음"으로 보고 기다리므로 강제로 누른다 (사용자가 눌러 보는 것과 같다)
-      await it.click({ force: true });
-      await page.waitForLoadState("networkidle");
-      expect(page.url(), "눌러도 주소 그대로").toBe(before);
-      expect(requests.slice(n).filter((p) => p !== before && !p.startsWith("/_next")), "눌러도 화면 요청 없음").toEqual([]);
-      // 키보드 포커스로도 툴팁
-      await page.mouse.move(info.project.use.viewport!.width - 5, info.project.use.viewport!.height - 5);
-      await expect(tip).toBeHidden();
-      await it.focus();
-      await page.keyboard.press("Shift+Tab");
-      await page.keyboard.press("Tab");
-      await expect(it).toBeFocused();
-      await expect(tip, `포커스하면 툴팁 "${READY_TOOLTIP}"`).toBeVisible();
-    }
+    // QR 찾기 = 정상 링크 (d7 §26 — 예전 §23 비활성 버튼·"준비 중" 툴팁 끝). 화면 12 본문은 D3 [S12] 에서 본다
+    const qr = itemByLabel(page, QR_MENU);
+    await expect(qr, `"${QR_MENU}" 1`).toHaveCount(1);
+    expect(await qr.evaluate((el) => el.tagName), `"${QR_MENU}" 은 링크`).toBe("A");
+    await expect(qr, `"${QR_MENU}" → ${SCAN_ROUTE}`).toHaveAttribute("href", SCAN_ROUTE);
+    await expect(qr, "aria-disabled 없음").not.toHaveAttribute("aria-disabled", /.*/);
+    await expect(qr, "aria-describedby(툴팁) 없음").not.toHaveAttribute("aria-describedby", /.*/);
+    await qr.hover();
+    await expect(page.getByRole("tooltip"), "올려도 툴팁 0").toHaveCount(0);
+    await qr.focus();
+    await expect(qr).toBeFocused();
+    await expect(page.getByRole("tooltip"), "포커스해도 툴팁 0").toHaveCount(0);
+    expect(await qr.innerText(), "메뉴 글자 = QR 찾기만 (준비 중 없음)").toMatch(exact(QR_MENU));
   } finally {
     await context.close();
   }
@@ -539,7 +528,7 @@ test(`[C3][S*] 로그인 전 ${PRE.screens.join("·")} · 둘러보기 ${rules.g
 // 갤러리 (K1) — /gallery/sidebar
 // =====================================================================
 
-test(`[K1][S*] /gallery/sidebar: 역할별 ${DS.component} 3종(학생 ${sidebarMenuOf("student").length} · 교사 ${sidebarMenuOf("teacher").length} · admin ${sidebarMenuOf("admin").length}, 문구·순서 = desktop_shell.menu) · 각 활성 1 · 폭 ${DS.width} · radius ${DS.radius} · ${NOT_BUILT_LABELS.join("·")} 는 aria-disabled 버튼`, async ({ page }) => {
+test(`[K1][S*] /gallery/sidebar: 역할별 ${DS.component} 3종(학생 ${sidebarMenuOf("student").length} · 교사 ${sidebarMenuOf("teacher").length} · admin ${sidebarMenuOf("admin").length}, 문구·순서 = desktop_shell.menu) · 각 활성 1 · 폭 ${DS.width} · radius ${DS.radius} · '${QR_MENU}' = ${SCAN_ROUTE} 링크 (aria-disabled · 툴팁 없음, d7 §26)`, async ({ page }) => {
   await page.goto("/gallery/sidebar");
   await page.waitForLoadState("load");
   const bars = page.locator(sel(DS.component));
@@ -557,11 +546,11 @@ test(`[K1][S*] /gallery/sidebar: 역할별 ${DS.component} 3종(학생 ${sidebar
     const box = (await bar.boundingBox())!;
     expect(Math.round(box.width), `${role} 폭`).toBe(DS.width);
     expect(await bar.evaluate((el) => getComputedStyle(el).borderTopLeftRadius)).toBe(`${DS.radius}px`);
-    for (const l of NOT_BUILT_LABELS) {
-      const it = bar.locator(sel(DS.item)).filter({ has: page.getByText(l, { exact: true }) });
-      expect(await it.evaluate((el) => el.tagName)).toBe("BUTTON");
-      await expect(it).toHaveAttribute("aria-disabled", "true");
-    }
+    const qr = bar.locator(sel(DS.item)).filter({ has: page.getByText(QR_MENU, { exact: true }) });
+    await expect(qr, `${role} '${QR_MENU}' 1`).toHaveCount(1);
+    expect(await qr.evaluate((el) => el.tagName), `${role} '${QR_MENU}' 은 링크`).toBe("A");
+    await expect(qr).toHaveAttribute("href", SCAN_ROUTE);
+    await expect(qr).not.toHaveAttribute("aria-disabled", /.*/);
   }
   expect(seen.sort(), "학생·교사·admin 각 1").toEqual([...ROLES].sort());
 });

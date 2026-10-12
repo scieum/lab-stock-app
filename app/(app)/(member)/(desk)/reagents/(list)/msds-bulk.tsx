@@ -23,6 +23,7 @@ type Props = {
  * msds-bulk-banner "MSDS 없는 시약 N종 · 한 번에 찾기" → 시약마다 차례로 후보 시트(제목 = 시약 이름 + "1 / N",
  * "알맞은 MSDS를 골라 주세요") → "이 MSDS로"(또는 직접 주소) = 바로 set_reagent_msds 저장 / "건너뛰기" → 다음.
  * 한 번에 최대 20종(목록 앞에서부터). 끝나거나 × 로 닫으면 저장한 수만큼 토스트 "N종에 MSDS를 넣었어요" + 목록 다시 받기.
+ * 끝까지 하나도 연결하지 않았으면(모두 건너뛰기) 토스트 "MSDS를 연결하지 않았어요"(d7 §26 QA (7)) — × 로 닫으면 토스트 없음.
  */
 export function MsdsBulk({ targets }: Props) {
   const { state, search, reset } = useMsdsSearch();
@@ -42,7 +43,8 @@ export function MsdsBulk({ targets }: Props) {
 
   const current = queue ? queue[index] : undefined;
 
-  const finish = () => {
+  /** reachedEnd = 마지막 시약까지 지나서 끝남 (× 로 닫은 것이 아님) */
+  const finish = (reachedEnd = false) => {
     const n = saved.current;
     saved.current = 0;
     setQueue(null);
@@ -52,12 +54,14 @@ export function MsdsBulk({ targets }: Props) {
     if (n > 0) {
       setToast(bulkDoneText(n));
       void refreshAfterMsdsAction();
+    } else if (reachedEnd) {
+      setToast(MSDS_TEXT.bulkNone);
     }
   };
 
   const goTo = (list: MsdsBulkTarget[], i: number) => {
     if (i >= list.length) {
-      finish();
+      finish(true);
       return;
     }
     setIndex(i);

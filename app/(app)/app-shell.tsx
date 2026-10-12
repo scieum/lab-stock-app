@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { NavPill, type NavLinkItem } from "@/components/nav-pill";
 import { TabBar, type TabKey } from "@/components/tab-bar";
+import { useRememberScanReturn, useScanReturnHref } from "@/lib/scan-return";
 import { sidebarAccountLabel, sidebarActiveKey, sidebarMenu, type SidebarRole } from "@/lib/sidebar-menu";
 import { useIsDesktop } from "@/lib/use-viewport";
 import styles from "./shell.module.css";
@@ -69,8 +70,15 @@ type SubPage = {
   mainNav?: boolean;
 };
 
+/** 화면 12 QR 스캔 (시안 12-mobile: nav-close × + "QR 스캔" + 학교명 ▾) */
+function isScanPath(pathname: string) {
+  return /^\/scan\/?$/.test(pathname);
+}
+
 /** 하위 화면 (시안: nav-pill = 뒤로가기 + 제목 + 학교명. 화면 4 데스크톱은 링크 2개) */
-function subPage(pathname: string, staff: boolean): SubPage | undefined {
+function subPage(pathname: string, staff: boolean, scanReturn = "/"): SubPage | undefined {
+  // 화면 12: × = 들어온 화면, 없으면 / (d7 §26)
+  if (isScanPath(pathname)) return { title: "QR 스캔", backHref: scanReturn, backIcon: "close" };
   if (/^\/reagents\/[^/]+\/?$/.test(pathname)) return { title: "시약 상세", backHref: "/reagents", mainNav: true };
   // 화면 17 (시안 17-detail-mobile · 17-form-mobile): 상세 = ‹ "센서 상세", 폼 = × "센서 등록" · "센서 수정"
   if (/^\/sensors\/new\/?$/.test(pathname)) return { title: "센서 등록", backHref: "/sensors", backIcon: "close" };
@@ -166,9 +174,10 @@ export function AppNav(props: AppNavProps) {
 
 function MobileNav({ schoolName, staff = false, admin = false, page }: AppNavProps) {
   const pathname = usePathname();
+  const scanReturn = useScanReturnHref(isScanPath(pathname));
   const sub: SubPage | undefined = page
     ? { title: page.title, backHref: page.backHref, mainNav: true }
-    : subPage(pathname, staff);
+    : subPage(pathname, staff, scanReturn);
   const links: NavLinkItem[] | undefined = sub && !sub.mainNav
     ? sub.links
     : LINKS.filter((l) => (staff || !l.staffOnly) && (admin || !l.adminOnly)).map((l) => ({
@@ -193,11 +202,11 @@ function MobileNav({ schoolName, staff = false, admin = false, page }: AppNavPro
 /**
  * 데스크톱 재구성 run b(d7 §23): 목록 data-table + 오른쪽 detail-drawer 화면 — 본문 여백을 페이지가 직접 둔다
  * (시안 main 안쪽 32, 드로어는 본문 오른쪽 끝에 붙는다). 모바일 여백은 그대로.
- * 2 /reagents · 3 /reagents/[id] · 16 /msds/[id] · 10 /usage · 8 /users · 9 /vendors
+ * 2 /reagents · 3 /reagents/[id] · 16 /msds/[id] · 10 /usage · 8 /users · 9 /vendors · 12 /scan(결과 드로어)
  * (화면 4 /usage/new 는 2026-10-10 디자인 1.25 부터 본문 페이지 — heavy_pages)
  */
 function isDeskPath(pathname: string): boolean {
-  return /^\/(reagents(\/[^/]+)?|msds\/[^/]+|usage|users|vendors|sensors(\/[^/]+(\/edit)?)?)\/?$/.test(pathname);
+  return /^\/(reagents(\/[^/]+)?|msds\/[^/]+|usage|users|vendors|scan|sensors(\/[^/]+(\/edit)?)?)\/?$/.test(pathname);
 }
 
 /**
@@ -217,6 +226,8 @@ function isPagePath(pathname: string): boolean {
  */
 export function AppShell({ schoolName, role, displayName, children }: Props) {
   const pathname = usePathname();
+  // 화면 12 nav-close 가 돌아갈 곳 (/scan 이 아닌 마지막 화면)
+  useRememberScanReturn(pathname);
   const desktop = useIsDesktop();
   const staff = role !== "student";
   const admin = role === "admin";

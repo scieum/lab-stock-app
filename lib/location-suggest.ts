@@ -14,6 +14,7 @@ import {
   type SlotKey,
   type SlotSide,
 } from "./cabinet-rules";
+import { effectiveStorageClass } from "./storage-class-rules";
 
 /** 칸 안 시약 (자기 자신 제외 판정용 id + 분류) */
 export type SuggestSlotReagent = { id: string; storageClass: string | null | undefined };
@@ -37,7 +38,13 @@ export type SuggestCabinet = {
 };
 
 /** 추천 대상 시약 — id 가 있으면 칸 안 시약 수·분류에서 자기 자신을 뺀다 */
-export type SuggestTarget = { id?: string | null; storageClass: string | null | undefined };
+export type SuggestTarget = {
+  id?: string | null;
+  storageClass: string | null | undefined;
+  /** 이름·CAS — 있으면 인화성 액체의 유기·기타 분류를 인화성으로 본다 (lib/storage-class-rules, d7 §26 QA (11)) */
+  name?: string | null;
+  cas?: string | null;
+};
 
 export type LocationSuggestion = {
   cabinetId: string;
@@ -68,7 +75,8 @@ function clashes(cls: string, others: Iterable<string>): boolean {
  * 시약 분류가 없거나(모르는 값 포함) 후보가 없으면 null.
  */
 export function suggestLocation(target: SuggestTarget, cabinets: readonly SuggestCabinet[]): LocationSuggestion | null {
-  const cls = target.storageClass;
+  // 인화성이 유기보다 먼저 — 서류 입고 추천과 같은 규칙. 분류가 없으면 추천 없음 (§17 그대로)
+  const cls = effectiveStorageClass(target.storageClass, { name: target.name, cas: target.cas });
   if (!cls || !isStorageClass(cls)) return null;
   const selfId = target.id ?? null;
 
@@ -132,7 +140,14 @@ export type SuggestSlotRow = {
   storage_class?: string | null;
   storage_classes?: string[] | null;
 };
-export type SuggestReagentRow = { id: string; slot_id: string | null; storage_class: string | null };
+export type SuggestReagentRow = {
+  id: string;
+  slot_id: string | null;
+  storage_class: string | null;
+  /** 있으면 칸 안 시약 분류도 같은 규칙(인화성 먼저)으로 본다 */
+  name?: string | null;
+  cas_no?: string | null;
+};
 
 /**
  * cabinets · cabinet_slots · reagents(slot_id · storage_class) 행 → 추천 입력.
@@ -147,7 +162,7 @@ export function toSuggestCabinets(
   for (const r of reagents) {
     if (!r.slot_id) continue;
     const list = bySlot.get(r.slot_id) ?? [];
-    list.push({ id: r.id, storageClass: r.storage_class });
+    list.push({ id: r.id, storageClass: effectiveStorageClass(r.storage_class, { name: r.name, cas: r.cas_no }) ?? r.storage_class });
     bySlot.set(r.slot_id, list);
   }
   return cabinets.map((c) => {

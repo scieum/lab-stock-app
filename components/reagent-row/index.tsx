@@ -33,10 +33,12 @@ type Props = {
    * 고른 행 = selected(highlight-soft). 화살표 · 체크 표시 없음
    */
   leading?: React.ReactNode;
+  /** false = 링크 행이어도 오른쪽 화살표 없음 (시안 12-result-mobile 결과 시트) */
+  chevron?: boolean;
 };
 
 /** 시약 목록·최근 사용 기록 행 (회색 바탕, radius 16) */
-export function ReagentRow({ title, body, caption, lowStock, badge, trailingCaption, href, selected, onSelect, action, leading }: Props) {
+export function ReagentRow({ title, body, caption, lowStock, badge, trailingCaption, href, selected, onSelect, action, leading, chevron = true }: Props) {
   const cls = [styles.row, selected ? styles.selected : ""].join(" ").trim();
   if (action) {
     const mainContent = (
@@ -112,7 +114,7 @@ export function ReagentRow({ title, body, caption, lowStock, badge, trailingCapt
         ) : null}
       </div>
       {trailingCaption ? <span className={styles.trailing}>{trailingCaption}</span> : null}
-      {href && !onSelect && !trailingCaption ? <Icon name="chevron-right" className={styles.chevron} /> : null}
+      {href && chevron && !onSelect && !trailingCaption ? <Icon name="chevron-right" className={styles.chevron} /> : null}
       {onSelect && selected ? <Icon name="check" className={styles.check} /> : null}
     </>
   );

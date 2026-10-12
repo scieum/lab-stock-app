@@ -710,7 +710,8 @@ test(`[C1][S9] 일회용 학교 admin 판매처 폼 (시안 1.17 9 · d7 §18): 
     const after = (await vendorsBySchool(f.school.id)).find((x) => x.id === v.id)!;
     expect(after.note, "DB note 그대로 (폼에 칸이 없다)").toBe(v.note);
     expect(after.website, "웹사이트 그대로").toBe(v.website);
-    expect((await readVendorRows(page)).find((r) => r[0] === v.name), "행 = 이름 + 새 연락처").toEqual([v.name, "043-555-0202"]);
+    // d7 §26: 저장 토스트 직후 한 번 읽기 금지 — UI 읽기를 다시 시도한다
+    await expect.poll(async () => (await readVendorRows(page)).find((r) => r[0] === v.name), { message: "행 = 이름 + 새 연락처", timeout: SAVE_TIMEOUT }).toEqual([v.name, "043-555-0202"]);
   } finally {
     await context.close();
   }

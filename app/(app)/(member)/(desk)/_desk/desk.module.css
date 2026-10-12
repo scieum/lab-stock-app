@@ -177,3 +177,14 @@
     display: none;
   }
 }
+
+/* 드로어가 열린 표 (d7 §26 QA (3)): 화면이 1440 보다 좁으면 MSDS · 보관 분류 열을 숨겨 시약명 칸 폭을 지킨다 (남는 폭은 시약명 칸으로) */
+.drawerTable {
+  min-width: 0;
+}
+
+@media (max-width: 1439px) {
+  .drawerTable .colNarrowHide {
+    display: none;
+  }
+}

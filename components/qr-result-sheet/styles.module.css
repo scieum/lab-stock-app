@@ -1,0 +1,155 @@
+/* qr-result-sheet (시안 12-result-mobile · 12-result-desktop)
+ * 모바일 시트: 흰 바탕 · border-strong 한 줄 · 위쪽 radius 24 · 안쪽 24 · 사이 16 · 딤·그림자 없음, tab-bar 위에 붙는다
+ * sheet-head: sheet-header(cabinet-number + 제목 20/700, 사이 8 · × 44 하늘색) + 캡션 12 회색, 사이 4
+ * result-list: reagent-row 사이 12 · result-table: 흰 바탕 hairline radius 16 (데스크톱)
+ * 배치도 보기: 전폭 button-pill-soft 48 + 오른쪽 하늘색 chevron */
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+  padding: var(--space-24);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-bottom: 0;
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-none) var(--radius-none);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-none);
+  box-sizing: border-box;
+}
+
+.fixed {
+  position: fixed;
+  right: 0;
+  bottom: var(--tab-bar-height);
+  left: 0;
+  z-index: 20;
+  max-height: calc(100% - var(--tab-bar-height) - var(--space-24));
+}
+
+.inline {
+  position: relative;
+  width: 100%;
+}
+
+/* 데스크톱 drawer-body 안: 틀 없이 묶음만 (사이 16) */
+.inDrawer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: var(--button-min-height);
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.title {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}
+
+.title:focus {
+  outline: none;
+}
+
+.title:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.close {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+  margin-right: calc(var(--space-12) * -1);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-highlight);
+  cursor: pointer;
+}
+
+.close:active {
+  opacity: var(--pressed-opacity);
+}
+
+.close:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.closeIcon {
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+}
+
+.caption {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+/* 시트 본문: 길면 이 안만 스크롤 (포커스 테두리가 잘리지 않게 4 여유) */
+.scroll {
+  min-height: 0;
+  margin: calc(var(--space-4) * -1);
+  padding: var(--space-4);
+  overflow-y: auto;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+.table {
+  min-width: 0;
+  overflow: hidden;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.layout {
+  flex-shrink: 0;
+  gap: var(--space-8);
+  min-height: var(--control-height);
+}

@@ -1,0 +1,82 @@
+/* 화면 12 QR 찾기 (시안 12 · 12-result, d7 §26)
+ * 모바일 content: segmented-control → qr-scan → qr-manual-entry, 사이 24 (nav-pill 은 셸)
+ * 데스크톱: 가로 [본문(안쪽 32, 사이 24): page-head → find-cards(scan-card · 번호 카드, 사이 24)] [detail-drawer 480]
+ * scan-card · 번호 카드: 흰 바탕 · hairline · radius 24 · 안쪽 24 (번호 카드 모양은 qr-manual-entry 가 그린다)
+ */
+
+.mobile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  min-width: 0;
+}
+
+.video {
+  display: block;
+}
+
+.frame {
+  display: flex;
+  align-items: flex-start;
+  min-height: 100dvh;
+}
+
+.body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-24);
+  min-width: 0;
+  padding: var(--space-32);
+}
+
+.cards {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-24);
+  min-width: 0;
+}
+
+.scanCard,
+.entryCard {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.scanCard {
+  padding: var(--space-24);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-sizing: border-box;
+}
+
+/* result-table (detail-drawer 안): 열 = 시약명 · 칸 위치 · 재고 · 상태 */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.table th:first-child,
+.table td:first-child {
+  width: 35%;
+}
+
+.nameLink {
+  display: block;
+  overflow: hidden;
+  color: var(--color-text);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nameLink:hover {
+  text-decoration: underline;
+}
+
+.nameLink:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: var(--space-4);
+}

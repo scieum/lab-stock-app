@@ -8,7 +8,6 @@ import { ROLE_LABEL, SCHOOL_A_ROLES } from "./db-helpers";
 import { openAs } from "./auth-state";
 import {
   PROFILE_ROLE,
-  ROLE_NAME,
   browserSession,
   countComponent,
   devRules,
@@ -145,22 +144,18 @@ test(`[R-ui][S${SCREEN}] 로그인 전 화면 ${SCREEN}: roles R1~R7 역할 제�
   await assertRoleChecks(page, checks);
 });
 
+// d7 §26 QA 개선 (1): 로그인 상태로 화면 1(/login) 을 열면 홈(/) 으로 보낸다 — 로그인 상태의 화면 1 은 없다.
+// (이전 run 의 "로그인 상태에서도 화면 1 이 열린다 + roles 검사" 기대를 이 결정으로 바꿨다. 비로그인 화면 1 roles 검사는 위 테스트)
 for (const role of SCHOOL_A_ROLES) {
-  const roleName = ROLE_NAME[role as keyof typeof ROLE_NAME];
-  const checks = roleChecks(SCREEN, roleName);
-  if (checks.length === 0) continue; // 이 역할에 화면 1 에서 적용되는 roles 규칙 없음 (예: admin)
-  test(`[R-ui][S${SCREEN}] ${ROLE_LABEL[role]} 로그인 상태 화면 ${SCREEN}: roles ${[
-    ...new Set(checks.map((c) => c.rule)),
-  ].join("·")}`, async ({ browser }, info) => {
+  test(`[R-ui][C1][S${SCREEN}] ${ROLE_LABEL[role]} 로그인 상태로 화면 ${SCREEN} → ${routeOf(13)} (d7 §26 QA (1)) · 화면 ${SCREEN} 폼 0`, async ({ browser }, info) => {
     test.setTimeout(90_000);
-    // 로그인 세션(역할별 1회 UI 로그인, auth-state.ts)으로 홈을 거쳐 화면 1 을 연다
     const { context, page } = await openAs(browser, info, role, 13);
     try {
       expect((await browserSession(page)).role, "테스트 계정 역할").toBe(PROFILE_ROLE[role]);
       await page.goto(routeOf(SCREEN));
-      expect(new URL(page.url()).pathname, "로그인 상태에서도 화면 1 이 열린다").toBe(routeOf(SCREEN));
-      await waitLoginScreen(page);
-      await assertRoleChecks(page, checks);
+      await page.waitForURL((u) => u.pathname === routeOf(13), { timeout: 30_000 });
+      await expect(page.locator(sel("home-summary")).first(), "홈 화면").toBeVisible({ timeout: 30_000 });
+      expect(await page.locator(sel("ex-auth-form-card")).count(), `화면 ${SCREEN} 폼 0`).toBe(0);
     } finally {
       await context.close();
     }

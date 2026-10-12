@@ -1,7 +1,6 @@
 /* sidebar-item (시안 1.22): 215 × 44, padding 0/12, gap 12, radius 0. icon 20 회색, label 15/400 검정 */
 .item,
-.itemActive,
-.itemDisabled {
+.itemActive {
   position: relative;
   display: flex;
   align-items: center;
@@ -70,39 +69,9 @@ a.item:has([data-pending]) .icon {
 }
 
 .item:focus-visible,
-.itemActive:focus-visible,
-.itemDisabled:focus-visible {
+.itemActive:focus-visible {
   outline: var(--border-width) solid var(--color-highlight);
   outline-offset: calc(var(--space-4) * -1);
-}
-
-/* 비활성(아직 없는 화면): 회색 글자, 누름 없음, 올리거나 포커스하면 "준비 중" 툴팁 */
-.itemDisabled {
-  color: var(--color-text-muted);
-  cursor: not-allowed;
-}
-
-.tooltip {
-  position: absolute;
-  top: 50%;
-  right: var(--space-12);
-  z-index: 20;
-  padding: var(--space-4) var(--space-8);
-  border-radius: var(--radius-md);
-  background: var(--color-toast);
-  color: var(--color-on-primary);
-  font-size: var(--font-size-12);
-  font-weight: var(--font-weight-regular);
-  line-height: var(--line-height-normal);
-  white-space: nowrap;
-  transform: translateY(-50%);
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.itemDisabled:hover .tooltip,
-.itemDisabled:focus-visible .tooltip {
-  visibility: visible;
 }
 
 /* 둘러보기 잠금 (guest-lock 16, 글자 바로 뒤) */

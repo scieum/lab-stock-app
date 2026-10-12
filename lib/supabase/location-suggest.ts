@@ -42,7 +42,7 @@ async function loadSuggestInput(supabase: Awaited<ReturnType<typeof createClient
     supabase.from("cabinets").select("*").order("number").order("created_at").order("id"),
     // "*": storage_classes 열이 있는 DB 와 없는 DB 모두 읽는다 (lib/cabinet-rules slotRowClasses)
     supabase.from("cabinet_slots").select("*"),
-    supabase.from("reagents").select("id, slot_id, storage_class").not("slot_id", "is", null),
+    supabase.from("reagents").select("id, name, cas_no, slot_id, storage_class").not("slot_id", "is", null),
   ]);
   if (cabinetsRes.error || slotsRes.error || placedRes.error) return null;
   return toSuggestCabinets(cabinetsRes.data ?? [], slotsRes.data ?? [], placedRes.data ?? []);
@@ -61,8 +61,8 @@ export async function getLocationSuggestions(reagentIds: readonly unknown[]): Pr
   const [cabinets, reagentsRes] = await Promise.all([
     loadSuggestInput(supabase),
     ids.length > 0
-      ? supabase.from("reagents").select("id, name, storage_class").in("id", ids)
-      : Promise.resolve({ data: [] as { id: string; name: string; storage_class: string | null }[], error: null }),
+      ? supabase.from("reagents").select("id, name, cas_no, storage_class").in("id", ids)
+      : Promise.resolve({ data: [] as { id: string; name: string; cas_no: string | null; storage_class: string | null }[], error: null }),
   ]);
   if (!cabinets || reagentsRes.error) return null;
 
@@ -72,7 +72,7 @@ export async function getLocationSuggestions(reagentIds: readonly unknown[]): Pr
     const r = byId.get(id);
     if (!r) continue;
     const storageClass = typeof r.storage_class === "string" && isStorageClass(r.storage_class) ? r.storage_class : null;
-    const s = suggestLocation({ id: r.id, storageClass }, cabinets);
+    const s = suggestLocation({ id: r.id, storageClass, name: r.name, cas: r.cas_no }, cabinets);
     items.push({
       id: r.id,
       name: r.name,

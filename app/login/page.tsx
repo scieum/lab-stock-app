@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { nextOrHome } from "@/lib/auth/next-path";
 import { getMembership } from "@/lib/supabase/my-school";
 import { ButtonPillSoft } from "@/components/button-pill-soft";
 import { NavPill } from "@/components/nav-pill";
@@ -16,10 +17,9 @@ type Props = { searchParams: Promise<Query> };
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
-/** 내부 경로만 허용 (열린 리다이렉트 방지) */
+/** 같은 origin 의 앱 경로만 허용 (열린 리다이렉트 방지 — lib/auth/next-path) */
 function safeNext(next: string | string[] | undefined): string {
-  const v = first(next);
-  return v && v.startsWith("/") && !v.startsWith("//") && !v.startsWith("/login") ? v : "/";
+  return nextOrHome(first(next));
 }
 
 /** 다른 흐름에서 돌아왔을 때의 안내 (고정 문구만 — 쿼리 값을 그대로 보여주지 않는다) */

@@ -146,7 +146,7 @@ export async function getCabinetScreen(input: { cabinetId?: string | null } = {}
     supabase.from("cabinets").select("*").order("number").order("created_at").order("id"),
     // "*": storage_classes 열이 있는 DB 와 없는 DB(마이그레이션 적용 전) 모두 읽는다
     supabase.from("cabinet_slots").select("*"),
-    supabase.from("reagents").select("id, name, stock, unit, slot_id, storage_class").order("name").order("id"),
+    supabase.from("reagents").select("id, name, cas_no, stock, unit, slot_id, storage_class").order("name").order("id"),
   ]);
   if (me.kind === "signed-out" || me.kind === "unavailable") return { kind: "signed-out" };
   if (me.kind === "no-school") return { kind: "no-school" };
@@ -203,7 +203,7 @@ export async function getCabinetScreen(input: { cabinetId?: string | null } = {}
   const unassigned: UnassignedReagent[] = reagents
     .filter((r) => !r.slot_id)
     .map((r) => {
-      const s = canManage ? suggestLocation({ id: r.id, storageClass: r.storage_class }, suggestInput) : null;
+      const s = canManage ? suggestLocation({ id: r.id, storageClass: r.storage_class, name: r.name, cas: r.cas_no }, suggestInput) : null;
       return { ...toReagent(r), suggestion: s ? { cabinetId: s.cabinetId, side: s.side, shelf: s.shelf } : null };
     });
 

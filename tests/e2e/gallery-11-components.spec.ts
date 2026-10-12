@@ -165,8 +165,8 @@ const DEL = {
 
 // 프레임의 컴포넌트 개수 (dev-rules components 이름만, nav-pill·tab-bar 는 갤러리 예시 구역 밖이라 뺀다)
 const componentNames = Object.keys(dev.components);
-// tab-soon = QR 스캔 tab-item 안 "준비 중"(rules tab_bar.qr_pending) — 탭바(셸) 일부
-const SHELL = ["nav-pill", rules.tab_bar.component, rules.tab_bar.item, "tab-soon"];
+// 탭바(셸)는 갤러리 예시 구역 밖 (tab-soon 은 d7 §26 · dev-rules 1.19 에서 지워졌다)
+const SHELL = ["nav-pill", rules.tab_bar.component, rules.tab_bar.item];
 const countByName = (nodes: FrameNode[]) => {
   const out: Record<string, number> = {};
   for (const n of nodes) {
@@ -510,17 +510,22 @@ test(`[K1][S${SCREEN}] /gallery DOM 에 화면 ${SCREEN} 전용 컴포넌트(화
     ].sort(),
   );
   const shared = componentNames.filter((n) => dev.components[n].includes(SCREEN) && dev.components[n].every((s) => s === SCREEN || s === 3) && !only.includes(n));
-  expect(shared.sort(), "dev-rules 에서 화면 3·11 에만 있는 컴포넌트").toEqual(["cabinet-number", "cabinet-slot", "cabinet-switcher", "mix-warning", "slot-count"].sort());
+  expect(shared.sort(), "dev-rules 에서 화면 3·11 에만 있는 컴포넌트").toEqual(["cabinet-slot", "cabinet-switcher", "mix-warning", "slot-count"].sort());
+  // dev-rules 1.19 (d7 §26): cabinet-number 는 화면 12 결과 시트 머리(12-result qr-result-sheet)에도 쓰여 [3, 11, 12]
+  const with12 = componentNames.filter(
+    (n) => dev.components[n].includes(SCREEN) && dev.components[n].includes(12) && dev.components[n].every((s) => s === SCREEN || s === 3 || s === 12) && !only.includes(n),
+  );
+  expect(with12.sort(), "dev-rules 에서 화면 3·11·12 에만 있는 컴포넌트").toEqual(["cabinet-number"]);
   // dev-rules 1.4 (디자인 1.17): storage-class-chip 은 화면 2 필터 시트(list-filter-sheet)에도 쓰여 [2, 11]
   const with2 = componentNames.filter((n) => dev.components[n].includes(SCREEN) && dev.components[n].every((s) => s === SCREEN || s === 2) && !only.includes(n));
   expect(with2.sort(), "dev-rules 에서 화면 2·11 에만 있는 컴포넌트").toEqual(["storage-class-chip"]);
   await open(page, GALLERY);
-  for (const n of [...only, ...shared, ...with2]) expect(await page.locator(sel(n)).count(), `/gallery ${n}`).toBeGreaterThanOrEqual(1);
+  for (const n of [...only, ...shared, ...with2, ...with12]) expect(await page.locator(sel(n)).count(), `/gallery ${n}`).toBeGreaterThanOrEqual(1);
 });
 
 test(`[K1][S${SCREEN}] /gallery/cabinets DOM 에 화면 ${SCREEN} 컴포넌트(dev-rules, tab-bar 제외)가 각각 1개 이상, 새 data-component 이름 없음`, async ({ page }) => {
   // 데스크톱 셸(rules 1.22 desktop_shell app-sidebar · sidebar-item)은 /gallery/sidebar 에 있다
-  const want = componentNames.filter((n) => dev.components[n].includes(SCREEN) && ![rules.tab_bar.component, rules.tab_bar.item, "tab-soon", ...DESKTOP_SHELL_NAMES].includes(n));
+  const want = componentNames.filter((n) => dev.components[n].includes(SCREEN) && ![rules.tab_bar.component, rules.tab_bar.item, ...DESKTOP_SHELL_NAMES].includes(n));
   expect(want.length, "dev-rules 화면 11 컴포넌트").toBeGreaterThan(8);
   await open(page);
   for (const n of want) expect(await page.locator(sel(n)).count(), `/gallery/cabinets ${n}`).toBeGreaterThanOrEqual(1);

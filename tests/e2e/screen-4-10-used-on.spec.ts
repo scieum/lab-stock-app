@@ -193,8 +193,10 @@ test.describe("일회용 학교", () => {
         const before = await logsBy(u.id, reagent);
         await amountOf(page, name).fill("1");
         await dateInput(page).fill(daysAgo(-1));
-        await saveButton(page).click();
+        // d7 §26 QA (6): 미래 날짜는 입력 즉시 칸 아래 오류 + 저장 비활성 (저장을 누를 수 없다 — 누르기 전 오류)
         await expect(page.locator('main [role="alert"]').first(), "미래 사용일 → 에러").toBeVisible({ timeout: 30_000 });
+        await expect(saveButton(page), "미래 사용일 → 저장 비활성 (d7 §26 QA 6)").toBeDisabled();
+        await page.waitForTimeout(800);
         await expect(toast(page).filter({ hasText: doneText(1) }), "미래 사용일 → 저장 토스트 없음").toHaveCount(0);
         expect(new URL(page.url()).pathname, "미래 사용일 → 이동 없음").toBe(routeOf(4));
         expect(await logsBy(u.id, reagent), "미래 사용일 → usage_logs 그대로").toEqual(before);

@@ -24,6 +24,8 @@ export type DataTableColumn = {
   align?: "start" | "end";
   /** 머리 칸에 글자 대신 둘 요소 (디자인 1.26 select-cell: 전체 선택 select-checkbox) */
   header?: React.ReactNode;
+  /** 열(col)·머리 칸(th)에 붙일 class — 좁을 때 숨길 열 등 (같은 열의 칸은 DataTableCell className) */
+  className?: string;
 };
 
 type TableProps = {
@@ -55,7 +57,7 @@ export function DataTable({ label, columns, children, empty, className }: TableP
       <table className={styles.table} aria-label={label}>
         <colgroup>
           {columns.map((c) => (
-            <col key={c.key} style={c.width ? { width: c.width } : undefined} />
+            <col key={c.key} className={c.className} style={c.width ? { width: c.width } : undefined} />
           ))}
         </colgroup>
         <thead>
@@ -64,7 +66,7 @@ export function DataTable({ label, columns, children, empty, className }: TableP
               <th
                 key={c.key}
                 scope="col"
-                className={[styles.headCell, c.align === "end" ? styles.end : ""].filter(Boolean).join(" ")}
+                className={[styles.headCell, c.align === "end" ? styles.end : "", c.className ?? ""].filter(Boolean).join(" ")}
                 aria-sort={ariaSort(c.sort)}
               >
                 {c.header ? (
@@ -197,10 +199,12 @@ type LinkCellProps = {
   caption?: string;
   /** 이동 뒤 화면을 맨 위로 올리지 않는다 (기본 — 목록 위치 유지) */
   scroll?: boolean;
+  /** 글자에 마우스를 올리면 보일 전체 글자 (말줄임될 때) */
+  title?: string;
 };
 
 /** 행의 대표 칸 = 행 링크 (키보드 포커스가 가는 곳). 행 어디를 눌러도 이 링크로 간다 (DataTableRow clickable). */
-export function DataTableLinkCell({ href, children, current = false, caption, scroll = false }: LinkCellProps) {
+export function DataTableLinkCell({ href, children, current = false, caption, scroll = false, title }: LinkCellProps) {
   return (
     <td className={[styles.cell, current ? styles.strong : ""].filter(Boolean).join(" ")}>
       <Link
@@ -210,6 +214,7 @@ export function DataTableLinkCell({ href, children, current = false, caption, sc
         data-row-link=""
         aria-current={current ? "true" : undefined}
         className={styles.rowLink}
+        title={title}
       >
         <span className={styles.rowLinkText}>{children}</span>
         {caption ? <span className={styles.caption}>{caption}</span> : null}
@@ -228,10 +233,12 @@ type ButtonCellProps = {
   controls?: string;
   /** 선택 모드 행 (디자인 1.26 bulk_delete.row_tap) — 누르면 고르기 · aria-pressed */
   pressed?: boolean;
+  /** 글자에 마우스를 올리면 보일 전체 글자 (말줄임될 때) */
+  title?: string;
 };
 
 /** 행의 대표 칸 = 버튼 (주소 대신 화면 상태로 여는 행) */
-export function DataTableButtonCell({ onClick, children, current = false, caption, controls, pressed }: ButtonCellProps) {
+export function DataTableButtonCell({ onClick, children, current = false, caption, controls, pressed, title }: ButtonCellProps) {
   return (
     <td className={[styles.cell, current ? styles.strong : ""].filter(Boolean).join(" ")}>
       <button
@@ -242,6 +249,7 @@ export function DataTableButtonCell({ onClick, children, current = false, captio
         aria-pressed={pressed}
         aria-controls={controls}
         onClick={onClick}
+        title={title}
       >
         <span className={styles.rowLinkText}>{children}</span>
         {caption ? <span className={styles.caption}>{caption}</span> : null}

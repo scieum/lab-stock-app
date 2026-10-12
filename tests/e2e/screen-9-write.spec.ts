@@ -246,7 +246,8 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin: 0건 "${EMPTY_VENDORS}" → "${RE
     const row = vendorRow(page, name);
     await expect(row, "새 행").toHaveCount(1);
     await expect(row).toBeVisible();
-    expect(await readVendorRows(page), "행 = 판매처명 + 부가 정보(연락처)").toEqual([[name, contact]]);
+    // d7 §26: 저장 토스트 직후 한 번 읽기 금지 — UI 읽기를 다시 시도한다
+    await expect.poll(() => readVendorRows(page), { message: "행 = 판매처명 + 부가 정보(연락처)", timeout: 20_000 }).toEqual([[name, contact]]);
     await expect(row, "방금 등록한 행 강조 (rules.json colors.highlight 연한 쪽)").toHaveCSS("background-color", highlightSoft());
     await expect(moreButton(row), "행의 더보기").toHaveCount(1);
     await expect(listScope(page).locator(sel(EMPTY)), "0건 안내는 사라진다").toHaveCount(0);
@@ -350,7 +351,7 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin: 더보기 "${EDIT_ITEM}" → 폼�
     await expect(vendorRow(page, target.name), "옛 이름의 행은 없다").toHaveCount(0);
     const row = vendorRow(page, next.name);
     await expect(row, "바뀐 행").toHaveCount(1);
-    expect((await readVendorRows(page)).sort(), "행 반영 (연락처만)").toEqual([[next.name, next.contact], [other.name, other.contact!]].sort());
+    await expect.poll(async () => (await readVendorRows(page)).sort(), { message: "행 반영 (연락처만) — d7 §26 UI 읽기 재시도", timeout: 20_000 }).toEqual([[next.name, next.contact], [other.name, other.contact!]].sort());
     await expect(row, "방금 수정한 행 강조").toHaveCSS("background-color", highlightSoft());
     await expect(vendorRow(page, other.name), "다른 행은 강조 없음").not.toHaveCSS("background-color", highlightSoft());
     if (viewport === "mobile") await expect(fieldInput(page, FIELD_NAME), "모바일: 저장 후 목록 복귀").toHaveCount(0);
@@ -415,7 +416,7 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin: 더보기 "${DELETE_ITEM}" → ${
     await expectToast(page, TOAST_DELETED);
     await expect(deleteDialog(page), "삭제 뒤 확인 카드 닫힘").toHaveCount(0);
     await expect(vendorRow(page, target.name), "목록에서 사라짐").toHaveCount(0);
-    expect(await readVendorRows(page), "남은 행 (연락처만)").toEqual([[keep.name, keep.contact!]]);
+    await expect.poll(() => readVendorRows(page), { message: "남은 행 (연락처만) — d7 §26 UI 읽기 재시도", timeout: 20_000 }).toEqual([[keep.name, keep.contact!]]);
     expect(await vendorsBySchool(f.school.id), "DB: 지운 행 없음 · 다른 행 불변").toEqual([keep]);
 
     // 마지막 행까지 지우면 0건 안내
@@ -503,7 +504,7 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin(판매처 3 + 화면에서 1 등�
     await expectToast(page, TOAST_SAVED);
     await expect(vendorRow(page, name)).toHaveCount(1);
     const all = [...seeded.map((v) => v.name), name];
-    expect((await readVendorRows(page)).map((r) => r[0]).sort(), "행 = DB 의 학교 판매처").toEqual([...all].sort());
+    await expect.poll(async () => (await readVendorRows(page)).map((r) => r[0]).sort(), { message: "행 = DB 의 학교 판매처 — d7 §26 UI 읽기 재시도", timeout: 20_000 }).toEqual([...all].sort());
     expect((await vendorsBySchool(f.school.id)).map((v) => v.name).sort()).toEqual([...all].sort());
 
     // 검색 (부분 일치 — 이름 가운데 글자, 대소문자 무시)

@@ -1,0 +1,66 @@
+/* qr-manual-entry (시안 12-mobile · 12-desktop)
+ * button: 전폭 button-outline 48 (흰 바탕 · border-strong · pill)
+ * card: 흰 바탕 · hairline(border) · radius 24 · 안쪽 24 · 사이 16 — heading 17/600, helper 13 회색(사이 4)
+ *       entry-row: text-input(남는 폭, 회색 상자 radius 16, 앞 search 아이콘) + button-primary "찾기"(안쪽 0·24), 사이 8 */
+
+.button {
+  display: flex;
+  width: 100%;
+}
+
+.full {
+  width: 100%;
+  min-height: var(--control-height);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+  padding: var(--space-24);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-sizing: border-box;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.heading {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.helper {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-8);
+  margin: 0;
+}
+
+.input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.submit {
+  flex-shrink: 0;
+  min-height: var(--control-height);
+  padding: 0 var(--space-24);
+}
