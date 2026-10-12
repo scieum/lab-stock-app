@@ -14,6 +14,8 @@ import {
 } from "@/components/data-table";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { Toast } from "@/components/ex-toast";
+import { INVITE_CANCEL_TEXT, InviteCancel, InviteCancelConfirm } from "@/components/invite-cancel";
+import { InviteMoreMenu } from "@/components/invite-more-menu";
 import { SegmentedControl } from "@/components/segmented-control";
 import { TextInput } from "@/components/text-input";
 import {
@@ -26,7 +28,7 @@ import {
 } from "@/components/user-manage";
 import type { Role } from "@/lib/types";
 import { isValidEmail, normalizeEmails } from "@/lib/users-rules";
-import { changeMemberRoleAction, inviteMembersAction, removeMemberAction } from "./actions";
+import { cancelInviteAction, changeMemberRoleAction, inviteMembersAction, removeMemberAction } from "./actions";
 import { INVITE_EMAIL_ERROR } from "@/lib/users-rules";
 import styles from "./users.module.css";
 
@@ -40,7 +42,8 @@ type Props = {
 };
 
 type SortKey = "name" | "role" | "joined";
-type Modal = { kind: "role" | "delete"; id: string } | null;
+/** cancel-invite = 초대 취소 확인 (rules 1.28 invite_cancel.confirm) — id = 초대 id */
+type Modal = { kind: "role" | "delete" | "cancel-invite"; id: string } | null;
 
 const TOAST_MS = 4000;
 const INVITE_ROLES = [
@@ -52,7 +55,8 @@ const collator = new Intl.Collator("ko", { sensitivity: "base", numeric: true })
 
 /* 시안 8-desktop 열 폭 (멤버 이메일은 읽지 않아 빼고 — d7 §8 — 나머지를 같은 비율로) */
 const MEMBER_W = { name: "38%", role: "26%", joined: "28%", more: "8%" };
-const INVITE_W = { email: "43.5%", role: "18%", invited: "18%", status: "20.5%" };
+/* 시안 8-desktop · 8-invite-cancel-desktop 초대 대기 표: 이메일 480 · 역할 200 · 초대일 200 · 상태 160 · invite-more-menu 64 (1104) */
+const INVITE_W = { email: "43.5%", role: "18%", invited: "18%", status: "14.5%", more: "6%" };
 
 /**
  * 화면 8 사용자 — 데스크톱 (디자인 1.24 8-desktop, d7 §23 run b, admin 전용).
@@ -85,7 +89,8 @@ export function UsersDesk({ schoolName, members, counts, invites, onCopyLink }: 
     return () => clearTimeout(t);
   }, [toast]);
 
-  const target = modal ? (members.find((m) => m.id === modal.id) ?? null) : null;
+  const target = modal && modal.kind !== "cancel-invite" ? (members.find((m) => m.id === modal.id) ?? null) : null;
+  const inviteTarget = modal?.kind === "cancel-invite" ? (invites.find((v) => v.id === modal.id) ?? null) : null;
   const total = counts.student + counts.teacher + counts.admin;
 
   const q = query.trim().toLowerCase();
@@ -106,7 +111,7 @@ export function UsersDesk({ schoolName, members, counts, invites, onCopyLink }: 
   const toggleSort = (key: SortKey) =>
     setSort((s) => (s?.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
 
-  const openModal = (kind: "role" | "delete", id: string) => {
+  const openModal = (kind: "role" | "delete" | "cancel-invite", id: string) => {
     setError(null);
     setModal({ kind, id });
   };
@@ -184,6 +189,17 @@ export function UsersDesk({ schoolName, members, counts, invites, onCopyLink }: 
     });
   };
 
+  const confirmCancelInvite = () => {
+    if (busy || !inviteTarget) return;
+    const inviteId = inviteTarget.id;
+    setError(null);
+    startTransition(async () => {
+      const res = await cancelInviteAction({ inviteId });
+      if (res.ok) done(INVITE_CANCEL_TEXT.done);
+      else setError(res.error);
+    });
+  };
+
   const memberColumns: DataTableColumn[] = [
     { key: "name", label: "이름", width: MEMBER_W.name, sort: sortOf("name"), onSort: () => toggleSort("name") },
     { key: "role", label: "역할", width: MEMBER_W.role, sort: sortOf("role"), onSort: () => toggleSort("role") },
@@ -195,6 +211,7 @@ export function UsersDesk({ schoolName, members, counts, invites, onCopyLink }: 
     { key: "role", label: "역할", width: INVITE_W.role },
     { key: "invited", label: "초대일", width: INVITE_W.invited },
     { key: "status", label: "상태", width: INVITE_W.status },
+    { key: "more", label: "", width: INVITE_W.more, align: "end" },
   ];
 
   return (
@@ -301,11 +318,23 @@ export function UsersDesk({ schoolName, members, counts, invites, onCopyLink }: 
             </h2>
             <DataTable label="초대 대기" columns={inviteColumns}>
               {invites.map((v) => (
-                <DataTableRow key={v.id}>
+                <DataTableRow key={v.id} selected={inviteTarget?.id === v.id}>
                   <DataTableCell>{v.email}</DataTableCell>
                   <DataTableCell>{v.role ? ROLE_LABEL[v.role] : "-"}</DataTableCell>
                   <DataTableCell>{v.invitedAt}</DataTableCell>
                   <DataTableCell>대기</DataTableCell>
+                  <DataTableCell align="end">
+                    {/* rules 1.28 invite_cancel.entry: 마지막 열 ⋯ → "초대 취소" (admin 전용 화면) */}
+                    <InviteMoreMenu email={v.email}>
+                      <InviteCancel
+                        disabled={busy}
+                        onSelect={() => {
+                          setToast(null);
+                          openModal("cancel-invite", v.id);
+                        }}
+                      />
+                    </InviteMoreMenu>
+                  </DataTableCell>
                 </DataTableRow>
               ))}
             </DataTable>
@@ -314,6 +343,19 @@ export function UsersDesk({ schoolName, members, counts, invites, onCopyLink }: 
 
         <p className={styles.deskFootnote}>같은 학교({schoolName}) 계정만 초대할 수 있어요</p>
       </section>
+
+      {inviteTarget ? (
+        <div className={styles.deskModal}>
+          <InviteCancelConfirm
+            key={inviteTarget.id}
+            email={inviteTarget.email}
+            pending={busy}
+            error={error}
+            onCancel={close}
+            onConfirm={confirmCancelInvite}
+          />
+        </div>
+      ) : null}
 
       {target && modal ? (
         <div className={styles.deskModal}>

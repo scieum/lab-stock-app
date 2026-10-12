@@ -39,13 +39,19 @@ type Props = {
    * 없으면 학교명은 지금처럼 글자다 (로그인 전 화면 · 둘러보기 · 소속 학교 없음 안내).
    */
   onLogout?: () => void | Promise<void>;
+  /**
+   * nav-pill 맨 왼쪽 — 모바일 전체 메뉴 ☰ (rules 1.28 mobile_menu.button, MobileMenu). 로그인 후·둘러보기 모바일 기본 화면만.
+   * 있으면 왼쪽 안쪽 여백 4(시안 13-mobile nav-pill padding 4·24·4·4), 뒤로가기·제목·워드마크는 그 오른쪽.
+   */
+  menu?: React.ReactNode;
 };
 
 /** 상단 내비게이션 stadium pill */
-export function NavPill({ title, backHref, backIcon = "back", desktopWordmark = false, schoolName, endTitle, links, sectionTitle, onLogout }: Props) {
+export function NavPill({ title, backHref, backIcon = "back", desktopWordmark = false, schoolName, endTitle, links, sectionTitle, onLogout, menu }: Props) {
   return (
-    <header data-component="nav-pill" className={styles.nav}>
+    <header data-component="nav-pill" className={[styles.nav, menu ? styles.withMenu : ""].filter(Boolean).join(" ")}>
       <div className={styles.left}>
+        {menu}
         {title ? (
           <>
             <span className={[styles.titleGroup, desktopWordmark ? styles.mobileOnly : ""].filter(Boolean).join(" ")}>

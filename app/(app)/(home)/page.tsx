@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getServerSession } from "@/lib/supabase/server";
 import { LandingScreen } from "../../landing-screen";
 import { NoSchoolScreen } from "../../no-school-screen";
+import { DeniedToast } from "./denied-toast";
 import { HomeScreen } from "./home-screen";
 
 export const dynamic = "force-dynamic";
@@ -20,5 +22,13 @@ export default async function HomePage() {
   if (me.kind === "signed-out") return <LandingScreen />;
   if (me.kind === "no-school") return <NoSchoolScreen />;
   if (me.kind === "unavailable") redirect("/login");
-  return <HomeScreen />;
+  return (
+    <>
+      <HomeScreen />
+      {/* 권한 없는 관리 화면에서 보내졌으면(/?denied=staff|admin) 토스트 한 번 (d7 §28) */}
+      <Suspense fallback={null}>
+        <DeniedToast />
+      </Suspense>
+    </>
+  );
 }

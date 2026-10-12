@@ -16,6 +16,11 @@ type Props = {
   component?: string | null;
   /** ⋯ 버튼 ref (확인 모달을 닫은 뒤 포커스를 돌려줄 곳) */
   buttonRef?: React.RefObject<HTMLButtonElement | null>;
+  /**
+   * true = 메뉴를 화면 기준(fixed)으로 버튼 아래 오른쪽 맞춤에 둔다 — 모서리를 자르는 표 틀·목록 안(화면 8 초대 대기 행 invite-more-menu)에서
+   * 메뉴가 잘리지 않게. 스크롤·창 크기가 바뀌면 닫힌다 (data-table 행 더보기와 같은 방식). 기본 false = 버튼 기준(absolute)
+   */
+  fixed?: boolean;
 };
 
 /**
@@ -31,8 +36,10 @@ export function ReagentMoreMenu({
   className,
   component = "reagent-more-menu",
   buttonRef: outerButtonRef,
+  fixed = false,
 }: Props) {
   const [open, setOpen] = useState(defaultOpen);
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const innerButtonRef = useRef<HTMLButtonElement>(null);
   const buttonRef = outerButtonRef ?? innerButtonRef;
@@ -46,20 +53,31 @@ export function ReagentMoreMenu({
       if (e.target instanceof Node && wrapRef.current?.contains(e.target)) return;
       setOpen(false);
     };
+    const shut = () => setOpen(false);
     const timer = window.setTimeout(() => {
       document.addEventListener("pointerdown", outside);
       document.addEventListener("focusin", outside);
     }, 0);
+    if (fixed) {
+      window.addEventListener("scroll", shut, true);
+      window.addEventListener("resize", shut);
+    }
     return () => {
       window.clearTimeout(timer);
       document.removeEventListener("pointerdown", outside);
       document.removeEventListener("focusin", outside);
+      window.removeEventListener("scroll", shut, true);
+      window.removeEventListener("resize", shut);
     };
-  }, [open]);
+  }, [open, fixed]);
 
   const items = () => Array.from(menuRef.current?.querySelectorAll<HTMLElement>("[role='menuitem']:not([disabled])") ?? []);
 
   const show = () => {
+    if (fixed) {
+      const r = buttonRef.current?.getBoundingClientRect();
+      if (r) setPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+    }
     setOpen(true);
     window.requestAnimationFrame(() => items()[0]?.focus({ preventScroll: true }));
   };
@@ -115,7 +133,8 @@ export function ReagentMoreMenu({
           id={menuId}
           role="menu"
           aria-labelledby={buttonId}
-          className={styles.menu}
+          className={[styles.menu, fixed ? styles.menuFixed : ""].filter(Boolean).join(" ")}
+          style={fixed && pos ? { top: pos.top, right: pos.right } : undefined}
           onClick={(e) => {
             if ((e.target as Element).closest("[role='menuitem']")) setOpen(false);
           }}

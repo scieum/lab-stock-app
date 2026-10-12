@@ -2,7 +2,10 @@ import { Fragment } from "react";
 import styles from "./styles.module.css";
 
 type Props = {
-  /** 작은 머리말 (시안 hero-lead / hero-eyebrow, 기본 "Lab_Stock") */
+  /**
+   * 작은 머리말 (시안 hero-lead / hero-eyebrow). 기본 = "과학실 시약·센서 관리" — rules 1.28 landing_hero_mark:
+   * 히어로 안에는 'Lab_Stock' 워드마크를 두지 않는다(상단 바 nav-pill · web-header 에만)
+   */
   lead?: string;
   /** 제목 (시안 hero-title). "\n" = 줄바꿈 — stack 은 모바일 폭에서만, split 은 늘 */
   title?: string;
@@ -34,12 +37,12 @@ function Lines({ text, always }: { text: string; always: boolean }) {
 
 /**
  * 화면 15 랜딩 머리 영역 (시안 15 landing-hero).
- * - stack(15-mobile): 머리말 15/400 회색 · 제목 28/700 · 부제 17/300 회색, 사이 8.
+ * - stack(15-mobile): 꼬리표 caption 12/400 text-muted("과학실 시약·센서 관리", 1.28) · 제목 28/700 · 부제 17/300 회색, 사이 8.
  * - split(15-desktop, rules.json 1.24): 전폭 1440 × 732 — 왼쪽 hero-copy(x 80, 560) = 꼬리표 → 제목 48/700 두 줄
  *   (typography.display_sizes — landing-hero 안에서만) → 부제 17/300 → children, 오른쪽 product-shot(화면 끝에서 잘림).
  */
 export function LandingHero({
-  lead = "Lab_Stock",
+  lead = "과학실 시약·센서 관리",
   title = "과학실 시약,\n학교별로 한눈에 관리해요",
   subtitle = "시약 재고·사용 기록·MSDS를 QR로 연결하고,\n재고가 부족하면 판매처까지 이어 줘요",
   layout = "stack",
