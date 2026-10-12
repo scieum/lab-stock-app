@@ -118,6 +118,11 @@ export function ExtractionTable({
                 <tr className={styles.mainRow}>
                   <DataTableCell>
                     <span className={styles.name}>{row.name}</span>
+                    {row.originalName ? (
+                      <span className={styles.original} data-name="original-name">
+                        원문: {row.originalName}
+                      </span>
+                    ) : null}
                   </DataTableCell>
                   <DataTableCell>
                     <TextInput

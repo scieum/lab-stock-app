@@ -131,7 +131,14 @@ export function DocIntakeTable({
             >
               <div className={styles.itemLine} data-name="item-line">
                 <div className={styles.itemName} data-name="item-name">
-                  <p className={styles.itemTitle}>{row.item.name}</p>
+                  <div className={styles.itemTitle}>
+                    <p className={styles.itemTitleText}>{row.item.name}</p>
+                    {row.item.originalName ? (
+                      <p className={styles.original} data-name="original-name">
+                        원문: {row.item.originalName}
+                      </p>
+                    ) : null}
+                  </div>
                   <p className={styles.itemSpec}>
                     <span className={styles.specLabel}>규격 </span>
                     {row.item.spec ?? "—"}

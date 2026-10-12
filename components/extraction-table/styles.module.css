@@ -162,6 +162,16 @@
   overflow-wrap: anywhere;
 }
 
+/* d7 §27: 영어 문서의 원문 이름 — 시약명 아래 caption text-muted 한 줄 (두 폭) */
+.original {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
 .required {
   display: block;
   color: var(--color-text);
