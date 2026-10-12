@@ -525,7 +525,8 @@ test(`[K1][S${SCREEN}] /gallery DOM 에 화면 ${SCREEN} 전용 컴포넌트(화
 
 test(`[K1][S${SCREEN}] /gallery/cabinets DOM 에 화면 ${SCREEN} 컴포넌트(dev-rules, tab-bar 제외)가 각각 1개 이상, 새 data-component 이름 없음`, async ({ page }) => {
   // 데스크톱 셸(rules 1.22 desktop_shell app-sidebar · sidebar-item)은 /gallery/sidebar 에 있다
-  const want = componentNames.filter((n) => dev.components[n].includes(SCREEN) && ![rules.tab_bar.component, rules.tab_bar.item, ...DESKTOP_SHELL_NAMES].includes(n));
+  // mobile-menu-button(rules 1.28 mobile_menu.button) = nav-pill 맨 왼쪽 셸 — /gallery/menu 에 있다 (gallery-28-components)
+  const want = componentNames.filter((n) => dev.components[n].includes(SCREEN) && ![rules.tab_bar.component, rules.tab_bar.item, "mobile-menu-button", ...DESKTOP_SHELL_NAMES].includes(n));
   expect(want.length, "dev-rules 화면 11 컴포넌트").toBeGreaterThan(8);
   await open(page);
   for (const n of want) expect(await page.locator(sel(n)).count(), `/gallery/cabinets ${n}`).toBeGreaterThanOrEqual(1);

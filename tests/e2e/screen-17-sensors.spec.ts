@@ -148,9 +148,13 @@ test(`[C1][S17] 기대값 원본: screens_required 17 · variants 17 · rules se
   expect(devRules.routes["17"], "dev-rules routes 17").toBe("/sensors");
   expect(devRules.routes["17-guest"], "dev-rules routes 17-guest").toBe("/demo/sensors");
   expect(devRules.guest_screens, "dev-rules guest_screens 에 17").toContain(17);
-  // 종류 칩 = 프레임 17-form-mobile type-chip 글자
-  const chips = newFrame("17-form-mobile").filter((n) => n.path.includes("type-chip") && n.text).map((n) => n.text!.characters);
-  expect(chips, "17-form type-chip = rules sensor.types").toEqual(SENSOR.types);
+  // 종류 (rules 1.28 · d7 §28): 27종 묶음 4줄 = 프레임 17-type-mobile group-name · group-count (17-form 의 예전 chip 줄은 type_select 로 바뀜)
+  const typeGroups = (rules as unknown as { sensor: { type_groups: Record<string, string[]> } }).sensor.type_groups;
+  expect(Object.values(typeGroups).flat(), "rules type_groups = sensor.types").toEqual(SENSOR.types);
+  const groupNames = newFrame("17-type-mobile").filter((n) => n.name === "group-name" && n.text).map((n) => n.text!.characters);
+  const groupCounts = newFrame("17-type-mobile").filter((n) => n.name === "group-count" && n.text).map((n) => n.text!.characters);
+  expect(groupNames, "17-type 묶음 이름 = rules type_groups").toEqual(Object.keys(typeGroups));
+  expect(groupCounts, "17-type 묶음 개수 = rules type_groups").toEqual(Object.values(typeGroups).map((v) => String(v.length)));
   expect(MAKER_GROUPS.map((g) => g.title), "회사 묶음 제목").toEqual(["센서", "현미경"]);
   expect(MAKERS.length, "회사 수 (센서 + 현미경)").toBe(MAKER_GROUPS.reduce((a, g) => a + g.makers.length, 0));
   // 상태 글자 = 프레임 17-form 상태 segmented

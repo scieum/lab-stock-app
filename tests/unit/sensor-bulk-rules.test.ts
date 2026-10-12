@@ -1,5 +1,5 @@
 // 화면 17 센서 · 화면 2·17 여러 개 삭제 · 화면 14 가입 오류 · 화면 4 사용량 순수 규칙 (lib/sensor-rules · lib/auth/signup-rules · lib/usage-batch-rules).
-// 기대값: design/rules.json 1.26 sensor(types · makers · status) · bulk_delete(max · select_all · confirm) · signup_error(summary),
+// 기대값: design/rules.json 1.28 sensor(types · makers · status) · bulk_delete(max · select_all · confirm) · signup_error(summary),
 //         harness/d7-data.md §25 (센서 DB 값 범위 · 상태 ok|check|broken · QA 4 사용량 0/음수 문구). 구현에서 기대값을 읽지 않는다.
 import { describe, expect, it } from "vitest";
 import { join } from "node:path";
@@ -37,7 +37,7 @@ const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0
 const base = { id: null, name: "무선 온도 센서", type: SENSOR.types[0], maker: (SENSOR.makers["센서"] as string[])[0], model: "", quantity: 3, locationText: "", slotId: null, status: "ok", memo: "" };
 
 describe("[C1][S17] 센서 규칙 = rules sensor · d7 §25 센서 DB", () => {
-  it("종류 14 · 회사 묶음(센서 · 현미경) · 상태 정상/점검 필요/고장 = ok/check/broken", () => {
+  it(`종류 ${SENSOR.types.length}종(rules 1.28) · 회사 묶음(센서 · 현미경) · 상태 정상/점검 필요/고장 = ok/check/broken`, () => {
     expect([...SENSOR_TYPES]).toEqual(SENSOR.types);
     const groups = Object.entries(SENSOR.makers).filter(([, v]) => Array.isArray(v));
     expect(SENSOR_MAKER_GROUPS.map((g) => ({ title: g.title, makers: [...g.makers] }))).toEqual(groups.map(([title, makers]) => ({ title, makers })));
