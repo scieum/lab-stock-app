@@ -156,9 +156,13 @@ export function countScoped(scope: Locator, name: string): Promise<number> {
  * 개수를 세기 전에 그 폭이 정리될 때까지 기다린다 (d7 §23 "모바일은 지금처럼 전용 화면", rules desktop_shell).
  * - 390: 데스크톱 전용 app-sidebar · data-table · detail-drawer 0
  * - 1440: 모바일 셸 nav-pill · tab-bar 0, 모바일 전용 본문 reagent-detail-card 0
+ * - 두 폭 공통: 스트리밍 교체 전 숨은 사본([hidden] 안 data-component) 0
  */
 export async function waitWidthSettled(page: Page, timeout = 45_000): Promise<void> {
   const gone = isDeskPage(page) ? ["nav-pill", "tab-bar", "reagent-detail-card"] : [DESKTOP_SHELL.component, TABLE, DRAWER];
   // 둘러보기(/demo)도 run d 부터 같은 규칙 (1440 = app-sidebar 셸 + 표·드로어, d7 §23 "run d 세부")
   for (const n of gone) await expect(page.locator(sel(n)), `폭 정리 대기: ${n} 0 (하이드레이션 뒤)`).toHaveCount(0, { timeout });
+  // 스트리밍(Suspense) 교체 전 사본: React 가 <div hidden> 안에 받아 둔 본문은 잠깐 두 폭 사본째 DOM 에 남는다
+  // (구현은 hidden 속성을 쓰지 않음). 셸이 정리된 뒤에도 본문 묶음은 따로 교체되므로 이것도 빠질 때까지 기다린다.
+  await expect(page.locator("[hidden] [data-component]"), "폭 정리 대기: 스트리밍 숨은 사본 0").toHaveCount(0, { timeout });
 }
