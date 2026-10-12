@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getSensorList } from "@/lib/supabase/sensors";
-import { SensorDetailView } from "../_sensors/sensor-detail-view";
+import { SensorDetailView } from "../../_sensors/sensor-detail-view";
 
 export const dynamic = "force-dynamic";
 

@@ -29,6 +29,11 @@ type Props = {
   error?: string | null;
   /** 안내 제목 (기본 "품의서·영수증·거래명세서를 올려 주세요", 실패 뒤 "다른 파일 올리기") */
   heading?: string;
+  /** 안내 아래 caption (기본 "PDF·JPG·PNG, 4MB까지" — 화면 17 "PDF·JPG·PNG 1개, 4MB까지 · 서버에 보관하지 않아요") */
+  caption?: string;
+  /** 처리 중 제목·본문 (기본 "읽는 중이에요" · "품목·규격·수량을 찾고 있어요" — 화면 17 "서류를 읽는 중이에요") */
+  readingTitle?: string;
+  readingBody?: string;
   /** 저장 중 등 잠금 */
   disabled?: boolean;
   /**
@@ -57,6 +62,9 @@ export function DocUpload({
   processing = false,
   error,
   heading = DOC_TEXT.uploadHeading,
+  caption = DOC_TEXT.uploadCaption,
+  readingTitle = DOC_TEXT.readingTitle,
+  readingBody = DOC_TEXT.readingBody,
   disabled = false,
   desktopBar = false,
   className,
@@ -136,7 +144,7 @@ export function DocUpload({
           <h2 id={headingId} className={styles.heading}>
             {heading}
           </h2>
-          <p className={styles.caption}>{DOC_TEXT.uploadCaption}</p>
+          <p className={styles.caption}>{caption}</p>
         </div>
       )}
 
@@ -160,14 +168,14 @@ export function DocUpload({
 
       {processing ? (
         <>
-          <div role="progressbar" aria-label={DOC_TEXT.readingBody} className={styles.track} data-name="progress-track">
+          <div role="progressbar" aria-label={readingBody} className={styles.track} data-name="progress-track">
             <span className={styles.fill} />
           </div>
           <div className={styles.reading} data-name="reading-text" role="status">
             <h2 id={headingId} className={styles.heading}>
-              {DOC_TEXT.readingTitle}
+              {readingTitle}
             </h2>
-            <p className={styles.body}>{DOC_TEXT.readingBody}</p>
+            <p className={styles.body}>{readingBody}</p>
             <p className={styles.caption}>{DOC_TEXT.readingCaption}</p>
           </div>
           <div className={styles.cancel}>

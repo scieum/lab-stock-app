@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import desk from "@/app/(app)/(member)/(desk)/_desk/desk.module.css";
 import { DesktopOnly } from "@/components/viewport-only";
 import { getSensorList } from "@/lib/supabase/sensors";
-import { SensorDesk } from "./_sensors/sensor-desk";
+import { SensorDesk } from "../_sensors/sensor-desk";
 
 export const dynamic = "force-dynamic";
 

@@ -16,5 +16,7 @@ export default defineConfig([
     "design/**",
     "test-results/**",
     "playwright-report/**",
+    // 에이전트 작업 트리 (다른 브랜치 사본)
+    ".claude/**",
   ]),
 ]);

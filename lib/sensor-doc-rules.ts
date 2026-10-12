@@ -34,6 +34,19 @@ export const SENSOR_DOC_TEXT = {
   pickTitle: "우리 학교 센서 고르기",
   catalogBadge: "카탈로그",
   modelPlaceholder: "모델명 (선택)",
+  uploadHeading: "품의서·영수증을 올려 주세요",
+  uploadAgainHeading: "다른 서류 올리기",
+  uploadCaption: "PDF·JPG·PNG 1개, 4MB까지 · 서버에 보관하지 않아요",
+  readingTitle: "서류를 읽는 중이에요",
+  readingBody: "센서 이름·회사·모델·수량을 찾고 있어요",
+  emptyTitle: "센서를 찾지 못했어요",
+  emptyBody: "다른 서류를 올리거나 직접 입력해 주세요",
+  failTitle: "서류를 읽지 못했어요",
+  notSensorAction: "센서로 넣기",
+  noRows: "표에 올린 센서가 없어요. 아래 묶음에서 센서로 넣을 수 있어요",
+  nothingToSave: "등록할 센서가 없어요",
+  fixRows: "표시한 줄을 고친 뒤 등록해 주세요",
+  slotMissing: "시약장 칸을 골라 주세요",
 } as const;
 
 /** 표 머리 "읽은 센서 3개" */
@@ -297,4 +310,123 @@ export function checkSensorDocInput(input: unknown): SensorDocInputChecked {
     }
   }
   return { ok: true, items };
+}
+
+/* ───────── 확인 표 상태 (화면 17 /sensors/doc — 화면이 가진다) ───────── */
+
+/** 확인 표 한 줄 */
+export type SensorDocRow = {
+  id: string;
+  item: SensorDocItem;
+  /** 표에 올림(센서) / "센서 아님" 묶음 */
+  isSensor: boolean;
+  link: SensorDocLink;
+  /** 회사+모델로 자동 연결된 우리 학교 센서 (다시 넣기 · 센서로 넣기 때 기본값) */
+  autoSensorId: string | null;
+  /** 새 센서 칸 펼침 */
+  expanded: boolean;
+  draft: NewSensorDraft;
+};
+
+/** 읽은 품목 → 새 센서 칸 처음 값 (카탈로그 모델이면 이름 · 종류 옆 "카탈로그") */
+export function sensorDraftFromItem(item: SensorDocItem): NewSensorDraft {
+  return {
+    name: item.name.slice(0, SENSOR_NAME_MAX),
+    type: item.type ?? "",
+    maker: (item.maker ?? "").slice(0, SENSOR_MAKER_MAX),
+    model: (item.model ?? "").slice(0, SENSOR_MODEL_MAX),
+    quantity: String(item.quantity),
+    locationMode: "text",
+    locationText: "",
+    slotId: null,
+    status: "ok",
+    catalogFilled: item.catalog ? ["name", "type"] : [],
+  };
+}
+
+/** 추출 결과 → 확인 표 줄. 같은 회사+모델 우리 학교 센서가 있으면 "기존 센서에 더하기", 없으면 "새 센서로 등록"(펼침) */
+export function buildSensorDocRows(extraction: SensorDocExtraction, sensors: readonly SchoolSensor[]): SensorDocRow[] {
+  return extraction.items.map((item, i) => {
+    const hit = matchSchoolSensor(item, sensors);
+    return {
+      id: `row-${i}`,
+      item,
+      isSensor: item.isSensor,
+      link: hit ? { kind: "sensor", sensorId: hit.id } : { kind: "new" },
+      autoSensorId: hit?.id ?? null,
+      expanded: !hit,
+      draft: sensorDraftFromItem(item),
+    };
+  });
+}
+
+/** 다시 넣을 때의 연결 (자동 연결 센서가 있으면 그 센서, 아니면 새 센서) */
+export function defaultSensorDocLink(row: Pick<SensorDocRow, "autoSensorId">): SensorDocLink {
+  return row.autoSensorId ? { kind: "sensor", sensorId: row.autoSensorId } : { kind: "new" };
+}
+
+export type SensorDocPlan = {
+  /** 저장 항목 (표에 올린 센서 중 빼지 않은 줄) */
+  items: SensorDocSaveItem[];
+  /** 줄마다 문제 (id → 문구) */
+  errors: Record<string, string>;
+  /** 저장 버튼 "확인 후 등록 · N개" 의 N */
+  count: number;
+  canSave: boolean;
+  /** 저장할 수 없는 까닭 (버튼 옆 안내) */
+  blockReason: string | null;
+};
+
+/** 확인 표 → 저장 항목 · 줄 문제 (화면 쪽 검사 — DB 가 다시 본다) */
+export function planSensorDoc(rows: readonly SensorDocRow[], sensors: readonly SchoolSensor[]): SensorDocPlan {
+  const items: SensorDocSaveItem[] = [];
+  const errors: Record<string, string> = {};
+  for (const row of rows) {
+    if (!row.isSensor || row.link.kind === "none") continue;
+    if (row.link.kind === "sensor") {
+      const sid = row.link.sensorId;
+      const s = sensors.find((x) => x.id === sid);
+      if (!s) {
+        errors[row.id] = SENSOR_DOC_ERRORS.sensor;
+        continue;
+      }
+      if (s.quantity + row.item.quantity > SENSOR_QUANTITY_MAX) {
+        errors[row.id] = `더하면 ${SENSOR_QUANTITY_MAX.toLocaleString("ko-KR")}개를 넘어요`;
+        continue;
+      }
+      items.push({ kind: "add", sensorId: s.id, addQuantity: row.item.quantity });
+      continue;
+    }
+    const d = row.draft;
+    if (d.locationMode === "slot" && !d.slotId) {
+      errors[row.id] = SENSOR_DOC_TEXT.slotMissing;
+      continue;
+    }
+    const checked = checkSensorInput({
+      id: null,
+      name: d.name,
+      type: d.type,
+      maker: d.maker,
+      model: d.model,
+      quantity: d.quantity,
+      locationText: d.locationMode === "text" ? d.locationText : "",
+      slotId: d.locationMode === "slot" ? d.slotId : null,
+      status: d.status,
+      memo: "",
+    });
+    if (!checked.ok) {
+      errors[row.id] = checked.error;
+      continue;
+    }
+    const { id: _id, ...sensor } = checked.value;
+    void _id;
+    items.push({ kind: "new", sensor });
+  }
+  const errorCount = Object.keys(errors).length;
+  const count = items.length + errorCount;
+  let blockReason: string | null = null;
+  if (errorCount > 0) blockReason = SENSOR_DOC_TEXT.fixRows;
+  else if (items.length === 0) blockReason = SENSOR_DOC_TEXT.nothingToSave;
+  else if (items.length > SENSOR_DOC_ITEMS_MAX) blockReason = SENSOR_DOC_ERRORS.count;
+  return { items, errors, count, canSave: blockReason === null, blockReason };
 }

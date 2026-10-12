@@ -40,3 +40,34 @@
   width: var(--icon-md);
   height: var(--icon-md);
 }
+
+/* 모바일 머리 "+ 등록" (시안 17-mobile sensor-add > button-pill-soft: 높이 44 · 안쪽 0/16/0/12 · plus 20 하늘색 + 사이 4) */
+.soft {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-16) 0 var(--space-12);
+  border: 0;
+  border-radius: var(--radius-button);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.soft:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: var(--space-4);
+}
+
+.softIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  color: var(--color-highlight);
+}

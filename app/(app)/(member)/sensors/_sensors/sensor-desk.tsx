@@ -10,6 +10,7 @@ import { ListFilterButton } from "@/components/list-filter-button";
 import { ListSelectToggle, selectedCountText } from "@/components/list-select-toggle";
 import { SelectCheckbox } from "@/components/select-checkbox";
 import { SensorAdd } from "@/components/sensor-add";
+import { SensorDocAdd } from "@/components/sensor-doc-add";
 import { SensorList } from "@/components/sensor-list";
 import { SensorTableRow } from "@/components/sensor-row";
 import { TextInput } from "@/components/text-input";
@@ -31,6 +32,7 @@ import { SensorFilterPanel } from "./filter-panel";
 import { sensorDetailHref, sensorNewHref, sensorSelectedId, type SensorBase } from "./hrefs";
 import { usedMakers } from "./sensor-browser";
 import styles from "./sensors.module.css";
+import { useSensorHighlight } from "./use-highlight";
 
 type Props = {
   items: SensorItem[];
@@ -52,7 +54,7 @@ const W_SELECT = "4.4%";
 
 /**
  * 화면 17 센서 목록 — 데스크톱 (디자인 1.26 17-desktop): page-head(제목 "센서" + "N개" · "고장 n · 점검 필요 n" /
- * 검색 + list-filter-button + list-select-toggle + sensor-add) → sensor-list(data-table: 이름 · 종류 · 회사 · 모델 · 수량 · 보관 위치 · 상태, 10행씩)
+ * 검색 + list-filter-button + list-select-toggle + sensor-doc-add '서류로 등록' + sensor-add — 1.28) → sensor-list(data-table: 이름 · 종류 · 회사 · 모델 · 수량 · 보관 위치 · 상태, 10행씩)
  * → pagination. 행을 누르면 오른쪽 detail-drawer (/sensors/[id]). 선택 모드 = 첫 열 select-checkbox(머리 칸 = 전체 선택) + bulk-action-bar.
  */
 export function SensorDesk({ items, canEdit, base = "" }: Props) {
@@ -71,6 +73,7 @@ export function SensorDesk({ items, canEdit, base = "" }: Props) {
   const [draft, setDraft] = useState<SensorFilter>(applied);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const select = useBulkSelect();
+  const fresh = useSensorHighlight();
 
   const visible = useMemo(() => applySensorFilter(items, query, applied), [items, query, applied]);
   const draftCount = useMemo(() => (open ? applySensorFilter(items, query, draft).length : 0), [open, items, query, draft]);
@@ -189,6 +192,7 @@ export function SensorDesk({ items, canEdit, base = "" }: Props) {
           {canEdit ? (
             <ListSelectToggle variant="desktop" selecting={selecting} onStart={select.start} onCancel={select.cancel} disabled={visible.length === 0} />
           ) : null}
+          {canEdit && !selecting ? <SensorDocAdd variant="button" /> : null}
           {canEdit && !selecting ? <SensorAdd href={sensorNewHref(sp)} /> : null}
         </div>
       </div>
@@ -206,6 +210,7 @@ export function SensorDesk({ items, canEdit, base = "" }: Props) {
                   selectMode={selecting}
                   selected={select.ids.has(s.id)}
                   onToggle={() => select.toggle(s.id)}
+                  fresh={fresh.has(s.id)}
                 />
               ))}
         </DataTable>

@@ -1,16 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import { ButtonOutline } from "@/components/button-outline";
 import { ButtonPillSoft } from "@/components/button-pill-soft";
 import { ButtonPrimary } from "@/components/button-primary";
+import { SensorTypeGroup } from "@/components/sensor-type-group";
 import { SheetPanel } from "@/components/sheet-panel";
 import {
   SENSOR_STATUSES,
   SENSOR_STATUS_LABEL,
-  SENSOR_TYPES,
+  SENSOR_TYPE_GROUPS,
+  initialOpenTypeGroups,
+  typeGroupSelectedCount,
   type SensorFilter,
   type SensorStatus,
-  type SensorType,
 } from "@/lib/sensor-rules";
 import styles from "./sensors.module.css";
 
@@ -31,10 +34,13 @@ function toggle<T>(list: readonly T[], v: T): T[] {
 }
 
 /**
- * 센서 필터 (디자인 1.26 sensor.filter — list-filter-sheet 모양): 종류 chip 여러 개 → 회사 chip 여러 개 → 상태 3개.
+ * 센서 필터 (디자인 1.28 sensor.filter — list-filter-sheet 모양, 시안 17-filter): 종류 = sensor-type-group 4줄(기본 접힘, 검색 없음,
+ * 묶음 줄에 고른 개수 "화학 · 2개", 고른 게 있는 묶음은 처음부터 펼침) → 회사 chip 여러 개 → 상태 3개.
  * 모바일 = tab-bar 위 하단 시트, 데스크톱 = 가운데 카드. "초기화" + "{N}개 보기".
  */
 export function SensorFilterPanel({ value, onChange, makers, resultCount, onApply, onReset, onClose }: Props) {
+  const [openGroups, setOpenGroups] = useState<string[]>(() => initialOpenTypeGroups(value.types));
+  const toggleGroup = (title: string) => setOpenGroups((o) => (o.includes(title) ? o.filter((t) => t !== title) : [...o, title]));
   return (
     <SheetPanel
       title="필터"
@@ -52,12 +58,23 @@ export function SensorFilterPanel({ value, onChange, makers, resultCount, onAppl
       <div className={styles.filterBody}>
         <section className={styles.filterGroup} aria-label="종류">
           <h3 className={styles.filterTitle}>종류</h3>
-          <div className={styles.chips}>
-            {SENSOR_TYPES.map((t: SensorType) => (
-              <ButtonPillSoft key={t} selected={value.types.includes(t)} aria-pressed={value.types.includes(t)} onClick={() => onChange({ ...value, types: toggle(value.types, t) })}>
-                {t}
-              </ButtonPillSoft>
-            ))}
+          <div className={styles.typeGroups} data-name="type-groups">
+            {SENSOR_TYPE_GROUPS.map((g, i) => {
+              const n = typeGroupSelectedCount(g, value.types);
+              return (
+                <SensorTypeGroup
+                  key={g.title}
+                  title={g.title}
+                  types={g.types}
+                  count={n > 0 ? `· ${n}개` : ""}
+                  open={openGroups.includes(g.title)}
+                  onToggle={() => toggleGroup(g.title)}
+                  selected={value.types}
+                  onPick={(t) => onChange({ ...value, types: toggle(value.types, t) })}
+                  first={i === 0}
+                />
+              );
+            })}
           </div>
         </section>
         {makers.length > 0 ? (

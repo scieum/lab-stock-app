@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { MobileOnly } from "@/components/viewport-only";
 import { parseSensorFilter } from "@/lib/sensor-rules";
 import { getSensorList } from "@/lib/supabase/sensors";
-import { SensorBrowser } from "./_sensors/sensor-browser";
+import { SensorBrowser } from "../_sensors/sensor-browser";
 
 export const dynamic = "force-dynamic";
 

@@ -15,9 +15,16 @@ type Props = {
   onRaw?: () => void;
   /** true(기본) = 모델명 칸 아래로 떠 있는 목록(모바일 입력 아래 · 데스크톱 드롭다운). false = 제자리(갤러리) */
   floating?: boolean;
-  /** 모델명 input 의 id (aria-controls 를 거는 쪽이 쓴다) */
+  /** 목록(listbox) id — 모델명 input 의 aria-controls 로 건다 */
   id?: string;
+  /** 키보드(위아래)로 가리킨 후보 순서 (없으면 -1). 그 행 id = `${id}-${순서}` — input 의 aria-activedescendant */
+  activeIndex?: number;
 };
+
+/** 후보 행 id (aria-activedescendant) */
+export function suggestOptionId(listId: string, index: number): string {
+  return `${listId}-${index}`;
+}
 
 /** 모델번호 안 입력과 맞은 글자만 bold (시안 model-number: match 700 + rest 400) */
 function ModelNumber({ model, query }: { model: string; query: string }) {
@@ -40,7 +47,7 @@ function ModelNumber({ model, query }: { model: string; query: string }) {
  * 행 = 모델번호(17, 맞은 글자 700) + caption "무선 편광계 · 편광"(12 muted), 안쪽 12/16 · 줄 사이 hairline-soft, 최대 6줄.
  * 고른 모델 = highlight-soft + ✓. 맨 끝 조용한 "목록에 없어요 — 그대로 적기"(13 muted). 맞는 모델이 없으면 그 줄만.
  */
-export function SensorModelSuggest({ query, selectedModel, onPick, onRaw, floating = true, id }: Props) {
+export function SensorModelSuggest({ query, selectedModel, onPick, onRaw, floating = true, id, activeIndex = -1 }: Props) {
   const autoId = useId();
   const listId = id ?? autoId;
   const items = searchPascoCatalog(query);
@@ -48,16 +55,20 @@ export function SensorModelSuggest({ query, selectedModel, onPick, onRaw, floati
   return (
     <div data-component="sensor-model-suggest" className={[styles.list, floating ? styles.floating : ""].filter(Boolean).join(" ")}>
       <ul id={listId} role="listbox" aria-label="파스코 모델 후보" className={styles.rows}>
-        {items.map((m) => {
+        {items.map((m, i) => {
           const on = selectedKey !== "" && catalogKey(m.model) === selectedKey;
+          const active = i === activeIndex;
           return (
             <li key={m.model} role="presentation">
               <button
                 type="button"
+                id={suggestOptionId(listId, i)}
                 role="option"
-                aria-selected={on}
+                aria-selected={on || active}
                 data-name="suggest-row"
-                className={[styles.row, on ? styles.on : ""].filter(Boolean).join(" ")}
+                data-active={active ? "" : undefined}
+                tabIndex={-1}
+                className={[styles.row, on ? styles.on : "", active ? styles.active : ""].filter(Boolean).join(" ")}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => onPick?.(m)}
               >

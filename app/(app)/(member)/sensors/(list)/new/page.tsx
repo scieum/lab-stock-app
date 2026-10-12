@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { EMPTY_SENSOR_FORM } from "@/lib/sensor-rules";
 import { getSensorList } from "@/lib/supabase/sensors";
-import { SensorFormView } from "../_sensors/sensor-form-view";
+import { SensorFormView } from "../../_sensors/sensor-form-view";
 
 export const dynamic = "force-dynamic";
 

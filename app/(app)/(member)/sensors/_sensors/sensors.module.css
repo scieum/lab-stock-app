@@ -201,6 +201,13 @@
   gap: var(--space-8);
 }
 
+/* 필터 종류 = sensor-type-group 4줄 (시안 17-filter type-groups, 제목 아래 8) */
+.filterGroup > .typeGroups {
+  display: flex;
+  flex-direction: column;
+  margin-top: calc(var(--space-4) * -1);
+}
+
 .filterActions {
   display: flex;
   gap: var(--space-8);
@@ -236,4 +243,15 @@
     max-width: 100%;
     pointer-events: auto;
   }
+}
+
+/* 모바일 '등록' 시트 바깥 누르면 닫힘 (투명 — 시안에 어둡게 깔린 막 없음) */
+.choiceScrim {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
 }

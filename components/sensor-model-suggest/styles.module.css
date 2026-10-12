@@ -51,6 +51,11 @@
   outline-offset: calc(var(--space-4) * -1);
 }
 
+/* 키보드로 가리킨 줄 */
+.active {
+  background: var(--color-surface-muted);
+}
+
 .on,
 .on:hover {
   background: var(--color-highlight-soft);

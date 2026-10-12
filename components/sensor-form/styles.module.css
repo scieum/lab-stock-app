@@ -87,3 +87,12 @@
     gap: var(--space-12);
   }
 }
+
+/* 모델명 칸 (데스크톱: 아래로 sensor-model-suggest 드롭다운이 붙는다 — 시안 17-model-desktop 303 폭) */
+.modelWrap {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}

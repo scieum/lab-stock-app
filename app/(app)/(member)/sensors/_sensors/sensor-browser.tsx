@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BulkDeleteFlow } from "@/components/bulk-action-bar/flow";
 import { ButtonOutline } from "@/components/button-outline";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { InventorySwitch } from "@/components/inventory-switch";
 import { ListFilterButton } from "@/components/list-filter-button";
 import { ListSelectToggle } from "@/components/list-select-toggle";
-import { SensorAdd } from "@/components/sensor-add";
+import { SensorAdd, SensorAddMenuButton } from "@/components/sensor-add";
+import { SENSOR_DOC_PATH, SensorAddChoiceSheet } from "@/components/sensor-doc-add";
 import { SensorList } from "@/components/sensor-list";
 import { SensorRow } from "@/components/sensor-row";
 import { TextInput } from "@/components/text-input";
@@ -25,6 +26,7 @@ import { archiveSensorsAction } from "../actions";
 import { SensorFilterPanel } from "./filter-panel";
 import { sensorDetailHref, sensorNewHref, type SensorBase } from "./hrefs";
 import styles from "./sensors.module.css";
+import { useSensorHighlight } from "./use-highlight";
 
 type Props = {
   items: SensorItem[];
@@ -51,7 +53,8 @@ export function usedMakers(items: readonly SensorItem[]): string[] {
 }
 
 /**
- * 화면 17 센서 목록 — 모바일 (디자인 1.26 17-mobile): inventory-switch "시약 | 센서"(센서 활성) → list-head("센서 N개" + 선택 + 등록) →
+ * 화면 17 센서 목록 — 모바일 (디자인 1.28 17-mobile): inventory-switch "시약 | 센서"(센서 활성) → list-head("센서 N개" + 선택 +
+ * sensor-add "+ 등록" → 작은 바텀시트 "서류로 등록 / 직접 입력", rules sensor.add_mobile) →
  * 검색 + list-filter-button → sensor-list(sensor-row 카드). 0개면 ex-empty-state-card(+ sensor-add, 교사·admin).
  * 선택 모드(교사·admin): 머리 = 취소 · N개 선택됨 · 전체 선택, 행 왼쪽 select-checkbox, bulk-action-bar → 확인 → 토스트.
  */
@@ -61,7 +64,26 @@ export function SensorBrowser({ items, canEdit, base = "", initialQuery, initial
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<SensorFilter>(initialFilter);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const addRef = useRef<HTMLButtonElement>(null);
+  const [choosing, setChoosing] = useState(false);
+  const fresh = useSensorHighlight();
   const select = useBulkSelect();
+
+  const closeChoice = (focus = true) => {
+    setChoosing(false);
+    if (focus) addRef.current?.focus({ preventScroll: true });
+  };
+
+  useEffect(() => {
+    if (!choosing) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      setChoosing(false);
+      addRef.current?.focus({ preventScroll: true });
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [choosing]);
 
   const visible = useMemo(() => applySensorFilter(items, query, applied), [items, query, applied]);
   const draftCount = useMemo(() => (open ? applySensorFilter(items, query, draft).length : 0), [open, items, query, draft]);
@@ -118,7 +140,12 @@ export function SensorBrowser({ items, canEdit, base = "", initialQuery, initial
             {canEdit ? (
               <div className={styles.headActions}>
                 <ListSelectToggle selecting={false} onStart={select.start} disabled={visible.length === 0} />
-                <SensorAdd href={sensorNewHref(listParams)} label={SENSOR_TEXT.addShort} />
+                <SensorAddMenuButton
+                  ref={addRef}
+                  label={SENSOR_TEXT.addShort}
+                  expanded={choosing}
+                  onClick={() => (choosing ? closeChoice(false) : setChoosing(true))}
+                />
               </div>
             ) : null}
           </div>
@@ -164,6 +191,7 @@ export function SensorBrowser({ items, canEdit, base = "", initialQuery, initial
                   selectMode={canEdit && select.selecting}
                   selected={select.ids.has(s.id)}
                   onToggle={() => select.toggle(s.id)}
+                  fresh={fresh.has(s.id)}
                 />
               </li>
             ))}
@@ -184,6 +212,13 @@ export function SensorBrowser({ items, canEdit, base = "", initialQuery, initial
           }}
           onClose={() => closeSheet()}
         />
+      ) : null}
+
+      {canEdit && choosing ? (
+        <>
+          <button type="button" className={styles.choiceScrim} aria-label="닫기" tabIndex={-1} onClick={() => closeChoice()} />
+          <SensorAddChoiceSheet docHref={SENSOR_DOC_PATH} directHref={sensorNewHref(listParams)} onClose={() => closeChoice()} />
+        </>
       ) : null}
 
       {canEdit ? (
