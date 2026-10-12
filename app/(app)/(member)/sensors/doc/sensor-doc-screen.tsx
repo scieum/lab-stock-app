@@ -272,7 +272,7 @@ export function SensorDocScreen({ sensors, cabinets, slots }: Props) {
         ) : null}
         <DocUpload
           file={picked?.view ?? null}
-          heading={failed ? SENSOR_DOC_TEXT.uploadAgainHeading : SENSOR_DOC_TEXT.uploadHeading}
+          heading={SENSOR_DOC_TEXT.uploadHeading}
           caption={SENSOR_DOC_TEXT.uploadCaption}
           readingTitle={SENSOR_DOC_TEXT.readingTitle}
           readingBody={SENSOR_DOC_TEXT.readingBody}

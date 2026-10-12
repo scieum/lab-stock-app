@@ -66,12 +66,13 @@ export function NewSensorFields({ itemName, value, onChange, onPickSlot, slotTex
     >
       <div className={styles.col} data-name="fields-col">
         <div className={styles.row} data-name="field-name">
-          <label htmlFor={nameId} className={styles.label}>
+          <label id={`${nameId}-label`} htmlFor={nameId} className={styles.label}>
             이름
           </label>
           <div className={styles.control}>
             <TextInput
               id={nameId}
+              aria-labelledby={`${nameId}-label`}
               className={styles.input}
               autoComplete="off"
               maxLength={SENSOR_NAME_MAX}
@@ -95,12 +96,13 @@ export function NewSensorFields({ itemName, value, onChange, onPickSlot, slotTex
           <SensorMakerSelect value={value.maker} floating={floating} onChange={(m) => onChange?.({ maker: m })} />
         </div>
         <div className={styles.row} data-name="field-model">
-          <label htmlFor={modelId} className={styles.label}>
+          <label id={`${modelId}-label`} htmlFor={modelId} className={styles.label}>
             모델
           </label>
           <div className={styles.control}>
             <TextInput
               id={modelId}
+              aria-labelledby={`${modelId}-label`}
               className={styles.input}
               autoComplete="off"
               maxLength={SENSOR_MODEL_MAX}
@@ -115,12 +117,13 @@ export function NewSensorFields({ itemName, value, onChange, onPickSlot, slotTex
 
       <div className={styles.col} data-name="fields-col">
         <div className={styles.row} data-name="field-quantity">
-          <label htmlFor={qtyId} className={styles.label}>
+          <label id={`${qtyId}-label`} htmlFor={qtyId} className={styles.label}>
             수량
           </label>
           <div className={styles.control}>
             <TextInput
               id={qtyId}
+              aria-labelledby={`${qtyId}-label`}
               className={styles.qty}
               inputMode="numeric"
               autoComplete="off"

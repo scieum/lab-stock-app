@@ -35,7 +35,6 @@ export const SENSOR_DOC_TEXT = {
   catalogBadge: "카탈로그",
   modelPlaceholder: "모델명 (선택)",
   uploadHeading: "품의서·영수증을 올려 주세요",
-  uploadAgainHeading: "다른 서류 올리기",
   uploadCaption: "PDF·JPG·PNG 1개, 4MB까지 · 서버에 보관하지 않아요",
   readingTitle: "서류를 읽는 중이에요",
   readingBody: "센서 이름·회사·모델·수량을 찾고 있어요",
