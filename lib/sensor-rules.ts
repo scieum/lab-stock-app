@@ -1,45 +1,86 @@
 // 무선 센서 규칙 (화면 17, d7 §25 — design/rules.json 1.26 sensor). 순수 함수 — 서버·클라이언트 공용.
 // DB(upsert_sensor · archive_sensor · archive_sensors)가 같은 검사를 다시 한다 — 여기는 입력 정리와 화면 안내용.
 
-/** 종류 14종 (rules sensor.types — 화면에는 한국어 이름만) */
+/**
+ * 종류 27종 (rules 1.28 sensor.types — 순서 그대로, 화면에는 한국어 이름만).
+ * 묶음 = sensor.type_groups: 물리 12 · 화학 9 · 생명·지구 3 · 장비 3. 예전 "심박" = "심박·생체" (d7 §28).
+ */
 export const SENSOR_TYPES = [
   "온도",
-  "pH",
   "힘",
   "운동(거리)",
+  "가속도",
+  "회전",
   "전압",
   "전류",
+  "자기장",
   "조도",
+  "소리",
   "압력",
+  "방사선",
+  "pH",
+  "전도도",
+  "용존산소",
+  "이온·수질",
+  "분광",
+  "편광",
+  "색·탁도",
   "CO₂",
   "산소",
+  "심박·생체",
   "습도",
-  "소리",
-  "심박",
+  "기상",
+  "인터페이스",
+  "코딩 보드",
   "기타",
 ] as const;
 export type SensorType = (typeof SENSOR_TYPES)[number];
 
+/** 종류 묶음 (rules sensor.type_groups — 순서·이름 그대로) */
+export type SensorTypeGroup = { title: string; types: readonly SensorType[] };
+export const SENSOR_TYPE_GROUPS: readonly SensorTypeGroup[] = [
+  { title: "물리", types: ["온도", "힘", "운동(거리)", "가속도", "회전", "전압", "전류", "자기장", "조도", "소리", "압력", "방사선"] },
+  { title: "화학", types: ["pH", "전도도", "용존산소", "이온·수질", "분광", "편광", "색·탁도", "CO₂", "산소"] },
+  { title: "생명·지구", types: ["심박·생체", "습도", "기상"] },
+  { title: "장비", types: ["인터페이스", "코딩 보드", "기타"] },
+];
+
+/** 예전 이름 → 지금 이름 (d7 §28: 기존 행 type '심박' → '심박·생체') */
+export const LEGACY_SENSOR_TYPES: Readonly<Record<string, SensorType>> = { 심박: "심박·생체" };
+
 /**
- * 종류 ↔ 지능형 과학실 ON 오픈API 센서타입 코드 (d7 §26: 코드 상수로만 두고 화면에는 쓰지 않는다).
+ * 종류 ↔ 지능형 과학실 ON 오픈API 센서타입 코드 (d7 §26·§28: 코드 상수로만 두고 화면에는 쓰지 않는다).
  * 출처: 지능형 과학실 ON 오픈API 정의서 2026-06-16 V1.2 별첨 2 (science-on.kosac.re.kr) 공식 코드 9개
  * TPR 온도 · PRS 압력 · SUD 소리 · SPO 산소포화도 · VTG 전압 · CRT 전류 · ILM 조도 · POH pH · CDT 전기 전도도.
- * SPO(산소포화도) · CDT(전기 전도도)는 아직 해당 종류가 없다. 공식 코드가 없는 종류는 null (임시 코드 금지).
+ * §28: 전도도 = CDT 추가. SPO(산소포화도)는 단독 종류가 아니므로(심박·생체에 섞임) 대응하지 않는다. 공식 코드가 없는 종류는 null (임시 코드 금지).
  */
 export const SENSOR_TYPE_CODES: Record<SensorType, string | null> = {
   온도: "TPR",
-  pH: "POH",
   힘: null,
   "운동(거리)": null,
+  가속도: null,
+  회전: null,
   전압: "VTG",
   전류: "CRT",
+  자기장: null,
   조도: "ILM",
+  소리: "SUD",
   압력: "PRS",
+  방사선: null,
+  pH: "POH",
+  전도도: "CDT",
+  용존산소: null,
+  "이온·수질": null,
+  분광: null,
+  편광: null,
+  "색·탁도": null,
   "CO₂": null,
   산소: null,
+  "심박·생체": null,
   습도: null,
-  소리: "SUD",
-  심박: null,
+  기상: null,
+  인터페이스: null,
+  "코딩 보드": null,
   기타: null,
 };
 
@@ -80,6 +121,58 @@ export function isSensorStatus(v: unknown): v is SensorStatus {
 
 export function isSensorType(v: unknown): v is SensorType {
   return typeof v === "string" && (SENSOR_TYPES as readonly string[]).includes(v);
+}
+
+/** 지금 종류 이름으로 맞춘다 (예전 "심박" → "심박·생체"). 27종이 아니면 null */
+export function normalizeSensorType(v: unknown): SensorType | null {
+  if (typeof v !== "string") return null;
+  const t = v.trim();
+  if (isSensorType(t)) return t;
+  return LEGACY_SENSOR_TYPES[t] ?? null;
+}
+
+/** 종류가 든 묶음 이름 (없으면 null) */
+export function sensorTypeGroupOf(type: string): string | null {
+  const t = normalizeSensorType(type);
+  if (!t) return null;
+  return SENSOR_TYPE_GROUPS.find((g) => g.types.includes(t))?.title ?? null;
+}
+
+/**
+ * 종류 고르기 시트 검색 (rules sensor.type_select): 글자가 있으면 맞는 종류가 있는 묶음만, 그 안은 맞는 종류만.
+ * 대소문자·공백·가운뎃점 무시 ("co2" → CO₂ 는 아래 아래첨자 맞춤). 빈 글자면 묶음 4줄 그대로.
+ */
+export function searchSensorTypeGroups(query: string): SensorTypeGroup[] {
+  const q = typeSearchKey(query);
+  if (!q) return SENSOR_TYPE_GROUPS.map((g) => ({ ...g }));
+  return SENSOR_TYPE_GROUPS.map((g) => ({ title: g.title, types: g.types.filter((t) => typeSearchKey(t).includes(q)) })).filter(
+    (g) => g.types.length > 0,
+  );
+}
+
+function typeSearchKey(s: string): string {
+  return s
+    .trim()
+    .toLowerCase()
+    .replace(/₂/g, "2")
+    .replace(/[\s·()]/g, "");
+}
+
+/**
+ * 처음 펼칠 묶음 (rules sensor.type_select · filter): 고른 종류가 있는 묶음만 펼침, 나머지는 접힘.
+ * 고른 것이 없으면 빈 목록 (4줄 모두 접힘).
+ */
+export function initialOpenTypeGroups(selected: readonly string[]): string[] {
+  const out: string[] = [];
+  for (const g of SENSOR_TYPE_GROUPS) {
+    if (selected.some((t) => (g.types as readonly string[]).includes(normalizeSensorType(t) ?? t))) out.push(g.title);
+  }
+  return out;
+}
+
+/** 필터 시트 묶음 줄 "· 2개" (고른 것이 없으면 빈 글자) */
+export function typeGroupSelectedCount(group: SensorTypeGroup, selected: readonly string[]): number {
+  return group.types.filter((t) => selected.includes(t)).length;
 }
 
 export const SENSOR_NAME_MAX = 40;
@@ -145,7 +238,7 @@ export function applySensorFilter<T extends FilterableSensor>(items: readonly T[
   return items.filter(
     (s) =>
       (!q || s.name.toLowerCase().includes(q) || (s.model ?? "").toLowerCase().includes(q)) &&
-      (f.types.length === 0 || (f.types as string[]).includes(s.type)) &&
+      (f.types.length === 0 || (f.types as string[]).includes(normalizeSensorType(s.type) ?? s.type)) &&
       (f.makers.length === 0 || f.makers.includes(s.maker)) &&
       (f.statuses.length === 0 || f.statuses.includes(s.status)),
   );
@@ -168,7 +261,7 @@ export function parseSensorFilter(params: URLSearchParams | Record<string, strin
       .map((s) => s.trim())
       .filter(Boolean);
   return {
-    types: list("type").filter(isSensorType),
+    types: Array.from(new Set(list("type").map(normalizeSensorType).filter((t): t is SensorType => t !== null))),
     makers: list("maker").filter((m) => m.length <= SENSOR_MAKER_MAX),
     statuses: list("status").filter(isSensorStatus),
   };
@@ -230,8 +323,8 @@ export function checkSensorInput(input: unknown): SensorChecked {
   const name = str(field(input, "name"));
   if (name === "") return { ok: false, error: "이름을 적어 주세요", field: "name" };
   if (name.length > SENSOR_NAME_MAX) return { ok: false, error: `이름은 ${SENSOR_NAME_MAX}자까지 쓸 수 있어요`, field: "name" };
-  const type = field(input, "type");
-  if (!isSensorType(type)) return { ok: false, error: "종류를 골라 주세요", field: "type" };
+  const type = normalizeSensorType(field(input, "type"));
+  if (type === null) return { ok: false, error: "종류를 골라 주세요", field: "type" };
   const maker = str(field(input, "maker"));
   if (maker === "") return { ok: false, error: "회사를 골라 주세요", field: "maker" };
   if (maker.length > SENSOR_MAKER_MAX) return { ok: false, error: `회사 이름은 ${SENSOR_MAKER_MAX}자까지 쓸 수 있어요`, field: "maker" };

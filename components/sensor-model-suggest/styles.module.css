@@ -1,0 +1,113 @@
+/* sensor-model-suggest (시안 17-model): 흰 바탕 · border-strong 1 · radius 16 · 그림자 없음.
+   suggest-row = 안쪽 12 16 · 사이 8 · 아래 hairline-soft, 모델번호 17(맞은 글자 700) + caption 12 muted, 고름 = highlight-soft + ✓ 20.
+   suggest-raw = 안쪽 16 · 13 muted */
+.list {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-none);
+}
+
+.floating {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  z-index: 30;
+  margin-top: var(--space-4);
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  width: 100%;
+  padding: var(--space-12) var(--space-16);
+  border: 0;
+  border-bottom: var(--border-width) solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.row:hover {
+  background: var(--color-surface-muted);
+}
+
+.row:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: calc(var(--space-4) * -1);
+}
+
+.on,
+.on:hover {
+  background: var(--color-highlight-soft);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.model {
+  font-size: var(--font-size-17);
+  line-height: var(--line-height-normal);
+}
+
+.match {
+  font-weight: var(--font-weight-bold);
+}
+
+.rest {
+  font-weight: var(--font-weight-regular);
+}
+
+.caption {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.check {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex-shrink: 0;
+  color: var(--color-highlight);
+}
+
+.raw {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--button-min-height);
+  padding: var(--space-16);
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+  text-align: left;
+  cursor: pointer;
+}
+
+.raw:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: calc(var(--space-4) * -1);
+}

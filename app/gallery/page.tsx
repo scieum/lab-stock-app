@@ -141,6 +141,19 @@ import { SensorMakerSelect } from "@/components/sensor-maker-select";
 import { SensorRow, SensorTableRow } from "@/components/sensor-row";
 import { SensorStatusBadge } from "@/components/sensor-status-badge";
 import { SensorTypeSelect } from "@/components/sensor-type-select";
+import { SensorTypeSheet } from "@/components/sensor-type-sheet";
+import { SensorTypeGroup } from "@/components/sensor-type-group";
+import { SensorModelSuggest } from "@/components/sensor-model-suggest";
+import { CatalogFillNote } from "@/components/catalog-fill-note";
+import { SensorDocAdd } from "@/components/sensor-doc-add";
+import { SensorLink } from "@/components/sensor-link";
+import { NewSensorFields } from "@/components/new-sensor-fields";
+import { MobileMenuButton } from "@/components/mobile-menu-button";
+import { MobileMenuSheet } from "@/components/mobile-menu-sheet";
+import { InviteMoreMenu } from "@/components/invite-more-menu";
+import { InviteCancel } from "@/components/invite-cancel";
+import { mobileMenu } from "@/lib/sidebar-menu";
+import { SENSOR_TYPE_GROUPS } from "@/lib/sensor-rules";
 import { SignupErrorSummary } from "@/components/signup-error-summary";
 import { QrManualEntry } from "@/components/qr-manual-entry";
 import { QrResultSheet } from "@/components/qr-result-sheet";
@@ -1163,6 +1176,68 @@ export default function GalleryPage() {
               memo: null,
             }}
           />
+        </Item>
+
+        <Item name="sensor-type-sheet · sensor-type-group · sensor-type-select box (디자인 1.28 — 시안 17-type: 종류 27종 묶음 4줄, 고른 묶음 펼침)">
+          <SensorTypeSelect variant="box" value="편광" />
+          <SensorTypeSheet value="편광" layout="dropdown" floating={false} />
+          <SensorTypeGroup title="물리" types={SENSOR_TYPE_GROUPS[0].types} count="· 1개" open selected={["온도"]} first />
+          <Link href="/gallery/sensor-catalog" className={styles.more}>
+            종류 시트 · 필터 묶음 · 파스코 모델 후보 · 서류로 등록 보기 (/gallery/sensor-catalog)
+          </Link>
+        </Item>
+
+        <Item name="sensor-model-suggest · catalog-fill-note (디자인 1.28 — 시안 17-model: 파스코 모델 후보)">
+          <SensorModelSuggest query="PS-321" selectedModel="PS-3215" floating={false} />
+          <CatalogFillNote filled={["type", "name"]} />
+        </Item>
+
+        <Item name="sensor-doc-add · sensor-link · new-sensor-fields (디자인 1.28 — 시안 17-desktop · 17-doc-review: 센서 서류로 등록)">
+          <div className={styles.row}>
+            <SensorDocAdd variant="button" />
+          </div>
+          <SensorDocAdd variant="head" fileName="2026 센서 구입 영수증.pdf" />
+          <SensorLink
+            itemName="무선 온도 센서"
+            quantity={2}
+            link={{ kind: "sensor", sensorId: "s-1" }}
+            sensors={[{ id: "s-1", name: "무선 온도 센서", maker: "파스코", model: "PS-3201", quantity: 3 }]}
+          />
+          <SensorLink itemName="무선 CO₂ 센서" quantity={2} link={{ kind: "new" }} sensors={[]} expanded />
+          <NewSensorFields
+            itemName="무선 CO₂ 센서"
+            floating={false}
+            value={{
+              name: "무선 CO₂ 센서",
+              type: "CO₂",
+              maker: "이지메이커",
+              model: "",
+              quantity: "2",
+              locationMode: "text",
+              locationText: "과학실 뒤 선반",
+              slotId: null,
+              status: "ok",
+            }}
+          />
+        </Item>
+
+        <Item name="mobile-menu-button · mobile-menu-sheet (디자인 1.28 — 시안 13-menu-mobile: 모바일 전체 메뉴, admin)">
+          <div className={styles.row}>
+            <MobileMenuButton />
+            <MobileMenuButton open />
+          </div>
+          <MobileMenuSheet schoolName={SAMPLE_SCHOOL} account="정OO · admin" groups={mobileMenu("admin")} active="home" floating={false} />
+          <Link href="/gallery/menu" className={styles.more}>
+            학생 · 둘러보기 메뉴 · 초대 취소 확인 보기 (/gallery/menu)
+          </Link>
+        </Item>
+
+        <Item name="invite-more-menu · invite-cancel (디자인 1.28 — 시안 8-invite-cancel: 초대 대기 행 ⋯ → 초대 취소)">
+          <div className={styles.row}>
+            <InviteMoreMenu email="han@example.com" defaultOpen>
+              <InviteCancel />
+            </InviteMoreMenu>
+          </div>
         </Item>
 
         <Item name="sensor-add · sensor-alert-tile (시안 17-empty · 13)">

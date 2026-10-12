@@ -47,7 +47,9 @@ export type IconName =
   | "shield"
   | "sensor"
   | "compass"
-  | "flash";
+  | "flash"
+  | "menu"
+  | "link";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   // 랜딩 15-desktop 문제 공감 카드 (icon-quote) · 안심 격자 (icon-lock · icon-shield)
@@ -302,6 +304,15 @@ const PATHS: Record<IconName, React.ReactNode> = {
   ),
   // 화면 12 플래시 (시안 icon-flash: 번개)
   flash: <path d="M13 3 6.5 13H12l-1 8 6.5-10H12l1-8Z" />,
+  // 모바일 전체 메뉴 (시안 13-menu-mobile icon-menu: 가로 세 줄)
+  menu: <path d="M5 7h14M5 12h14M5 17h14" />,
+  // 센서 서류 확인 표 연결 줄 (시안 17-doc-review icon-link: 사슬 고리 두 개 + 가운데 선)
+  link: (
+    <>
+      <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" />
+      <path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
+    </>
+  ),
 };
 
 export function Icon({ name, ...rest }: { name: IconName } & SVGProps<SVGSVGElement>) {

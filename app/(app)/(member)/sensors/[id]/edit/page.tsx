@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { isSensorType } from "@/lib/sensor-rules";
+import { normalizeSensorType } from "@/lib/sensor-rules";
 import { getSensorList } from "@/lib/supabase/sensors";
 import { SensorFormView } from "../../_sensors/sensor-form-view";
 
@@ -19,7 +19,7 @@ export default async function SensorEditPage({ params }: Props) {
       initial={{
         id: sensor.id,
         name: sensor.name,
-        type: isSensorType(sensor.type) ? sensor.type : "",
+        type: normalizeSensorType(sensor.type) ?? "",
         maker: sensor.maker,
         model: sensor.model,
         quantity: sensor.quantity,
