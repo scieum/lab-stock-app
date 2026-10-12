@@ -10,7 +10,7 @@ import { deskOnlyComponents } from "../desktop-shell";
 import { isDeskPage, newFrame } from "./desk-helpers";
 import { test, expect, type TestInfo } from "@playwright/test";
 import { countComponent, routeOf, rules, sel } from "./screen-helpers";
-import { expectShell, isShellComponent, shellNavLabel, shellNavLabels, shellSchoolScope } from "./shell-helpers";
+import { MOBILE_MENU_BUTTON, expectShell, isShellComponent, shellNavLabel, shellNavLabels, shellSchoolScope } from "./shell-helpers";
 import {
   CANCEL_BUTTON,
   CHANGE_BUTTON,
@@ -186,7 +186,8 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin, 시안 1.17 과 같은 상태(멤
     // rules 1.28 invite_cancel.entry (d7 §28): invite-cancel '초대 취소' 는 초대 대기 행의 ⋯ 를 연 동안만 있는 메뉴 항목 — 프레임에 없다 (dev-rules components_note)
     const inviteCancel = /→ ([a-z][a-z-]*) '/.exec((rules as unknown as { invite_cancel: { entry: string } }).invite_cancel.entry)?.[1];
     expect(inviteCancel, "rules invite_cancel.entry 의 메뉴 항목 이름").toBe("invite-cancel");
-    const absent = [PILL_SOFT, SEGMENT, SEGMENT_ACTIVE, EMPTY, TOAST, inviteCancel!, ...(viewport === "mobile" ? deskOnlyComponents() : [])];
+    // rules 1.28 mobile_menu.button: ☰ 는 시안 8-mobile 에만(1) — 1440 은 app-sidebar 가 같은 메뉴라 0 (프레임 8-desktop 에 없음)
+    const absent = [PILL_SOFT, SEGMENT, SEGMENT_ACTIVE, EMPTY, TOAST, inviteCancel!, ...(viewport === "mobile" ? deskOnlyComponents() : [MOBILE_MENU_BUTTON])];
     let checked = 0;
     // 셸은 폭별 기대값 (390 nav-pill 1 · 탭바 / 1440 app-sidebar 1 · nav-pill 0 — rules 1.22 desktop_shell, C2 · C3)
     await expectShell(page, viewport, SCREEN, "삭제 확인 시트");

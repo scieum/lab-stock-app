@@ -809,16 +809,19 @@ test("[C1][S8] 초대 취소 흐름 (rules invite_cancel): ⋯ → 초대 취소
   const email = INVITE.title.characters.replace(/ 초대를 취소할까요\?$/, "");
   await expect(sec.getByText(email, { exact: true })).toHaveCount(1);
   const trigger = sec.getByRole("button", { name: /초대 더보기/ });
+  // 7c02164: 메뉴는 화면 기준(fixed)이고 스크롤하면 닫힌다(rules invite_cancel.entry — 표 틀이 자르지 않게) — 메뉴가 화면 안에 열리도록 ⋯ 를 가운데로 먼저 옮긴다
+  await trigger.evaluate((e) => e.scrollIntoView({ block: "center" }));
   await trigger.click();
-  await sec.locator(sel("invite-cancel")).click();
+  await page.locator(sel("invite-cancel")).click();
   const card = sec.locator(sel("ex-modal-card"));
   await expect(card).toHaveCount(1);
   await expect(card.getByRole("heading")).toHaveText(INVITE.title.characters);
   await card.locator(sel("button-outline")).click();
   await expect(card, "닫기 = 카드 닫힘").toHaveCount(0);
   await expect(sec.getByText(email, { exact: true }), "닫기 = 행 그대로").toHaveCount(1);
+  await trigger.evaluate((e) => e.scrollIntoView({ block: "center" }));
   await trigger.click();
-  await sec.locator(sel("invite-cancel")).click();
+  await page.locator(sel("invite-cancel")).click();
   await sec.locator(`${sel("ex-modal-card")} ${sel("button-primary")}`).click();
   await expect(sec.getByText(email, { exact: true }), "초대 취소 = 행 빠짐").toHaveCount(0);
   await expect(sec.locator(sel("invite-more-menu"))).toHaveCount(0);

@@ -11,6 +11,7 @@ import { openAs } from "./auth-state";
 import { devRules, routeOf, rules, sel } from "./screen-helpers";
 import { HAS_SERVICE, openTemp, watchActions, type TempUser } from "./screen-8-helpers";
 import { newFrame } from "./desk-helpers";
+import { DIRECT, TYPE_GROUPS, TYPE_PLACEHOLDER, TYPE_SEARCH, groupOf } from "./d7-28-helpers";
 import {
   ADD_LABEL,
   BULK,
@@ -263,8 +264,10 @@ test.describe("일회용 학교", () => {
       expect(groupTitles, "필터 묶음 순서 (rules sensor.filter)").toEqual(["종류", "회사", "상태"]);
       const statusChips = (await sheet.locator('section[aria-label="상태"] button').allInnerTexts()).map((t) => t.trim());
       expect(statusChips, "상태 칩 3개 = d7 상태 글자").toEqual(STATUS.map((s) => s.label));
-      const typeChips = (await sheet.locator('section[aria-label="종류"] button').allInnerTexts()).map((t) => t.trim());
-      expect(typeChips, "종류 칩 = rules sensor.types").toEqual(SENSOR.types);
+      // 종류 = sensor-type-group 묶음 (rules 1.28 sensor.filter — 처음 접힘). 묶음 이름 = rules type_groups 순서
+      const typeSec = sheet.locator('section[aria-label="종류"]');
+      const groupRows = typeSec.locator(`${sel("sensor-type-group")} button[aria-expanded]`);
+      expect((await groupRows.allInnerTexts()).map((t) => t.trim()), "종류 묶음 = rules type_groups").toEqual(TYPE_GROUPS.map((g) => g.title));
       const brokenLabel = STATUS[2].label;
       const checkLabel = STATUS[1].label;
       await sheet.locator('section[aria-label="상태"] button').filter({ hasText: exact(brokenLabel) }).click();
@@ -275,7 +278,9 @@ test.describe("일회용 학교", () => {
       for (const r of await rowsOf(page).locator(sel("sensor-status-badge")).allInnerTexts()) expect([brokenLabel, checkLabel]).toContain(r.trim());
       // 묶음 사이 AND: + 종류 '온도'(정상 센서) → 0 → 빈 카드
       sheet = await openFilter();
-      await sheet.locator('section[aria-label="종류"] button').filter({ hasText: exact(SENSOR.types[0]) }).click();
+      const firstGroup = sheet.locator(`section[aria-label="종류"] ${sel("sensor-type-group")}`).filter({ has: page.locator("button[aria-expanded]", { hasText: new RegExp(`^\\s*${groupOf(SENSOR.types[0]).title}`) }) });
+      if ((await firstGroup.locator("button[aria-expanded]").getAttribute("aria-expanded")) !== "true") await firstGroup.locator("button[aria-expanded]").click();
+      await firstGroup.getByRole("button", { name: exact(SENSOR.types[0]) }).click();
       await sheet.getByRole("button", { name: /^0개 보기$/ }).click();
       await expect(rowsOf(page), "종류 AND 상태 → 0").toHaveCount(0);
       await expect(page.locator(`main ${sel("ex-empty-state-card")}`), "결과 0 = ex-empty-state-card").toHaveCount(1);
@@ -313,13 +318,19 @@ test.describe("일회용 학교", () => {
     }
   });
 
-  test(`[C1][S17] [R-ui][S17] 등록 폼: '${ADD_LABEL}' → sensor-form(sensor-type-select 칩 ${SENSOR.types.length} = rules types · sensor-maker-select 묶음 ${MAKER_GROUPS.map((g) => g.title).join("·")} = rules makers + 끝 '${MAKER_DIRECT}' · 검색) · 회사 직접 입력 · 상태 고장 · 저장 → 상세 + DB 1행 / 이름 없이 저장 = 행 0`, async ({ browser }, info) => {
+  test(`[C1][S17] [R-ui][S17] 등록 폼: '${ADD_LABEL}'(390 '등록' 시트 '직접 입력') → sensor-form(sensor-type-select 고르기 칸 → 종류 시트 · sensor-maker-select 묶음 ${MAKER_GROUPS.map((g) => g.title).join("·")} = rules makers + 끝 '${MAKER_DIRECT}' · 검색) · 회사 직접 입력 · 상태 고장 · 저장 → 상세 + DB 1행 / 이름 없이 저장 = 행 0`, async ({ browser }, info) => {
     test.setTimeout(TIMEOUT);
     const f = await fixture(info);
     const { page, context } = await openList({ browser }, info, f.teacher);
     try {
+      // 1440 = 머리 '센서 등록' 링크 / 390 = '등록' → 작은 시트 '직접 입력' (rules 1.28 sensor.add_mobile)
       await expect(async () => {
-        await page.locator(`main ${sel("sensor-add")} a`).first().click({ timeout: 3_000 });
+        if (isDesk(page)) await page.locator(`main ${sel("sensor-add")} a`).first().click({ timeout: 3_000 });
+        else {
+          const direct = page.getByRole("dialog").getByRole("link").filter({ hasText: exact(DIRECT) });
+          if (!(await direct.isVisible())) await page.locator(`main ${sel("sensor-add")} button`).first().click({ timeout: 3_000 });
+          await direct.click({ timeout: 3_000 });
+        }
         await expect(page.locator(sel("sensor-form")), "sensor-form").toBeVisible({ timeout: 10_000 });
       }).toPass({ timeout: 45_000 });
       await expect(page).toHaveURL(new RegExp(`${routeOf(SCREEN)}/new`));
@@ -329,9 +340,10 @@ test.describe("일회용 학교", () => {
         const el = document.querySelector('[data-component="sensor-form"]');
         return !!el && Object.keys(el).some((k) => k.startsWith("__react"));
       });
-      // 종류 칩
-      const typeChips = form.locator(`${sel("sensor-type-select")} [role="radio"]`);
-      await expect(typeChips, "종류 칩 = rules types").toHaveText(SENSOR.types);
+      // 종류 = 고르기 칸 (rules 1.28 sensor.type_select — 예전 chip 줄 없음)
+      const typeBox = form.locator(`${sel("sensor-type-select")} button[aria-haspopup]`).first();
+      await expect(form.locator(`${sel("sensor-type-select")} [role="radio"]`), "예전 종류 chip 줄 0").toHaveCount(0);
+      await expect(typeBox, `빈 칸 '${TYPE_PLACEHOLDER}'`).toHaveText(exact(TYPE_PLACEHOLDER));
       // 이름 없이 저장 → 행 0
       const before = (await liveSensors(f.school.id)).length;
       const actions = watchActions(page);
@@ -343,8 +355,14 @@ test.describe("일회용 학교", () => {
 
       const name = `새 센서 ${f.tag}-${info.project.name.slice(0, 1)}`;
       await form.getByLabel("이름", { exact: true }).fill(name);
-      await typeChips.filter({ hasText: exact(SENSOR.types[6]) }).click();
-      await expect(typeChips.filter({ hasText: exact(SENSOR.types[6]) }), "고른 종류").toHaveAttribute("aria-checked", "true");
+      const pickType = SENSOR.types[6];
+      await typeBox.click();
+      const typeSheetEl = page.locator(sel("sensor-type-sheet"));
+      await expect(typeSheetEl, "종류 시트").toBeVisible();
+      await typeSheetEl.getByPlaceholder(TYPE_SEARCH).fill(pickType);
+      await typeSheetEl.getByRole("button", { name: exact(pickType) }).click();
+      await expect(typeSheetEl, "고르면 닫힘").toHaveCount(0);
+      await expect(typeBox, "고른 종류").toHaveText(exact(pickType));
       // 회사 고르기: 묶음 · 항목 · 끝 직접 입력
       const maker = page.locator(sel("sensor-maker-select"));
       await maker.locator('button[aria-haspopup="listbox"]').click();
@@ -405,7 +423,7 @@ test.describe("일회용 학교", () => {
       const form = page.locator(sel("sensor-form"));
       await expect(form.getByLabel("이름", { exact: true }), "지금 이름").toHaveValue(s.name);
       await expect(form.getByLabel("수량", { exact: true }), "지금 수량").toHaveValue(String(s.quantity));
-      await expect(form.locator(`${sel("sensor-type-select")} [aria-checked="true"]`), "지금 종류").toHaveText(exact(s.type));
+      await expect(form.locator(`${sel("sensor-type-select")} button[aria-haspopup]`).first(), "지금 종류 (고르기 칸)").toHaveText(exact(s.type));
       await page.waitForFunction(() => {
         const el = document.querySelector('[data-component="sensor-form"]');
         return !!el && Object.keys(el).some((k) => k.startsWith("__react"));

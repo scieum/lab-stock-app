@@ -239,7 +239,8 @@ test(`[C1][S${SCREEN}] 일회용 교사 · 시약장 0개: "${EMPTY_HEADING}" + 
     for (const c of VARIANTS.empty) expect(await countComponent(page, c), `variants.empty ${c}`).toBeGreaterThanOrEqual(1);
     const frame = frameCounts(`${SCREEN}-empty-${viewport}`);
     // 1.26 사이드바 '센서'(rules desktop_shell.menu_source) — 1.26 전 시안 11-empty-desktop 에는 없어 sidebar-item +1
-    for (const [name, n] of Object.entries(adjustStaleMenu(`${SCREEN}-empty-${viewport}`, frame))) expect(await countComponent(page, name), `시안 11-empty ${name} = ${n}`).toBe(n);
+    // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 기다리며 센다 (서버 HTML 에는 두 폭 모두 있다)
+    for (const [name, n] of Object.entries(adjustStaleMenu(`${SCREEN}-empty-${viewport}`, frame))) await expect.poll(() => countComponent(page, name), { message: `시안 11-empty ${name} = ${n}`, timeout: 30_000 }).toBe(n);
     for (const c of [SWITCHER, SLOT, EDIT, MIX, ROW, MODAL, DOOR_SELECT, SHELF_SELECT, PRIMARY]) expect(await countComponent(page, c), `빈 상태 ${c}`).toBe(0);
     await expect(unassignedTitle(page), "빈 상태에 칸 없음 목록 없음").toHaveCount(0);
     const card = emptyCard(page);

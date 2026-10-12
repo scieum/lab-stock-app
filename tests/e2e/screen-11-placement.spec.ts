@@ -985,8 +985,9 @@ for (const role of ["student", "teacher", "admin"] as const) {
     try {
       await waitCabinets(page);
       const frame = frameCounts(`${SCREEN}-${viewport}`);
-      expect(await countComponent(page, QR_PRINT), `${QR_PRINT}`).toBe(staff ? frame[QR_PRINT] : R7.max);
-      expect(await countComponent(page, ADD), `${ADD}`).toBe(staff ? frame[ADD] : R7.max);
+      // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 기다리며 센다 (서버 HTML 에는 두 폭 모두 있다)
+      await expect(page.locator(sel(QR_PRINT)), `${QR_PRINT}`).toHaveCount((staff ? frame[QR_PRINT] : R7.max) as number, { timeout: 30_000 });
+      await expect(page.locator(sel(ADD)), `${ADD}`).toHaveCount((staff ? frame[ADD] : R7.max) as number, { timeout: 30_000 });
       const db = await dbView(page);
       const id = await activeId(page, db);
       const cab = db.cabinets.find((c) => c.id === id)!;
