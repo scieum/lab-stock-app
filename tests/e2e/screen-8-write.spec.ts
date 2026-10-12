@@ -183,7 +183,10 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin, 시안 1.17 과 같은 상태(멤
     await expect(dialog, "삭제 확인 시트").toBeVisible();
 
     // 폭 390: 데스크톱 전용 data-table(run b, rules desktop_required · d7 §23)도 0
-    const absent = [PILL_SOFT, SEGMENT, SEGMENT_ACTIVE, EMPTY, TOAST, ...(viewport === "mobile" ? deskOnlyComponents() : [])];
+    // rules 1.28 invite_cancel.entry (d7 §28): invite-cancel '초대 취소' 는 초대 대기 행의 ⋯ 를 연 동안만 있는 메뉴 항목 — 프레임에 없다 (dev-rules components_note)
+    const inviteCancel = /→ ([a-z][a-z-]*) '/.exec((rules as unknown as { invite_cancel: { entry: string } }).invite_cancel.entry)?.[1];
+    expect(inviteCancel, "rules invite_cancel.entry 의 메뉴 항목 이름").toBe("invite-cancel");
+    const absent = [PILL_SOFT, SEGMENT, SEGMENT_ACTIVE, EMPTY, TOAST, inviteCancel!, ...(viewport === "mobile" ? deskOnlyComponents() : [])];
     let checked = 0;
     // 셸은 폭별 기대값 (390 nav-pill 1 · 탭바 / 1440 app-sidebar 1 · nav-pill 0 — rules 1.22 desktop_shell, C2 · C3)
     await expectShell(page, viewport, SCREEN, "삭제 확인 시트");

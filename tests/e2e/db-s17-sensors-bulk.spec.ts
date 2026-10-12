@@ -75,6 +75,7 @@ function fixture(info: TestInfo): Promise<Fixture> {
     const student = await addMember(a, info, GROUP, "학생");
     expect((await profileByService(student.id))?.role).toBe("student");
     const b = await tempSchool(info, GROUP);
+    tempUserIds.push(a.admin.id, teacher.id, student.id, b.admin.id);
     return { a, b, c: { admin, teacher: await clientFor(teacher), student: await clientFor(student) }, teacherId: teacher.id, bAdmin: await clientFor(b.admin) };
   })();
   cache.catch(() => (cache = null));
@@ -125,14 +126,52 @@ async function bulkReagentsByService(schoolId: string, n: number): Promise<strin
 }
 
 // ---------- 공용 학교 스냅숏 ----------
-async function sharedReagentsSnapshot(): Promise<string[]> {
-  const sb = service();
-  const schools = await sb.from("schools").select("id").or("neis_code.like.TEST-SCHOOL-%,is_demo.eq.true");
-  const ids = (schools.data ?? []).map((s) => s.id as string);
-  const r = await sb.from("reagents").select("id, stock, intake_date, deleted_at").in("school_id", ids).order("id");
-  return (r.data ?? []).map((x) => JSON.stringify(x));
+// 이 스펙이 공용 학교 시약에 할 수 있는 일 = 거부되어야 하는 archive_reagents(데모 시약 · 학교 B 계정) 뿐이다.
+// 학교 A·B 시약의 stock·intake_date 는 다른 스펙(db-s10 고정 시약 사용 → 되돌리기 등)이 병렬로 잠깐 바꾸므로
+// 전체 열 스냅숏은 경쟁 상태가 된다 → 이 스펙이 만들 수 있는 변화만 본다:
+//   (1) 학교 A·B: 처음 있던 시약의 보관 열(deleted_at·deleted_by)·소속(school_id)·이름·단위 그대로
+//       (사라진 행 = 다른 스펙의 임시 시약 정리 — 보관은 행을 지우지 않으므로 이 스펙 탓일 수 없다)
+//   (2) 데모 학교: 아무도 쓰지 않는다 → 전체 열(stock·intake_date 포함) 그대로
+//   (3) 새어 들어감 0: 공용 학교에 이 스펙의 일회용 계정이 남긴 보관·입고 기록·사용 기록, 이 스펙 이름 접두사의 시약
+const OWN_PREFIXES = ["임시보관-", "대량시약-", "미래입고-"];
+const tempUserIds: string[] = [];
+async function sharedSchoolIds(): Promise<{ all: string[]; demo: string[] }> {
+  const s = await service().from("schools").select("id, is_demo").or("neis_code.like.TEST-SCHOOL-%,is_demo.eq.true");
+  if (s.error) throw new Error(`schools 대조 조회 실패: ${s.error.message}`);
+  const rows = (s.data ?? []) as { id: string; is_demo: boolean }[];
+  expect(rows.length, "대조: 학교 A·B·데모").toBeGreaterThanOrEqual(3);
+  return { all: rows.map((r) => r.id), demo: rows.filter((r) => r.is_demo).map((r) => r.id) };
 }
-let before: { sensors: string[]; reagents: string[] } | null = null;
+async function sharedReagentsSnapshot(): Promise<{ ab: Map<string, string>; demo: string[] }> {
+  const ids = await sharedSchoolIds();
+  const r = await service().from("reagents").select("*").in("school_id", ids.all).order("id");
+  if (r.error) throw new Error(`대조 조회 실패: ${r.error.message}`);
+  const rows = (r.data ?? []) as Row[];
+  const ab = new Map<string, string>();
+  const demo: string[] = [];
+  for (const x of rows) {
+    if (ids.demo.includes(x.school_id as string)) demo.push(JSON.stringify(x));
+    else ab.set(x.id as string, JSON.stringify({ school_id: x.school_id, name: x.name, unit: x.unit, deleted_at: x.deleted_at, deleted_by: x.deleted_by }));
+  }
+  return { ab, demo };
+}
+async function sharedLeaks(): Promise<Record<string, number>> {
+  const sb = service();
+  const { all } = await sharedSchoolIds();
+  const users = tempUserIds.length ? tempUserIds : [randomUUID()];
+  const count = async (q: PromiseLike<{ data: unknown[] | null; error: { message: string } | null }>, what: string) => {
+    const r = await q;
+    if (r.error) throw new Error(`${what} 대조 조회 실패: ${r.error.message}`);
+    return (r.data ?? []).length;
+  };
+  return {
+    archivedByTemp: await count(sb.from("reagents").select("id").in("school_id", all).in("deleted_by", users), "reagents"),
+    intakeByTemp: await count(sb.from("intake_logs").select("id").in("school_id", all).in("user_id", users), "intake_logs"),
+    usageByTemp: await count(sb.from("usage_logs").select("id").in("school_id", all).in("user_id", users), "usage_logs"),
+    ownNamed: await count(sb.from("reagents").select("id").in("school_id", all).or(OWN_PREFIXES.map((p) => `name.like.${p}*`).join(",")), "reagents 이름"),
+  };
+}
+let before: { sensors: string[]; reagents: Awaited<ReturnType<typeof sharedReagentsSnapshot>> } | null = null;
 test.beforeAll(async ({}, info) => {
   info.setTimeout(120_000);
   if (HAS_SERVICE) before = { sensors: await sharedSensorSnapshot(), reagents: await sharedReagentsSnapshot() };
@@ -141,11 +180,16 @@ test.afterAll(async ({}, info) => {
   info.setTimeout(TIMEOUT);
   if (!HAS_SERVICE) return;
   cache = null;
+  const leaks = await sharedLeaks();
   const left = await cleanupSensors(GROUP, info.project.name);
   expect(left, "일회용 계정·학교·센서·시약·기록 잔여물").toEqual(NO_SENSOR_RESIDUE);
+  expect(leaks, "공용 학교 A·B·데모에 이 스펙의 일회용 계정이 남긴 보관·입고·사용 기록 · 이 스펙 이름의 시약").toEqual({ archivedByTemp: 0, intakeByTemp: 0, usageByTemp: 0, ownNamed: 0 });
   if (before) {
     expect(await sharedSensorSnapshot(), "학교 A·B·데모 센서 그대로").toEqual(before.sensors);
-    expect(await sharedReagentsSnapshot(), "학교 A·B·데모 시약 그대로").toEqual(before.reagents);
+    const now = await sharedReagentsSnapshot();
+    const changedAB = [...before.reagents.ab].filter(([id, v]) => now.ab.has(id) && now.ab.get(id) !== v).map(([id, v]) => `${id}: ${v} → ${now.ab.get(id)}`);
+    expect(changedAB, "학교 A·B 시약 보관 열·소속·이름·단위 그대로").toEqual([]);
+    expect(now.demo, "데모 시약 (전체 열) 그대로").toEqual(before.reagents.demo);
   }
 });
 
