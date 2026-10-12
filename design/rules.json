@@ -1,5 +1,5 @@
 {
-  "version": "1.26",
+  "version": "1.28",
   "sources": [
     "docs/design.md",
     "docs/story-service.md",
@@ -26,7 +26,9 @@
     "2026-10-08 푸터 = \"© 2026 사이음(sci_eum). 과학의 사이, 사람을 잇다.\" 한 줄",
     "2026-10-08 랜딩 섹션 리듬·반전 버튼·스크롤 동작 (승인 run 20261008-2144)",
     "2026-10-10 여러 시약 한 번에 사용 기록·시약 삭제·수업 기록 (개발 세션 요청 6)",
-    "2026-10-11 여러 개 삭제·QR 탭 준비 중·앱 404·가입 오류 요약·랜딩 그림·기록 추가·무선 센서 화면 17 (개발 세션 요청 7)"
+    "2026-10-11 여러 개 삭제·QR 탭 준비 중·앱 404·가입 오류 요약·랜딩 그림·기록 추가·무선 센서 화면 17 (개발 세션 요청 7)",
+    "2026-10-12 센서 종류 27·파스코 모델 카탈로그·센서 서류로 등록·모바일 전체 메뉴·권한 안내 토스트·초대 취소·모바일 랜딩 워드마크 1번 (개발 세션 요청 8)",
+    "2026-10-12 센서 종류 묶음 토글(접힘) — 종류 시트·필터 시트 (요청 8 후속)"
   ],
   "colors": {
     "allowed": [
@@ -210,8 +212,8 @@
       17
     ],
     "guest_name_pattern": "^([1-9]|1[0-7])-guest-(mobile|desktop)$",
-    "variant_name_pattern": "^([1-9]|1[0-7])-(empty|delete|slot|print|unsaved|location|result|doc-upload|doc-review|doc-fail|suggest|msds|msds-bulk|filter|filter-empty|past-date|no-school|loading|fail|no-summary|picker|error|select|bulk-delete|not-found|detail|form)-(mobile|desktop)$",
-    "variant_note": "같은 화면의 다른 상태 프레임. input.json variants {\"11\": [\"empty\",\"delete\"]} 로 요청 (2026-10-04) · 2026-10-06 상태 추가: 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 상태 추가: 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk · 2026-10-07 상태 추가: 2-filter·2-filter-empty, 4-past-date · 2026-10-07 상태 추가: 14-no-school · 2026-10-08 상태 추가: 16-loading·16-fail·16-no-summary · 2026-10-10 상태 추가: 4-picker·4-empty·4-error, 3-delete · 2026-10-11 상태 추가: 2-select·2-bulk-delete, 13-not-found·1-not-found, 14-error, 17-detail·17-form·17-empty·17-select",
+    "variant_name_pattern": "^([1-9]|1[0-7])-(empty|delete|slot|print|unsaved|location|result|doc-upload|doc-review|doc-fail|suggest|msds|msds-bulk|filter|filter-empty|past-date|no-school|loading|fail|no-summary|picker|error|select|bulk-delete|not-found|detail|form|type|model|menu|no-access|invite-cancel)-(mobile|desktop)$",
+    "variant_note": "같은 화면의 다른 상태 프레임. input.json variants {\"11\": [\"empty\",\"delete\"]} 로 요청 (2026-10-04) · 2026-10-06 상태 추가: 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 상태 추가: 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk · 2026-10-07 상태 추가: 2-filter·2-filter-empty, 4-past-date · 2026-10-07 상태 추가: 14-no-school · 2026-10-08 상태 추가: 16-loading·16-fail·16-no-summary · 2026-10-10 상태 추가: 4-picker·4-empty·4-error, 3-delete · 2026-10-11 상태 추가: 2-select·2-bulk-delete, 13-not-found·1-not-found, 14-error, 17-detail·17-form·17-empty·17-select · 2026-10-12 상태 추가: 17-type·17-model·17-doc-upload·17-doc-review·17-doc-fail, 13-menu·13-no-access, 8-invite-cancel · 2026-10-12 상태 추가: 17-filter",
     "tall": {
       "15-desktop": {
         "width": 1440,
@@ -219,7 +221,13 @@
         "max_height": 6000
       },
       "source": "2026-10-08 사용자 결정: 랜딩 데스크톱만 스크롤 긴 페이지"
-    }
+    },
+    "mobile_only_variants": {
+      "13": [
+        "menu"
+      ]
+    },
+    "mobile_only_note": "모바일에만 있는 상태: {ID}-{state}-mobile만 요구, desktop 프레임 없음(데스크톱은 app-sidebar가 같은 메뉴). 2026-10-12 사용자 결정 (run 20261012-0923 S2에서 발견)"
   },
   "s1": {
     "refs_per_screen": [
@@ -273,10 +281,11 @@
         "sensor-add",
         "sensor-edit",
         "sensor-delete",
-        "sensor-alert-tile"
+        "sensor-alert-tile",
+        "sensor-doc-add"
       ],
       "max": 0,
-      "source": "2026-10-02 화면 7 · 2026-10-06 threshold-edit(재주문 기준 고치기 = 시약 정보 입력) 추가 · 2026-10-07 doc-upload·msds-search·msds-bulk-banner 추가 · 2026-10-10 reagent-more-menu·reagent-delete(시약 삭제 = 교사·admin) 추가 · 2026-10-11 선택 모드·여러 개 삭제·센서 등록·수정·삭제·홈 센서 타일(교사·admin) 추가"
+      "source": "2026-10-02 화면 7 · 2026-10-06 threshold-edit(재주문 기준 고치기 = 시약 정보 입력) 추가 · 2026-10-07 doc-upload·msds-search·msds-bulk-banner 추가 · 2026-10-10 reagent-more-menu·reagent-delete(시약 삭제 = 교사·admin) 추가 · 2026-10-11 선택 모드·여러 개 삭제·센서 등록·수정·삭제·홈 센서 타일(교사·admin) 추가 · 2026-10-12 sensor-doc-add(센서 서류로 등록 = 교사·admin) 추가"
     },
     "R6": {
       "component": "user-manage",
@@ -611,7 +620,7 @@
     "shape_source": "2026-10-02 사용자 결정: 둥근 floating pill 말고 하단에 붙은 사각형",
     "mobile_screens_note": "1 로그인·14 회원가입·15 랜딩 제외 (로그인 전 화면)",
     "qr_pending": "화면 12 나오기 전까지: 'QR 스캔' tab-item = 회색(text-faint 아이콘·라벨) + 아이콘 아래 tab-soon '준비 중'(caption), 누르면 ex-toast '준비 중이에요'. 탭 4개 유지 (2026-10-11 사용자 결정 (개발 세션 요청 7) 2)",
-    "sensor_entry": "센서는 탭이 아니라 '시약' 탭 안: 화면 2·17 모바일 맨 위 inventory-switch(segmented-control '시약 | 센서'), 마지막 고른 쪽 기억. 화면 17 모바일에서 '시약' 탭이 활성 (2026-10-11 사용자 결정 (개발 세션 요청 7) 7)"
+    "sensor_entry": "센서는 탭이 아니라 '시약' 탭 안: 화면 2·17 모바일 맨 위 inventory-switch(segmented-control '시약 | 센서'), 마지막 고른 쪽 기억. 화면 17 모바일에서 '시약' 탭이 활성 (2026-10-11 사용자 결정 (개발 세션 요청 7) 7) · 2026-10-12 모바일 전체 메뉴(mobile_menu)에도 '센서' (개발 세션 요청 8 6)"
   },
   "auth": {
     "login_id": "개인 이메일",
@@ -672,7 +681,10 @@
       "sensor-add",
       "sensor-edit",
       "sensor-delete",
-      "sensor-alert-tile"
+      "sensor-alert-tile",
+      "sensor-doc-add",
+      "invite-more-menu",
+      "invite-cancel"
     ],
     "source": "2026-10-03 사용자 결정: 비회원 둘러보기 (데모 학교 읽기 전용)",
     "sidebar_locks": 2,
@@ -811,10 +823,17 @@
         "msds-original-link"
       ]
     },
-    "source": "2026-10-04 여러 시약장: 빈 상태(교사 기준)·삭제 확인 상태 필수 컴포넌트 (C1) · 2026-10-06 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk, 3-location + suggest-badge · 2026-10-07 2-filter·2-filter-empty, 4-past-date · 2026-10-07 14-no-school · 2026-10-08 16-loading·16-fail·16-no-summary · 2026-10-10 4-picker·4-empty·4-error, 3-delete · 2026-10-11 2-select·2-bulk-delete, 13-not-found·1-not-found, 14-error, 17-detail·form·empty·select",
+    "source": "2026-10-04 여러 시약장: 빈 상태(교사 기준)·삭제 확인 상태 필수 컴포넌트 (C1) · 2026-10-06 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk, 3-location + suggest-badge · 2026-10-07 2-filter·2-filter-empty, 4-past-date · 2026-10-07 14-no-school · 2026-10-08 16-loading·16-fail·16-no-summary · 2026-10-10 4-picker·4-empty·4-error, 3-delete · 2026-10-11 2-select·2-bulk-delete, 13-not-found·1-not-found, 14-error, 17-detail·form·empty·select · 2026-10-12 17-type·17-model·17-doc-upload·17-doc-review·17-doc-fail, 13-menu·13-no-access, 8-invite-cancel · 2026-10-12 17-type에 sensor-type-group(접힘 토글), 17-filter 추가",
     "13": {
       "not-found": [
         "ex-empty-state-card"
+      ],
+      "menu": [
+        "mobile-menu-button",
+        "mobile-menu-sheet"
+      ],
+      "no-access": [
+        "ex-toast"
       ]
     },
     "1": {
@@ -840,6 +859,40 @@
         "list-select-toggle",
         "select-checkbox",
         "bulk-action-bar"
+      ],
+      "type": [
+        "sensor-form",
+        "sensor-type-select",
+        "sensor-type-sheet",
+        "sensor-type-group"
+      ],
+      "model": [
+        "sensor-form",
+        "sensor-model-suggest",
+        "catalog-fill-note"
+      ],
+      "doc-upload": [
+        "sensor-doc-add",
+        "doc-upload"
+      ],
+      "doc-review": [
+        "doc-intake-table",
+        "sensor-link",
+        "new-sensor-fields"
+      ],
+      "doc-fail": [
+        "ex-empty-state-card",
+        "doc-upload"
+      ],
+      "filter": [
+        "list-filter-sheet",
+        "sensor-type-group"
+      ]
+    },
+    "8": {
+      "invite-cancel": [
+        "invite-more-menu",
+        "ex-modal-card"
       ]
     }
   },
@@ -1027,7 +1080,7 @@
       "landing_sections": "15-desktop 순서: 히어로(landing-hero·product-shot·landing-cta·guest-entry) → landing-tabs(접는 선, 스크롤 시 고정) → 문제 공감 feature-card 3 → landing-section 4(좌우 번갈아, 꼬리표·제목·점 목록 3·승인 화면 조각) → step-flow 5단계 → 대상 탭(segmented-control 교사·학생·관리자) → 안심 2×2(hairline 격자, 운영 숫자 없음) → cta-band → web-footer 한 줄"
     },
     "heavy_pages_source": "2026-10-10 사용자 결정: 화면 4 여러 시약 = 본문 페이지(드로어 아님)",
-    "menu_source": "2026-10-11 사용자 결정 (개발 세션 요청 7) 7: 사이드바 '시약' 아래 '센서'(모든 역할). QR 찾기는 화면 12 전까지 비활성 '준비 중'"
+    "menu_source": "2026-10-11 사용자 결정 (개발 세션 요청 7) 7: 사이드바 '시약' 아래 '센서'(모든 역할). QR 찾기는 화면 12 전까지 비활성 '준비 중' · 2026-10-12 모바일 전체 메뉴(mobile_menu)가 같은 목록을 씀 (요청 8 6)"
   },
   "msds_summary": {
     "screen": 16,
@@ -1149,28 +1202,41 @@
   },
   "sensor": {
     "screen": 17,
-    "entry": "데스크톱 사이드바 '센서'(모든 역할) · 모바일 '시약' 탭 안 inventory-switch '시약 | 센서'",
-    "list": "데스크톱 = 페이지 머리 '센서 N개' + 검색 + list-filter-button + list-select-toggle(교사·admin) + sensor-add button-primary '센서 등록'(교사·admin), sensor-list = data-table 열 이름 · 종류 · 회사 · 모델 · 수량 · 보관 위치 · 상태, 행 = sensor-row, 행 누르면 detail-drawer. 모바일 = inventory-switch 아래 같은 머리, sensor-row 카드(colors.canvas-soft, rounded.sm): 이름(title) · '온도 · 버니어 · GDX-TMP'(caption muted) · '3개 · 과학실 뒤 선반' · 오른쪽 sensor-status-badge",
-    "filter": "list-filter-sheet 모양: 종류 chip 여러 개 → 회사 chip 여러 개 → 상태 3개",
+    "entry": "데스크톱 사이드바 '센서'(모든 역할) · 모바일 '시약' 탭 안 inventory-switch '시약 | 센서' + 전체 메뉴(mobile_menu) '센서'",
+    "list": "데스크톱 = 페이지 머리 '센서 N개' + 검색 + list-filter-button + list-select-toggle(교사·admin) + sensor-doc-add button-outline '서류로 등록' + sensor-add button-primary '센서 등록'(둘 다 교사·admin), sensor-list = data-table 열 이름 · 종류 · 회사 · 모델 · 수량 · 보관 위치 · 상태, 행 = sensor-row, 행 누르면 detail-drawer. 모바일 = inventory-switch 아래 같은 머리, sensor-row 카드(colors.canvas-soft, rounded.sm): 이름(title) · '온도 · 버니어 · GDX-TMP'(caption muted) · '3개 · 과학실 뒤 선반' · 오른쪽 sensor-status-badge",
+    "filter": "list-filter-sheet 모양: 종류 = sensor-type-group 4줄(기본 접힘, 검색 없음), 묶음 줄에 고른 개수 '화학 · 2개'(고른 게 있으면 그 묶음 펼침), chip 여러 개 고르기 → 회사 chip 여러 개 → 상태 3개. 고른 chip = colors.highlight-soft + colors.highlight 테두리",
     "detail": "sensor-detail: 모바일 전용 화면 / 데스크톱 detail-drawer. 제목 + sensor-status-badge → '항목 | 값' 종류·회사·모델·수량·보관 위치·메모·등록일 → sensor-edit button-outline '수정'(교사·admin) · 머리 ⋯ → sensor-delete '센서 삭제'(reagent_delete와 같은 모달, '목록과 홈에서 사라져요')",
-    "form": "sensor-form: 모바일 전용 화면 / 데스크톱 detail-drawer(짧은 폼). 이름 text-input(예: 무선 온도 센서) → 종류 sensor-type-select(chip 하나 고르기) → 회사 sensor-maker-select → 모델명(선택) → 수량 숫자 + '개' → 보관 위치 segmented '직접 입력 | 시약장 칸'(기본 직접 입력, 시약장 칸 = location-picker 재사용) → 상태 segmented-control 정상 · 점검 필요 · 고장(기본 정상) → 메모(선택) → button-primary '저장'. × 닫기",
+    "form": "sensor-form: 모바일 전용 화면 / 데스크톱 detail-drawer(짧은 폼). 이름 text-input(예: 무선 온도 센서) → 종류 sensor-type-select(묶음 시트) → 회사 sensor-maker-select → 모델명(선택, 회사 = 파스코면 sensor-model-suggest) → 수량 숫자 + '개' → 보관 위치 segmented '직접 입력 | 시약장 칸'(기본 직접 입력, 시약장 칸 = location-picker 재사용) → 상태 segmented-control 정상 · 점검 필요 · 고장(기본 정상) → 메모(선택) → button-primary '저장'. × 닫기",
     "types": [
       "온도",
-      "pH",
       "힘",
       "운동(거리)",
+      "가속도",
+      "회전",
       "전압",
       "전류",
+      "자기장",
       "조도",
+      "소리",
       "압력",
+      "방사선",
+      "pH",
+      "전도도",
+      "용존산소",
+      "이온·수질",
+      "분광",
+      "편광",
+      "색·탁도",
       "CO₂",
       "산소",
+      "심박·생체",
       "습도",
-      "소리",
-      "심박",
+      "기상",
+      "인터페이스",
+      "코딩 보드",
       "기타"
     ],
-    "types_note": "지능형 과학실 ON 센서타입(TPR·ILM 등) 대응은 개발 쪽, 화면에는 한국어 이름만",
+    "types_note": "27종(물리 12·화학 9·생명·지구 3·장비 3), 심박+생체 = '심박·생체' 하나. 지능형 과학실 ON 센서타입 9개(TPR 온도·PRS 압력·SUD 소리·SPO 산소포화도→심박·생체·VTG 전압·CRT 전류·ILM 조도·POH pH·CDT 전도도) 대응은 개발 쪽, 화면에는 한국어 이름만",
     "makers": {
       "센서": [
         "버니어",
@@ -1203,10 +1269,101 @@
     "delete": "보관 처리, 되돌리기 없음. 하나 = 상세 ⋯, 여러 개 = bulk_delete",
     "home": "sensor-alert-tile: 교사·admin, 고장·점검 필요가 1개 이상일 때만. 데스크톱 '지금 처리할 것' 숫자 타일 '고장·점검 필요 센서 N', 모바일 home-summary 줄. 무채색",
     "roles": "등록·수정·삭제 = 교사·admin, 학생 = 보기만, 둘러보기 = 데모 센서 읽기 전용",
-    "source": "2026-10-11 사용자 결정 (개발 세션 요청 7) 7: 보유 관리만(측정값·대여 없음), 상태 무채색, 모바일 시약 탭 안 전환"
+    "source": "2026-10-11 사용자 결정 (개발 세션 요청 7) 7: 보유 관리만(측정값·대여 없음), 상태 무채색, 모바일 시약 탭 안 전환 · 2026-10-12 사용자 결정 (개발 세션 요청 8) 1·5·6",
+    "type_groups": {
+      "물리": [
+        "온도",
+        "힘",
+        "운동(거리)",
+        "가속도",
+        "회전",
+        "전압",
+        "전류",
+        "자기장",
+        "조도",
+        "소리",
+        "압력",
+        "방사선"
+      ],
+      "화학": [
+        "pH",
+        "전도도",
+        "용존산소",
+        "이온·수질",
+        "분광",
+        "편광",
+        "색·탁도",
+        "CO₂",
+        "산소"
+      ],
+      "생명·지구": [
+        "심박·생체",
+        "습도",
+        "기상"
+      ],
+      "장비": [
+        "인터페이스",
+        "코딩 보드",
+        "기타"
+      ]
+    },
+    "type_select": "sensor-type-select = 폼 안 고르기 칸 '종류 [편광 ▾]'(field 채움, 비었으면 placeholder '종류 고르기'). 누르면 sensor-type-sheet: 모바일 바텀시트 / 데스크톱 드롭다운. 맨 위 검색 text-input('종류 검색') → sensor-type-group 4줄(물리 12 · 화학 9 · 생명·지구 3 · 장비 3), 기본 접힘. 줄 = 묶음 이름(title) + 개수(caption muted) + 오른쪽 ▸/▾, 52 높이, 줄 사이 hairline-soft. 누른 묶음만 펼쳐 chip 줄바꿈(여러 묶음 동시에 펼침 가능). 이미 고른 종류가 있으면 그 묶음이 처음부터 펼침. 검색 글자가 있으면 맞는 chip이 있는 묶음만 펼쳐 맞는 chip만 보임, 없으면 muted '맞는 종류가 없어요'. 고른 chip = colors.highlight-soft + 1px colors.highlight 테두리. 하나 고르면 바로 닫힘. 27종을 한꺼번에 펼쳐 두지 않는다",
+    "catalog": {
+      "maker": "파스코",
+      "suggest": "sensor-model-suggest: 회사가 파스코일 때 모델명 text-input 아래로 펼치는 후보 목록(모바일 입력 아래 목록 / 데스크톱 드롭다운). 모델번호·이름으로 검색('PS-3201', '편광'). 후보 행 = 모델번호(title) + '무선 편광계 · 편광'(caption muted), 최대 6줄, 입력과 맞은 글자 bold. 맨 끝 조용한 '목록에 없어요 — 그대로 적기'",
+      "fill": "고르면 모델명 = 모델번호, 종류 = 카탈로그 종류, 이름이 비었으면 이름 = 한국어 이름. 채운 칸은 잠깐 colors.highlight-soft, 모델명 아래 catalog-fill-note muted '카탈로그에서 종류·이름을 채웠어요'(채운 칸만 이름). 고쳐도 됨. 핑크 없음",
+      "other_makers": "다른 회사는 지금처럼 모델명 직접 입력",
+      "data": "코드 상수(DB·관리 화면 없음), 모델 목록 = 개발 세션 요청 8 부록(pasco.com 2026-10-11). 데모 학교 센서도 파스코 모델로"
+    },
+    "model_caption": "모델번호는 지금처럼: 모바일 행 caption '편광 · 파스코 · PS-3237', 데스크톱 data-table '모델' 열, 상세 '모델' 행. 카탈로그 한국어 이름은 이름 칸에 들어가고 따로 보이지 않음",
+    "add_mobile": "모바일 머리 sensor-add button-pill-soft '등록'(교사·admin) → 작은 바텀시트 2줄: sensor-doc-add '서류로 등록'(caption '품의서·영수증을 AI가 읽어요') / '직접 입력'(→ sensor-form)",
+    "doc": {
+      "entry": "데스크톱 머리 sensor-doc-add · 모바일 '등록' 시트의 '서류로 등록'. 교사·admin만, 둘러보기 없음. 모바일 전용 화면 / 데스크톱 본문 페이지(intake처럼 무거운 작업, 드로어 아님)",
+      "upload": "1단계 = doc-upload 재사용(PDF·JPG·PNG 1개, 4MB 이하, '서버에 보관하지 않아요' 안내) + button-primary 'AI로 읽기' → 처리 중 = doc-upload 안 진행 표시 '서류를 읽는 중이에요'",
+      "review": "2단계 = doc-intake-table 재사용, 머리 '읽은 센서 N개'. 행 = 품명 · 회사 · 모델 · 수량 + 아래 줄 sensor-link. 데스크톱 data-table 열 품명 · 회사 · 모델 · 수량 · 연결, 모바일 행마다 canvas-soft 카드",
+      "link": "sensor-link 아래 줄: 같은 학교에 같은 회사+모델이 있으면 기본 '기존 센서에 더하기 · {이름} · 지금 3개 → 5개' + 조용한 '바꾸기'·'빼기'. 없으면 '새 센서로 등록'(펼쳐짐). 바꾸기 = 우리 학교 센서 고르기 시트 + '새 센서로 등록'",
+      "new_sensor": "new-sensor-fields: '새 센서'인 행이 아래로 펼쳐짐 — 이름 · 종류(sensor-type-select) · 회사(sensor-maker-select) · 모델 · 수량 · 보관 위치(segmented '직접 입력 | 시약장 칸') · 상태 segmented(기본 정상). 카탈로그로 채운 값 옆 caption muted '카탈로그'",
+      "not_sensor": "센서·현미경이 아닌 품목은 표 아래 접힌 묶음 '센서 아님 N개'",
+      "save": "아래 고정 띠 button-primary '확인 후 등록 · N개'. 한 번 = 한 트랜잭션(1~50개, 하나라도 틀리면 전부 취소, 문제 행 2px ink 테두리 + muted 줄). ex-toast '센서 N개를 등록했어요' → 화면 17, 바뀐 행 잠깐 colors.highlight-soft",
+      "fail": "0개·실패 = 7-doc-fail 모양 재사용: ex-empty-state-card '센서를 찾지 못했어요' + '다른 서류를 올리거나 직접 입력해 주세요' + doc-upload + button-outline '직접 입력'. 읽기 실패 = '서류를 읽지 못했어요'. 핑크 없음",
+      "source": "2026-10-12 사용자 결정 (개발 세션 요청 8) 5: 화면 7 서류로 입고와 같은 흐름, 머리 버튼 두 개"
+    },
+    "type_select_source": "2026-10-12 사용자 결정 (요청 8 후속: 27종 접어 두기)"
   },
   "landing_shot": {
     "usage_section": "15-desktop landing-section '사용 기록' 그림 = 승인된 4-desktop(여러 시약 담기 + 수업) 조각으로 교체",
     "source": "2026-10-11 사용자 결정 (개발 세션 요청 7) 5"
+  },
+  "mobile_menu": {
+    "button": "mobile-menu-button: 로그인 후 모바일 nav-pill 맨 왼쪽 메뉴 아이콘(☰, 44×44 터치, 동그란 아이콘 버튼, 글자 없음). 화면 2~13·16·17 모바일",
+    "sheet": "mobile-menu-sheet: 전체 높이 바텀시트(위 rounded.lg, 아래 0), 맨 위 학교명(title) + 이름 · 역할 caption + × 닫기. 아래 desktop_shell.menu와 같은 역할별 묶음: 홈·시약·센서·기록·시약장·QR 스캔 / (교사·admin) 입고·실험 매뉴얼·재주문 알림 / (admin) 사용자·판매처. 묶음 사이 hairline-soft. 항목 = 아이콘 + body 라벨, 52 높이, 사각. 지금 화면 = colors.highlight-soft 채움 + colors.highlight 아이콘. QR 스캔은 화면 12 전까지 tab_bar.qr_pending과 같은 회색 + '준비 중'. 맨 아래 '로그아웃'(조용한 글자)",
+    "tab_bar": "하단 tab-bar 4개 그대로. inventory-switch '시약 | 센서'도 그대로",
+    "guest": "둘러보기: 같은 메뉴 시트, 학교 '데모 학교'. 홈·시약·센서 활성, 기록·QR 스캔 guest-lock, 관리 묶음 숨김, 로그아웃 대신 button-primary '가입하기'. 이번 시안의 상태 프레임 13-menu는 admin 기준",
+    "source": "2026-10-12 사용자 결정 (개발 세션 요청 8) 6: (가) 전체 메뉴",
+    "frames": "상태 프레임 13-menu = 모바일만(frames.mobile_only_variants)"
+  },
+  "no_access": {
+    "behavior": "권한이 없는 관리 화면 주소로 들어오면 지금처럼 홈(13)으로 보내고, 홈에서 ex-toast 한 번",
+    "copy": {
+      "teacher_admin": "교사·관리자만 쓸 수 있는 화면이에요",
+      "admin": "관리자만 쓸 수 있는 화면이에요"
+    },
+    "style": "ex-toast 그대로(무채색, 핑크 없음), 버튼 없음",
+    "frame": "상태 프레임 13-no-access(학생 홈 + ex-toast)",
+    "source": "2026-10-12 사용자 결정 (개발 세션 요청 8) 2: 토스트로 충분"
+  },
+  "invite_cancel": {
+    "screen": 8,
+    "roles": [
+      "admin"
+    ],
+    "entry": "invite-more-menu: 초대 대기 행의 ⋯ 아이콘 버튼(reagent-more-menu와 같은 작은 메뉴) → invite-cancel '초대 취소'(ink). 모바일 = 카드 오른쪽 위, 데스크톱 = data-table 마지막 열",
+    "confirm": "ex-modal-card '{이메일} 초대를 취소할까요?' + '보낸 초대로는 더 이상 가입할 수 없어요.' + button-outline '닫기' + button-primary '초대 취소'(검정). '취소' 두 개가 나란히 서지 않게 왼쪽 버튼은 '닫기'. 핑크 없음",
+    "after": "ex-toast '초대를 취소했어요', 행이 빠짐",
+    "source": "2026-10-12 사용자 결정 (개발 세션 요청 8) 3"
+  },
+  "landing_hero_mark": {
+    "rule": "landing-hero 안에 'Lab_Stock' 워드마크를 두지 않는다(상단 바 nav-pill·web-header에만 1번). 모바일 히어로 첫 줄 = 작은 꼬리표 '과학실 시약·센서 관리'(caption, text-muted) → 제목",
+    "source": "2026-10-12 사용자 결정 (개발 세션 요청 8) 4: 상단 바만 남김"
   }
 }

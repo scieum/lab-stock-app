@@ -368,6 +368,24 @@
 | 화면 | 표의 시약명 = 한국어 name. originalName 이 있으면 그 아래 caption text-muted "원문: {originalName}"(두 폭, 시안에 없는 한 줄 — 개발 예외, 디자인 하네스에 나중에 알림). 사용자가 고친 이름이 저장·새 시약 등록에 쓰인다(화면 7 새 시약 이름 기본값 = 한국어 name) |
 | 테스트 | §13·§21 과 같다 — 실제 Gemini 호출 없음. 추출 API 응답을 영어 문서 결과로 가로채 표·연결·원문 줄을 확인, 서버 쪽은 응답 정규화(originalName·cas 검사·영문 이름 정리) 단위 테스트 |
 
+## 28. 센서 종류 27종·파스코 카탈로그·센서 서류 등록·모바일 전체 메뉴·권한 안내·초대 취소·랜딩 (화면 2~13·15·16·17, 2026-10-12 — design/rules.json 1.28 sensor.types·type_groups·type_select·filter·catalog·doc · mobile_menu · no_access · invite_cancel · landing_hero_mark, 디자인 run 20261012-0939·1155)
+
+| 항목 | 결정 |
+|---|---|
+| 센서 종류 | rules sensor.types 27종 · type_groups(물리 12 · 화학 9 · 생명·지구 3 · 장비 3). lib/sensor-rules SENSOR_TYPES·묶음을 rules 그대로. 기존 "심박" = "심박·생체"로 이름 변경 |
+| 센서 종류 DB | `sensors.type` 검사(체크 제약·upsert_sensor 검사)가 있으면 27종으로 바꾸는 마이그레이션. 기존 행 type '심박' → '심박·생체'. 데모 센서 시드는 파스코 모델(카탈로그)로 바꾼다(4~6개 유지, 종류 다양하게 — 분광·편광 포함) |
+| ON 코드 | 공식 9개(§26) 그대로: 전도도 = CDT 추가. 심박·생체 · 나머지 새 종류 = null(SPO 는 "산소포화도" 단독 종류가 아니므로 대응하지 않음) |
+| 종류 고르기·필터 | rules sensor.type_select·filter: sensor-type-sheet(모바일 바텀시트 / 데스크톱 드롭다운) — 검색 + sensor-type-group 묶음 4줄 처음 접힘, 누른 묶음만 펼침, 고른 종류가 있는 묶음은 처음부터 펼침. 필터 시트도 같은 모양, 묶음 줄에 "화학 · 2개". 시안 17-type·17-filter(Figma S4-screens-v23) |
+| 파스코 카탈로그 | rules sensor.catalog. 코드 상수 `lib/pasco-catalog.ts`: 디자인 요청 8 부록(../디자인하네스-요청서-2026-10-11-8.md "부록 — 파스코 카탈로그 요약") 의 모델 전부 — {model, nameKo, type(27종 중), discontinued?}. 회사 = 파스코일 때 모델명 칸 sensor-model-suggest(모델번호·한국어 이름 검색, 최대 6줄, 행 "PS-3215" + caption "무선 비색·탁도 · 색·탁도"), 고르면 모델·종류(이름이 비었으면 이름도) 채우고 catalog-fill-note "카탈로그에서 종류·이름을 채웠어요". 시안 17-model |
+| 센서 서류로 등록 | rules sensor.doc. 진입 sensor-doc-add(데스크톱 머리 button-outline '서류로 등록' + '센서 등록' / 모바일 '등록' → 시트 '서류로 등록 / 직접 입력'). 교사·admin(R5 학생 0), 둘러보기 없음. 흐름·상태는 화면 7 서류로 입고와 같음(doc-upload → 처리 중 → doc-intake-table 확인 표 / 7-doc-fail 모양 재사용), 데스크톱은 본문 페이지(경로 `/sensors/doc`). 시안 17-doc-upload·17-doc-review·17-doc-fail |
+| 센서 추출 API | `POST /api/sensors/extract`(multipart, 로그인·교사·admin·자기 학교, PDF·JPG·PNG 4MB, 파일 보관 안 함, `lib/server/gemini.ts` 재사용, 지시문 무시 문구). 구조화 출력 `{ docDate, items: [{ name(한국어 — §27 과 같이 영문 서류도 한국어), originalName, maker, model, quantity(정수 ≥1), isSensor, type(27종 또는 null) }] }`, 최대 50. 서버 정규화: maker 가 PASCO/파스코 계열이면 "파스코", model 이 카탈로그에 있으면 type·한국어 이름 = 카탈로그. 키 없음 503, 실패 502, 0개 = 7-doc-fail 모양 |
+| 센서 확인 표 | 행 = 품명 · 회사 · 모델 · 수량 + sensor-link 줄. 우리 학교에 같은 회사+모델(대소문자·공백 무시) 센서가 있으면 기본 "기존 센서에 더하기 · {이름} · 지금 3개 → 5개", 바꾸기·빼기·"새 센서로 등록". 새 센서 행은 펼침 new-sensor-fields(이름·종류·회사·모델·수량·보관 위치·상태 기본 정상). 센서 아님 = "센서 아님 N개" 접힘(펼쳐 "센서로 넣기"). 저장 버튼 "확인 후 등록 · N개" |
+| 센서 서류 저장 DB | 새 함수 `record_sensor_document(p_items jsonb)` 한 트랜잭션: `{sensor_id, add_quantity}` = 기존 센서 수량 더하기(9999 상한), `{name, type, maker, model, quantity, location_text, slot_id, status, memo}` = upsert_sensor 와 같은 검사로 새 센서. 교사·admin·자기 학교·데모 거부, 1~50, 하나라도 틀리면 전부 취소. 반환 `{ added_count, new_sensor_ids[] }`. 저장 뒤 토스트 "센서 N개를 등록했어요" → 화면 17, 바뀐 행 highlight-soft |
+| 모바일 전체 메뉴 | rules mobile_menu. mobile-menu-button(☰, nav-pill 맨 왼쪽, 44×44) = 로그인 후 모바일 화면 2~13·16·17 의 기본 화면(폼·서류·상세 시트 같은 하위 화면은 ×/‹ 머리만 — 디자인 회신). mobile-menu-sheet = 전체 높이 바텀시트, 학교명 + 이름·역할 + ×, desktop_shell.menu 와 같은 역할별 묶음(홈·시약·센서·기록·시약장·QR 스캔 / 교사·admin 입고·실험 매뉴얼·재주문 알림 / admin 사용자·판매처), 지금 화면 활성, 맨 아래 로그아웃. 화면 12 가 있으므로 QR 스캔은 정상 항목. 둘러보기 = 같은 시트(데모 학교, 홈·시약·센서, 기록·QR guest-lock, 관리 숨김, '가입하기'). 하단 탭 4개·inventory-switch 그대로. 시안 13-menu(모바일만) |
+| 권한 없는 주소 | rules no_access: 지금처럼 홈으로 보내고(proxy/페이지 가드), 홈에서 ex-toast 한 번 — 교사·admin 화면 "교사·관리자만 쓸 수 있는 화면이에요", admin 화면(8·9) "관리자만 쓸 수 있는 화면이에요". 전달은 주소 `/?denied=staff|admin` → 토스트 뒤 주소에서 지움(새로고침 시 다시 안 뜸). 시안 13-no-access |
+| 초대 취소 (화면 8) | rules invite_cancel: admin, 초대 대기 행 invite-more-menu(⋯) → invite-cancel "초대 취소" → ex-modal-card "{이메일} 초대를 취소할까요?" / "보낸 초대로는 더 이상 가입할 수 없어요." / '닫기' · '초대 취소'(검정) → 토스트 "초대를 취소했어요", 행 빠짐. DB 새 함수 `cancel_invite(p_invite_id uuid)` — admin·자기 학교·아직 가입 안 한 초대만·데모 거부, 지운 뒤 그 이메일로 가입하면 초대 역할 없이 student(§8 규칙). 시안 8·8-invite-cancel |
+| 랜딩 | rules landing_hero_mark: landing-hero 안 'Lab_Stock' 워드마크 제거(상단 바만), 모바일 히어로 첫 줄 = caption text-muted "과학실 시약·센서 관리" → 제목. 시안 15 |
+
 ## 10. 로그아웃 (2026-10-05 결정)
 
 - 로그인 후 모든 화면의 nav-pill 학교명을 누르면 작은 메뉴가 열리고 "로그아웃" 1개가 있다. 누르면 `POST /api/auth/logout` → `/login`.
