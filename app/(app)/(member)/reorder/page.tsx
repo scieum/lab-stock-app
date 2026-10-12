@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { deniedHomePath } from "@/lib/no-access";
 import {
   autoCaptionText,
   reorderAlertDateText,
@@ -24,7 +25,7 @@ export const metadata: Metadata = { title: "재주문 알림 · Lab_Stock" };
 export default async function ReorderPage() {
   const result = await getReorderScreen();
   if (result.kind === "signed-out") redirect("/login");
-  if (result.kind !== "ok") redirect("/");
+  if (result.kind !== "ok") redirect(result.kind === "forbidden" ? deniedHomePath("staff") : "/");
 
   const { isAdmin, alerts, vendors } = result.data;
   return (

@@ -295,7 +295,8 @@ test(`[N1-ui][S${SCREEN}] 학교B 교사 ${CABINETS_HREF}: 화면·응답 본문
     // 화면의 칸 수·pill 수는 학교 B 것만
     await expect(page.locator(`main ${sel(SWITCHER)}`)).toHaveCount(1);
     expect(await pillLabels(page)).toHaveLength(db.cabinets.length);
-    expect(await countComponent(page, SLOT)).toBe(await slots(page).count());
+    // 하이드레이션 뒤 맞지 않는 폭의 사본이 빠질 때까지 (서버 HTML 에는 두 폭 모두 있다)
+    await expect.poll(async () => (await countComponent(page, SLOT)) === (await slots(page).count()), { message: `${SLOT} 전체 = 보이는 칸`, timeout: 30_000 }).toBe(true);
     expect(actions.count(), "쓰기 요청 0건").toBe(0);
   } finally {
     await context.close();

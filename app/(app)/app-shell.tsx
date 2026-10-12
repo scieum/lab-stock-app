@@ -1,8 +1,10 @@
 "use client";
 
 import { FlashToast } from "./flash-toast";
+import { createContext, useContext } from "react";
 import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
+import { MobileMenu } from "@/components/mobile-menu-sheet/menu";
 import { NavPill, type NavLinkItem } from "@/components/nav-pill";
 import { TabBar, type TabKey } from "@/components/tab-bar";
 import { useRememberScanReturn, useScanReturnHref } from "@/lib/scan-return";
@@ -82,6 +84,8 @@ function subPage(pathname: string, staff: boolean, scanReturn = "/"): SubPage | 
   if (/^\/reagents\/[^/]+\/?$/.test(pathname)) return { title: "시약 상세", backHref: "/reagents", mainNav: true };
   // 화면 17 (시안 17-detail-mobile · 17-form-mobile): 상세 = ‹ "센서 상세", 폼 = × "센서 등록" · "센서 수정"
   if (/^\/sensors\/new\/?$/.test(pathname)) return { title: "센서 등록", backHref: "/sensors", backIcon: "close" };
+  // 화면 17 서류로 등록 (시안 17-doc-*: × + "서류로 등록")
+  if (/^\/sensors\/doc\/?$/.test(pathname)) return { title: "서류로 등록", backHref: "/sensors", backIcon: "close" };
   const edit = /^\/sensors\/([^/]+)\/edit\/?$/.exec(pathname);
   if (edit) return { title: "센서 수정", backHref: `/sensors/${edit[1]}`, backIcon: "close" };
   if (/^\/sensors\/[^/]+\/?$/.test(pathname)) return { title: "센서 상세", backHref: "/sensors" };
@@ -122,6 +126,19 @@ function sectionTitle(pathname: string): string | undefined {
   if (isActive(pathname, "/vendors")) return "판매처 설정";
   return undefined;
 }
+
+/**
+ * 모바일 전체 메뉴 ☰ (rules 1.28 mobile_menu.button, d7 §28 · dev-rules mobile-menu-button 2~13·16·17):
+ * 로그인 후 모바일 기본 화면의 nav-pill 맨 왼쪽. 화면 3·4·5·16(‹ 뒤로)·12(× 닫기)는 dev-rules 대로 그 화면 자체가 기본 화면이라
+ * ☰ 를 두고 ‹/× 는 그 오른쪽에 둔다. 화면 17 의 하위 화면(센서 상세 ‹ · 등록·수정 폼 × · 서류로 등록)은 ×/‹ 머리만 — ☰ 없음.
+ */
+function hasMobileMenu(pathname: string): boolean {
+  return !/^\/sensors\/[^/]+/.test(pathname);
+}
+
+/** 셸이 아는 계정 (전체 메뉴 시트 머리 "이름 · 역할") — 페이지가 그리는 AppNav(화면 16)도 같은 값을 쓴다 */
+type ShellAccountValue = { role: SidebarRole; displayName: string };
+const ShellAccount = createContext<ShellAccountValue | null>(null);
 
 type Props = {
   schoolName: string;
@@ -174,6 +191,8 @@ export function AppNav(props: AppNavProps) {
 
 function MobileNav({ schoolName, staff = false, admin = false, page }: AppNavProps) {
   const pathname = usePathname();
+  const account = useContext(ShellAccount);
+  const role: SidebarRole = account?.role ?? (admin ? "admin" : staff ? "teacher" : "student");
   const scanReturn = useScanReturnHref(isScanPath(pathname));
   const sub: SubPage | undefined = page
     ? { title: page.title, backHref: page.backHref, mainNav: true }
@@ -195,6 +214,11 @@ function MobileNav({ schoolName, staff = false, admin = false, page }: AppNavPro
       desktopWordmark={sub?.mainNav}
       sectionTitle={sub ? undefined : sectionTitle(pathname)}
       onLogout={logout}
+      menu={
+        hasMobileMenu(pathname) ? (
+          <MobileMenu role={role} schoolName={schoolName} account={sidebarAccountLabel(account?.displayName ?? "", role)} onLogout={logout} />
+        ) : undefined
+      }
     />
   );
 }
@@ -206,16 +230,17 @@ function MobileNav({ schoolName, staff = false, admin = false, page }: AppNavPro
  * (화면 4 /usage/new 는 2026-10-10 디자인 1.25 부터 본문 페이지 — heavy_pages)
  */
 function isDeskPath(pathname: string): boolean {
+  if (/^\/sensors\/doc\/?$/.test(pathname)) return false;
   return /^\/(reagents(\/[^/]+)?|msds\/[^/]+|usage|users|vendors|scan|sensors(\/[^/]+(\/edit)?)?)\/?$/.test(pathname);
 }
 
 /**
  * 데스크톱 재구성 run c(d7 §23): 본문 페이지 — 시안 main 안쪽 32 · 블록 사이 24 (page-head → page-column, 아래 고정 bottom-bar).
- * 13 / · 5 /manual · 6 /reorder · 7 /intake · 11 /cabinets · 4 /usage/new(d7 §24). 제목은 각 페이지의 page-head 가 그린다 (run a 의 셸 page-head 대신).
+ * 13 / · 5 /manual · 6 /reorder · 7 /intake · 11 /cabinets · 4 /usage/new(d7 §24) · 17 /sensors/doc(d7 §28). 제목은 각 페이지의 page-head 가 그린다 (run a 의 셸 page-head 대신).
  * 오른쪽 detail-drawer(11 QR 인쇄)가 열리면 본문 + 드로어 가로 배치.
  */
 function isPagePath(pathname: string): boolean {
-  return /^\/(manual|reorder|intake|cabinets|usage\/new)?\/?$/.test(pathname);
+  return /^\/(manual|reorder|intake|cabinets|usage\/new|sensors\/doc)?\/?$/.test(pathname);
 }
 
 /**
@@ -232,6 +257,7 @@ export function AppShell({ schoolName, role, displayName, children }: Props) {
   const staff = role !== "student";
   const admin = role === "admin";
   return (
+    <ShellAccount.Provider value={{ role, displayName }}>
     <div className={[styles.shell, styles.withSidebar].join(" ")}>
       {desktop === false ? null : (
         <AppSidebar
@@ -257,5 +283,6 @@ export function AppShell({ schoolName, role, displayName, children }: Props) {
       {/* 화면을 옮긴 뒤 보여 줄 토스트 (시약 삭제 → 화면 2) — 셸은 이동해도 남는다 */}
       <FlashToast />
     </div>
+    </ShellAccount.Provider>
   );
 }

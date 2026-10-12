@@ -47,3 +47,8 @@
   background: var(--color-surface);
   box-shadow: var(--shadow-none);
 }
+
+/* fixed: 화면 기준 (top·right 는 버튼 위치로 계산) — 모서리를 자르는 표 틀 안에서도 잘리지 않는다 */
+.menuFixed {
+  position: fixed;
+}

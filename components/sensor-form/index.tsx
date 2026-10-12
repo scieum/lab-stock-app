@@ -1,15 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { ButtonPrimary } from "@/components/button-primary";
 import { CabinetNumber } from "@/components/cabinet-number";
+import { CatalogFillNote } from "@/components/catalog-fill-note";
 import { Icon } from "@/components/icons";
 import { LocationPicker, type LocationChoice, type LocationPickerCabinet } from "@/components/location-picker";
 import { SegmentedControl } from "@/components/segmented-control";
 import { SensorMakerSelect } from "@/components/sensor-maker-select";
+import { SensorModelSuggest, suggestOptionId } from "@/components/sensor-model-suggest";
 import { SensorTypeSelect } from "@/components/sensor-type-select";
 import { TextInput } from "@/components/text-input";
 import { locationText } from "@/lib/cabinet-rules";
+import { catalogFill, findPascoModel, isPascoMaker, searchPascoCatalog, type PascoModel } from "@/lib/pasco-catalog";
+import { useIsDesktop } from "@/lib/use-viewport";
 import {
   SENSOR_LOCATION_MAX,
   SENSOR_MEMO_MAX,
@@ -60,8 +64,9 @@ type Props = {
 };
 
 /**
- * 센서 등록 · 수정 폼 (디자인 1.26 sensor.form, sensor-form): 이름 text-input → 종류 sensor-type-select → 회사 sensor-maker-select →
- * 모델명(선택) + 수량(숫자 + "개") → 보관 위치 segmented "직접 입력 | 시약장 칸"(시약장 칸 = location-picker) →
+ * 센서 등록 · 수정 폼 (디자인 1.28 sensor.form, sensor-form): 이름 text-input → 종류 sensor-type-select(box → sensor-type-sheet) →
+ * 회사 sensor-maker-select → 모델명(선택, 회사 = 파스코면 sensor-model-suggest 자동완성 — 위아래 · Enter · Esc,
+ * 고르면 모델 · 종류 · (빈) 이름 채우고 catalog-fill-note) + 수량(숫자 + "개") → 보관 위치 segmented "직접 입력 | 시약장 칸"(시약장 칸 = location-picker) →
  * 상태 segmented-control 정상 · 점검 필요 · 고장(기본 정상) → 메모(선택). 저장 = button-primary.
  * 모바일 = 전용 화면 / 데스크톱 = detail-drawer(짧은 폼). 교사·admin 만.
  */
@@ -88,6 +93,80 @@ export function SensorForm({
   const [memo, setMemo] = useState(initial.memo ?? "");
   const [picking, setPicking] = useState(false);
   const [local, setLocal] = useState<{ field?: SensorField; message: string } | null>(null);
+  // 파스코 카탈로그 (rules 1.28 sensor.catalog): 후보 목록 · 키보드로 가리킨 줄 · 채운 칸(안내 문구) · 잠깐 highlight-soft
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+  const [filled, setFilled] = useState<("type" | "name")[]>([]);
+  const [flash, setFlash] = useState(false);
+  const desktop = useIsDesktop();
+  const listId = useId();
+
+  useEffect(() => {
+    if (!flash) return;
+    const t = setTimeout(() => setFlash(false), 1600);
+    return () => clearTimeout(t);
+  }, [flash]);
+
+  const pasco = isPascoMaker(maker);
+  const candidates = pasco ? searchPascoCatalog(model) : [];
+  const showSuggest = pasco && suggestOpen && model.trim() !== "";
+
+  const pickModel = (m: PascoModel) => {
+    const f = catalogFill(m, { name });
+    setModel(f.model);
+    setType(f.type);
+    setName(f.name);
+    setFilled(f.filled);
+    setFlash(true);
+    setSuggestOpen(false);
+    setActive(-1);
+  };
+
+  const onModelKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggest) {
+      if (pasco && e.key === "ArrowDown" && model.trim() !== "") {
+        e.preventDefault();
+        setSuggestOpen(true);
+        setActive(0);
+      }
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActive((i) => (candidates.length === 0 ? -1 : (i + 1) % candidates.length));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActive((i) => (candidates.length === 0 ? -1 : i <= 0 ? candidates.length - 1 : i - 1));
+    } else if (e.key === "Enter") {
+      // 가리킨 후보가 있으면 고르기 (폼 제출 아님)
+      const m = active >= 0 ? candidates[active] : undefined;
+      if (m) {
+        e.preventDefault();
+        pickModel(m);
+      }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      setSuggestOpen(false);
+      setActive(-1);
+    }
+  };
+
+  const suggest = (floating: boolean) =>
+    showSuggest ? (
+      <SensorModelSuggest
+        id={listId}
+        query={model}
+        selectedModel={findPascoModel(model)?.model ?? null}
+        activeIndex={active}
+        floating={floating}
+        onPick={pickModel}
+        onRaw={() => {
+          setSuggestOpen(false);
+          setActive(-1);
+        }}
+      />
+    ) : null;
 
   const slot = slotId ? slots.find((s) => s.id === slotId) : undefined;
   const cabinet = slot ? cabinets.find((c) => c.id === slot.cabinetId) : undefined;
@@ -155,23 +234,59 @@ export function SensorForm({
         maxLength={SENSOR_NAME_MAX}
         autoComplete="off"
         value={name}
-        onChange={(e) => setName(e.target.value)}
+        edited={flash && filled.includes("name")}
+        onChange={(e) => {
+          setName(e.target.value);
+          setFilled((f) => f.filter((x) => x !== "name"));
+        }}
         error={fieldError("name")}
       />
-      <SensorTypeSelect value={type} onChange={setType} error={fieldError("type")} />
-      <SensorMakerSelect value={maker} onChange={setMaker} error={fieldError("maker")} />
+      <SensorTypeSelect
+        variant="box"
+        value={type}
+        filled={flash && filled.includes("type")}
+        onChange={(t) => {
+          setType(t);
+          setFilled((f) => f.filter((x) => x !== "type"));
+        }}
+        error={fieldError("type")}
+      />
+      <SensorMakerSelect
+        value={maker}
+        onChange={(m) => {
+          setMaker(m);
+          if (!isPascoMaker(m)) setSuggestOpen(false);
+        }}
+        error={fieldError("maker")}
+      />
       <div className={styles.pair}>
-        <TextInput
-          className={styles.model}
-          label="모델명 (선택)"
-          labelTone="strong"
-          name="model"
-          maxLength={SENSOR_MODEL_MAX}
-          autoComplete="off"
-          value={model}
-          onChange={(e) => setModel(e.target.value)}
-          error={fieldError("model")}
-        />
+        <div className={styles.modelWrap}>
+          <TextInput
+            className={styles.model}
+            label="모델명 (선택)"
+            labelTone="strong"
+            name="model"
+            maxLength={SENSOR_MODEL_MAX}
+            autoComplete="off"
+            role={pasco ? "combobox" : undefined}
+            aria-autocomplete={pasco ? "list" : undefined}
+            aria-expanded={pasco ? showSuggest : undefined}
+            aria-controls={showSuggest ? listId : undefined}
+            aria-activedescendant={showSuggest && active >= 0 ? suggestOptionId(listId, active) : undefined}
+            value={model}
+            onChange={(e) => {
+              setModel(e.target.value);
+              setFilled([]);
+              setSuggestOpen(true);
+              setActive(-1);
+            }}
+            onFocus={() => setSuggestOpen(true)}
+            onBlur={() => setSuggestOpen(false)}
+            onKeyDown={onModelKey}
+            error={fieldError("model")}
+          />
+          {desktop === true ? suggest(true) : null}
+        </div>
         <TextInput
           className={styles.quantity}
           label="수량"
@@ -186,6 +301,8 @@ export function SensorForm({
           error={fieldError("quantity")}
         />
       </div>
+      {filled.length > 0 ? <CatalogFillNote filled={filled} /> : null}
+      {desktop === true ? null : suggest(false)}
       <div className={styles.group}>
         <span className={styles.label}>보관 위치</span>
         <SegmentedControl

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { deniedHomePath } from "@/lib/no-access";
 import { getManualScreen } from "@/lib/supabase/manual";
 import { ManualScreen } from "./manual-screen";
 
@@ -17,7 +18,7 @@ export const metadata: Metadata = { title: "실험 매뉴얼 · Lab_Stock" };
 export default async function ManualPage() {
   const result = await getManualScreen();
   if (result.kind === "signed-out") redirect("/login");
-  if (result.kind !== "ok") redirect("/");
+  if (result.kind !== "ok") redirect(result.kind === "forbidden" ? deniedHomePath("staff") : "/");
 
   return (
     <ManualScreen

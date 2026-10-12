@@ -12,7 +12,7 @@ import { openAs } from "./auth-state";
 import { anonClient } from "./db-helpers";
 import { browserSession, devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
 import { HAS_SERVICE, forgetSession, openTemp, sessionFor, type TempUser } from "./screen-8-helpers";
-import { anonContext, shellAccountLabel } from "./shell-helpers";
+import { MOBILE_MENU_BUTTON, anonContext, shellAccountLabel } from "./shell-helpers";
 import { NO_S11_RESIDUE, cleanup, exact, makeFixture, prepCabinet, prepReagent, type S11Fixture } from "./screen-11-helpers";
 
 test.describe.configure({ mode: "default" });
@@ -196,7 +196,11 @@ test(`[C1][S${HOME}] 로그인 전 화면(랜딩 ${routeOf(LANDING)} · ${routeO
       const shellNm = anonShellName(page, isGuest);
       await expect(anonShell(page, isGuest), `${path}: ${shellNm} 1`).toHaveCount(1, { timeout: 30_000 });
       await expect(anonShell(page, isGuest).first(), `${path}: ${shellNm}`).toBeVisible();
-      await expect(anonShell(page, isGuest).locator("[aria-haspopup]"), `${path}: ${shellNm} 메뉴 버튼`).toHaveCount(0);
+      // rules 1.28 mobile_menu.guest (d7 §28): 둘러보기 390 nav-pill 에는 전체 메뉴 ☰(mobile-menu-button, 시트 = '가입하기' · 로그아웃 없음) 1개 —
+      // 계정(로그아웃) 메뉴 버튼은 아니다. 로그인 전 화면(랜딩·로그인·가입)과 1440 은 ☰ 0
+      const wantMenuButton = isGuest && info.project.name === "mobile" ? 1 : 0;
+      await expect(anonShell(page, isGuest).locator(sel(MOBILE_MENU_BUTTON)), `${path}: ${shellNm} 전체 메뉴 ☰ ${wantMenuButton}`).toHaveCount(wantMenuButton);
+      await expect(anonShell(page, isGuest).locator(`[aria-haspopup]:not(${sel(MOBILE_MENU_BUTTON)})`), `${path}: ${shellNm} 메뉴 버튼 (☰ 밖)`).toHaveCount(0);
       await expect(page.locator("[aria-haspopup=\"menu\"]"), `${path}: 계정 메뉴 버튼 0`).toHaveCount(0);
       await expect(page.getByRole("menu"), `${path}: 메뉴`).toHaveCount(0);
       await expect(page.getByRole("menuitem"), `${path}: 메뉴 항목`).toHaveCount(0);

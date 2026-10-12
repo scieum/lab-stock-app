@@ -119,3 +119,23 @@ export function sidebarAccountLabel(displayName: string, role: SidebarRole) {
   const name = displayName.trim();
   return name ? `${name} · ${ROLE_TEXT[role]}` : ROLE_TEXT[role];
 }
+
+/**
+ * 모바일 전체 메뉴 (rules.json 1.28 mobile_menu, d7 §28 — mobile-menu-sheet): 데스크톱 사이드바와 같은 출처(sidebarMenu ·
+ * guestSidebarMenu)를 그대로 쓰고, 글자만 모바일 하단 tab-bar 와 맞춘다 (QR 찾기 → "QR 스캔", 시안 13-menu-mobile).
+ * 활성 항목은 sidebarActiveKey · guestSidebarActiveKey 를 그대로 쓴다.
+ */
+const MOBILE_LABELS: Partial<Record<SidebarKey, string>> = { scan: "QR 스캔" };
+
+function toMobile(groups: SidebarGroup[]): SidebarGroup[] {
+  return groups.map((g) => ({ ...g, items: g.items.map((it) => ({ ...it, label: MOBILE_LABELS[it.key] ?? it.label })) }));
+}
+
+export function mobileMenu(role: SidebarRole): SidebarGroup[] {
+  return toMobile(sidebarMenu(role));
+}
+
+/** 둘러보기 모바일 메뉴: 홈·시약·센서 활성, 기록·QR 스캔 guest-lock, 관리 묶음 없음 (rules mobile_menu.guest) */
+export function guestMobileMenu(): SidebarGroup[] {
+  return toMobile(guestSidebarMenu());
+}

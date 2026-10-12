@@ -3,6 +3,8 @@
 import { useId, useState } from "react";
 import { ButtonPrimary } from "@/components/button-primary";
 import { DataInviteRow, DataMemberRow } from "@/components/ex-data-table-cell";
+import { InviteCancel } from "@/components/invite-cancel";
+import { InviteMoreMenu } from "@/components/invite-more-menu";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { TextInput } from "@/components/text-input";
 import type { Role } from "@/lib/types";
@@ -51,6 +53,13 @@ type Props = {
   onInvite?: () => void;
   /** 멤버 행을 눌렀을 때 (역할 변경 시트를 연다) */
   onSelectMember?: (member: UserManageMember) => void;
+  /**
+   * 초대 대기 행 ⋯ → "초대 취소" (rules 1.28 invite_cancel — 확인 모달은 화면 쪽에서 연다).
+   * 있거나 inviteMenu 가 true 면 행 끝에 invite-more-menu 를 그린다.
+   */
+  onCancelInvite?: (invite: UserManageInvite) => void;
+  /** 갤러리 — 핸들러 없이 ⋯ 만 그린다 */
+  inviteMenu?: boolean;
 };
 
 /** 초대 대기 행 보조줄 — 시안 1.24 8-mobile "교사 · 10월 6일 초대" (역할 · 초대일) */
@@ -77,6 +86,8 @@ export function UserManage({
   selectedId = null,
   onInvite,
   onSelectMember,
+  onCancelInvite,
+  inviteMenu = false,
 }: Props) {
   const [query, setQuery] = useState(defaultQuery);
   const headingId = useId();
@@ -163,7 +174,18 @@ export function UserManage({
             <ul className={styles.rows} aria-labelledby={invitesId}>
               {invites.map((v) => (
                 <li key={v.id} className={styles.item}>
-                  <DataInviteRow email={v.email} caption={inviteCaption(v)} status="대기" />
+                  <DataInviteRow
+                    email={v.email}
+                    caption={inviteCaption(v)}
+                    status="대기"
+                    end={
+                      onCancelInvite || inviteMenu ? (
+                        <InviteMoreMenu email={v.email}>
+                          <InviteCancel onSelect={onCancelInvite ? () => onCancelInvite(v) : undefined} />
+                        </InviteMoreMenu>
+                      ) : undefined
+                    }
+                  />
                 </li>
               ))}
             </ul>

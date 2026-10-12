@@ -35,6 +35,9 @@ for (const role of ROLES) {
         ? page.locator(`main [data-name="widget-column"] > ${sel("home-summary")}`).first()
         : page.locator(sel("home-summary")).first();
       const tile = page.locator(`main [data-name="tile-row"] > ${sel("home-summary")}`).first();
+      // 서버 HTML 에는 두 폭 사본(+ 스트리밍 중 숨은 사본)이 함께 있다 — 숨은 사본의 innerText 는 textContent 라
+      // 숫자가 붙어 읽힌다(타일 "0" + "0건" → "00"). 읽기 전에 이 폭의 요약이 보일 때까지 기다린다.
+      await expect(summary, "이 폭의 재고 부족 요약 보임 (하이드레이션 뒤)").toBeVisible({ timeout: 30_000 });
       expect((await browserSession(page)).role, "테스트 계정 역할").toBe(PROFILE_ROLE[role]);
 
       const { client } = await browserClient(page);
@@ -76,6 +79,13 @@ for (const role of ROLES) {
       }
 
       const cards = page.locator(sel("reorder-alert-card"));
+      // 하이드레이션 뒤에는 맞지 않는 폭의 카드가 DOM 에서 빠지므로 남은 카드는 모두 보여야 한다 — 숨은 사본이 빠질 때까지 기다린 뒤 읽는다
+      await expect
+        .poll(() => cards.evaluateAll((els) => els.filter((e) => !(e as HTMLElement).checkVisibility()).length), {
+          message: "숨은 reorder-alert-card 사본 0 (폭 정리·스트리밍 교체 뒤)",
+          timeout: 30_000,
+        })
+        .toBe(0);
       const nCards = await cards.count();
       for (let i = 0; i < nCards; i++) {
         const card = cards.nth(i);

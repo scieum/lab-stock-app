@@ -187,6 +187,11 @@
   line-height: var(--line-height-normal);
 }
 
+/* 끝에 ⋯ 버튼이 있는 행 (시안 1.28 8-mobile: 안쪽 오른쪽 4) */
+.entryWithEnd {
+  padding-right: var(--space-4);
+}
+
 .entryEnd {
   display: flex;
   grid-column: 2;

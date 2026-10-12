@@ -566,6 +566,7 @@ export type Database = {
       archive_reagents: { Args: { p_reagent_ids: string[] }; Returns: number }
       archive_sensor: { Args: { p_sensor_id: string }; Returns: Json }
       archive_sensors: { Args: { p_sensor_ids: string[] }; Returns: number }
+      cancel_invite: { Args: { p_invite_id: string }; Returns: Json }
       change_member_role: {
         Args: { p_role: string; p_user_id: string }
         Returns: {
@@ -653,6 +654,7 @@ export type Database = {
         Args: { p_intake_date: string; p_items: Json }
         Returns: Json
       }
+      record_sensor_document: { Args: { p_items: Json }; Returns: Json }
       record_intake: {
         Args: { p_amount: number; p_intake_date: string; p_reagent_id: string }
         Returns: {

@@ -28,7 +28,7 @@ export default function GalleryUsersPage() {
 
       <div className={styles.grid}>
         <Item id="list" name="user-manage + ③ 삭제 확인 (시안 1.17 8: 박OO 삭제 확인 시트가 열린 상태)">
-          <UserManage schoolName={SAMPLE_SCHOOL} members={sampleMembers} invites={sampleInvites} counts={sampleMemberCounts} />
+          <UserManage schoolName={SAMPLE_SCHOOL} members={sampleMembers} invites={sampleInvites} counts={sampleMemberCounts} inviteMenu />
           <DeleteConfirm sheet={false} closeIcon name="박OO" />
         </Item>
 
@@ -37,7 +37,7 @@ export default function GalleryUsersPage() {
         </Item>
 
         <Item id="role-last-admin" name="ex-modal-card ② 역할 변경 시트 — 본인 · 마지막 admin">
-          <RoleChangeSheet sheet={false} name="김OO" currentRole="admin" isSelf isLastAdmin />
+          <RoleChangeSheet sheet={false} name="정OO" currentRole="admin" isSelf isLastAdmin />
         </Item>
 
         <Item id="invite" name="ex-modal-card ① 초대 시트">

@@ -20,7 +20,7 @@ import {
   sel, tabItemLabels,
 } from "./screen-helpers";
 import { framePath } from "../frames";
-import { SHELL_COMPONENTS, expectShell, isShellComponent } from "./shell-helpers";
+import { MOBILE_MENU_BUTTON, SHELL_COMPONENTS, expectShell, isShellComponent } from "./shell-helpers";
 import { deskOnlyComponents } from "../desktop-shell";
 import { mobileOnlyOf, waitWidthSettled } from "./desk-helpers";
 
@@ -113,9 +113,12 @@ for (const role of ROLES) {
       const mobileOnly = mobileOnlyOf(SCREEN, SHELL_COMPONENTS);
       // 1.26: inventory-switch "시약 | 센서" 는 모바일 전용 (데스크톱 = 사이드바 '센서', 프레임 2-desktop 에 없음)
       expect(mobileOnly, "새 프레임: 화면 2 모바일 전용 = inventory-switch · reagent-row").toEqual(["inventory-switch", "reagent-row"]);
+      // rules 1.28 mobile_menu.button (d7 §28): 기본 화면 nav-pill 맨 왼쪽 ☰ — 폭 390 = 1 · 1440 = 0. 프레임 2-{폭}(1.28 이전)에는 없어 따로 센다
+      expect(devRules.components[MOBILE_MENU_BUTTON] ?? [], `dev-rules ${MOBILE_MENU_BUTTON} 에 화면 ${SCREEN}`).toContain(SCREEN);
+      await expect(page.locator(sel(MOBILE_MENU_BUTTON)), `${MOBILE_MENU_BUTTON} (폭 ${viewport})`).toHaveCount(viewport === "desktop" ? 0 : 1, { timeout: 30_000 });
       for (const name of fromDev) {
         // 셸(탭바·nav-pill·사이드바)은 위 expectShell 에서 폭별 기대값으로 봤다
-        if (isShellComponent(name)) continue;
+        if (isShellComponent(name) || name === MOBILE_MENU_BUTTON) continue;
         if ((viewport === "mobile" && deskOnly.includes(name)) || (viewport === "desktop" && mobileOnly.includes(name))) {
           await expect(page.locator(sel(name)), `${name} — ${viewport === "mobile" ? "데스크톱" : "모바일"} 전용 (폭 ${viewport}: 0)`).toHaveCount(0, { timeout: 30_000 });
           continue;

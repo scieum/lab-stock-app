@@ -1,7 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { archiveMany, archiveSensor, upsertSensor, type ArchiveResult, type UpsertSensorResult } from "@/lib/supabase/sensors";
+import {
+  archiveMany,
+  archiveSensor,
+  recordSensorDocument,
+  upsertSensor,
+  type ArchiveResult,
+  type RecordSensorDocumentResult,
+  type UpsertSensorResult,
+} from "@/lib/supabase/sensors";
 
 function field(input: unknown, key: string): unknown {
   return input !== null && typeof input === "object" ? (input as Record<string, unknown>)[key] : undefined;
@@ -27,6 +35,17 @@ export async function archiveSensorAction(input: unknown): Promise<ArchiveResult
 /** 센서 여러 개 삭제(보관) — DB 함수 archive_sensors (1~100, 한 트랜잭션) */
 export async function archiveSensorsAction(ids: unknown): Promise<ArchiveResult> {
   const result = await archiveMany("sensor", ids);
+  if (result.ok) revalidatePath("/", "layout");
+  return result;
+}
+
+/**
+ * 센서 서류로 등록 저장 (d7 §28) — DB 함수 record_sensor_document (한 트랜잭션, 1~50 항목).
+ * 입력 { items: [{ kind: "add", sensorId, addQuantity } | { kind: "new", sensor: {...} }] } 은 lib/sensor-doc-rules 가 다시 맞추고,
+ * 교사·admin · 자기 학교 · 데모 · 9999 상한은 DB 가 본다. 목록 · 상세 · 홈 센서 타일이 바뀌므로 전체를 다시 받게 한다.
+ */
+export async function recordSensorDocumentAction(input: unknown): Promise<RecordSensorDocumentResult> {
+  const result = await recordSensorDocument(input);
   if (result.ok) revalidatePath("/", "layout");
   return result;
 }

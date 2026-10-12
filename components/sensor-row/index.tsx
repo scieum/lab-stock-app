@@ -43,6 +43,8 @@ type CardProps = {
   selectMode?: boolean;
   selected?: boolean;
   onToggle?: () => void;
+  /** 방금 바뀐 행 (서류로 등록 뒤 잠깐 highlight-soft — rules sensor.doc.save) */
+  fresh?: boolean;
 };
 
 /**
@@ -50,7 +52,7 @@ type CardProps = {
  * 이름(17/600) + 오른쪽 sensor-status-badge → "온도 · 버니어 · GDX-TMP"(12 회색) → "3개 · 과학실 뒤 선반"(13) · 오른쪽 ›.
  * 선택 모드 = 왼쪽 select-checkbox, 고른 행 highlight-soft.
  */
-export function SensorRow({ sensor, href, selectMode = false, selected = false, onToggle }: CardProps) {
+export function SensorRow({ sensor, href, selectMode = false, selected = false, onToggle, fresh = false }: CardProps) {
   const body = (
     <span className={styles.text}>
       <span className={styles.titleRow}>
@@ -65,7 +67,7 @@ export function SensorRow({ sensor, href, selectMode = false, selected = false, 
       </span>
     </span>
   );
-  const cls = [styles.card, selected ? styles.selected : ""].filter(Boolean).join(" ");
+  const cls = [styles.card, selected || fresh ? styles.selected : ""].filter(Boolean).join(" ");
   if (selectMode) {
     return (
       <button data-component="sensor-row" type="button" className={[cls, styles.button].join(" ")} aria-pressed={selected} onClick={onToggle}>
@@ -76,7 +78,7 @@ export function SensorRow({ sensor, href, selectMode = false, selected = false, 
   }
   if (href) {
     return (
-      <Link data-component="sensor-row" href={href} prefetch={linkPrefetch(href)} className={cls}>
+      <Link data-component="sensor-row" data-fresh={fresh ? "true" : undefined} href={href} prefetch={linkPrefetch(href)} className={cls}>
         {body}
         <Icon name="chevron-right" className={styles.chevron} />
         <LinkPending />
@@ -98,15 +100,17 @@ type TableRowProps = {
   selectMode?: boolean;
   selected?: boolean;
   onToggle?: () => void;
+  /** 방금 바뀐 행 (잠깐 highlight-soft) */
+  fresh?: boolean;
 };
 
 /**
  * 센서 한 줄 — 데스크톱 data-table 행 (시안 17-desktop sensor-row): 이름(13/600) · 종류 · 회사 · 모델 · 수량 · 보관 위치 · 상태.
  * 행을 누르면 드로어(상세). 선택 모드 = 첫 칸 select-checkbox, 누르면 고르기.
  */
-export function SensorTableRow({ sensor, href, current = false, selectMode = false, selected = false, onToggle }: TableRowProps) {
+export function SensorTableRow({ sensor, href, current = false, selectMode = false, selected = false, onToggle, fresh = false }: TableRowProps) {
   return (
-    <DataTableRow component="sensor-row" selected={selectMode ? selected : current} clickable>
+    <DataTableRow component="sensor-row" selected={selectMode ? selected : current} fresh={fresh && !selectMode} clickable>
       {selectMode ? (
         <DataTableCell>
           <SelectCheckbox checked={selected} />

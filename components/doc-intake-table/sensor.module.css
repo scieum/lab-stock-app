@@ -1,0 +1,314 @@
+/* 센서 서류 확인 표 (시안 17-doc-review doc-intake-table — rules 1.28 sensor.doc.review)
+ * 모바일: 제목 20/700 → 행마다 canvas-soft 카드(radius 16, 안쪽 16): 품명 17/600 + caption 12 muted "파스코 · PS-3201 · 2개" → sensor-link → new-sensor-fields
+ * 데스크톱: 제목 → data-table(hairline 테두리, radius 16) 머리 40 품명 300 · 회사 180 · 모델 180 · 수량 120 · 연결 322(12/600 muted)
+ *   → intake-row(아래 hairline): 칸 줄 48(13) → sensor-link 줄(좌우 16) → new-sensor-wrap(안쪽 0 16 16)
+ * 문제 줄 = 두 배 굵기 ink 테두리 + muted 안내 줄. 센서 아님 = 13 muted 44 접힘 */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+  color: var(--color-text);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}
+
+.table {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.header {
+  display: none;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+.row {
+  /* 카드 안 입력 상자는 흰색 (시안 17-doc-review-mobile) */
+  --color-surface-input: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+  padding: var(--space-16);
+  border: calc(var(--border-width) * 2) solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  box-sizing: border-box;
+}
+
+.row[data-error] {
+  border-color: var(--color-text);
+}
+
+.cells {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.nameCell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.itemName {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+/* d7 §27: 영어 서류의 원문 품명 — caption muted */
+.original,
+.caption {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+/* 모바일: 칸 글자는 caption 한 줄로 대신한다 */
+.cell {
+  display: none;
+}
+
+.link {
+  min-width: 0;
+}
+
+.newWrap {
+  display: flex;
+  min-width: 0;
+}
+
+.newWrap > * {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 안내 문구는 기본색 (핑크 금지) */
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.errorIcon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  flex-shrink: 0;
+  margin-top: calc((var(--font-size-13) * var(--line-height-normal) - var(--icon-sm)) / 2);
+  color: var(--color-text-muted);
+}
+
+.empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+/* not-sensor-group: 접힌 묶음 "센서 아님 N개" 13/400 muted, 높이 44 */
+.others {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.othersToggle {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--button-min-height);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+}
+
+.othersToggle:focus-visible,
+.otherAction:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.othersIcon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  color: var(--color-text-muted);
+}
+
+.otherList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.otherItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-12) var(--space-8) var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.otherName {
+  min-width: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.otherMeta {
+  color: var(--color-text-muted);
+}
+
+.otherAction {
+  flex-shrink: 0;
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-12);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+}
+
+.otherAction:disabled {
+  cursor: not-allowed;
+  opacity: var(--pressed-opacity);
+}
+
+@media (min-width: 1024px) {
+  .table {
+    overflow: hidden;
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+  }
+
+  .header,
+  .cells {
+    display: grid;
+    grid-template-columns: minmax(0, 300fr) minmax(0, 180fr) minmax(0, 180fr) minmax(0, 120fr) minmax(0, 322fr);
+    align-items: center;
+    gap: var(--space-16);
+    padding: 0 var(--space-16);
+  }
+
+  .header {
+    min-height: calc(var(--space-32) + var(--space-8));
+    border-bottom: var(--border-width) solid var(--color-border);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-12);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-normal);
+  }
+
+  .rows {
+    gap: var(--space-0);
+  }
+
+  .row {
+    --color-surface-input: var(--color-gray-100);
+    gap: var(--space-0);
+    padding: 0 0 var(--space-4);
+    border-width: 0 0 var(--border-width);
+    border-color: var(--color-border);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .row:last-child {
+    border-bottom-width: 0;
+  }
+
+  .row[data-error] {
+    outline: calc(var(--border-width) * 2) solid var(--color-text);
+    outline-offset: calc(var(--border-width) * -2);
+  }
+
+  .cells {
+    min-height: var(--control-height);
+  }
+
+  .itemName {
+    font-size: var(--font-size-13);
+  }
+
+  .nameCell > .caption {
+    display: none;
+  }
+
+  .cell {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--color-text);
+    font-size: var(--font-size-13);
+    line-height: var(--line-height-normal);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .linkCell {
+    color: var(--color-text-muted);
+  }
+
+  .link {
+    padding: 0 var(--space-16);
+  }
+
+  .newWrap {
+    padding: var(--space-0) var(--space-16) var(--space-16);
+  }
+
+  .error {
+    padding: 0 var(--space-16) var(--space-12);
+  }
+
+  .empty {
+    padding: var(--space-16);
+  }
+}

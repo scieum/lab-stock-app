@@ -157,6 +157,8 @@ for (const role of ["student", "schoolB"] as Role[]) {
       await page.waitForLoadState("load");
       await waitWidthSettled(page);
       if (isDeskPage(page)) {
+        // 서버 HTML 의 두 폭 사본 중 모바일 사본이 하이드레이션 뒤 빠질 때까지 기다린 뒤 센다 (셸 nav-pill 이 먼저 빠질 수 있다)
+        await expect.poll(() => page.locator(sel("home-summary")).count(), { message: `1440 home-summary ≤ ${DESK_HOME_MAX} (홈 한 벌)`, timeout: 30_000 }).toBeLessThanOrEqual(DESK_HOME_MAX);
         const n = await page.locator(sel("home-summary")).count();
         expect(n, `1440 home-summary ${DESK_HOME_MIN}~${DESK_HOME_MAX} (새 프레임 13-desktop 타일 + 위젯 — 홈 한 벌)`).toBeGreaterThanOrEqual(DESK_HOME_MIN);
         expect(n).toBeLessThanOrEqual(DESK_HOME_MAX);

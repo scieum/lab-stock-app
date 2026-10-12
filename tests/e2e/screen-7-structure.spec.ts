@@ -132,7 +132,8 @@ test(`[R-ui][S${SCREEN}] rules.json R5 = 학생 ${INTAKE}·${REGISTER} max 0 이
     "threshold-edit": [3],
     "msds-search": [3, SCREEN],
     "msds-bulk-banner": [2],
-    "doc-upload": [SCREEN],
+    // rules 1.28 (d7 §28 · dev-rules 1.20): 화면 17 서류 등록이 doc-upload 를 재사용(17-doc-*) → [7, 센서 화면]
+    "doc-upload": [SCREEN, SENSOR_SCREEN].sort(), // 아래 비교와 같은 기본 정렬
     "reagent-more-menu": [3],
     "reagent-delete": [3],
     "list-select-toggle": BULK_SCREENS,
@@ -141,6 +142,8 @@ test(`[R-ui][S${SCREEN}] rules.json R5 = 학생 ${INTAKE}·${REGISTER} max 0 이
     "sensor-add": [SENSOR_SCREEN],
     "sensor-edit": [SENSOR_SCREEN],
     "sensor-delete": [SENSOR_SCREEN],
+    // rules 1.28 R5 source "2026-10-12 sensor-doc-add(센서 서류로 등록 = 교사·admin)" — 센서 화면 머리 버튼
+    "sensor-doc-add": [SENSOR_SCREEN],
     "sensor-alert-tile": [13],
   };
   expect(R5_COMPONENTS, "1.17 R5 에 doc-upload").toContain("doc-upload");

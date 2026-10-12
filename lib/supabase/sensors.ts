@@ -13,6 +13,8 @@ import {
   type SensorField,
   type SensorStatus,
 } from "@/lib/sensor-rules";
+import { checkSensorDocInput, type SchoolSensor } from "@/lib/sensor-doc-rules";
+import type { Json } from "@/lib/types/database";
 import type { Role } from "@/lib/types";
 
 /** 화면 17 센서 한 개 (목록 · 상세 · 폼 공용, 화면 글자는 컴포넌트가 만든다) */
@@ -143,6 +145,50 @@ export async function getDemoSensorList(): Promise<SensorItem[]> {
   return ((data ?? []) as unknown as SensorRow[]).map(toSensorItem);
 }
 
+/* ───────── 센서 서류로 등록 — 확인 표 (d7 §28) ───────── */
+
+/** 확인 표의 우리 학교 센서 (회사+모델 자동 연결 · "기존 센서에 더하기 · 지금 3개 → 5개" · 바꾸기 목록) */
+export type SensorDocSensor = SchoolSensor & { type: string };
+
+export type SensorDocEntry =
+  | { kind: "signed-out" }
+  | { kind: "no-school" }
+  | { kind: "forbidden" }
+  | {
+      kind: "ok";
+      data: {
+        role: Role;
+        /** 우리 학교 센서 (보관 제외, 이름순) — lib/sensor-doc-rules matchSchoolSensor 로 회사+모델 일치를 찾는다 */
+        sensors: SensorDocSensor[];
+        /** 새 센서 행의 보관 위치 "시약장 칸" 피커 */
+        picker: PickerCabinet[];
+        slots: SensorSlotRef[];
+      };
+    };
+
+/**
+ * 센서 서류로 등록 화면 데이터 (교사·admin 만 — 학생은 forbidden, 데모 학교 계정도 forbidden).
+ * 로그인 세션(RLS: 자기 학교 · 보관 제외)으로 읽는다. 학교·역할은 입력에서 받지 않는다.
+ */
+export async function getSensorDocEntry(): Promise<SensorDocEntry> {
+  const me = await getServerSession();
+  if (me.kind === "signed-out" || me.kind === "unavailable") return { kind: "signed-out" };
+  if (me.kind === "no-school") return { kind: "no-school" };
+  if (me.role !== "teacher" && me.role !== "admin") return { kind: "forbidden" };
+  if (me.school.id === DEMO_SCHOOL_ID) return { kind: "forbidden" };
+  const list = await getSensorList();
+  if (!list) return { kind: "signed-out" };
+  return {
+    kind: "ok",
+    data: {
+      role: list.role,
+      sensors: list.items.map((s) => ({ id: s.id, name: s.name, type: s.type, maker: s.maker, model: s.model, quantity: s.quantity })),
+      picker: list.picker ?? [],
+      slots: list.slots,
+    },
+  };
+}
+
 /* ───────── 쓰기 (DB 함수만) ───────── */
 
 const SIGNED_OUT = "다시 로그인해 주세요";
@@ -244,3 +290,44 @@ export async function archiveMany(kind: "sensor" | "reagent", raw: unknown): Pro
   }
   return { ok: true, count: typeof data === "number" ? data : ids.length };
 }
+
+export type RecordSensorDocumentResult =
+  | { ok: true; addedCount: number; newSensorIds: string[] }
+  | { ok: false; error: string; index?: number };
+
+/**
+ * 센서 서류 저장 (d7 §28) — DB 함수 public.record_sensor_document 하나만 (한 트랜잭션: 기존 센서 수량 더하기 + 새 센서 등록).
+ * 입력은 lib/sensor-doc-rules checkSensorDocInput 으로 다시 맞춘다. 교사·admin · 자기 학교 · 데모 · 9999 상한 · 칸 학교 검사는 DB 가 한다.
+ */
+export async function recordSensorDocument(input: unknown): Promise<RecordSensorDocumentResult> {
+  const checked = checkSensorDocInput(input);
+  if (!checked.ok) return checked;
+
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  if (!claims?.claims?.sub) return { ok: false, error: SIGNED_OUT };
+
+  const { data, error } = await supabase.rpc("record_sensor_document", { p_items: checked.items as unknown as Json });
+  if (error) {
+    switch (error.code) {
+      case "P0002":
+        return error.message === "slot not found"
+          ? { ok: false, error: "시약장 칸을 다시 골라 주세요" }
+          : { ok: false, error: "더할 센서를 찾을 수 없어요. 화면을 새로 고친 뒤 다시 시도해 주세요" };
+      case "22023":
+        return error.message === "invalid quantity"
+          ? { ok: false, error: `수량은 ${SENSOR_QUANTITY_LIMIT_TEXT}` }
+          : { ok: false, error: "입력한 값을 확인해 주세요" };
+      case "42501":
+        return { ok: false, error: error.message === "not authenticated" ? SIGNED_OUT : "교사·관리자만 센서를 등록할 수 있어요" };
+      default:
+        return { ok: false, error: "저장하지 못했어요. 잠시 후 다시 시도해 주세요" };
+    }
+  }
+  const obj = data && typeof data === "object" && !Array.isArray(data) ? (data as Record<string, unknown>) : {};
+  const ids = Array.isArray(obj.new_sensor_ids) ? obj.new_sensor_ids.filter((x): x is string => typeof x === "string") : [];
+  const added = typeof obj.added_count === "number" ? obj.added_count : checked.items.length;
+  return { ok: true, addedCount: added, newSensorIds: ids };
+}
+
+const SENSOR_QUANTITY_LIMIT_TEXT = "더해서 9,999개까지 적을 수 있어요";

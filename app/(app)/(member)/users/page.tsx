@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { deniedHomePath } from "@/lib/no-access";
 import { formatDateTimeDashes } from "@/lib/format";
 import { monthDayLabel } from "@/lib/usage-history-rules";
 import { getUserManage } from "@/lib/supabase/users";
@@ -19,7 +20,7 @@ export const metadata: Metadata = { title: "사용자 관리 · Lab_Stock" };
 export default async function UsersPage() {
   const result = await getUserManage();
   if (result.kind === "signed-out") redirect("/login");
-  if (result.kind !== "ok") redirect("/");
+  if (result.kind !== "ok") redirect(result.kind === "forbidden" ? deniedHomePath("admin") : "/");
 
   const { schoolName, members, counts, invites } = result.data;
   return (

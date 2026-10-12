@@ -53,3 +53,88 @@
   font-size: var(--font-size-13);
   line-height: var(--line-height-normal);
 }
+
+/* box (rules 1.28 sensor.type_select, 시안 17-model · 17-doc-review): 라벨 13/600 → select-box(입력 상자 모양 · radius 16 · 안쪽 12/16 · caret 16), 사이 4 */
+.boxField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.inline {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.inline > .label {
+  flex: 0 0 calc(var(--space-64));
+}
+
+.inline > .anchor {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.anchor {
+  position: relative;
+}
+
+.boxRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.box {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-width: 0;
+  min-height: var(--button-min-height);
+  padding: var(--space-12) var(--space-16);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-input);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+  text-align: left;
+  cursor: pointer;
+}
+
+.box:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.filled {
+  background: var(--color-highlight-soft);
+}
+
+.placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.caret {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  flex-shrink: 0;
+  color: var(--color-highlight);
+}
+
+.note {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}

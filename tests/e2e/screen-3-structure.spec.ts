@@ -22,7 +22,7 @@ import { SCREEN, dbDetail, detailPath, seedReagents, seedSchoolOf, waitDetail } 
 import { watchActions } from "./screen-11-helpers";
 import { expectedSuggestion, suggestRowsOf } from "./suggest-helpers";
 import { framePath } from "../frames";
-import { SHELL_COMPONENTS, expectShell, isShellComponent } from "./shell-helpers";
+import { MOBILE_MENU_BUTTON, SHELL_COMPONENTS, expectShell, isShellComponent } from "./shell-helpers";
 import { deskOnlyComponents } from "../desktop-shell";
 import { DRAWER, countScoped, frameNamesIn, mobileOnlyOf, newFrame, screenScope } from "./desk-helpers";
 
@@ -82,6 +82,8 @@ for (const role of ROLES) {
       .filter((n) => !guestOnly.has(n))
       // 셸(390 nav-pill·탭바 / 1440 app-sidebar·sidebar-item)은 폭별 기대값이 다르다 (아래 expectShell · C2 · C3)
       .filter((n) => !isShellComponent(n))
+      // rules 1.28 mobile_menu.button: 기본 화면 nav-pill 안 메뉴 버튼(폭 390 = 1 · 1440 = 0) — 프레임 3·3-*(1.28 이전)에는 없다. 아래에서 따로 센다
+      .filter((n) => n !== MOBILE_MENU_BUTTON)
       .filter((n) => !widthOff.includes(n))
       // 셸 예외(rules app_exceptions nav-account-menu)는 1440 드로어 밖(사이드바) — 아래에서 문서 전체로 센다
       .filter((n) => !(desk && n in (rules as unknown as { app_exceptions: Record<string, string> }).app_exceptions));
@@ -119,6 +121,9 @@ for (const role of ROLES) {
     try {
       await waitDetail(page);
       await expectShell(page, viewport, SCREEN, `${ROLE_LABEL[role]} 화면 ${SCREEN}`);
+      // rules 1.28 mobile_menu.button: dev-rules components 에 화면 3 이 있으면 기본 화면 폭 390 = 1 · 1440 = 0
+      expect(devRules.components[MOBILE_MENU_BUTTON] ?? [], `dev-rules components ${MOBILE_MENU_BUTTON} 에 화면 ${SCREEN}`).toContain(SCREEN);
+      await expect(page.locator(sel(MOBILE_MENU_BUTTON)), `${MOBILE_MENU_BUTTON} (폭 ${viewport})`).toHaveCount(desk ? 0 : 1, { timeout: 30_000 });
       // 화면 3 본문 범위 (1440 = 드로어) 안 개수
       const scope = screenScope(page, SCREEN, viewport);
       const countComponent = (_p: unknown, name: string) => countScoped(scope, name);

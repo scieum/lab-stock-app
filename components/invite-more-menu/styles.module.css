@@ -1,0 +1,6 @@
+/* invite-more-menu (시안 8-desktop: 64 × 44 칸 안 44 원 버튼, 오른쪽 맞춤) */
+.wrap {
+  display: inline-flex;
+  flex-shrink: 0;
+  justify-content: flex-end;
+}

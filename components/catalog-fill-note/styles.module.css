@@ -1,0 +1,16 @@
+/* catalog-fill-note (시안 17-model): icon-info 16 muted + 12 muted, 사이 4 */
+.note {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.icon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  flex-shrink: 0;
+}

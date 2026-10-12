@@ -3,6 +3,7 @@
 // 서류로 입고(d7 §21)의 품목 응답도 여기서 읽는다(parseDocIntakeResponse).
 
 import { normalizeDocExtraction, type DocExtraction } from "../doc-intake-rules";
+import { normalizeSensorDocExtraction, type SensorDocExtraction } from "../sensor-doc-rules";
 import type { ChemicalGuess } from "../msds-aliases";
 import { MSDS_QUERY_MAX, isCasChecksumValid } from "../msds-rules";
 import { localizeReagentName } from "../reagent-name-ko";
@@ -161,6 +162,26 @@ export function parseDocIntakeResponse(body: unknown): DocIntakeParseResult {
   const read = readCandidateJson(body);
   if (!read.ok) return read;
   const extraction = normalizeDocExtraction(read.value);
+  if (!extraction) return { ok: false, code: "parse", reason: "schema" };
+  const rawCount = (read.value as { items: unknown[] }).items.length;
+  if (rawCount === 0) return { ok: false, code: "empty", reason: "no-items" };
+  if (extraction.items.length === 0) return { ok: false, code: "parse", reason: "schema" };
+  return { ok: true, extraction };
+}
+
+export type SensorDocParseResult =
+  | { ok: true; extraction: SensorDocExtraction }
+  /** empty = 품목을 하나도 못 찾았다 (items = []) — 화면이 7-doc-fail 모양을 보여 준다 */
+  | { ok: false; code: "blocked" | "upstream" | "parse" | "empty"; reason: string };
+
+/**
+ * generateContent 응답 → 센서 서류 품목 (d7 §28). 모양 정리는 화면과 같은 lib/sensor-doc-rules normalizeSensorDocExtraction
+ * (파스코 계열 회사 → "파스코", 카탈로그 모델이면 종류·한국어 이름 = 카탈로그, 영문만인 이름 보정).
+ */
+export function parseSensorDocResponse(body: unknown): SensorDocParseResult {
+  const read = readCandidateJson(body);
+  if (!read.ok) return read;
+  const extraction = normalizeSensorDocExtraction(read.value);
   if (!extraction) return { ok: false, code: "parse", reason: "schema" };
   const rawCount = (read.value as { items: unknown[] }).items.length;
   if (rawCount === 0) return { ok: false, code: "empty", reason: "no-items" };

@@ -1,0 +1,92 @@
+/* 화면 17 센서 서류로 등록 (시안 17-doc-upload · 17-doc-review · 17-doc-fail)
+ * 모바일: sensor-doc-add 머리 → doc-upload / (0개·실패) ex-empty-state-card + doc-upload / 확인 표 + tab-bar 위 save-bar. 블록 사이 16
+ * 데스크톱: 본문 안쪽 32 · 블록 사이 24 — 머리 → doc-column 640(왼쪽) / 확인 표 전폭 → 아래 고정 bottom-bar("AI로 읽기" · "확인 후 등록 · N개")
+ *   (본문 안쪽 32 는 셸 isPagePath — 화면 5·7 과 같은 본문 페이지)
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.head {
+  min-width: 0;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+/* 확인 표: 고정된 하단 버튼 줄(안내 한 줄 포함)만큼 비워 둔다 */
+.review {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-bottom: calc(var(--space-12) + var(--control-height) + var(--space-16) + var(--border-width) + var(--space-24));
+}
+
+/* save-bar: 모바일은 tab-bar 바로 위 고정 (흰 바탕, 위 가는 선, 안쪽 12 16 16) */
+.saveBar {
+  position: fixed;
+  right: 0;
+  bottom: var(--tab-bar-height);
+  left: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-16) var(--space-16);
+  border-top: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.submit {
+  width: 100%;
+}
+
+/* 안내 문구는 기본색 (핑크 금지) */
+.note,
+.reason {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.reason {
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 1024px) {
+  .page {
+    gap: var(--space-24);
+    /* 본문 안쪽 32 는 셸(본문 페이지)이 준다 — 여기는 고정 bottom-bar(80) 만큼만 비운다 */
+    padding-bottom: calc(var(--space-64) + var(--space-16));
+  }
+
+  .column {
+    width: 100%;
+    max-width: var(--form-width);
+    gap: var(--space-24);
+  }
+
+  .review {
+    padding-bottom: var(--space-0);
+  }
+
+  .submit {
+    width: auto;
+    padding-right: var(--space-32);
+    padding-left: var(--space-32);
+  }
+
+  .note,
+  .reason {
+    text-align: end;
+  }
+}

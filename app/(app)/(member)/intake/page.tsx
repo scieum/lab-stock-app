@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { deniedHomePath } from "@/lib/no-access";
 import { getIntakeEntry } from "@/lib/supabase/intake";
 import { IntakeScreen } from "./intake-screen";
 
@@ -21,7 +22,7 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
 export default async function IntakePage({ searchParams }: Props) {
   const result = await getIntakeEntry();
   if (result.kind === "signed-out") redirect("/login");
-  if (result.kind === "forbidden") redirect("/");
+  if (result.kind === "forbidden") redirect(deniedHomePath("staff"));
 
   const sp = await searchParams;
   const { reagents, today } = result.data;
