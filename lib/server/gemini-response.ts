@@ -5,13 +5,23 @@
 import { normalizeDocExtraction, type DocExtraction } from "../doc-intake-rules";
 import type { ChemicalGuess } from "../msds-aliases";
 import { MSDS_QUERY_MAX, isCasChecksumValid } from "../msds-rules";
+import { localizeReagentName } from "../reagent-name-ko";
 
 export const USAGE_ITEMS_MAX = 50;
 export const USAGE_NAME_MAX = 80;
 export const USAGE_UNIT_MAX = 20;
 
-/** 추출한 한 줄: 매뉴얼 표기 그대로의 시약명·1조 사용량(못 읽으면 null)·단위(없으면 "") */
-export type ExtractedUsage = { name: string; amount: number | null; unit: string };
+/**
+ * 추출한 한 줄: 한국어 시약명(d7 §27 — 한국어 문서면 표기 그대로)·1조 사용량(못 읽으면 null)·단위(없으면 "").
+ * originalName = 문서 표기(영어 문서일 때만), cas = 문서에 보인 CAS(형식·검사 숫자가 맞을 때만) — 값이 없으면 칸을 두지 않는다.
+ */
+export type ExtractedUsage = {
+  name: string;
+  amount: number | null;
+  unit: string;
+  originalName?: string;
+  cas?: string;
+};
 
 export type UsageParseResult =
   | { ok: true; items: ExtractedUsage[] }
@@ -106,6 +116,8 @@ export function readCandidateJson(body: unknown): CandidateJsonResult {
 /**
  * generateContent 응답(JSON 으로 읽은 값)을 사용량 목록으로 바꾼다.
  * - 이름이 문자열이 아니거나 빈 줄은 버린다. 이름 80자·단위 20자까지, 최대 50줄(넘는 줄은 버린다).
+ * - d7 §27: originalName(문서 표기, 한국어이거나 이름과 같으면 없음)·cas(CAS 형식·검사 숫자) 는 값이 있을 때만 둔다.
+ *   이름에 한글이 없고 영문만이면 상용 이름 표·CAS 로 한국어 이름을 찾는다(못 찾으면 그대로).
  * - 수량은 유한한 양수만 남기고 나머지는 null.
  * - items 에 줄이 있는데 쓸 수 있는 줄이 하나도 없으면 schema 오류.
  */
@@ -122,9 +134,14 @@ export function parseUsageResponse(body: unknown): UsageParseResult {
   for (const it of raw) {
     if (items.length >= USAGE_ITEMS_MAX) break;
     if (!isRecord(it)) continue;
-    const name = cleanName(it.name);
-    if (name === "") continue;
-    items.push({ name, amount: cleanAmount(it.amount), unit: cleanUnit(it.unit) });
+    const rawName = cleanName(it.name);
+    if (rawName === "") continue;
+    // d7 §27: 영문만 남은 이름은 상용 이름 표·CAS 로 한국어로, originalName·cas 는 검사한 값만
+    const { name, originalName, cas } = localizeReagentName(rawName, it.originalName, it.cas, USAGE_NAME_MAX);
+    const row: ExtractedUsage = { name, amount: cleanAmount(it.amount), unit: cleanUnit(it.unit) };
+    if (originalName) row.originalName = originalName;
+    if (cas) row.cas = cas;
+    items.push(row);
   }
   if (items.length === 0) return { ok: false, code: "parse", reason: "schema" };
   return { ok: true, items };

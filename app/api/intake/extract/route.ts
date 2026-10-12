@@ -47,7 +47,9 @@ function fail(status: number, code: IntakeExtractCode, error: string, headers: R
 }
 
 function ok(extraction: DocExtraction) {
-  return NextResponse.json<IntakeExtractResponse>({ ok: true, ...extraction }, { headers: NO_STORE });
+  // originalName·cas 는 값이 없어도 null 로 둔다 (d7 §27)
+  const items = extraction.items.map((it) => ({ ...it, originalName: it.originalName ?? null, cas: it.cas ?? null }));
+  return NextResponse.json<IntakeExtractResponse>({ ok: true, docDate: extraction.docDate, items }, { headers: NO_STORE });
 }
 
 /** 파일 앞머리가 그 형식이 맞는가 (확장자만 바꾼 파일을 AI 에 보내지 않는다 — /api/manual/extract 와 같은 검사) */
@@ -62,7 +64,8 @@ function hasMagic(bytes: Uint8Array, mime: string): boolean {
 /**
  * POST /api/intake/extract — 화면 7 서류로 입고 "AI로 읽기" (d7 §21)
  * 요청: multipart/form-data — file(PDF·JPG·PNG 1개, 4MB 이하)
- * 응답: { ok: true, docDate, items: [{ name, spec, specAmount, specUnit, quantity, quantityUnit, isReagent, suggestedClass }] }
+ * 응답: { ok: true, docDate, items: [{ name(한국어), originalName(서류 표기 | null), cas(CAS | null), spec, specAmount, specUnit,
+ *       quantity, quantityUnit, isReagent, suggestedClass }] } (d7 §21·§27)
  *       / { ok: false, error, code }. 품목을 못 찾으면 200 + items [] (화면이 "서류에서 품목을 찾지 못했어요"를 보여 준다).
  * 순서: 로그인(401) → 역할(학생 403 — 본문을 읽기 전에) → 학교·데모(403) → 본문 크기(413) → 파일(400·413)
  *       → 키 설정(503) → 호출 제한(429) → Gemini(502·504·422).

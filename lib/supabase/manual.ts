@@ -96,7 +96,7 @@ export async function getManualScreen(): Promise<ManualScreenResult> {
   const supabase = await getServerClient();
   const { data } = await supabase
     .from("reagents")
-    .select("id, name, unit, min_stock, reorder_per_group, reorder_groups, min_stock_source")
+    .select("id, name, cas_no, unit, min_stock, reorder_per_group, reorder_groups, min_stock_source")
     .eq("school_id", access.schoolId)
     .order("name")
     .order("id");
@@ -112,6 +112,8 @@ export async function getManualScreen(): Promise<ManualScreenResult> {
         return {
           id: r.id,
           name: r.name,
+          // d7 §27: 추출한 CAS 와 견준다
+          casNo: r.cas_no ?? null,
           unit: r.unit,
           minStock,
           perGroup,

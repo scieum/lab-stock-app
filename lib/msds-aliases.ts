@@ -330,3 +330,144 @@ export function searchedAsNote(
   }
   return `${q} → ${lead}${s}${roParticle(s)} 찾았어요`;
 }
+
+/* ───────── 영문 이름 → 한국어 이름 (d7 §27 이름 정리) ───────── */
+
+/**
+ * [CAS, 영문 이름·화학식…] — 위 상용 이름 표와 같은 CAS 로 잇는다(CAS 가 위 표에 없으면 쓰지 않는다).
+ * MSDS 검색(lookupAliasCas)에는 쓰지 않는다 — 영어 문서 추출 결과의 이름을 한국어로 바꿀 때만.
+ */
+const EN_ALIAS_ROWS: readonly (readonly [string, ...string[]])[] = [
+  ["7647-01-0", "hydrochloric acid", "hydrogen chloride", "muriatic acid", "HCl"],
+  ["7664-93-9", "sulfuric acid", "sulphuric acid", "H2SO4"],
+  ["7697-37-2", "nitric acid", "HNO3"],
+  ["64-19-7", "acetic acid", "glacial acetic acid", "ethanoic acid", "CH3COOH"],
+  ["7664-38-2", "phosphoric acid", "orthophosphoric acid", "H3PO4"],
+  ["10043-35-3", "boric acid", "H3BO3"],
+  ["77-92-9", "citric acid"],
+  ["144-62-7", "oxalic acid"],
+  ["1310-73-2", "sodium hydroxide", "caustic soda", "NaOH"],
+  ["1310-58-3", "potassium hydroxide", "caustic potash", "KOH"],
+  ["1305-62-0", "calcium hydroxide", "slaked lime", "limewater", "lime water", "Ca(OH)2"],
+  ["1336-21-6", "ammonia solution", "ammonium hydroxide", "aqueous ammonia", "ammonia water", "NH4OH"],
+  ["1309-42-8", "magnesium hydroxide", "Mg(OH)2"],
+  ["17194-00-2", "barium hydroxide", "Ba(OH)2"],
+  ["21645-51-2", "aluminium hydroxide", "aluminum hydroxide", "Al(OH)3"],
+  ["7722-84-1", "hydrogen peroxide", "H2O2"],
+  ["7722-64-7", "potassium permanganate", "KMnO4"],
+  ["1313-13-9", "manganese dioxide", "manganese(IV) oxide", "MnO2"],
+  ["7789-00-6", "potassium chromate", "K2CrO4"],
+  ["7778-50-9", "potassium dichromate", "K2Cr2O7"],
+  ["64-17-5", "ethanol", "ethyl alcohol", "absolute ethanol", "C2H5OH"],
+  ["67-56-1", "methanol", "methyl alcohol", "CH3OH"],
+  ["67-63-0", "isopropyl alcohol", "isopropanol", "2-propanol", "propan-2-ol"],
+  ["67-64-1", "acetone", "propanone"],
+  ["60-29-7", "diethyl ether", "ether", "ethyl ether"],
+  ["110-54-3", "hexane", "n-hexane"],
+  ["108-88-3", "toluene"],
+  ["141-78-6", "ethyl acetate"],
+  ["50-00-0", "formaldehyde", "formalin"],
+  ["107-21-1", "ethylene glycol"],
+  ["56-81-5", "glycerol", "glycerin", "glycerine"],
+  ["91-20-3", "naphthalene"],
+  ["50-99-7", "glucose", "D-glucose", "dextrose"],
+  ["57-50-1", "sucrose"],
+  ["9005-25-8", "starch", "soluble starch"],
+  ["57-13-6", "urea"],
+  ["127-09-3", "sodium acetate", "CH3COONa"],
+  ["77-09-8", "phenolphthalein"],
+  ["76-59-5", "bromothymol blue", "bromthymol blue", "BTB"],
+  ["547-58-0", "methyl orange"],
+  ["143-74-8", "phenol red"],
+  ["61-73-4", "methylene blue"],
+  ["1393-92-6", "litmus"],
+  ["7439-95-4", "magnesium", "magnesium ribbon", "Mg"],
+  ["7440-66-6", "zinc", "zinc granules", "Zn"],
+  ["7440-50-8", "copper", "copper wire", "Cu"],
+  ["7439-89-6", "iron", "iron filings", "iron wool", "steel wool", "Fe"],
+  ["7429-90-5", "aluminium", "aluminum", "aluminium foil", "aluminum foil", "Al"],
+  ["7704-34-9", "sulfur", "sulphur"],
+  ["7553-56-2", "iodine", "I2"],
+  ["7647-14-5", "sodium chloride", "NaCl"],
+  ["144-55-8", "sodium bicarbonate", "sodium hydrogen carbonate", "sodium hydrogencarbonate", "baking soda", "NaHCO3"],
+  ["497-19-8", "sodium carbonate", "soda ash", "Na2CO3"],
+  ["7757-82-6", "sodium sulfate", "sodium sulphate", "Na2SO4"],
+  ["7631-99-4", "sodium nitrate", "NaNO3"],
+  ["7447-40-7", "potassium chloride", "KCl"],
+  ["584-08-7", "potassium carbonate", "K2CO3"],
+  ["7757-79-1", "potassium nitrate", "KNO3"],
+  ["7681-11-0", "potassium iodide", "KI"],
+  ["471-34-1", "calcium carbonate", "marble chips", "limestone", "CaCO3"],
+  ["1305-78-8", "calcium oxide", "quicklime", "CaO"],
+  ["10043-52-4", "calcium chloride", "CaCl2"],
+  ["7487-88-9", "magnesium sulfate", "magnesium sulphate", "MgSO4"],
+  ["7786-30-3", "magnesium chloride", "MgCl2"],
+  ["546-93-0", "magnesium carbonate", "MgCO3"],
+  ["1309-48-4", "magnesium oxide", "MgO"],
+  ["10361-37-2", "barium chloride", "BaCl2"],
+  ["10022-31-8", "barium nitrate", "Ba(NO3)2"],
+  ["10476-85-4", "strontium chloride", "SrCl2"],
+  ["7447-41-8", "lithium chloride", "LiCl"],
+  ["12125-02-9", "ammonium chloride", "NH4Cl"],
+  ["6484-52-2", "ammonium nitrate", "NH4NO3"],
+  ["7783-20-2", "ammonium sulfate", "ammonium sulphate", "(NH4)2SO4"],
+  ["7761-88-8", "silver nitrate", "AgNO3"],
+  ["7758-98-7", "copper(II) sulfate", "copper sulfate", "copper sulphate", "copper(II) sulphate", "cupric sulfate", "CuSO4"],
+  [
+    "7758-99-8",
+    "copper(II) sulfate pentahydrate",
+    "copper sulfate pentahydrate",
+    "copper sulphate pentahydrate",
+    "copper(II) sulphate pentahydrate",
+    "CuSO4·5H2O",
+  ],
+  ["7447-39-4", "copper(II) chloride", "cupric chloride", "CuCl2"],
+  ["3251-23-8", "copper(II) nitrate", "cupric nitrate", "Cu(NO3)2"],
+  ["1317-38-0", "copper(II) oxide", "cupric oxide", "CuO"],
+  ["7646-79-9", "cobalt chloride", "cobalt(II) chloride", "CoCl2"],
+  ["7791-13-1", "cobalt(II) chloride hexahydrate", "cobalt chloride hexahydrate"],
+  ["7705-08-0", "iron(III) chloride", "ferric chloride", "FeCl3"],
+  ["10025-77-1", "iron(III) chloride hexahydrate", "ferric chloride hexahydrate"],
+  ["7720-78-7", "iron(II) sulfate", "ferrous sulfate", "iron(II) sulphate", "FeSO4"],
+  ["7782-63-0", "iron(II) sulfate heptahydrate", "ferrous sulfate heptahydrate"],
+  ["7646-85-7", "zinc chloride", "ZnCl2"],
+  ["7733-02-0", "zinc sulfate", "zinc sulphate", "ZnSO4"],
+  ["7772-99-8", "tin(II) chloride", "stannous chloride", "SnCl2"],
+  ["10099-74-8", "lead nitrate", "lead(II) nitrate", "Pb(NO3)2"],
+  ["10101-63-0", "lead iodide", "lead(II) iodide", "PbI2"],
+];
+
+/** CAS → 대표 한국어 이름 (상용 이름 표에서 한글이 든 첫 이름) */
+const CAS_KO_NAME: ReadonlyMap<string, string> = (() => {
+  const m = new Map<string, string>();
+  for (const [cas, ...names] of ALIAS_ROWS) {
+    const ko = names.find((n) => /[가-힣]/.test(n));
+    if (ko && !m.has(cas)) m.set(cas, ko);
+  }
+  return m;
+})();
+
+const EN_ALIAS_MAP: ReadonlyMap<string, string> = (() => {
+  const m = new Map<string, string>();
+  for (const [cas, ...names] of EN_ALIAS_ROWS) {
+    if (!CAS_KO_NAME.has(cas)) throw new Error(`msds-aliases: 영문 표의 CAS ${cas} 가 상용 이름 표에 없음`);
+    for (const n of names) {
+      const k = aliasKey(n);
+      const prev = m.get(k);
+      if (prev && prev !== cas) throw new Error(`msds-aliases: 영문 "${n}" 이 두 CAS 에 있음`);
+      m.set(k, cas);
+    }
+  }
+  return m;
+})();
+
+/** 상용 이름 표의 CAS → 대표 한국어 이름 (표에 없으면 null) */
+export function koreanNameForCas(cas: string | null | undefined): string | null {
+  if (typeof cas !== "string") return null;
+  return CAS_KO_NAME.get(cas.trim()) ?? null;
+}
+
+/** 영문 이름·화학식(이미 정리한 것) → CAS (영문 표에 없으면 null) */
+export function lookupEnglishAliasCas(name: string): string | null {
+  return EN_ALIAS_MAP.get(aliasKey(name)) ?? null;
+}

@@ -124,10 +124,26 @@
 }
 
 .itemTitle {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.itemTitleText {
   margin: 0;
   color: var(--color-text);
   font-size: var(--font-size-17);
   font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+/* d7 §27: 영어 서류의 원문 품명 — 품명 아래 caption text-muted 한 줄 (두 폭) */
+.original {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-normal);
   overflow-wrap: anywhere;
 }

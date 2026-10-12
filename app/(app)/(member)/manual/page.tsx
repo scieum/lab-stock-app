@@ -21,7 +21,7 @@ export default async function ManualPage() {
 
   return (
     <ManualScreen
-      reagents={result.data.reagents.map((r) => ({ id: r.id, name: r.name, unit: r.unit, minStock: r.minStock, source: r.source }))}
+      reagents={result.data.reagents.map((r) => ({ id: r.id, name: r.name, unit: r.unit, minStock: r.minStock, source: r.source, casNo: r.casNo ?? null }))}
     />
   );
 }

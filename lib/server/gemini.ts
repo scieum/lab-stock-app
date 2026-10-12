@@ -44,7 +44,9 @@ const PROMPT = [
   "이 문서에서 한 조(모둠)가 실험을 한 번 할 때 쓰는 시약과 그 사용량만 뽑아 주세요.",
   "",
   "규칙:",
-  "1. name: 시약명을 문서에 적힌 그대로 적습니다. 농도가 함께 적혀 있으면 농도까지 포함합니다(예: \"묽은 염산(0.1M)\").",
+  "1. name: 시약명을 한국어로 적습니다. 문서가 한국어면 문서에 적힌 그대로 적습니다. 문서가 영어 등 다른 언어면 우리나라 학교 과학실에서 흔히 쓰는 국문 이름으로 바꿔 적습니다(예: Sodium chloride → 염화나트륨, Hydrochloric acid 0.1 M → 묽은 염산(0.1M), Ethanol → 에탄올). 농도가 함께 적혀 있으면 농도까지 포함하고, 농도·규격의 숫자와 단위는 바꾸지 않고 말만 한국어로 옮깁니다(예: \"묽은 염산(0.1M)\"). 국문 이름을 확실히 모르면 문서 표기 그대로 둡니다.",
+  "1-1. originalName: name 을 한국어로 바꿨으면 문서에 적힌 원래 표기를 그대로 적습니다. 문서가 한국어이거나 name 과 같으면 null.",
+  "1-2. cas: 문서에 그 시약의 CAS 번호(예: 7647-01-0)가 적혀 있을 때만 그대로 적습니다. 문서에 없으면 null — 아는 번호라도 추측해서 적지 않습니다.",
   "2. amount: 한 조가 한 번 실험에 쓰는 양을 숫자로만 적습니다. 문서에 양이 없거나 \"약간\"·\"적당량\"처럼 숫자가 아니면 null 로 둡니다.",
   "3. unit: 문서에 적힌 단위를 그대로 적습니다(mL, L, g, kg, mg, 병, 방울 등). 단위가 없으면 빈 문자열입니다.",
   "4. 문서의 양이 학급 전체나 여러 조 기준이라고 분명히 적혀 있을 때만 한 조 기준으로 나눕니다. 분명하지 않으면 적힌 값을 그대로 씁니다.",
@@ -58,7 +60,7 @@ const PROMPT = [
   "정해진 JSON 형식(items 배열)만 출력합니다. 설명 문장을 덧붙이지 않습니다.",
 ].join("\n");
 
-/** 구조화 출력 스키마: { items: [{ name, amount(null 가능), unit }] } */
+/** 구조화 출력 스키마: { items: [{ name(한국어), originalName(null 가능), cas(null 가능), amount(null 가능), unit }] } (d7 §13·§27) */
 const RESPONSE_SCHEMA = {
   type: "OBJECT",
   properties: {
@@ -68,11 +70,13 @@ const RESPONSE_SCHEMA = {
         type: "OBJECT",
         properties: {
           name: { type: "STRING" },
+          originalName: { type: "STRING", nullable: true },
+          cas: { type: "STRING", nullable: true },
           amount: { type: "NUMBER", nullable: true },
           unit: { type: "STRING" },
         },
-        required: ["name", "amount", "unit"],
-        propertyOrdering: ["name", "amount", "unit"],
+        required: ["name", "originalName", "cas", "amount", "unit"],
+        propertyOrdering: ["name", "originalName", "cas", "amount", "unit"],
       },
     },
   },
@@ -218,11 +222,13 @@ const DOC_PROMPT = [
   "이 서류에 적힌 품목을 한 줄에 하나씩 뽑아 주세요.",
   "",
   "규칙:",
-  "1. name: 품명을 서류에 적힌 그대로 적습니다(농도·규격 표기가 품명에 붙어 있으면 그대로 둡니다).",
+  "1. name: 품명을 한국어로 적습니다. 서류가 한국어면 서류에 적힌 그대로 적습니다(농도·규격 표기가 품명에 붙어 있으면 그대로 둡니다). 서류가 영어 등 다른 언어면 시약은 우리나라 학교 과학실에서 흔히 쓰는 국문 이름으로, 시약이 아닌 품목은 알기 쉬운 한국어로 바꿔 적습니다(예: Sodium chloride 500g → 염화나트륨 500g, Hydrochloric acid 0.1 M → 묽은 염산(0.1M), Ethanol → 에탄올). 농도·규격의 숫자와 단위는 바꾸지 않고 말만 한국어로 옮깁니다. 국문 이름을 확실히 모르면 서류 표기 그대로 둡니다.",
+  "1-1. originalName: name 을 한국어로 바꿨으면 서류에 적힌 원래 품명을 그대로 적습니다. 서류가 한국어이거나 name 과 같으면 null.",
+  "1-2. cas: 서류에 그 품목의 CAS 번호(예: 7647-01-0)가 적혀 있을 때만 그대로 적습니다. 서류에 없으면 null — 아는 번호라도 추측해서 적지 않습니다.",
   "2. spec: 규격을 서류에 적힌 그대로 적습니다(예: \"500 mL\", \"25 g\"). 규격이 없으면 null.",
   "3. specAmount·specUnit: 규격에서 한 병(한 개)의 양을 숫자와 단위로 나눠 적습니다. 단위는 mL·L·g·kg 중 하나만 씁니다(ml·㎖ → mL, ℓ → L, ㎏ → kg). 그 밖의 단위이거나 양이 없으면 둘 다 null.",
   "4. quantity: 산 개수(수량)를 숫자로 적습니다. 서류에 없으면 1.",
-  "5. quantityUnit: 수량의 단위(예: \"병\", \"개\", \"EA\")를 적습니다. 없으면 null.",
+  "5. quantityUnit: 수량의 단위를 한국어로 적습니다(예: \"병\", \"개\" — bottle 은 \"병\", EA·ea·pcs 는 \"개\"). 없으면 null.",
   "6. isReagent: 화학 시약(산·염기·염·유기 용매·지시약·표준 용액 등)이면 true, 실험 기구·소모품·배송비·부가세·합계 줄처럼 시약이 아니면 false.",
   `7. suggestedClass: 시약이면 보관 분류를 ${STORAGE_CLASSES.join("·")} 중 하나로 추천합니다. ${STORAGE_CLASS_PROMPT_RULE} 모르겠거나 시약이 아니면 null.`,
   "8. docDate: 서류의 작성일·거래일을 YYYY-MM-DD 로 적습니다. 없으면 null.",
@@ -233,7 +239,10 @@ const DOC_PROMPT = [
   "정해진 JSON 형식(docDate, items 배열)만 출력합니다. 설명 문장을 덧붙이지 않습니다.",
 ].join("\n");
 
-/** 구조화 출력 스키마 (d7 §21): { docDate, items: [{ name, spec, specAmount, specUnit, quantity, quantityUnit, isReagent, suggestedClass }] } */
+/**
+ * 구조화 출력 스키마 (d7 §21·§27):
+ * { docDate, items: [{ name(한국어), originalName, cas, spec, specAmount, specUnit, quantity, quantityUnit, isReagent, suggestedClass }] }
+ */
 const DOC_RESPONSE_SCHEMA = {
   type: "OBJECT",
   properties: {
@@ -244,6 +253,8 @@ const DOC_RESPONSE_SCHEMA = {
         type: "OBJECT",
         properties: {
           name: { type: "STRING" },
+          originalName: { type: "STRING", nullable: true },
+          cas: { type: "STRING", nullable: true },
           spec: { type: "STRING", nullable: true },
           specAmount: { type: "NUMBER", nullable: true },
           // 값 목록(enum)은 두지 않는다 — 프롬프트로 정하고 lib/doc-intake-rules 가 정리한다(목록 밖 값은 null)
@@ -253,8 +264,30 @@ const DOC_RESPONSE_SCHEMA = {
           isReagent: { type: "BOOLEAN" },
           suggestedClass: { type: "STRING", nullable: true },
         },
-        required: ["name", "spec", "specAmount", "specUnit", "quantity", "quantityUnit", "isReagent", "suggestedClass"],
-        propertyOrdering: ["name", "spec", "specAmount", "specUnit", "quantity", "quantityUnit", "isReagent", "suggestedClass"],
+        required: [
+          "name",
+          "originalName",
+          "cas",
+          "spec",
+          "specAmount",
+          "specUnit",
+          "quantity",
+          "quantityUnit",
+          "isReagent",
+          "suggestedClass",
+        ],
+        propertyOrdering: [
+          "name",
+          "originalName",
+          "cas",
+          "spec",
+          "specAmount",
+          "specUnit",
+          "quantity",
+          "quantityUnit",
+          "isReagent",
+          "suggestedClass",
+        ],
       },
     },
   },
