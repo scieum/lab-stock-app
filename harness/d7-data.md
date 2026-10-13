@@ -386,6 +386,24 @@
 | 초대 취소 (화면 8) | rules invite_cancel: admin, 초대 대기 행 invite-more-menu(⋯) → invite-cancel "초대 취소" → ex-modal-card "{이메일} 초대를 취소할까요?" / "보낸 초대로는 더 이상 가입할 수 없어요." / '닫기' · '초대 취소'(검정) → 토스트 "초대를 취소했어요", 행 빠짐. DB 새 함수 `cancel_invite(p_invite_id uuid)` — admin·자기 학교·아직 가입 안 한 초대만·데모 거부, 지운 뒤 그 이메일로 가입하면 초대 역할 없이 student(§8 규칙). 시안 8·8-invite-cancel |
 | 랜딩 | rules landing_hero_mark: landing-hero 안 'Lab_Stock' 워드마크 제거(상단 바만), 모바일 히어로 첫 줄 = caption text-muted "과학실 시약·센서 관리" → 제목. 시안 15 |
 
+## 29. 모바일 관리 탭(화면 18)·☰ 없앰·시약 전체 삭제·기록 삭제 (화면 2·10·13·17·18 + 관리 아래 화면, 2026-10-13 — design/rules.json 1.29 manage · wipe · tab_bar · mobile_menu.removed, 디자인 run 20261013-1938)
+
+| 항목 | 결정 |
+|---|---|
+| 하단 탭 | rules tab_bar.labels = 홈 · 관리 · QR 스캔 · 기록. '관리' → `/manage`(화면 18, 모바일 전용). 관리 아래 화면(2·5·6·7·8·9·11·17)과 그보다 깊은 화면(3·16·센서 상세·폼 등)에서 탭 활성 = '관리'. 둘러보기 탭 = 홈 · 관리 · QR(잠금) · 기록(잠금), 관리 → `/demo/manage` |
+| 화면 18 관리 | rules manage: nav-pill(학교명 ▾) 아래 제목 '관리' → manage-list 묶음 3개(manage-group: '재고' 시약·센서·시약장 / '입고·주문' 입고·실험 매뉴얼·재주문 알림(교사·admin) / '학교' 사용자·판매처(admin)) · manage-row(아이콘 + 이름 + 요약 caption + ›, 56 높이). 요약 = 실제 숫자(시약 N종 · 재고 부족 K / 센서 N개 · 고장 K / 시약장 N개 / 재주문 알림 N건 / 학생 a · 교사 b · admin c / 판매처 N곳 — 프레임 예시 문구 형식 그대로, 0 이면 그 부분 생략 규칙은 rules 예시대로), 무채색. 항목 목록은 lib/sidebar-menu 와 같은 출처(역할별). 요약 숫자는 한 번의 서버 읽기(RLS)로 |
+| 데스크톱 /manage | 데스크톱은 바꾸지 않는다(사이드바). 1440 에서 `/manage` 로 오면 `/` 로 보낸다. 데모도 같다(`/demo/manage` → `/demo`) |
+| manage-back | 관리 아래 화면(2·5·6·7·8·9·11·17) 모바일 머리 왼쪽 '‹ 관리'(link, ink) → `/manage`. 시약 상세(3)·MSDS(16)·센서 하위 화면 등 더 깊은 화면은 지금처럼 ‹ 뒤로 |
+| ☰ 없앰 | rules mobile_menu.removed: mobile-menu-button · mobile-menu-sheet 와 연결 코드를 지운다(§28 모바일 전체 메뉴 끝). 계정·로그아웃은 nav-pill 학교명 ▾(nav-account-menu) |
+| 전환 없앰 | inventory-switch '시약 \| 센서' 를 지운다(화면 2·17 모바일). 마지막 고른 쪽 기억 코드도 정리. 센서 진입 = 관리 탭 '센서' 행 · 데스크톱 사이드바 '센서' |
+| 전체 삭제 진입 | rules wipe: admin 만(R8 교사 0, R5 학생 0, 둘러보기 숨김). 화면 2·10 페이지 머리 오른쪽 page-more-menu ⋯(두 폭 같은 자리) → 화면 2 reagent-wipe '시약 전체 삭제' / 화면 10 record-wipe '기록 삭제'. 지울 것이 0건이면 항목 비활성 + caption '지울 시약이 없어요' / '지울 기록이 없어요'. 선택 모드와 섞지 않음 |
+| school-name-confirm | text-input(placeholder = 학교명) + caption '확인을 위해 학교 이름 {학교명}을 입력하세요'. 앞뒤 공백만 정리하고 정확히 같아야 확인 버튼 켜짐, 다르면 muted '학교 이름이 달라요'. 붙여 넣기 허용. 서버(DB 함수)도 학교명을 다시 받아 확인한다 |
+| 시약 전체 삭제 | ex-modal-card(경고 아이콘 무채색 + '시약 {N}종을 모두 삭제할까요?' + 본문 + school-name-confirm + '닫기' / '전체 삭제' 검정) → DB 새 함수 `wipe_reagents(p_school_name text)`: admin · 자기 학교 · 데모 거부 · 학교명 일치(앞뒤 공백 정리 후 같음, 아니면 22023) → 보관 안 된 우리 학교 시약 전부 보관(archive_reagent 와 같은 처리 — deleted_at·deleted_by, 칸 배치 해제 등 기존 보관 규칙 그대로), 한 트랜잭션, 반환 = 보관한 수. 토스트 '시약 {N}종을 삭제했어요' → 빈 목록. 사용·입고 기록은 남는다 |
+| 기록 삭제 | 모바일 바텀시트 / 데스크톱 detail-drawer. record-wipe-range(segmented '전체 \| 이 날짜 이전', 기본 '이 날짜 이전' + 날짜 — 미래 불가, 그날 미포함) → wipe-preview('사용 기록 {N}건 · 입고 기록 {M}건을 지워요' + muted '지금 재고 수량은 그대로예요. 수업 정보도 함께 지워져요.', 0건이면 '이 기간에 지울 기록이 없어요' + 버튼 꺼짐) → school-name-confirm → '기록 {N+M}건 삭제'(검정). 미리보기 수 = 새 함수 `count_wipe_records(p_before date)`(null = 전체, admin·자기 학교) |
+| 기록 삭제 DB | 새 함수 `wipe_records(p_before date, p_school_name text)`: admin · 자기 학교 · 데모 거부 · 학교명 일치 · p_before 미래 거부(22023) → 우리 학교 usage_logs(사용일 used_on < p_before, null = 전부)·intake_logs(입고일 < p_before) 와 거기 딸린 수업 정보(class 연결 행 — 테이블 구조대로)를 **실제로 지운다**. 시약 재고(stock)·intake_date·재주문 기준·low_stock_since 는 바꾸지 않는다(재고 트리거가 delete 에 반응하면 이 함수 안에서만 막는다). 한 트랜잭션, 반환 = {usage_count, intake_count}. 토스트 '기록 {N}건을 삭제했어요' |
+| 반영 | 실행 뒤 화면 2·10·13·6 숫자 바로 반영(revalidate). 감사 로그는 두지 않는다(이번 범위 밖) |
+| 테스트 | 공용 학교 A·B·데모 데이터는 절대 지우지 않는다 — 전체 삭제·기록 삭제의 성공 경로는 일회용 학교에서만. 공용 학교로는 거부 경로(교사·학생·학교명 틀림·다른 학교)만 |
+
 ## 10. 로그아웃 (2026-10-05 결정)
 
 - 로그인 후 모든 화면의 nav-pill 학교명을 누르면 작은 메뉴가 열리고 "로그아웃" 1개가 있다. 누르면 `POST /api/auth/logout` → `/login`.

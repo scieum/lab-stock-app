@@ -1,5 +1,5 @@
 {
-  "version": "1.28",
+  "version": "1.29",
   "sources": [
     "docs/design.md",
     "docs/story-service.md",
@@ -28,7 +28,8 @@
     "2026-10-10 여러 시약 한 번에 사용 기록·시약 삭제·수업 기록 (개발 세션 요청 6)",
     "2026-10-11 여러 개 삭제·QR 탭 준비 중·앱 404·가입 오류 요약·랜딩 그림·기록 추가·무선 센서 화면 17 (개발 세션 요청 7)",
     "2026-10-12 센서 종류 27·파스코 모델 카탈로그·센서 서류로 등록·모바일 전체 메뉴·권한 안내 토스트·초대 취소·모바일 랜딩 워드마크 1번 (개발 세션 요청 8)",
-    "2026-10-12 센서 종류 묶음 토글(접힘) — 종류 시트·필터 시트 (요청 8 후속)"
+    "2026-10-12 센서 종류 묶음 토글(접힘) — 종류 시트·필터 시트 (요청 8 후속)",
+    "2026-10-13 모바일 하단 관리 탭(화면 18)·☰ 메뉴 없앰·inventory-switch 없앰·시약 전체 삭제·기록 삭제(admin, 학교명 입력) (개발 세션 요청 9)"
   ],
   "colors": {
     "allowed": [
@@ -180,7 +181,7 @@
       1440,
       900
     ],
-    "name_pattern": "^([1-9]|1[0-7])-(mobile|desktop)$",
+    "name_pattern": "^([1-9]|1[0-8])-(mobile|desktop)$",
     "keyscreens": {
       "default": [
         2,
@@ -209,11 +210,12 @@
       14,
       15,
       16,
-      17
+      17,
+      18
     ],
-    "guest_name_pattern": "^([1-9]|1[0-7])-guest-(mobile|desktop)$",
-    "variant_name_pattern": "^([1-9]|1[0-7])-(empty|delete|slot|print|unsaved|location|result|doc-upload|doc-review|doc-fail|suggest|msds|msds-bulk|filter|filter-empty|past-date|no-school|loading|fail|no-summary|picker|error|select|bulk-delete|not-found|detail|form|type|model|menu|no-access|invite-cancel)-(mobile|desktop)$",
-    "variant_note": "같은 화면의 다른 상태 프레임. input.json variants {\"11\": [\"empty\",\"delete\"]} 로 요청 (2026-10-04) · 2026-10-06 상태 추가: 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 상태 추가: 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk · 2026-10-07 상태 추가: 2-filter·2-filter-empty, 4-past-date · 2026-10-07 상태 추가: 14-no-school · 2026-10-08 상태 추가: 16-loading·16-fail·16-no-summary · 2026-10-10 상태 추가: 4-picker·4-empty·4-error, 3-delete · 2026-10-11 상태 추가: 2-select·2-bulk-delete, 13-not-found·1-not-found, 14-error, 17-detail·17-form·17-empty·17-select · 2026-10-12 상태 추가: 17-type·17-model·17-doc-upload·17-doc-review·17-doc-fail, 13-menu·13-no-access, 8-invite-cancel · 2026-10-12 상태 추가: 17-filter",
+    "guest_name_pattern": "^([1-9]|1[0-8])-guest-(mobile|desktop)$",
+    "variant_name_pattern": "^([1-9]|1[0-8])-(empty|delete|slot|print|unsaved|location|result|doc-upload|doc-review|doc-fail|suggest|msds|msds-bulk|filter|filter-empty|past-date|no-school|loading|fail|no-summary|picker|error|select|bulk-delete|not-found|detail|form|type|model|menu|no-access|invite-cancel|wipe|record-wipe)-(mobile|desktop)$",
+    "variant_note": "같은 화면의 다른 상태 프레임. input.json variants {\"11\": [\"empty\",\"delete\"]} 로 요청 (2026-10-04) · 2026-10-06 상태 추가: 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 상태 추가: 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk · 2026-10-07 상태 추가: 2-filter·2-filter-empty, 4-past-date · 2026-10-07 상태 추가: 14-no-school · 2026-10-08 상태 추가: 16-loading·16-fail·16-no-summary · 2026-10-10 상태 추가: 4-picker·4-empty·4-error, 3-delete · 2026-10-11 상태 추가: 2-select·2-bulk-delete, 13-not-found·1-not-found, 14-error, 17-detail·17-form·17-empty·17-select · 2026-10-12 상태 추가: 17-type·17-model·17-doc-upload·17-doc-review·17-doc-fail, 13-menu·13-no-access, 8-invite-cancel · 2026-10-12 상태 추가: 17-filter · 2026-10-13 상태 추가: 2-wipe·10-record-wipe, 13-menu 없앰",
     "tall": {
       "15-desktop": {
         "width": 1440,
@@ -222,12 +224,12 @@
       },
       "source": "2026-10-08 사용자 결정: 랜딩 데스크톱만 스크롤 긴 페이지"
     },
-    "mobile_only_variants": {
-      "13": [
-        "menu"
-      ]
-    },
-    "mobile_only_note": "모바일에만 있는 상태: {ID}-{state}-mobile만 요구, desktop 프레임 없음(데스크톱은 app-sidebar가 같은 메뉴). 2026-10-12 사용자 결정 (run 20261012-0923 S2에서 발견)"
+    "mobile_only_variants": {},
+    "mobile_only_note": "모바일에만 있는 상태: {ID}-{state}-mobile만 요구, desktop 프레임 없음(데스크톱은 app-sidebar가 같은 메뉴). 2026-10-12 사용자 결정 (run 20261012-0923 S2에서 발견) · 2026-10-13 13-menu 없앰(☰ 메뉴 삭제, 요청 9)",
+    "mobile_only_screens": [
+      18
+    ],
+    "mobile_only_screens_note": "모바일에만 있는 화면: {ID}-mobile(·{ID}-guest-mobile·{ID}-{state}-mobile)만 요구, desktop 프레임 없음. 18 관리 = 데스크톱은 사이드바가 대신 (2026-10-13 요청 9)"
   },
   "s1": {
     "refs_per_screen": [
@@ -282,10 +284,13 @@
         "sensor-edit",
         "sensor-delete",
         "sensor-alert-tile",
-        "sensor-doc-add"
+        "sensor-doc-add",
+        "page-more-menu",
+        "reagent-wipe",
+        "record-wipe"
       ],
       "max": 0,
-      "source": "2026-10-02 화면 7 · 2026-10-06 threshold-edit(재주문 기준 고치기 = 시약 정보 입력) 추가 · 2026-10-07 doc-upload·msds-search·msds-bulk-banner 추가 · 2026-10-10 reagent-more-menu·reagent-delete(시약 삭제 = 교사·admin) 추가 · 2026-10-11 선택 모드·여러 개 삭제·센서 등록·수정·삭제·홈 센서 타일(교사·admin) 추가 · 2026-10-12 sensor-doc-add(센서 서류로 등록 = 교사·admin) 추가"
+      "source": "2026-10-02 화면 7 · 2026-10-06 threshold-edit(재주문 기준 고치기 = 시약 정보 입력) 추가 · 2026-10-07 doc-upload·msds-search·msds-bulk-banner 추가 · 2026-10-10 reagent-more-menu·reagent-delete(시약 삭제 = 교사·admin) 추가 · 2026-10-11 선택 모드·여러 개 삭제·센서 등록·수정·삭제·홈 센서 타일(교사·admin) 추가 · 2026-10-12 sensor-doc-add(센서 서류로 등록 = 교사·admin) 추가 · 2026-10-13 전체 삭제(admin 전용) 진입점 추가"
     },
     "R6": {
       "component": "user-manage",
@@ -305,6 +310,16 @@
       ],
       "max": 0,
       "source": "2026-10-02 화면 11 · 2026-10-04 cabinet-add 추가 · 2026-10-06 slot-assign·location-edit·qr-print 추가"
+    },
+    "R8": {
+      "role": "교사",
+      "components": [
+        "page-more-menu",
+        "reagent-wipe",
+        "record-wipe"
+      ],
+      "max": 0,
+      "source": "2026-10-13 사용자 결정 (개발 세션 요청 9) 2: 시약 전체 삭제·기록 삭제 = admin만"
     }
   },
   "never": {
@@ -324,7 +339,8 @@
         12,
         13,
         16,
-        17
+        17,
+        18
       ],
       "school_name_pattern": "[가-힣A-Za-z0-9]+(?:초등학교|중학교|고등학교)",
       "distinct_school_names": 1,
@@ -346,7 +362,8 @@
         12,
         13,
         16,
-        17
+        17,
+        18
       ],
       "school_name_scope_source": "2026-10-01 NEIS: 화면 1 학교 목록에는 여러 학교명이 정상",
       "school_select_levels": [
@@ -498,7 +515,7 @@
       "ghs-pictogram",
       "msds-original-link"
     ],
-    "source": "2026-10-02 story-service 결정 (화면별 필수 컴포넌트, 규칙 C1) · 15 랜딩 2026-10-03 · 2026-10-06 화면 3 보관 위치·재주문 기준, 화면 11 시약장 번호·QR 인쇄 · 2026-10-07 화면 7 intake-mode · 2026-10-07 화면 2 list-filter-button, 화면 4 usage-date · 2026-10-07 화면 14 school-select-kind · 2026-10-08 화면 16 MSDS 요약 · 2026-10-10 화면 4 여러 시약·수업, 화면 10 수업 표시·반 필터·삭제된 시약 · 2026-10-11 화면 10 record-add, 화면 17 센서",
+    "source": "2026-10-02 story-service 결정 (화면별 필수 컴포넌트, 규칙 C1) · 15 랜딩 2026-10-03 · 2026-10-06 화면 3 보관 위치·재주문 기준, 화면 11 시약장 번호·QR 인쇄 · 2026-10-07 화면 7 intake-mode · 2026-10-07 화면 2 list-filter-button, 화면 4 usage-date · 2026-10-07 화면 14 school-select-kind · 2026-10-08 화면 16 MSDS 요약 · 2026-10-10 화면 4 여러 시약·수업, 화면 10 수업 표시·반 필터·삭제된 시약 · 2026-10-11 화면 10 record-add, 화면 17 센서 · 2026-10-13 화면 18 관리",
     "10": [
       "class-label",
       "class-filter",
@@ -510,6 +527,10 @@
       "sensor-row",
       "sensor-status-badge",
       "list-filter-button"
+    ],
+    "18": [
+      "manage-list",
+      "manage-row"
     ]
   },
   "cabinet": {
@@ -595,7 +616,7 @@
     "items": 4,
     "labels": [
       "홈",
-      "시약",
+      "관리",
       "QR 스캔",
       "기록"
     ],
@@ -613,14 +634,17 @@
       12,
       13,
       16,
-      17
+      17,
+      18
     ],
     "source": "2026-10-02 사용자 결정: 하단 탭바 (refs/uibowl-home-nav-20261002.md)",
     "radius": 0,
     "shape_source": "2026-10-02 사용자 결정: 둥근 floating pill 말고 하단에 붙은 사각형",
     "mobile_screens_note": "1 로그인·14 회원가입·15 랜딩 제외 (로그인 전 화면)",
     "qr_pending": "화면 12 나오기 전까지: 'QR 스캔' tab-item = 회색(text-faint 아이콘·라벨) + 아이콘 아래 tab-soon '준비 중'(caption), 누르면 ex-toast '준비 중이에요'. 탭 4개 유지 (2026-10-11 사용자 결정 (개발 세션 요청 7) 2)",
-    "sensor_entry": "센서는 탭이 아니라 '시약' 탭 안: 화면 2·17 모바일 맨 위 inventory-switch(segmented-control '시약 | 센서'), 마지막 고른 쪽 기억. 화면 17 모바일에서 '시약' 탭이 활성 (2026-10-11 사용자 결정 (개발 세션 요청 7) 7) · 2026-10-12 모바일 전체 메뉴(mobile_menu)에도 '센서' (개발 세션 요청 8 6)"
+    "sensor_entry": "센서는 관리 탭(화면 18) 안 '센서' 행. inventory-switch '시약 | 센서'는 없앰 (2026-10-13 요청 9)",
+    "labels_source": "2026-10-13 사용자 결정 (개발 세션 요청 9) 1: '시약' 탭 → '관리' 탭(격자 아이콘). 화면 2·3·4·5·6·7·8·9·11·16·17·18 모바일에서 '관리'가 활성, 13 홈·10 기록·12 QR은 각자 탭",
+    "quick_action_note": "관리 화면이 생겨도 홈 quick-action은 그대로 (2026-10-13)"
   },
   "auth": {
     "login_id": "개인 이메일",
@@ -635,7 +659,8 @@
       2,
       3,
       16,
-      17
+      17,
+      18
     ],
     "entry_screen": 15,
     "entry_component": "guest-entry",
@@ -684,12 +709,17 @@
       "sensor-alert-tile",
       "sensor-doc-add",
       "invite-more-menu",
-      "invite-cancel"
+      "invite-cancel",
+      "page-more-menu",
+      "reagent-wipe",
+      "record-wipe",
+      "school-name-confirm"
     ],
     "source": "2026-10-03 사용자 결정: 비회원 둘러보기 (데모 학교 읽기 전용)",
     "sidebar_locks": 2,
     "desktop": "로그인 후와 같은 app-sidebar(위 '데모 학교'), sidebar-item = 홈·시약 활성 + 기록·QR 찾기 guest-lock(2), 관리 메뉴 숨김. 본문 위 guest-banner · 2026-10-11 '센서'도 활성(데모 센서 읽기 전용)",
-    "desktop_source": "2026-10-08 사용자 결정"
+    "desktop_source": "2026-10-08 사용자 결정",
+    "manage": "18-guest-mobile: manage-row 시약·센서만, 나머지 묶음 숨김 (2026-10-13)"
   },
   "variants": {
     "11": {
@@ -781,6 +811,12 @@
       "bulk-delete": [
         "bulk-action-bar",
         "ex-modal-card"
+      ],
+      "wipe": [
+        "page-more-menu",
+        "reagent-wipe",
+        "ex-modal-card",
+        "school-name-confirm"
       ]
     },
     "4": {
@@ -823,14 +859,10 @@
         "msds-original-link"
       ]
     },
-    "source": "2026-10-04 여러 시약장: 빈 상태(교사 기준)·삭제 확인 상태 필수 컴포넌트 (C1) · 2026-10-06 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk, 3-location + suggest-badge · 2026-10-07 2-filter·2-filter-empty, 4-past-date · 2026-10-07 14-no-school · 2026-10-08 16-loading·16-fail·16-no-summary · 2026-10-10 4-picker·4-empty·4-error, 3-delete · 2026-10-11 2-select·2-bulk-delete, 13-not-found·1-not-found, 14-error, 17-detail·form·empty·select · 2026-10-12 17-type·17-model·17-doc-upload·17-doc-review·17-doc-fail, 13-menu·13-no-access, 8-invite-cancel · 2026-10-12 17-type에 sensor-type-group(접힘 토글), 17-filter 추가",
+    "source": "2026-10-04 여러 시약장: 빈 상태(교사 기준)·삭제 확인 상태 필수 컴포넌트 (C1) · 2026-10-06 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk, 3-location + suggest-badge · 2026-10-07 2-filter·2-filter-empty, 4-past-date · 2026-10-07 14-no-school · 2026-10-08 16-loading·16-fail·16-no-summary · 2026-10-10 4-picker·4-empty·4-error, 3-delete · 2026-10-11 2-select·2-bulk-delete, 13-not-found·1-not-found, 14-error, 17-detail·form·empty·select · 2026-10-12 17-type·17-model·17-doc-upload·17-doc-review·17-doc-fail, 13-menu·13-no-access, 8-invite-cancel · 2026-10-12 17-type에 sensor-type-group(접힘 토글), 17-filter 추가 · 2026-10-13 2-wipe·10-record-wipe 추가, 13-menu 없앰",
     "13": {
       "not-found": [
         "ex-empty-state-card"
-      ],
-      "menu": [
-        "mobile-menu-button",
-        "mobile-menu-sheet"
       ],
       "no-access": [
         "ex-toast"
@@ -893,6 +925,15 @@
       "invite-cancel": [
         "invite-more-menu",
         "ex-modal-card"
+      ]
+    },
+    "10": {
+      "record-wipe": [
+        "page-more-menu",
+        "record-wipe",
+        "record-wipe-range",
+        "wipe-preview",
+        "school-name-confirm"
       ]
     }
   },
@@ -1080,7 +1121,7 @@
       "landing_sections": "15-desktop 순서: 히어로(landing-hero·product-shot·landing-cta·guest-entry) → landing-tabs(접는 선, 스크롤 시 고정) → 문제 공감 feature-card 3 → landing-section 4(좌우 번갈아, 꼬리표·제목·점 목록 3·승인 화면 조각) → step-flow 5단계 → 대상 탭(segmented-control 교사·학생·관리자) → 안심 2×2(hairline 격자, 운영 숫자 없음) → cta-band → web-footer 한 줄"
     },
     "heavy_pages_source": "2026-10-10 사용자 결정: 화면 4 여러 시약 = 본문 페이지(드로어 아님)",
-    "menu_source": "2026-10-11 사용자 결정 (개발 세션 요청 7) 7: 사이드바 '시약' 아래 '센서'(모든 역할). QR 찾기는 화면 12 전까지 비활성 '준비 중' · 2026-10-12 모바일 전체 메뉴(mobile_menu)가 같은 목록을 씀 (요청 8 6)"
+    "menu_source": "2026-10-11 사용자 결정 (개발 세션 요청 7) 7: 사이드바 '시약' 아래 '센서'(모든 역할). QR 찾기는 화면 12 전까지 비활성 '준비 중' · 2026-10-12 모바일 전체 메뉴(mobile_menu)가 같은 목록을 씀 (요청 8 6) · 2026-10-13 모바일은 ☰ 대신 관리 탭(화면 18)이 같은 목록(홈·기록·QR 제외)"
   },
   "msds_summary": {
     "screen": 16,
@@ -1202,7 +1243,7 @@
   },
   "sensor": {
     "screen": 17,
-    "entry": "데스크톱 사이드바 '센서'(모든 역할) · 모바일 '시약' 탭 안 inventory-switch '시약 | 센서' + 전체 메뉴(mobile_menu) '센서'",
+    "entry": "데스크톱 사이드바 '센서'(모든 역할) · 모바일 관리 탭(화면 18) '센서' 행. inventory-switch 없음 (2026-10-13)",
     "list": "데스크톱 = 페이지 머리 '센서 N개' + 검색 + list-filter-button + list-select-toggle(교사·admin) + sensor-doc-add button-outline '서류로 등록' + sensor-add button-primary '센서 등록'(둘 다 교사·admin), sensor-list = data-table 열 이름 · 종류 · 회사 · 모델 · 수량 · 보관 위치 · 상태, 행 = sensor-row, 행 누르면 detail-drawer. 모바일 = inventory-switch 아래 같은 머리, sensor-row 카드(colors.canvas-soft, rounded.sm): 이름(title) · '온도 · 버니어 · GDX-TMP'(caption muted) · '3개 · 과학실 뒤 선반' · 오른쪽 sensor-status-badge",
     "filter": "list-filter-sheet 모양: 종류 = sensor-type-group 4줄(기본 접힘, 검색 없음), 묶음 줄에 고른 개수 '화학 · 2개'(고른 게 있으면 그 묶음 펼침), chip 여러 개 고르기 → 회사 chip 여러 개 → 상태 3개. 고른 chip = colors.highlight-soft + colors.highlight 테두리",
     "detail": "sensor-detail: 모바일 전용 화면 / 데스크톱 detail-drawer. 제목 + sensor-status-badge → '항목 | 값' 종류·회사·모델·수량·보관 위치·메모·등록일 → sensor-edit button-outline '수정'(교사·admin) · 머리 ⋯ → sensor-delete '센서 삭제'(reagent_delete와 같은 모달, '목록과 홈에서 사라져요')",
@@ -1335,12 +1376,8 @@
     "source": "2026-10-11 사용자 결정 (개발 세션 요청 7) 5"
   },
   "mobile_menu": {
-    "button": "mobile-menu-button: 로그인 후 모바일 nav-pill 맨 왼쪽 메뉴 아이콘(☰, 44×44 터치, 동그란 아이콘 버튼, 글자 없음). 화면 2~13·16·17 모바일",
-    "sheet": "mobile-menu-sheet: 전체 높이 바텀시트(위 rounded.lg, 아래 0), 맨 위 학교명(title) + 이름 · 역할 caption + × 닫기. 아래 desktop_shell.menu와 같은 역할별 묶음: 홈·시약·센서·기록·시약장·QR 스캔 / (교사·admin) 입고·실험 매뉴얼·재주문 알림 / (admin) 사용자·판매처. 묶음 사이 hairline-soft. 항목 = 아이콘 + body 라벨, 52 높이, 사각. 지금 화면 = colors.highlight-soft 채움 + colors.highlight 아이콘. QR 스캔은 화면 12 전까지 tab_bar.qr_pending과 같은 회색 + '준비 중'. 맨 아래 '로그아웃'(조용한 글자)",
-    "tab_bar": "하단 tab-bar 4개 그대로. inventory-switch '시약 | 센서'도 그대로",
-    "guest": "둘러보기: 같은 메뉴 시트, 학교 '데모 학교'. 홈·시약·센서 활성, 기록·QR 스캔 guest-lock, 관리 묶음 숨김, 로그아웃 대신 button-primary '가입하기'. 이번 시안의 상태 프레임 13-menu는 admin 기준",
-    "source": "2026-10-12 사용자 결정 (개발 세션 요청 8) 6: (가) 전체 메뉴",
-    "frames": "상태 프레임 13-menu = 모바일만(frames.mobile_only_variants)"
+    "removed": "2026-10-13 요청 9: ☰ mobile-menu-button·mobile-menu-sheet 없앰. 관리 탭(manage)이 대신하고 계정·로그아웃은 nav-pill 학교명 ▾(nav-account-menu)",
+    "source": "2026-10-13 사용자 결정 (개발 세션 요청 9) 3: 없앰"
   },
   "no_access": {
     "behavior": "권한이 없는 관리 화면 주소로 들어오면 지금처럼 홈(13)으로 보내고, 홈에서 ex-toast 한 번",
@@ -1365,5 +1402,30 @@
   "landing_hero_mark": {
     "rule": "landing-hero 안에 'Lab_Stock' 워드마크를 두지 않는다(상단 바 nav-pill·web-header에만 1번). 모바일 히어로 첫 줄 = 작은 꼬리표 '과학실 시약·센서 관리'(caption, text-muted) → 제목",
     "source": "2026-10-12 사용자 결정 (개발 세션 요청 8) 4: 상단 바만 남김"
+  },
+  "manage": {
+    "screen": 18,
+    "device": "모바일 전용(데스크톱은 app-sidebar가 같은 목록)",
+    "head": "nav-pill(학교명 ▾ nav-account-menu) 아래 페이지 제목 '관리'(heading-2)",
+    "list": "manage-list: 묶음 3개, 묶음 제목(caption muted) + manage-row들. '재고' = 시약 · 센서 · 시약장(모든 역할) / '입고·주문' = 입고 · 실험 매뉴얼 · 재주문 알림(교사·admin) / '학교' = 사용자 · 판매처(admin). 묶음 사이 hairline-soft",
+    "row": "manage-row: 아이콘(colors.ink) + 이름(title) + 요약 caption text-muted(예: '시약 128종 · 재고 부족 3', '센서 12개 · 고장 1', '시약장 2개', '알림 2건', '학생 40 · 교사 3 · admin 1', '4곳') + 오른쪽 ›. 56 높이, 사각, colors.canvas. 숫자는 무채색 글자만(핑크·하늘 없음). 요약이 없는 항목은 이름만",
+    "back": "manage-back: 관리 아래 화면(2·5·6·7·8·9·11·17) 모바일 머리 왼쪽 '‹ 관리'(link, ink). 그 화면들의 tab-bar 활성 = '관리'. 시약 상세(3)·MSDS(16) 등 더 깊은 화면은 지금처럼 ‹ 뒤로",
+    "guest": "둘러보기: 18-guest-mobile = '재고' 묶음에 시약 · 센서 두 줄만(요약 데모 값), 나머지 묶음 숨김. 탭 '관리' 활성, QR 스캔·기록 guest-lock 2",
+    "desktop": "데스크톱은 바꾸지 않는다(app-sidebar 그대로)",
+    "source": "2026-10-13 사용자 결정 (개발 세션 요청 9) 1: 묶음 3개 + 요약 줄, 탭 이름 '관리'"
+  },
+  "wipe": {
+    "roles": [
+      "admin"
+    ],
+    "entry": "page-more-menu: 화면 2·10 페이지 머리 오른쪽 ⋯ 아이콘 버튼(admin에게만, 두 폭 같은 자리) → 작은 메뉴(reagent-more-menu 모양). 화면 2 = reagent-wipe '시약 전체 삭제', 화면 10 = record-wipe '기록 삭제'. 선택 모드와 섞지 않음",
+    "empty": "지울 것이 0건이면 메뉴 항목 비활성(text-faint) + caption '지울 시약이 없어요' / '지울 기록이 없어요'",
+    "danger_mark": "위험 표시는 무채색: 제목 앞 colors.ink 외곽선 경고 아이콘(삼각형 !), 핑크·빨강 없음",
+    "school_name_confirm": "school-name-confirm: text-input(field 채움) placeholder = 학교명, 위 caption '확인을 위해 학교 이름 {학교명}을 입력하세요'. 정확히 같아야 확인 버튼이 켜짐. 다르면 muted '학교 이름이 달라요'. 붙여 넣기 허용",
+    "disabled_button": "꺼진 button-primary = #e0e0e0 채움 + #707070 글자 (2026-10-12 17-type 승인본과 같음)",
+    "reagent": "시약 전체 삭제(화면 2): ex-modal-card — 경고 아이콘 + '시약 {N}종을 모두 삭제할까요?' + '목록·시약장·홈·재주문 알림에서 사라지고 되돌릴 수 없어요. 사용·입고 기록은 남아요.' + school-name-confirm + button-outline '닫기' / button-primary '전체 삭제'(검정, 학교명 맞기 전엔 꺼짐). 실행 뒤 ex-toast '시약 {N}종을 삭제했어요' → 빈 목록(ex-empty-state-card)",
+    "record": "기록 삭제(화면 10): 모바일 바텀시트 / 데스크톱 detail-drawer(짧은 폼), × 닫기. 제목 경고 아이콘 + '기록 삭제' → record-wipe-range: segmented-control '전체 | 이 날짜 이전'(기본 '이 날짜 이전') + 날짜 text-input(미래 불가, 이 날짜 '이전' = 그날 미포함) → wipe-preview: canvas-soft 줄 '사용 기록 {N}건 · 입고 기록 {M}건을 지워요' + muted '지금 재고 수량은 그대로예요. 수업 정보도 함께 지워져요.' (0건이면 '이 기간에 지울 기록이 없어요', 버튼 꺼짐) → school-name-confirm → button-primary '기록 {N+M}건 삭제'(검정). 실행 뒤 ex-toast '기록 {N}건을 삭제했어요'",
+    "after": "홈 숫자·재주문 알림 바로 반영. 둘러보기·교사·학생에게 진입점 없음",
+    "source": "2026-10-13 사용자 결정 (개발 세션 요청 9) 2: 머리 ⋯ 메뉴, 0건 = 비활성 + 이유"
   }
 }
