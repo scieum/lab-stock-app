@@ -583,6 +583,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      count_wipe_records: { Args: { p_before: string | null }; Returns: Json }
       delete_cabinet: { Args: { p_cabinet_id: string }; Returns: Json }
       demo_reagent_usage: {
         Args: { p_limit?: number; p_reagent_id: string }
@@ -888,6 +889,11 @@ export type Database = {
           used_on: string
           user_name: string
         }[]
+      }
+      wipe_reagents: { Args: { p_school_name: string }; Returns: number }
+      wipe_records: {
+        Args: { p_before: string | null; p_school_name: string }
+        Returns: Json
       }
     }
     Enums: {
