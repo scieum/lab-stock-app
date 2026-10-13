@@ -19,7 +19,7 @@ import {
   sel, tabItemLabels,
 } from "./screen-helpers";
 import { seedSchoolOf } from "./screen-3-helpers";
-import { MOBILE_MENU_BUTTON, expectShell, expectShellHeader, isShellComponent, shellSchoolScope } from "./shell-helpers";
+import { expectShell, expectShellHeader, isShellComponent, shellSchoolScope } from "./shell-helpers";
 import { deskOnlyComponents, frameActiveLabel } from "../desktop-shell";
 import { PAGE_SIZE, newFrame, waitWidthSettled } from "./desk-helpers";
 
@@ -407,12 +407,6 @@ test(`[C1][S${SCREEN}] 학교A 학생 시안과 같은 상태(390 = 목록, 1440
       // 로그인 후 셸이 있는 화면마다 정확히 1개 (dev-rules components_note · route_auth.logout)
       if (name in (rules as unknown as { app_exceptions: Record<string, string> }).app_exceptions) {
         expect(await countComponent(page, name), `셸 ${name} = 1`).toBe(1);
-        continue;
-      }
-      // rules 1.28 mobile_menu.button (d7 §28): 프레임 10(1.28 이전)에는 없고 dev-rules 가 화면 10 에 더했다 — 모바일 nav-pill 안 1 · 1440 은 0
-      if (name === MOBILE_MENU_BUTTON) {
-        expect(want, `시안 ${SCREEN}-${viewport}(1.28 이전)에 ${name} 없음`).toBe(0);
-        expect(await countComponent(page, name), `${name} (폭 ${viewport})`).toBe(viewport === "mobile" ? 1 : 0);
         continue;
       }
       // d7 §24 (1.25): class-label · deleted-reagent-tag 는 데이터에 따라 — 시안 개수가 아니라 보이는 기록으로 센다.

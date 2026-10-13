@@ -82,6 +82,7 @@ import {
   watchWrites,
   type DbReagent,
   type Fx,
+  ACTIVE_TAB_LABEL,
 } from "./screen-6-9-helpers";
 
 test.describe.configure({ mode: "default" });
@@ -366,7 +367,7 @@ test(`[C1][S${SCREEN}] 일회용 학교 교사: 판매처 연결 모달 — 행 
 // C2
 // =====================================================================
 
-test(`[C2][S${SCREEN}] 일회용 학교 교사(알림 5건): 390 tab-bar 1·tab-item ${rules.tab_bar.items}·활성 "시약" / 1440 = 0 · 모바일: 목록 끝이 tab-bar 에 가려지지 않음 · 마지막 카드에서 연 시트 아래 끝 ≤ tab-bar 위쪽 선 · 시트가 떠 있어도 누른 버튼·마지막 카드가 시트 위에 보임`, async ({ browser }, info) => {
+test(`[C2][S${SCREEN}] 일회용 학교 교사(알림 5건): 390 tab-bar 1·tab-item ${rules.tab_bar.items}·활성 "${ACTIVE_TAB_LABEL}" / 1440 = 0 · 모바일: 목록 끝이 tab-bar 에 가려지지 않음 · 마지막 카드에서 연 시트 아래 끝 ≤ tab-bar 위쪽 선 · 시트가 떠 있어도 누른 버튼·마지막 카드가 시트 위에 보임`, async ({ browser }, info) => {
   const f = await fresh(info);
   const made: DbReagent[] = [];
   for (let i = 0; i < 5; i++) made.push(await prepReagent(f, { tag: `줄${i}`, stock: 1 + i, min: 10, unit: "g" }));

@@ -8,7 +8,7 @@
 // 데이터: 일회용 학교에만 쓴다(정리 후 잔여 0). 공용 학교 A·B·데모 센서는 그대로(앞뒤 스냅숏).
 import { test, expect, type Page, type TestInfo } from "@playwright/test";
 import { openAs } from "./auth-state";
-import { devRules, routeOf, rules, sel } from "./screen-helpers";
+import { REMOVED_INVENTORY_SWITCH, devRules, mobileActiveTab, routeOf, rules, sel } from "./screen-helpers";
 import { HAS_SERVICE, openTemp, watchActions, type TempUser } from "./screen-8-helpers";
 import { newFrame } from "./desk-helpers";
 import { DIRECT, TYPE_GROUPS, TYPE_PLACEHOLDER, TYPE_SEARCH, groupOf } from "./d7-28-helpers";
@@ -179,7 +179,7 @@ test(`[C1][S17] 기대값 원본: screens_required 17 · variants 17 · rules se
 test.describe("일회용 학교", () => {
   test.skip(!HAS_SERVICE, NO_SERVICE_REASON);
 
-  test(`[C1][S17] [C3][S17] [R-ui][S17] [N1-ui][S17] 교사 목록: screens_required 17 · 행 = DB 센서(이름 · 종류 · 회사 · 모델 · 수량 · 보관 위치 · 상태 배지 글자) · 모바일 inventory-switch '센서' 활성 + 탭바 '시약' 활성 · 데스크톱 app-sidebar 1 · desktop_required data-table · 표 머리 = rules 열 · 학교명 1종 · V1 스크린샷`, async ({ browser }, info) => {
+  test(`[C1][S17] [C3][S17] [R-ui][S17] [N1-ui][S17] 교사 목록: screens_required 17 · 행 = DB 센서(이름 · 종류 · 회사 · 모델 · 수량 · 보관 위치 · 상태 배지 글자) · 모바일 inventory-switch 0 + 탭바 '${mobileActiveTab(17)}' 활성 (rules 1.29) · 데스크톱 app-sidebar 1 · desktop_required data-table · 표 머리 = rules 열 · 학교명 1종 · V1 스크린샷`, async ({ browser }, info) => {
     test.setTimeout(TIMEOUT);
     const f = await fixture(info);
     const { page, context } = await openList({ browser }, info, f.teacher);
@@ -209,15 +209,14 @@ test.describe("일회용 학교", () => {
         const heads = await page.locator(`main ${sel("data-table")} thead th`).evaluateAll((els) => els.map((e) => (e as HTMLElement).innerText.trim()).filter(Boolean));
         expect(heads, "표 머리 = rules sensor.list 열").toEqual(DESK_COLUMNS);
         await expect(page.locator("main"), "머리 요약 (고장 · 점검 필요)").toContainText(DESK_SUMMARY(broken, check));
-        await expect(page.locator(sel("inventory-switch")), "데스크톱 inventory-switch 0 (사이드바 '센서')").toHaveCount(0);
+        await expect(page.locator(sel(REMOVED_INVENTORY_SWITCH)), `데스크톱 ${REMOVED_INVENTORY_SWITCH} 0 (사이드바 '센서')`).toHaveCount(0);
       } else {
         await expect(page.locator("main h1"), "머리 '센서 N개'").toHaveText(exact(MOBILE_HEADING(live.length)));
-        const sw = page.locator(`main ${sel("inventory-switch")}`);
-        await expect(sw, "inventory-switch 1").toHaveCount(1);
-        await expect(sw.locator(sel("segmented-control-active")), "inventory-switch 센서 활성").toHaveText(exact("센서"));
+        // rules 1.29 tab_bar.sensor_entry: inventory-switch '시약 | 센서' 없앰 (센서 진입 = 관리 탭 '센서' 행) · labels_source: 화면 17 활성 = '관리'
+        await expect(page.locator(sel(REMOVED_INVENTORY_SWITCH)), `${REMOVED_INVENTORY_SWITCH} 0`).toHaveCount(0);
         const tabs = page.locator(`${sel("tab-bar")} ${sel("tab-item")}`);
-        await expect(tabs, "tab-item 4").toHaveCount(rules.tab_bar.items);
-        await expect(page.locator(`${sel("tab-bar")} [aria-current="page"]`), "탭바 '시약' 활성 (rules tab_bar.sensor_entry)").toHaveText(/시약/);
+        await expect(tabs, `tab-item ${rules.tab_bar.items}`).toHaveCount(rules.tab_bar.items);
+        await expect(page.locator(`${sel("tab-bar")} [aria-current="page"]`), `탭바 '${mobileActiveTab(17)}' 활성 (rules tab_bar.labels_source)`).toHaveText(exact(mobileActiveTab(17)));
       }
       // 교사: 선택 · 등록 진입 1
       await expect(page.locator(`main ${sel("list-select-toggle")}`), "교사 list-select-toggle 1").toHaveCount(1);

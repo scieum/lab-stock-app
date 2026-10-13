@@ -14,7 +14,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type BrowserContext, type Locator, type Page } from "@playwright/test";
-import { devRules, routeOf, rules, sel, type ViewportName, tabItemLabels } from "./screen-helpers";
+import { devRules, routeOf, rules, sel, type ViewportName, tabItemLabels, mobileActiveTab } from "./screen-helpers";
 import { service } from "./screen-8-helpers";
 import { exact, hydrated, type Fx } from "./screen-6-9-helpers";
 import { framePath } from "../frames";
@@ -149,8 +149,8 @@ export const OUR_REAGENT = "우리 학교 시약";
 /** d7 §13 에 그대로 적혀 있어야 하는 문구 (자체 점검용) */
 export const D7_QUOTES = [`"${EXTRACT}"`, `"${PROGRESS_LABEL}"`, `"${SAVE}"`, `"${RETRY}"`, `"${TOAST_SAVED}"`, `"${UNLINKED}"`, `"${OUR_REAGENT}"`, '"기존 기준 N"'];
 export const BASIS_RE = /기존 기준 ([\d.,]+) ?(\S+)/;
-/** rules.json tab_bar · s2-spec 화면 5: 모바일 활성 탭 */
-export const ACTIVE_TAB_LABEL = "기록";
+/** rules 1.29 tab_bar.labels_source (d7 §29): 화면 5 모바일 활성 탭 */
+export const ACTIVE_TAB_LABEL = mobileActiveTab(5);
 
 // ---------- 서버에 Gemini 키가 있는가 (값은 읽어 쓰지 않는다 — screen-5-extract-api.spec 과 같은 판단) ----------
 const KEY_NAME = "GEMINI_API_KEY";

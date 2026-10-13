@@ -75,6 +75,7 @@ import {
   waitReorder,
   watchActions,
   watchWrites,
+  ACTIVE_TAB_LABEL,
 } from "./screen-6-9-helpers";
 
 const SCREEN = REORDER;
@@ -350,7 +351,7 @@ test(`[C1][S${SCREEN}] 학교A 교사: "${LINK_BUTTON}" → ${MODAL} (판매처 
 // =====================================================================
 
 for (const role of ["teacher", "admin"] as const) {
-  test(`[C2][S${SCREEN}] ${ROLE_LABEL[role]}: 390 = tab-bar 1·tab-item ${rules.tab_bar.items}·활성 "시약", 1440 = 0 (모달 닫힘·열림 모두) · 모바일 모달 시트 아래 끝 ≤ tab-bar 위쪽 선`, async ({ browser }, info) => {
+  test(`[C2][S${SCREEN}] ${ROLE_LABEL[role]}: 390 = tab-bar 1·tab-item ${rules.tab_bar.items}·활성 "${ACTIVE_TAB_LABEL}", 1440 = 0 (모달 닫힘·열림 모두) · 모바일 모달 시트 아래 끝 ≤ tab-bar 위쪽 선`, async ({ browser }, info) => {
     test.setTimeout(150_000);
     const { context, page, viewport } = await openAs(browser, info, role, SCREEN);
     try {

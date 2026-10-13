@@ -28,7 +28,7 @@ import {
   hexesIn,
   scrollThrough,
 } from "./pre-login-helpers";
-import { devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
+import { REMOVED_INVENTORY_SWITCH, devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
 
 const VIEW_W = devRules.viewports.desktop[0];
 const LANDING = 15;
@@ -914,7 +914,9 @@ for (const g of GUEST.screens) {
           for (const n of [DESKTOP_SHELL.component, TABLE]) await expect(page.locator(sel(n)), `17g 1440 ${n} 1`).toHaveCount(1);
           return;
         }
-        for (const n of ["nav-pill", rules.tab_bar.component, GUEST.banner, "inventory-switch", ...(rules.screens_required["17"] as string[])]) await expect(page.locator(sel(n)).first(), `17g 390 ${n}`).toBeAttached();
+        for (const n of ["nav-pill", rules.tab_bar.component, GUEST.banner, ...(rules.screens_required["17"] as string[])]) await expect(page.locator(sel(n)).first(), `17g 390 ${n}`).toBeAttached();
+        // rules 1.29 tab_bar.sensor_entry: inventory-switch '시약 | 센서' 없앰
+        await expect(page.locator(sel(REMOVED_INVENTORY_SWITCH)), `17g 390 ${REMOVED_INVENTORY_SWITCH} 0`).toHaveCount(0);
         await expect(page.locator(sel(rules.tab_bar.item)), "tab-item").toHaveCount(rules.tab_bar.items);
         await expect(page.locator(`${sel(rules.tab_bar.component)} ${sel(GUEST.lock)}`), `탭바 잠금 ${GUEST.tab_locks}`).toHaveCount(GUEST.tab_locks);
         for (const n of [DESKTOP_SHELL.component, TABLE, DRAWER, HEADER]) await expect(page.locator(sel(n)), `390 ${n} 0`).toHaveCount(0);

@@ -102,6 +102,7 @@ import {
   type Fx,
   listScope,
   formScope,
+  ACTIVE_TAB_LABEL,
 } from "./screen-6-9-helpers";
 import { framePath } from "../frames";
 
@@ -591,7 +592,7 @@ test(`[C1][S${SCREEN}] 일회용 학교: admin 이 화면 9 에서 등록한 판
 // C2
 // =====================================================================
 
-test(`[C2][S${SCREEN}] 일회용 학교 admin(판매처 12개): 390 tab-bar 1·tab-item ${rules.tab_bar.items}·활성 "시약" / 1440 = 0 · 모바일 하단 고정 "${REGISTER_BUTTON}" 이 tab-bar 바로 위(사이 ${BUTTON_TAB_GAP}) · 폼 "${SAVE_BUTTON}" 은 tab-bar 위 하단 시트 안(사이 = 시안 1.17 시트 아래 여백 ${SHEET_PAD_BOTTOM}) · 가려지지 않음 · 마지막 행의 더보기 메뉴가 고정 줄·tab-bar 에 가려지지 않고 눌림`, async ({ browser }, info) => {
+test(`[C2][S${SCREEN}] 일회용 학교 admin(판매처 12개): 390 tab-bar 1·tab-item ${rules.tab_bar.items}·활성 "${ACTIVE_TAB_LABEL}" / 1440 = 0 · 모바일 하단 고정 "${REGISTER_BUTTON}" 이 tab-bar 바로 위(사이 ${BUTTON_TAB_GAP}) · 폼 "${SAVE_BUTTON}" 은 tab-bar 위 하단 시트 안(사이 = 시안 1.17 시트 아래 여백 ${SHEET_PAD_BOTTOM}) · 가려지지 않음 · 마지막 행의 더보기 메뉴가 고정 줄·tab-bar 에 가려지지 않고 눌림`, async ({ browser }, info) => {
   const f = await fresh(info);
   const made: DbVendor[] = [];
   for (let i = 0; i < 12; i++) made.push(await prepVendor(f, { name: `줄${String(i).padStart(2, "0")} 판매처-${hex()}`, contact: `043-100-00${String(i).padStart(2, "0")}`, note: "시약" }));

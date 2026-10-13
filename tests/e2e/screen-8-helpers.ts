@@ -17,7 +17,7 @@ import { expect, type Browser, type BrowserContext, type Locator, type Page, typ
 import { createClient, type Session as AuthSession, type SupabaseClient } from "@supabase/supabase-js";
 import { anonClient } from "./db-helpers";
 import { isDeskPage, waitWidthSettled } from "./desk-helpers";
-import { browserClient, devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
+import { browserClient, devRules, routeOf, rules, sel, type ViewportName, mobileActiveTab } from "./screen-helpers";
 import { framePath } from "../frames";
 import { adjustPreDesktopShell } from "../desktop-shell";
 
@@ -77,7 +77,8 @@ export const TOAST_REMOVED = "사용자를 삭제했어요";
 export const CLOSE_LABEL = "닫기";
 /** 1440 행 끝 더보기 메뉴 (역할 바꾸기 · 삭제) */
 export const ROLE_MENU = "역할 바꾸기";
-export const ACTIVE_TAB_LABEL = "홈";
+/** rules 1.29 tab_bar.labels_source (d7 §29): 화면 8 모바일 활성 탭 */
+export const ACTIVE_TAB_LABEL = mobileActiveTab(8);
 export const STAFF_NAV_LABEL = "입고·시약 등록";
 export const NO_SCHOOL_TITLE = "소속 학교가 없어요";
 export const LOGOUT_BUTTON = "로그아웃";

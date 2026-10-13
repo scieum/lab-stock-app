@@ -7,7 +7,7 @@
 import { waitWidthSettled } from "./desk-helpers";
 import { expect, type Browser, type BrowserContext, type Locator, type Page, type Request, type TestInfo } from "@playwright/test";
 import type { Role } from "./db-helpers";
-import { ROLE_NAME, browserClient, devRules, routeOf, rules, sel, seedRows, type ViewportName } from "./screen-helpers";
+import { REMOVED_MOBILE_MENU, ROLE_NAME, browserClient, devRules, routeOf, rules, sel, seedRows, type ViewportName } from "./screen-helpers";
 import { frameActiveLabel } from "../desktop-shell";
 
 export const HOME = 13;
@@ -40,15 +40,11 @@ export const SCAN_ROUTE = devRules.routes["12"];
 export const SHELL_COMPONENTS: string[] = ["nav-pill", rules.tab_bar.component, rules.tab_bar.item, rules.desktop_shell.component, rules.desktop_shell.item];
 export const isShellComponent = (name: string): boolean => SHELL_COMPONENTS.includes(name);
 /**
- * rules 1.28 mobile_menu.button (d7 §28, 개발 세션 요청 8 6): 로그인 후 모바일 nav-pill 맨 왼쪽 메뉴 버튼 이름.
- * dev-rules components 의 소속 화면(모바일 2~13·16·17) 기본 화면에 폭 390 = 1개, 폭 1440 = 0개 (nav-pill 이 없다).
- * 프레임은 8·13·17 만 1.28 로 갱신 — 그 전 프레임(상태 프레임 포함)과 대조할 때는 이 값으로 따로 본다.
+ * rules 1.29 mobile_menu.removed (d7 §29, 개발 세션 요청 9 3): ☰ mobile-menu-button · mobile-menu-sheet 는 없앴다 — 어느 화면 · 폭에서도 0.
+ * (1.28 에서는 모바일 nav-pill 맨 왼쪽 ☰ 였다.) 계정 · 로그아웃은 nav-pill 학교명 ▾(nav-account-menu).
  */
-export const MOBILE_MENU_BUTTON: string = (() => {
-  const m = /^([a-z][a-z-]*):/.exec((rules as unknown as { mobile_menu: { button: string } }).mobile_menu.button);
-  if (!m) throw new Error("rules.json mobile_menu.button 에서 컴포넌트 이름을 읽지 못함");
-  return m[1];
-})();
+export const MOBILE_MENU_BUTTON: string = REMOVED_MOBILE_MENU[0];
+export const MOBILE_MENU_SHEET: string = REMOVED_MOBILE_MENU[1];
 
 /** dev-rules.json components 의 모든 컴포넌트 이름 */
 export const ALL_COMPONENTS = Object.keys(devRules.components);

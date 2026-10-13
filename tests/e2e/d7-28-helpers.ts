@@ -1,14 +1,14 @@
 // d7 §28 화면 연결(D3) 테스트 공용 — 센서 종류 묶음·파스코 카탈로그·센서 서류 등록·모바일 전체 메뉴·권한 안내·초대 취소·랜딩.
 // 기준(구현이 아니라 여기서 도출): harness/d7-data.md §28, design/rules.json 1.28 sensor.type_groups · type_select · filter · catalog ·
 //   add_mobile · doc · mobile_menu · no_access · invite_cancel · landing_hero_mark · desktop_shell.menu · colors,
-//   harness/dev-rules.json 1.20 routes · components, design/frames 13-menu-mobile · 13-no-access-* · 8-invite-cancel-* · 17-type · 17-filter ·
+//   harness/dev-rules.json 1.20 routes · components, design/frames 13-no-access-* · 8-invite-cancel-* · 17-type · 17-filter ·
 //   17-model · 17-desktop · 17-mobile · 17-doc-upload · 17-doc-review · 17-doc-fail · 15-*.
 // 문구는 rules 따옴표 글자 · 프레임 글자에서 읽는다 (구현 상수를 읽지 않는다).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { expect, type Locator, type Page } from "@playwright/test";
+import { type Locator, type Page } from "@playwright/test";
 import { newFrame } from "./desk-helpers";
-import { devRules, routeOf, rules, sel } from "./screen-helpers";
+import { REMOVED_MOBILE_MENU, devRules, routeOf, rules, sel } from "./screen-helpers";
 
 type R28 = {
   sensor: {
@@ -21,7 +21,6 @@ type R28 = {
     list: string;
     doc: { entry: string; upload: string; review: string; link: string; new_sensor: string; not_sensor: string; save: string; fail: string };
   };
-  mobile_menu: { button: string; sheet: string; tab_bar: string; guest: string };
   no_access: { copy: { teacher_admin: string; admin: string } };
   invite_cancel: { screen: number; roles: string[]; entry: string; confirm: string; after: string };
   landing_hero_mark: { rule: string };
@@ -180,83 +179,15 @@ export type SensorDocItemBody = {
   type: string | null;
 };
 
-// ---------------------------------------------------------------- 모바일 전체 메뉴 (mobile_menu)
+// ---------------------------------------------------------------- 모바일 전체 메뉴 (mobile_menu) — 1.29 에서 없앰
 
-export const MENU_BUTTON = /^([a-z][a-z-]*):/.exec(R.mobile_menu.button)![1];
-export const MENU_SHEET = /^([a-z][a-z-]*):/.exec(R.mobile_menu.sheet)![1];
-/** 버튼 크기 "44×44" */
-export const MENU_BUTTON_SIZE = Number((/(\d+)×\d+/.exec(R.mobile_menu.button) ?? [])[1]);
-/** 역할별 묶음 (rules mobile_menu.sheet "홈·시약·센서·기록·시약장·QR 스캔 / (교사·admin) 입고·… / (admin) 사용자·판매처") */
-export const MENU_GROUPS: string[][] = (() => {
-  const m = /역할별 묶음: (.+?)\. 묶음 사이/.exec(R.mobile_menu.sheet);
-  if (!m) throw new Error("rules mobile_menu.sheet 에서 묶음을 읽지 못함");
-  return m[1].split(" / ").map((g) => g.replace(/^\([^)]*\)\s*/, "").split("·").map((s) => s.trim()));
-})();
-/** 묶음 제목 (시안 13-menu-mobile menu-group-title) — 둘째·셋째 묶음 */
-export const MENU_GROUP_TITLES = newFrame("13-menu-mobile")
-  .filter((n) => n.path.includes("menu-group-title") && n.text)
-  .map((n) => n.text!.characters);
-export const LOGOUT = pick(R.mobile_menu.sheet, (q) => q === "로그아웃", "mobile_menu.sheet 로그아웃");
-/** 데스크톱 사이드바 묶음과 같은 순서 → 화면 번호 (desktop_shell.menu: 홈 13 · 시약 2 · 센서 17 · 기록 10 · 시약장 11 · QR 12 / 입고 7 · 실험 매뉴얼 5 · 재주문 6 / 사용자 8 · 판매처 9) */
-const MENU_SCREENS: number[][] = [
-  [13, 2, 17, 10, 11, 12],
-  [7, 5, 6],
-  [8, 9],
-];
-/** 역할별로 보이는 묶음 수 (학생 1 · 교사 2 · admin 3 — desktop_shell.menu all / teacher_admin / admin) */
-export const groupsFor = (role: "student" | "teacher" | "admin") => MENU_GROUPS.slice(0, role === "student" ? 1 : role === "teacher" ? 2 : 3);
-/** 모바일 메뉴 글자 → 그 화면 경로 */
-export function menuRouteOf(label: string): string {
-  for (const [gi, g] of MENU_GROUPS.entries()) {
-    const i = g.indexOf(label);
-    if (i >= 0) return routeOf(MENU_SCREENS[gi][i]);
-  }
-  throw new Error(`메뉴 글자 ${label} 의 화면 없음`);
-}
-/** 데스크톱 사이드바 글자(desktop_shell.menu) → 같은 자리의 모바일 메뉴 글자 (QR 찾기 → QR 스캔) */
-export function mobileLabelOf(deskLabel: string): string {
-  const d = [R.desktop_shell.menu.all, R.desktop_shell.menu.teacher_admin, R.desktop_shell.menu.admin];
-  for (const [gi, g] of d.entries()) {
-    const i = g.indexOf(deskLabel);
-    if (i >= 0) return MENU_GROUPS[gi][i];
-  }
-  throw new Error(`사이드바 글자 ${deskLabel} 없음`);
-}
-/** 둘러보기 메뉴: 학교 '데모 학교' · 활성 묶음 · guest-lock 묶음 · '가입하기' */
-export const GUEST_MENU = (() => {
-  const g = R.mobile_menu.guest;
-  const active = (/\. (\S+?) 활성/.exec(g) ?? [])[1];
-  const locked = (/활성, (.+?) guest-lock/.exec(g) ?? [])[1];
-  if (!active || !locked) throw new Error("rules mobile_menu.guest 에서 활성 · 잠금 항목을 읽지 못함");
-  return {
-    school: quotes(g)[0],
-    active: active.split("·"),
-    locked: locked.split("·"),
-    signup: pick(g, (q) => q.includes("가입"), "mobile_menu.guest 가입하기"),
-  };
-})();
-
+/**
+ * rules 1.29 mobile_menu.removed (d7 §29): ☰ mobile-menu-button · mobile-menu-sheet 는 없앴다 (관리 탭이 대신).
+ * 1.28 의 ☰ 화면 테스트는 지웠고, 남은 사용처는 "☰ 0" 확인에만 쓴다.
+ */
+export const [MENU_BUTTON, MENU_SHEET] = REMOVED_MOBILE_MENU;
 export const menuButton = (page: Page) => page.locator(sel(MENU_BUTTON));
 export const menuSheet = (page: Page) => page.locator(sel(MENU_SHEET));
-/** 시트 안 메뉴 항목(링크 · 잠금 버튼) — 글자로 */
-export const menuItem = (sheet: Locator, label: string) =>
-  sheet.locator("a, button").filter({ hasText: new RegExp(`^\\s*${esc(label)}\\s*$`) });
-/** 시트 안 메뉴 항목 글자 순서 (로그아웃 · 닫기 · 가입하기 빼고) */
-export async function menuLabels(sheet: Locator): Promise<string[]> {
-  const all = MENU_GROUPS.flat();
-  const texts = await sheet.locator("nav a, nav button").evaluateAll((els) => els.map((e) => (e as HTMLElement).innerText.replace(/\s+/g, " ").trim()));
-  return texts.filter((t) => all.includes(t));
-}
-
-/** ☰ 를 눌러 시트를 연다 (하이드레이션 전 클릭 대비 다시 시도) */
-export async function openMenu(page: Page): Promise<Locator> {
-  const sheet = menuSheet(page);
-  await expect(async () => {
-    if (!(await sheet.isVisible())) await menuButton(page).click({ timeout: 3_000 });
-    await expect(sheet, "mobile-menu-sheet 보임").toBeVisible({ timeout: 3_000 });
-  }).toPass({ timeout: 30_000 });
-  return sheet;
-}
 
 // ---------------------------------------------------------------- 권한 없는 주소 (no_access)
 

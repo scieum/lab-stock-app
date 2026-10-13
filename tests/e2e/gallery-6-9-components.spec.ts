@@ -236,8 +236,8 @@ const sheet117 = (() => {
 const componentNames = Object.keys(dev.components);
 // 데스크톱 셸(rules 1.22 desktop_shell app-sidebar · sidebar-item)은 dev-rules 가 화면마다 더하지만 /gallery/sidebar 에 있다
 // 탭바(셸)는 뺀다 (tab-soon 은 d7 §26 · dev-rules 1.19 에서 지워졌다)
-// mobile-menu-button(rules 1.28 mobile_menu.button) = nav-pill 맨 왼쪽 셸 — /gallery/menu 에 있다 (gallery-28-components)
-const SHELL = ["nav-pill", "mobile-menu-button", rules.tab_bar.component, rules.tab_bar.item, ...DESKTOP_SHELL_NAMES];
+// manage-back(rules 1.29 manage.back) = 모바일 nav-pill 왼쪽 셸 부분 — /gallery · /gallery/manage 에 있다 (gallery-29-components). ☰ 는 1.29 에서 없앰
+const SHELL = ["nav-pill", "manage-back", rules.tab_bar.component, rules.tab_bar.item, ...DESKTOP_SHELL_NAMES];
 const countByName = (nodes: FrameNode[]) => {
   const out: Record<string, number> = {};
   for (const n of nodes) {

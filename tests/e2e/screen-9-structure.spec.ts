@@ -67,6 +67,7 @@ import {
   commonCell,
   listScope,
   vendorTable,
+  ACTIVE_TAB_LABEL,
 } from "./screen-6-9-helpers";
 
 const SCREEN = VENDORS;
@@ -316,7 +317,7 @@ test(`[C1][S${SCREEN}] 학교A admin "${TAB_COMMON}" 탭: ${CELL} 2열(${COMMON_
 // C2
 // =====================================================================
 
-test(`[C2][S${SCREEN}] 학교A admin: 390 = tab-bar 1·tab-item ${rules.tab_bar.items}·활성 "시약", 1440 = 0 (두 탭 모두) · 모바일 하단 고정 "${REGISTER_BUTTON}" 이 tab-bar 바로 위(사이 ${BUTTON_TAB_GAP}, 가려지지 않음)`, async ({ browser }, info) => {
+test(`[C2][S${SCREEN}] 학교A admin: 390 = tab-bar 1·tab-item ${rules.tab_bar.items}·활성 "${ACTIVE_TAB_LABEL}", 1440 = 0 (두 탭 모두) · 모바일 하단 고정 "${REGISTER_BUTTON}" 이 tab-bar 바로 위(사이 ${BUTTON_TAB_GAP}, 가려지지 않음)`, async ({ browser }, info) => {
   test.setTimeout(150_000);
   const { context, page, viewport } = await openAs(browser, info, "admin", SCREEN);
   try {
