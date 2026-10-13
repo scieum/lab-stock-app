@@ -1,0 +1,25 @@
+/* 시안 1.29 10-record-wipe wipe-preview: surface-muted · radius 16 · 안쪽 12 16 · 사이 4 · body 15 ink + body-sm 13 muted */
+.box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.text {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}

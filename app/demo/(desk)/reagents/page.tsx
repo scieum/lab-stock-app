@@ -29,7 +29,6 @@ export default async function DemoReagentsPage({ searchParams }: Props) {
         initialQuery={first(params.q) ?? ""}
         initialListFilter={parseListFilter(params, cabinets)}
         detailBase="/demo/reagents"
-        inventoryBase="/demo"
       />
     </div>
     </MobileOnly>

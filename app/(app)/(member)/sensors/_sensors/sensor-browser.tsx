@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { BulkDeleteFlow } from "@/components/bulk-action-bar/flow";
 import { ButtonOutline } from "@/components/button-outline";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
-import { InventorySwitch } from "@/components/inventory-switch";
 import { ListFilterButton } from "@/components/list-filter-button";
 import { ListSelectToggle } from "@/components/list-select-toggle";
 import { SensorAdd, SensorAddMenuButton } from "@/components/sensor-add";
@@ -53,7 +52,7 @@ export function usedMakers(items: readonly SensorItem[]): string[] {
 }
 
 /**
- * 화면 17 센서 목록 — 모바일 (디자인 1.28 17-mobile): inventory-switch "시약 | 센서"(센서 활성) → list-head("센서 N개" + 선택 +
+ * 화면 17 센서 목록 — 모바일 (디자인 1.29 17-mobile): list-head("센서 N개" + 선택 +
  * sensor-add "+ 등록" → 작은 바텀시트 "서류로 등록 / 직접 입력", rules sensor.add_mobile) →
  * 검색 + list-filter-button → sensor-list(sensor-row 카드). 0개면 ex-empty-state-card(+ sensor-add, 교사·admin).
  * 선택 모드(교사·admin): 머리 = 취소 · N개 선택됨 · 전체 선택, 행 왼쪽 select-checkbox, bulk-action-bar → 확인 → 토스트.
@@ -107,7 +106,6 @@ export function SensorBrowser({ items, canEdit, base = "", initialQuery, initial
   if (items.length === 0) {
     return (
       <div className={styles.page}>
-        <InventorySwitch active="sensors" base={base} />
         <div className={styles.listBody}>
           <div className={styles.listHead}>
             <h1 className={styles.heading}>센서 0개</h1>
@@ -124,7 +122,6 @@ export function SensorBrowser({ items, canEdit, base = "", initialQuery, initial
 
   return (
     <div className={styles.page}>
-      <InventorySwitch active="sensors" base={base} />
       <div className={styles.listBody}>
         {canEdit && select.selecting ? (
           <ListSelectToggle

@@ -1,0 +1,64 @@
+/* 시안 1.29 18-mobile manage-row: 390 × 56 · 안쪽 0 16 · 사이 12 · canvas · 사각 */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-height: calc(var(--control-height) + var(--space-8));
+  padding: var(--space-0) var(--space-16);
+  border-radius: var(--radius-none);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.row:hover {
+  background: var(--color-surface-muted);
+}
+
+.row:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: calc(var(--border-width) * -1);
+}
+
+.row:active,
+.row:has([data-pending]) {
+  opacity: var(--pressed-opacity);
+}
+
+.icon {
+  flex-shrink: 0;
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+  color: var(--color-text);
+}
+
+.text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.caption {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  flex-shrink: 0;
+  width: var(--icon-md);
+  height: var(--icon-md);
+  color: var(--color-text-muted);
+}

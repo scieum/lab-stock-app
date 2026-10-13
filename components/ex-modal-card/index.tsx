@@ -11,8 +11,8 @@ export type ModalCardField = {
 };
 
 type Props = {
-  /** 상단 제목 (시약명, heading-3) */
-  title: string;
+  /** 상단 제목 (시약명, heading-3). 글자 외에 아이콘 + 글자 묶음(시안 2-wipe reagent-wipe 경고 아이콘 + 제목)도 된다 */
+  title: React.ReactNode;
   /** 제목 아래 안내 한 줄 (화면 8: "역할을 고르고 변경을 누르세요", body-sm 회색) */
   description?: string;
   /**

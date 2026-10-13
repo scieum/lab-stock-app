@@ -1,0 +1,34 @@
+/* 시안 1.29 manage-back: 51 × 48, 사이 4 · icon-back 20 (highlight) · label 15/400 ink */
+.back {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--control-height);
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  text-decoration: none;
+}
+
+.back:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: var(--space-4);
+}
+
+.back:active,
+.back:has([data-pending]) {
+  opacity: var(--pressed-opacity);
+}
+
+.icon {
+  flex-shrink: 0;
+  width: var(--icon-md);
+  height: var(--icon-md);
+  color: var(--color-highlight);
+}
+
+.label {
+  white-space: nowrap;
+}

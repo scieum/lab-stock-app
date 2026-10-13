@@ -48,3 +48,12 @@
   font-size: var(--font-size-13);
   white-space: nowrap;
 }
+
+/* fill: 줄 폭을 채우고 항목을 반씩 (시안 1.29 record-wipe-range segmented 340 = 163 + 165) */
+.track.fill {
+  width: auto;
+}
+
+.track.fill > * {
+  flex: 1 1 0;
+}

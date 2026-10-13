@@ -21,10 +21,12 @@ type Props = {
    * 기본은 지금 크기 (항목 44 · 글자 15)
    */
   size?: "default" | "sm";
+  /** true = sm 크기로 줄 폭을 채우고 항목을 반씩 나눈다 (시안 1.29 10-record-wipe record-wipe-range) */
+  fill?: boolean;
 };
 
 /** 세그먼트 컨트롤 (회색 stadium 트랙 + 흰 선택 항목) */
-export function SegmentedControl({ options, value, defaultValue, onChange, variant = "outline", label, disabled, size = "default" }: Props) {
+export function SegmentedControl({ options, value, defaultValue, onChange, variant = "outline", label, disabled, size = "default", fill = false }: Props) {
   const [inner, setInner] = useState(defaultValue ?? options[0]?.value ?? "");
   const current = value ?? inner;
   const select = (v: string) => {
@@ -32,7 +34,7 @@ export function SegmentedControl({ options, value, defaultValue, onChange, varia
     onChange?.(v);
   };
   return (
-    <div data-component="segmented-control" role="tablist" aria-label={label} className={[styles.track, size === "sm" ? styles.sm : ""].filter(Boolean).join(" ")}>
+    <div data-component="segmented-control" role="tablist" aria-label={label} className={[styles.track, size === "sm" ? styles.sm : "", fill ? styles.fill : ""].filter(Boolean).join(" ")}>
       {options.map((o) =>
         o.value === current ? (
           <SegmentedControlActive key={o.value} variant={variant} disabled={disabled}>

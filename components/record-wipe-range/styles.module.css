@@ -1,0 +1,21 @@
+/* 시안 1.29 10-record-wipe record-wipe-range: 라벨 15/400 ink → segmented(44) → 날짜 text-input(47) → caption 12 muted, 사이 8 */
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.label {
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.caption {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}

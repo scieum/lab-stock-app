@@ -5,7 +5,6 @@ import { BulkDeleteFlow } from "@/components/bulk-action-bar/flow";
 import { ButtonOutline } from "@/components/button-outline";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { FilterChipRow } from "@/components/filter-chip-row";
-import { InventorySwitch } from "@/components/inventory-switch";
 import { ListFilterButton } from "@/components/list-filter-button";
 import { ListFilterSheet } from "@/components/list-filter-sheet";
 import { ListSelectToggle } from "@/components/list-select-toggle";
@@ -49,8 +48,6 @@ type Props = {
   canFindMsds?: boolean;
   /** true = 교사·admin — 선택 모드 · 여러 개 삭제 (d7 §25 bulk_delete, R5). 학생·둘러보기는 false */
   canSelect?: boolean;
-  /** 맨 위 inventory-switch "시약 | 센서" 주소 앞머리 (둘러보기 "/demo") */
-  inventoryBase?: "" | "/demo";
 };
 
 /** 주소창(?filter·?q + 필터 시트 값)을 화면 상태와 맞춘다 — 새로고침·뒤로가기에도 같은 목록 */
@@ -82,7 +79,6 @@ export function ReagentBrowser({
   detailBase = "/reagents",
   canFindMsds = false,
   canSelect = false,
-  inventoryBase = "",
 }: Props) {
   const [filter, setFilter] = useState<ReagentFilter>(initialFilter);
   const [query, setQuery] = useState(initialQuery);
@@ -155,9 +151,6 @@ export function ReagentBrowser({
 
   return (
     <>
-      <div className={styles.switchRow}>
-        <InventorySwitch active="reagents" base={inventoryBase} />
-      </div>
       {canFindMsds && applied.noMsds ? <MsdsBulk targets={msdsTargets} /> : null}
       {selecting ? (
         <ListSelectToggle

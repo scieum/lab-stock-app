@@ -1,0 +1,10 @@
+/* 시안 1.29 18-mobile manage-list: canvas · 묶음 사이 divider 1 (hairline-soft) */
+.list {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+}
+
+.divided {
+  border-top: var(--border-width) solid var(--color-border);
+}

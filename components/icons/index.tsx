@@ -49,7 +49,8 @@ export type IconName =
   | "compass"
   | "flash"
   | "menu"
-  | "link";
+  | "link"
+  | "grid";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   // 랜딩 15-desktop 문제 공감 카드 (icon-quote) · 안심 격자 (icon-lock · icon-shield)
@@ -304,8 +305,17 @@ const PATHS: Record<IconName, React.ReactNode> = {
   ),
   // 화면 12 플래시 (시안 icon-flash: 번개)
   flash: <path d="M13 3 6.5 13H12l-1 8 6.5-10H12l1-8Z" />,
-  // 모바일 전체 메뉴 (시안 13-menu-mobile icon-menu: 가로 세 줄)
+  // 가로 세 줄 (예전 모바일 전체 메뉴 ☰ — 1.29 에서 없앰, 아이콘만 남김)
   menu: <path d="M5 7h14M5 12h14M5 17h14" />,
+  // 하단 탭 '관리' (시안 18-mobile tab-bar icon-grid: 네모 네 칸)
+  grid: (
+    <>
+      <rect x="4" y="4" width="6.5" height="6.5" rx="1" />
+      <rect x="13.5" y="4" width="6.5" height="6.5" rx="1" />
+      <rect x="4" y="13.5" width="6.5" height="6.5" rx="1" />
+      <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1" />
+    </>
+  ),
   // 센서 서류 확인 표 연결 줄 (시안 17-doc-review icon-link: 사슬 고리 두 개 + 가운데 선)
   link: (
     <>
