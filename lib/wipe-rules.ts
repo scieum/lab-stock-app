@@ -26,9 +26,20 @@ export const SCHOOL_NAME_TEXT = {
   mismatch: "학교 이름이 달라요",
 } as const;
 
-/** school-name-confirm 위 caption (시안 2-wipe · 10-record-wipe: 학교명을 작은따옴표로 감싼다) */
+/**
+ * 목적격 조사 을/를 — 끝 글자가 한글 음절이면 받침 있음 = '을', 없음 = '를'. 한글이 아니면(영문·숫자·괄호 등) '을(를)'.
+ */
+export function objectParticle(word: string): "을" | "를" | "을(를)" {
+  const last = word.trim().slice(-1);
+  const code = last ? last.charCodeAt(0) : 0;
+  if (code < 0xac00 || code > 0xd7a3) return "을(를)";
+  return (code - 0xac00) % 28 === 0 ? "를" : "을";
+}
+
+/** school-name-confirm 위 caption (시안 2-wipe · 10-record-wipe: 학교명을 작은따옴표로 감싸고 조사는 받침대로 — '샘플고등학교'를) */
 export function schoolNameConfirmCaption(schoolName: string): string {
-  return `확인을 위해 학교 이름 '${normalizeSchoolName(schoolName)}'을 입력하세요`;
+  const name = normalizeSchoolName(schoolName);
+  return `확인을 위해 학교 이름 '${name}'${objectParticle(name)} 입력하세요`;
 }
 
 // ---------- 시약 전체 삭제 (화면 2) ----------
@@ -90,9 +101,15 @@ export function isValidYmd(value: string): boolean {
   return d.getUTCFullYear() === Number(m[1]) && d.getUTCMonth() === Number(m[2]) - 1 && d.getUTCDate() === Number(m[3]);
 }
 
-/** 날짜 칸 기본값 = 이번 달 1일 (today = 한국 날짜 "YYYY-MM-DD") */
+/**
+ * 날짜 칸 기본값 = 가장 최근에 지난 3월 1일 (한국 학년도 시작) — 오케스트레이터 결정 2026-10-13 (d7 §29 에는 없는 값).
+ * today(한국 날짜 "YYYY-MM-DD")가 3월 1일 이후면 올해 3월 1일(3월 1일 당일 포함 — 미래 아님), 그 전이면 작년 3월 1일.
+ */
 export function defaultWipeBeforeDate(today: string): string {
-  return isValidYmd(today) ? `${today.slice(0, 7)}-01` : today;
+  if (!isValidYmd(today)) return today;
+  const year = Number(today.slice(0, 4));
+  const y = today.slice(5) >= "03-01" ? year : year - 1;
+  return `${String(y).padStart(4, "0")}-03-01`;
 }
 
 export type WipeDateCheck = { ok: true } | { ok: false; reason: "invalid" | "future" };
