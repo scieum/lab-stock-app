@@ -1,6 +1,6 @@
 // 화면 6 (재주문 알림) 판매처 연결 — 검색어 자동 입력: C1
 // 기준: harness/d7-data.md §11 "검색어 자동 입력"(2026-10-07 사용자 결정)·"판매처 연결", §12, harness/d2-purpose.md §5.
-//   - 공통 목록 4곳: "확인" → 웹사이트 대신 그 판매처의 검색 결과 주소 (d7 §11 의 주소, `{q}` = 카드 시약 이름(앞뒤 공백 정리, URL 인코딩)).
+//   - 공통 목록 판매처(검색 주소 있는 곳 — 2026-10-14 생물나라 포함): "확인" → 웹사이트 대신 그 판매처의 검색 결과 주소 (d7 §11 의 주소, `{q}` = 카드 시약 이름(앞뒤 공백 정리, URL 인코딩)).
 //   - 우리 학교 판매처(search_url 없음): 지금처럼 웹사이트.
 //   - "직접 열기" href 도 새 창과 같은 주소. 아무것도 저장하지 않는다.
 // 일회용 학교(일회용 admin·교사)에서만 상태를 만든다. service role 은 준비·정리·대조 조회에만.
@@ -12,6 +12,7 @@ import { test, expect, type TestInfo } from "@playwright/test";
 import { browserClient } from "./screen-helpers";
 import { HAS_SERVICE, openTemp } from "./screen-8-helpers";
 import {
+  COMMON_ADDED_12,
   COMMON_SEARCH,
   DIRECT_OPEN,
   NO_RESIDUE_69,
@@ -123,6 +124,8 @@ test(`[C1][S${SCREEN}] 일회용 학교 교사: 시약명에 공백·괄호·% �
       ...COMMON_SEARCH.map((s) => ({ name: s.name, url: searchHref(s.searchUrl, reagent.name), what: "d7 §11 검색 주소" })),
       { name: own.name, url: hrefOf(own.website!), what: "우리 학교 판매처 website" },
     ];
+    // d7 §12 "사용자 추가"(2026-10-14 생물나라 — d7 §11 search_text={q}) 도 고르는 목록에 든다
+    for (const a of COMMON_ADDED_12) expect(picks.map((p) => p.name), `d7 §12 ${a.date} 추가 "${a.name}" 도 고른다`).toContain(a.name);
     // 기대 주소의 검색어 = 시약 이름 그대로 (인코딩을 풀면 원래 이름)
     for (const p of picks.slice(0, COMMON_SEARCH.length)) {
       expect([...new URL(p.url).searchParams.values()], `${p.name}: 기대 주소의 검색어`).toContain(reagent.name);
