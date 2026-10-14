@@ -10,6 +10,8 @@ import { test, expect, type Page } from "@playwright/test";
 import { ROLE_LABEL, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
 import {
+  MANAGE_BACK_SCREENS,
+  MANAGE_SCREEN,
   PROFILE_ROLE,
   ROLE_NAME,
   browserSession,
@@ -126,6 +128,12 @@ test(`[R-ui][S${SCREEN}] rules.json R5 = 학생 ${INTAKE}·${REGISTER} max 0 이
   // R5 의 나머지 컴포넌트 화면 소속 (dev-rules 1.9): threshold-edit [3] · msds-search [3,7] · msds-bulk-banner [2] · doc-upload [7](서류로 입고, d7 §21)
   // 1.25 (d7 §24 · rules reagent_delete.entry "화면 3에서만"): reagent-more-menu · reagent-delete = 화면 3
   // 1.26 (R5 source "2026-10-11 선택 모드·여러 개 삭제·센서 등록·수정·삭제·홈 센서 타일"): 선택 모드 = rules bulk_delete.screens, 센서 = rules sensor.screen, 홈 타일 = 13
+  /** rules variants 에서 그 컴포넌트가 들어 있는 상태 프레임의 화면 (정렬) */
+  const WIPE_SCREENS = (name: string): number[] =>
+    Object.entries((rules as unknown as { variants: Record<string, Record<string, unknown>> }).variants)
+      .filter(([, v]) => Object.values(v).some((list) => Array.isArray(list) && list.includes(name)))
+      .map(([k]) => Number(k))
+      .sort();
   const BULK_SCREENS = [...(rules as unknown as { bulk_delete: { screens: number[] } }).bulk_delete.screens].sort(); // 아래 비교와 같은 기본 정렬
   const SENSOR_SCREEN = (rules as unknown as { sensor: { screen: number } }).sensor.screen;
   const R5_HOME: Record<string, number[]> = {
@@ -145,6 +153,10 @@ test(`[R-ui][S${SCREEN}] rules.json R5 = 학생 ${INTAKE}·${REGISTER} max 0 이
     // rules 1.28 R5 source "2026-10-12 sensor-doc-add(센서 서류로 등록 = 교사·admin)" — 센서 화면 머리 버튼
     "sensor-doc-add": [SENSOR_SCREEN],
     "sensor-alert-tile": [13],
+    // rules 1.29 R5 source "2026-10-13 전체 삭제(admin 전용) 진입점" — 상태 프레임 variants[2].wipe · variants[10]["record-wipe"] 의 화면
+    "page-more-menu": WIPE_SCREENS("page-more-menu"),
+    "reagent-wipe": WIPE_SCREENS("reagent-wipe"),
+    "record-wipe": WIPE_SCREENS("record-wipe"),
   };
   expect(R5_COMPONENTS, "1.17 R5 에 doc-upload").toContain("doc-upload");
   expect(devRules.components["doc-upload"] ?? [], "dev-rules 1.9 components 에 doc-upload").toContain(SCREEN);
@@ -257,7 +269,14 @@ test(`[R-ui][S${SCREEN}] ${ROLE_LABEL.teacher} 진입점(양성 대조): 시약 
     await page.goto(DIRECT_PATH);
     await waitIntake(page, "intake");
     const label = shellIntakeLabel(viewport);
-    await expect(shellSchoolScope(page, viewport).getByText(label, { exact: true }).locator("visible=true").first(), `셸 "${label}" 보임`).toBeVisible();
+    if (viewport === "mobile" && MANAGE_BACK_SCREENS.includes(SCREEN)) {
+      // rules 1.29 manage.back (d7 §29): 390 화면 7 머리 왼쪽 = manage-back '‹ 관리'(제목 자리) → 진입점은 화면 18 관리 '입고·주문' 묶음의 manage-row
+      const back = shellSchoolScope(page, viewport).locator(sel("manage-back"));
+      await expect(back, "390 nav-pill manage-back 보임").toBeVisible();
+      await expect(back).toHaveAttribute("href", routeOf(MANAGE_SCREEN));
+      await page.goto(routeOf(MANAGE_SCREEN));
+      await expect(page.locator(`main ${sel("manage-row")}[href="${routeOf(SCREEN)}"]`), `교사 화면 18 에 ${routeOf(SCREEN)} manage-row 1`).toHaveCount(1, { timeout: 30_000 });
+    } else await expect(shellSchoolScope(page, viewport).getByText(label, { exact: true }).locator("visible=true").first(), `셸 "${label}" 보임`).toBeVisible();
     if (viewport === "desktop") {
       // 데스크톱 = app-sidebar 의 sidebar-item "입고" (rules 1.22 desktop_shell.menu teacher_admin)
       const link = shellSchoolScope(page, viewport).locator(`a[href="${routeOf(SCREEN)}"]`);

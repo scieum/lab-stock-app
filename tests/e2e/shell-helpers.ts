@@ -7,7 +7,7 @@
 import { waitWidthSettled } from "./desk-helpers";
 import { expect, type Browser, type BrowserContext, type Locator, type Page, type Request, type TestInfo } from "@playwright/test";
 import type { Role } from "./db-helpers";
-import { REMOVED_MOBILE_MENU, ROLE_NAME, browserClient, devRules, routeOf, rules, sel, seedRows, type ViewportName } from "./screen-helpers";
+import { MANAGE_BACK_SCREENS, MANAGE_SCREEN, MOBILE_ACTIVE_TAB, REMOVED_MOBILE_MENU, mobileActiveTab, ROLE_NAME, browserClient, devRules, routeOf, rules, screenOfPath, sel, seedRows, type ViewportName } from "./screen-helpers";
 import { frameActiveLabel } from "../desktop-shell";
 
 export const HOME = 13;
@@ -173,6 +173,25 @@ export async function installNavGate(page: Page, info: TestInfo): Promise<NavGat
  * 셸의 화면 이동 링크: 폭 390 = tab-bar 의 tab-item, 폭 1440 = app-sidebar 의 sidebar-item
  * (design/rules.json 1.22 desktop_shell — 데스크톱은 nav-pill 대신 왼쪽 사이드바, d7 §23)
  */
+/**
+ * rules 1.29 tab_bar (d7 §29): 모바일 탭 4개가 가는 화면 — '관리' = manage.screen(18 /manage), 나머지(홈 · QR 스캔 · 기록)는
+ * tab_bar.labels_source 에서 그 탭이 활성인 화면이 하나뿐인 화면(13 · 12 · 10).
+ */
+export function tabRootScreen(label: string): number {
+  if (label === mobileActiveTab(MANAGE_SCREEN)) return MANAGE_SCREEN;
+  const own = Object.entries(MOBILE_ACTIVE_TAB).filter(([, l]) => l === label).map(([s]) => Number(s));
+  if (own.length !== 1) throw new Error(`rules tab_bar.labels_source: '${label}' 탭이 활성인 화면이 하나가 아님 (${own.join("·")})`);
+  return own[0];
+}
+
+/**
+ * 셸 링크로 화면 N "쪽"으로 갈 때 실제로 누르는 링크의 도착 화면:
+ * 폭 1440 = N (사이드바 메뉴), 폭 390 = N 의 활성 탭이 가는 화면 (rules 1.29 — 화면 2 는 '관리' 탭 → 화면 18).
+ */
+export function shellNavScreen(viewport: ViewportName, screen: number): number {
+  return viewport === "mobile" ? tabRootScreen(mobileActiveTab(screen)) : screen;
+}
+
 export function shellLink(page: Page, viewport: ViewportName, screen: number): Locator {
   const href = routeOf(screen);
   const tb = rules.tab_bar;
@@ -228,6 +247,17 @@ export async function expectShellHeader(
   if (viewport === "mobile") {
     const nav = page.locator(sel("nav-pill"));
     await expect(nav, `${where}: nav-pill 1개`).toHaveCount(1);
+    // rules 1.29 manage.back (d7 §29): 관리 아래 화면(2·5·6·7·8·9·11·17) 모바일 머리 왼쪽 = manage-back '‹ 관리'(→ /manage) 1개 —
+    // 워드마크 · 제목 자리 (시안 2-mobile · 17-mobile nav-left = manage-back 만). 학교명은 그대로
+    const screen = screenOfPath(new URL(page.url()).pathname);
+    if (screen !== null && MANAGE_BACK_SCREENS.includes(screen)) {
+      const back = nav.locator(sel("manage-back"));
+      await expect(back, `${where}: nav-pill manage-back 1 (rules manage.back)`).toHaveCount(1);
+      await expect(back, `${where}: manage-back → ${routeOf(MANAGE_SCREEN)}`).toHaveAttribute("href", routeOf(MANAGE_SCREEN));
+      await expect(back, `${where}: manage-back 보임`).toBeVisible();
+      if (want.schoolName) await expect(nav, `${where}: nav-pill "${want.schoolName}"`).toContainText(want.schoolName);
+      return;
+    }
     for (const t of [want.wordmark, want.title, want.schoolName]) if (t) await expect(nav, `${where}: nav-pill "${t}"`).toContainText(t);
     return;
   }
@@ -289,6 +319,8 @@ export async function waitContent(page: Page, screen: number): Promise<void> {
     [HOME]: `main ${sel("home-summary")}`,
     [LIST]: desk ? `main ${sel("data-table")} ${sel("ex-data-table-cell")}` : `main ${sel("reagent-row")}`,
     [HISTORY]: `main ${sel("segmented-control")}`,
+    // 화면 18 관리 (rules 1.29 manage, 모바일 전용): manage-list
+    [MANAGE_SCREEN]: `main ${sel("manage-list")}`,
   };
   const m = marker[screen];
   if (!m) throw new Error(`waitContent: 화면 ${screen} 표식 없음`);

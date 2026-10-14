@@ -381,6 +381,14 @@ test(`[C1][S${SCREEN}] 진입점 (d7 §7): 탭바 "${ACTIVE_TAB_LABEL}"(390) · 
 
 // 디자인 1.17: 10-mobile 시안은 목록 상태(상세 없음), 10-desktop 시안은 첫 행 상세가 열린 상태 — 폭마다 그 상태로 맞춰 견준다.
 const DETAIL_PARTS = [MODAL, MSDS, "button-outline", "button-pill-soft"];
+/** rules variants[10] 상태 프레임 부품 + wipe.record 의 실행 뒤 ex-toast (기본 목록 상태 = 0) */
+const STATE_ONLY_10 = new Set<string>([
+  ...Object.entries((rules as unknown as { variants: Record<string, Record<string, string[] | string>> }).variants[String(SCREEN)] ?? {})
+    .filter(([k, v]) => k !== "source" && Array.isArray(v))
+    .flatMap(([, v]) => v as string[])
+    .filter((n) => n !== MODAL && n !== DRAWER),
+  ...(/ex-toast/.test((rules as unknown as { wipe: { record: string } }).wipe.record) ? ["ex-toast"] : []),
+]);
 test(`[C1][S${SCREEN}] 학교A 학생 시안과 같은 상태(390 = 목록, 1440 = 첫 행 상세 열림): 시안 10 프레임에 있는 화면 ${SCREEN} 컴포넌트가 프레임 개수 이상 · ${MODAL}·${SEGMENT}·${SEGMENT_ACTIVE}·${MSDS} 는 정확히 프레임 개수`, async ({ browser }, info) => {
   test.setTimeout(150_000);
   const { context, page, viewport } = await openAs(browser, info, "student", SCREEN);
@@ -442,8 +450,14 @@ test(`[C1][S${SCREEN}] 학교A 학생 시안과 같은 상태(390 = 목록, 1440
           expect(await page.locator(`${sel(name)}:not(${sel(detail)} *)`).count(), `${name} 은 상세 안에만`).toBe(0);
           continue;
         }
+        // rules 1.29 (d7 §29): 기록 삭제 상태 프레임(variants[10]["record-wipe"]) 부품 · 실행 뒤 ex-toast 는 기본 목록 상태(학생)에서 0
+        // (학생은 R5 page-more-menu · record-wipe 0 — 진입 자체가 없다. 흐름은 screen-10-record-wipe.spec)
+        if (STATE_ONLY_10.has(name)) {
+          expect(await countComponent(page, name), `${name} (상태 프레임 10-record-wipe · 실행 뒤 토스트 — 기본 목록 0)`).toBe(0);
+          continue;
+        }
         // 프레임에 없는 상태 컴포넌트 (0건 카드) — 기록이 있을 때는 없어야 한다
-        expect(name, "프레임에 없는 화면 10 컴포넌트는 0건 카드뿐").toBe(EMPTY);
+        expect(name, "프레임에 없는 화면 10 컴포넌트는 0건 카드 · 기록 삭제 상태 부품뿐").toBe(EMPTY);
         expect(await countComponent(page, name), `${name} (기록 있음)`).toBe(0);
         continue;
       }

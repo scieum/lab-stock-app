@@ -8,10 +8,25 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { openAs } from "./auth-state";
 import { DRAWER, TABLE, drawer, drawerTitle, newFrame, waitDrawer } from "./desk-helpers";
-import { browserClient, routeOf, sel, type ViewportName } from "./screen-helpers";
+import { MANAGE_BACK_SCREENS, MANAGE_SCREEN, browserClient, routeOf, sel, type ViewportName } from "./screen-helpers";
 import { dbHistory } from "./screen-10-helpers";
 
 type FNode = ReturnType<typeof newFrame>[number];
+/**
+ * 390 머리: rules 1.29 manage.back (d7 §29) 관리 아래 화면이면 nav-pill 왼쪽 manage-back '‹ 관리'(→ /manage) — 제목 자리
+ * (시안 8-mobile · 9-mobile 은 1.29 전 그림, rules 우선). 아니면 시안 nav-title 이 보인다.
+ */
+async function expectMobileHead(page: Page, screen: number, title: string): Promise<void> {
+  if (MANAGE_BACK_SCREENS.includes(screen)) {
+    const back = page.locator(`${sel("nav-pill")} ${sel("manage-back")}`);
+    await expect(back, `화면 ${screen} 390 manage-back 1`).toHaveCount(1);
+    await expect(back).toBeVisible();
+    await expect(back).toHaveAttribute("href", routeOf(MANAGE_SCREEN));
+    return;
+  }
+  await expect(page.locator(sel("nav-pill")).getByText(title, { exact: true }).filter({ visible: true })).toHaveCount(1);
+}
+
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const squash = (s: string) => s.replace(/\s+/g, " ").trim();
 
@@ -288,7 +303,7 @@ test(`[C1][S8] 학교A admin /users 새 프레임 대조: 1440 = 8-desktop(제�
     const [pre, post] = [note.slice(0, note.indexOf("(") + 1), note.slice(note.indexOf(")"))];
     await expect(manage.getByText(new RegExp(`^${esc(pre)}.+${esc(post)}$`)), "유의사항 틀").toHaveCount(1);
     if (viewport === "mobile") {
-      await expect(page.locator(sel("nav-pill")).getByText(one(f, (n) => n.name === "nav-title", "제목"), { exact: true }).filter({ visible: true })).toHaveCount(1);
+      await expectMobileHead(page, Number(f.split("-")[0]), one(f, (n) => n.name === "nav-title", "제목"));
       return;
     }
     const head = page.locator('main [data-name="page-head"]');
@@ -315,7 +330,7 @@ test(`[C1][S9] 학교A admin /vendors 새 프레임 대조: 1440 = 9-desktop(제
     await expect(seg).toBeVisible({ timeout: 45_000 });
     expect((await seg.locator('[role="tab"]').allInnerTexts()).map(squash), "탭 = 시안").toEqual(tabs);
     if (viewport === "mobile") {
-      await expect(page.locator(sel("nav-pill")).getByText(one(f, (n) => n.name === "nav-title", "제목"), { exact: true }).filter({ visible: true })).toHaveCount(1);
+      await expectMobileHead(page, Number(f.split("-")[0]), one(f, (n) => n.name === "nav-title", "제목"));
       return;
     }
     const head = page.locator('main [data-name="page-head"]');
@@ -345,7 +360,7 @@ test(`[C1][S10] 학교A 학생 /usage 새 프레임 대조: 1440 = 10-desktop(�
     await expect(seg).toBeVisible({ timeout: 45_000 });
     expect((await seg.locator('[role="tab"]').allInnerTexts()).map(squash), "범위 탭 = 시안").toEqual(tabs);
     if (viewport === "mobile") {
-      await expect(page.locator(sel("nav-pill")).getByText(one(f, (n) => n.name === "nav-title", "제목"), { exact: true }).filter({ visible: true })).toHaveCount(1);
+      await expectMobileHead(page, Number(f.split("-")[0]), one(f, (n) => n.name === "nav-title", "제목"));
       return;
     }
     const head = page.locator('main [data-name="page-head"]');

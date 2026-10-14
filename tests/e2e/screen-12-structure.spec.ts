@@ -78,7 +78,13 @@ test(`[C1][S${SCREEN}] 기대값 원본: dev-rules routes ${SCREEN} = ${SCAN} ·
   // 프레임: segmented 라벨 = d7 · 탭 라벨 · 사이드바 메뉴
   expect(ftexts(frameName("mobile"), "label", SEGMENT), "프레임 12-mobile segmented 라벨 = d7").toEqual([MODES.scan, MODES.manual]);
   expect(fnode(frameName("mobile"), "nav-title").text!.characters, "프레임 nav-title = 탭 라벨").toBe(QR_TAB_LABEL);
-  expect(ftexts(frameName("mobile"), "label", TB.component), "프레임 12-mobile 탭 라벨 = rules").toEqual(TB.labels);
+  // 프레임 12-mobile 은 1.29 전에 그려졌다 — rules tab_bar.labels_source "'시약' 탭 → '관리' 탭" 이름 바꿈을 적용하면 rules labels 와 같다
+  const rename = /'([^']+)' 탭 → '([^']+)' 탭/.exec((TB as unknown as { labels_source: string }).labels_source);
+  expect(rename, "rules tab_bar.labels_source 탭 이름 바꿈").not.toBeNull();
+  expect(
+    ftexts(frameName("mobile"), "label", TB.component).map((l) => (l === rename![1] ? rename![2] : l)),
+    "프레임 12-mobile 탭 라벨(1.29 이름 바꿈 적용) = rules",
+  ).toEqual(TB.labels);
   expect(ftexts(frameName("desktop"), "label", DS.component), "프레임 12-desktop 사이드바에 QR 메뉴").toContain(QR_MENU_LABEL);
   expect(fnode(frameName("desktop"), "title", "page-head").text!.characters, "프레임 page-head 제목 = QR 메뉴").toBe(QR_MENU_LABEL);
 });

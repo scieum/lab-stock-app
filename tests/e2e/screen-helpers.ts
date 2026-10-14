@@ -161,6 +161,20 @@ export const REMOVED_INVENTORY_SWITCH: string = (() => {
 })();
 if (REMOVED_MOBILE_MENU.length !== 2) throw new Error("rules mobile_menu.removed 에서 없앤 ☰ 컴포넌트 2개를 읽지 못함");
 
+/**
+ * rules 1.29 manage (d7 §29): 화면 18 관리(모바일 전용) · manage-back '‹ 관리' 를 두는 관리 아래 화면 (manage.back "관리 아래 화면(2·5·6·7·8·9·11·17)").
+ * 그 화면들의 모바일 nav-pill 머리 왼쪽 = manage-back(→ routes[18]) — 워드마크 · 제목 자리 (시안 2-mobile · 17-mobile nav-left = manage-back 만).
+ */
+export const MANAGE_RULES = (rules as unknown as { manage: { screen: number; back: string; list: string; row: string; guest: string; desktop: string } }).manage;
+export const MANAGE_SCREEN: number = MANAGE_RULES.screen;
+export const MANAGE_BACK_SCREENS: number[] = (() => {
+  const m = /관리 아래 화면\(([\d·]+)\)/.exec(MANAGE_RULES.back);
+  if (!m) throw new Error("rules manage.back 에서 관리 아래 화면 목록을 읽지 못함");
+  return m[1].split("·").map(Number);
+})();
+/** rules frames.mobile_only_screens (1.29 — 18): 데스크톱 프레임 없음 · 1440 은 사이드바가 대신 */
+export const MOBILE_ONLY_SCREENS: number[] = (rules as unknown as { frames: { mobile_only_screens?: number[] } }).frames.mobile_only_screens ?? [];
+
 export function routeOf(screen: number): string {
   const r = devRules.routes[String(screen)];
   if (!r) throw new Error(`dev-rules.json routes 에 화면 ${screen} 없음`);

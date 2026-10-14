@@ -62,6 +62,11 @@ async function lowStockCount(page: Page): Promise<number> {
 }
 
 const MSDS_BANNER = "msds-bulk-banner";
+const PAGE_MORE = "page-more-menu";
+/** rules 1.29 wipe.roles (시약 전체 삭제 · 기록 삭제 = admin 만) */
+const WIPE_ROLES: string[] = (rules as unknown as { wipe: { roles: string[] } }).wipe.roles;
+/** rules roles 의 역할 이름 (학교 B 계정 = 교사) */
+const RULE_ROLE_OF: Record<Role, string> = { student: "학생", teacher: "교사", admin: "admin", schoolB: "교사" };
 
 /** 자기 세션(RLS)으로 읽은 MSDS 없는(msds_url 비어 있음) 시약 수 */
 async function noMsdsCount(page: Page): Promise<number> {
@@ -92,7 +97,8 @@ for (const role of ROLES) {
     const baseFrame = frameNames(`${SCREEN}-${info.project.name}`);
     const variantOnly = [...new Set(Object.values(VARIANTS2).flat())].filter((n) => fromDev.includes(n) && !baseFrame.has(n));
     // 1.26: variants[2].select · bulk-delete (선택 모드 · 확인 모달) — 기본 상태 0, 선택 모드는 screen-2-bulk-delete.spec 에서 본다
-    expect(variantOnly.sort(), "variants[2] 에만 있는 화면 2 컴포넌트").toEqual(["bulk-action-bar", "ex-empty-state-card", "ex-modal-card", "filter-chip-row", "list-filter-sheet", "msds-candidates", "select-checkbox", "storage-class-chip"]);
+    // 1.29: variants[2].wipe (page-more-menu ⋯ · reagent-wipe · school-name-confirm — 시약 전체 삭제, admin 만) — 흐름은 screen-2-wipe.spec
+    expect(variantOnly.sort(), "variants[2] 에만 있는 화면 2 컴포넌트").toEqual(["bulk-action-bar", "ex-empty-state-card", "ex-modal-card", "filter-chip-row", "list-filter-sheet", "msds-candidates", "page-more-menu", "reagent-wipe", "school-name-confirm", "select-checkbox", "storage-class-chip"]);
     // 역할로 금지된 것 (R5 학생: list-select-toggle 등) — 그 역할 화면에서는 0 (screen-2 R-ui 와 같은 기준)
     const forbidden = new Set(roleChecks(SCREEN, ROLE_NAME[role as keyof typeof ROLE_NAME]).filter((c) => c.op === "max" && c.value === 0).map((c) => c.component));
     expect(VARIANTS2["msds-bulk"] ?? [], "variants[2].msds-bulk 에 msds-bulk-banner").toContain(MSDS_BANNER);
@@ -143,6 +149,12 @@ for (const role of ROLES) {
           }
           if (low > 0) expect(await countComponent(page, name), `${name} (부족 ${low}종)`).toBeGreaterThanOrEqual(1);
           else expect(await countComponent(page, name), `${name} (부족 0종)`).toBe(0);
+          continue;
+        }
+        if (name === PAGE_MORE) {
+          // rules 1.29 wipe.entry: 페이지 머리 ⋯ 는 기본 상태에도 있다 — admin(wipe.roles) 1 · 교사(R8) · 학생(R5) 0 (학교 B 계정 = 교사)
+          const n = WIPE_ROLES.includes(RULE_ROLE_OF[role]) ? 1 : 0;
+          await expect(page.locator(`main ${sel(name)}`), `${name} (${ROLE_LABEL[role]}: rules wipe.roles ${WIPE_ROLES.join("·")} → ${n})`).toHaveCount(n);
           continue;
         }
         if (variantOnly.includes(name) || name === MSDS_BANNER) {

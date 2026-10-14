@@ -7,7 +7,7 @@
 import { test, expect, type TestInfo } from "@playwright/test";
 import { openAs } from "./auth-state";
 import { frameActiveLabel } from "../desktop-shell";
-import { browserClient, browserSession, countComponent, rules, sel } from "./screen-helpers";
+import { browserClient, browserSession, countComponent, routeOf, rules, sel } from "./screen-helpers";
 import { HAS_SERVICE, openTemp } from "./screen-8-helpers";
 import { autoFromIntake } from "./reorder-auto-helpers";
 import {
@@ -61,6 +61,8 @@ import {
   amountInput,
   backLink,
   backExpected,
+  backHref,
+  MANAGE_HREF,
   basisOf,
   blockSaves,
   bodyRows,
@@ -531,8 +533,14 @@ test(`[C1][S${SCREEN}] 일회용 학교 교사: 추출하고 고치기만 하고
     expect(await schoolReagents(f.school.id), `"${RETRY}" 뒤 DB 불변`).toEqual(dbBefore);
 
     // 화면 6 으로 떠난다 → 돌아온다 (390 = nav-pill 뒤로, 1440 = 새 프레임 5-desktop 에 뒤로가 없으면 사이드바 "${frameActiveLabel(6)}")
-    if (backExpected(page)) await backLink(page).click();
-    else await page.locator(sel("app-sidebar")).getByRole("link", { name: frameActiveLabel(6), exact: true }).click();
+    if (backExpected(page)) {
+      await backLink(page).click();
+      if (backHref(page) === MANAGE_HREF) {
+        // 390 (rules 1.29 manage.back): '‹ 관리' → 화면 18 → manage-row '재주문 알림'(→ 화면 6)
+        await page.waitForURL((u) => u.pathname === MANAGE_HREF, { timeout: 30_000 });
+        await page.locator(`main ${sel("manage-row")}[href="${routeOf(6)}"]`).click();
+      }
+    } else await page.locator(sel("app-sidebar")).getByRole("link", { name: frameActiveLabel(6), exact: true }).click();
     await waitReorder(page);
     const shown = await readAlerts(page);
     expect(shown.map((s) => s.name), "화면 6: 저장하지 않았으니 알림은 준비한 그대로(0건)").toEqual([]);
