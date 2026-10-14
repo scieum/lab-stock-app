@@ -35,7 +35,7 @@ export type ReorderVendor = {
   name: string;
   contact: string | null;
   website: string | null;
-  /** 검색 주소 틀 (vendors.search_url, `{q}` = 시약 이름) — 공통 목록 4곳만 있다 (d7 §11 검색어 자동 입력) */
+  /** 검색 주소 틀 (vendors.search_url, `{q}` = 시약 이름) — 공통 목록 일부만 있다 (d7 §11 검색어 자동 입력) */
   searchUrl: string | null;
   note: string | null;
   /** 공통 목록(school_id = null) 여부 */

@@ -111,7 +111,7 @@ export const VENDOR_SEARCH_PLACEHOLDER = "{q}";
 
 /**
  * 판매처 연결 "확인" 때 열 주소 (d7 §11 검색어 자동 입력, 2026-10-07 결정).
- * - searchUrl(검색 주소 틀, 공통 목록 4곳만 있음)이 있고 시약 이름이 앞뒤 공백을 지운 뒤 비지 않으면
+ * - searchUrl(검색 주소 틀, 공통 목록 일부만 있음)이 있고 시약 이름이 앞뒤 공백을 지운 뒤 비지 않으면
  *   `{q}` 를 encodeURIComponent(이름) 으로 바꾼 검색 결과 주소.
  * - 아니면 website (없으면 null). 우리 학교 판매처는 searchUrl 이 없어 지금처럼 웹사이트를 연다.
  * searchUrl 이 https:// 가 아니거나 `{q}` 가 없으면(테이블 제약상 없는 값) 없는 것으로 본다.
