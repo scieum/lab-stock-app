@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { test, expect, type Page } from "@playwright/test";
 import { ROLE_LABEL, SCHOOL_A_ROLES } from "./db-helpers";
 import { openAs } from "./auth-state";
-import { PROFILE_ROLE, ROLE_NAME, browserClient, browserSession, countComponent, devRules, roleChecks, routeOf, rules, sel, tabItemLabels } from "./screen-helpers";
+import { MANAGE_BACK_SCREENS, PROFILE_ROLE, ROLE_NAME, browserClient, browserSession, countComponent, devRules, roleChecks, routeOf, rules, sel, tabItemLabels } from "./screen-helpers";
 import { DESKTOP_SHELL, frameActiveLabel } from "../desktop-shell";
 import { newFrame, waitWidthSettled } from "./desk-helpers";
 import { expectShellHeader, shellSchoolScope } from "./shell-helpers";
@@ -325,7 +325,8 @@ test(`[C1][S${SCREEN}] 학교A admin 기본 상태: nav-pill(워드마크·"${NA
     // 셸 머리: 390 = nav-pill(워드마크·제목·학교명) / 1440 = 사이드바(워드마크·학교명) + 본문 제목 (rules 1.22 desktop_shell)
     // 본문 제목: 390 = nav-pill "사용자 관리" / 1440 = 새 프레임 8-desktop page-title (d7 §23 run b)
     await expectShellHeader(page, viewport, { wordmark: WORDMARK, title: viewport === "desktop" ? DESK_TITLE8 : NAV_LABEL, schoolName: me.schoolName }, "화면 8");
-    if (viewport === "mobile") {
+    // rules 1.29 manage.back (d7 §29): 화면 8 은 관리 아래 화면 — 390 머리 왼쪽 = manage-back '‹ 관리' (제목 "사용자 관리" 자리, expectShellHeader 가 본다)
+    if (viewport === "mobile" && !MANAGE_BACK_SCREENS.includes(SCREEN)) {
       await expect(page.locator(sel("nav-pill")).getByText(exact(NAV_LABEL)).locator("visible=true"), `nav-pill 에 "${NAV_LABEL}" 가 보임`).toHaveCount(1);
     }
     if (viewport === "desktop") await expect(page.getByRole("heading", { level: 1, name: exact(DESK_TITLE8) }), "데스크탑 page-title").toBeVisible();

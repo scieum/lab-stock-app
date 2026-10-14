@@ -10,14 +10,9 @@
   box-sizing: border-box;
 }
 
-/* ☰ 가 있는 nav (시안 13-mobile: 위아래 4 · 왼쪽 4 · 오른쪽 24, 높이 52 = 버튼 44 + 8) */
-.withMenu {
-  padding: var(--space-4) var(--space-24) var(--space-4) var(--space-4);
-}
-
-/* ☰ 오른쪽의 뒤로가기·닫기(44): 좌우는 사이 8 만큼만 당겨 ☰ 와 맞닿고(겹침 없음), 위아래 당김은 없다(nav 안쪽이 이미 44 높이) */
-.withMenu .back {
-  margin: 0 calc(var(--space-8) * -1);
+/* manage-back '‹ 관리' 가 있는 nav (시안 1.29 2-mobile · 17-mobile: 위아래 0 · 왼쪽 16 · 오른쪽 24, 높이 48 = manage-back 48) */
+.withManageBack {
+  padding: var(--space-0) var(--space-24) var(--space-0) var(--space-16);
 }
 
 .left {

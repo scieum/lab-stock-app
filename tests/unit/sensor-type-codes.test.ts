@@ -1,7 +1,7 @@
 // 센서 종류 ↔ 지능형 과학실 ON 오픈API 센서타입 코드 (lib/sensor-rules SENSOR_TYPE_CODES).
 // 기대값: harness/d7-data.md §26 "ON 센서 코드"(정의서 2026-06-16 V1.2 별첨 2 공식 코드 9개, 공식 코드가 없는 종류는 null — 임시 3글자 금지,
 //         화면에는 쓰지 않음) + §28 "ON 코드"(전도도 = CDT 추가, 심박·생체 · 나머지 새 종류 = null, SPO 는 대응하지 않음),
-//         design/rules.json 1.28 sensor.types(27종). 코드 표는 d7 문장에서 읽는다 (구현에서 읽지 않는다).
+//         design/rules.json sensor.types(27종). 코드 표는 d7 문장에서 읽는다 (구현에서 읽지 않는다).
 import { describe, expect, it } from "vitest";
 import { join } from "node:path";
 import { SENSOR_TYPES, SENSOR_TYPE_CODES } from "../../lib/sensor-rules";
@@ -42,7 +42,6 @@ describe("[C1][S17] ON 센서 코드 = d7 §26 공식 코드 + §28 (종류 27�
     expect(ADDED).toEqual({ 전도도: "CDT" });
     expect(NOT_MAPPED).toEqual(["SPO"]);
     expect(TYPES).toHaveLength(27);
-    expect(rules.version).toBe("1.28");
   });
 
   it(`[C1][S17] SENSOR_TYPES · SENSOR_TYPE_CODES 의 종류 = rules sensor.types ${TYPES.length}종 그대로 (순서 · 빠짐 · 덧붙임 없음)`, () => {

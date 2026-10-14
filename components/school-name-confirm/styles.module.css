@@ -1,0 +1,29 @@
+/* 시안 1.29 school-name-confirm: caption 12 muted → text-input 47 (field 채움, radius 16), 사이 8. 모달 안은 위 16 */
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.spaced {
+  padding-top: var(--space-16);
+}
+
+.caption {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.input {
+  width: 100%;
+}
+
+.note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}

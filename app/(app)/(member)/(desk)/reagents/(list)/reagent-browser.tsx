@@ -5,7 +5,6 @@ import { BulkDeleteFlow } from "@/components/bulk-action-bar/flow";
 import { ButtonOutline } from "@/components/button-outline";
 import { EmptyStateCard } from "@/components/ex-empty-state-card";
 import { FilterChipRow } from "@/components/filter-chip-row";
-import { InventorySwitch } from "@/components/inventory-switch";
 import { ListFilterButton } from "@/components/list-filter-button";
 import { ListFilterSheet } from "@/components/list-filter-sheet";
 import { ListSelectToggle } from "@/components/list-select-toggle";
@@ -25,6 +24,7 @@ import {
 import type { ReagentListItem } from "@/lib/supabase/reagents-data";
 import { useBulkSelect } from "@/lib/use-bulk-select";
 import { archiveReagentsAction } from "../bulk-actions";
+import { ReagentWipeFlow } from "../reagent-wipe-flow";
 import { MsdsBulk } from "./msds-bulk";
 import styles from "./reagents.module.css";
 
@@ -49,8 +49,8 @@ type Props = {
   canFindMsds?: boolean;
   /** true = 교사·admin — 선택 모드 · 여러 개 삭제 (d7 §25 bulk_delete, R5). 학생·둘러보기는 false */
   canSelect?: boolean;
-  /** 맨 위 inventory-switch "시약 | 센서" 주소 앞머리 (둘러보기 "/demo") */
-  inventoryBase?: "" | "/demo";
+  /** admin 만 — 우리 학교 이름. 있으면 목록 머리 오른쪽 page-more-menu ⋯ '시약 전체 삭제' (d7 §29). 교사·학생·둘러보기는 없음 */
+  wipeSchoolName?: string;
 };
 
 /** 주소창(?filter·?q + 필터 시트 값)을 화면 상태와 맞춘다 — 새로고침·뒤로가기에도 같은 목록 */
@@ -82,7 +82,7 @@ export function ReagentBrowser({
   detailBase = "/reagents",
   canFindMsds = false,
   canSelect = false,
-  inventoryBase = "",
+  wipeSchoolName,
 }: Props) {
   const [filter, setFilter] = useState<ReagentFilter>(initialFilter);
   const [query, setQuery] = useState(initialQuery);
@@ -142,7 +142,8 @@ export function ReagentBrowser({
   }, [open]);
 
   let empty: React.ReactNode = null;
-  if (items.length === 0) empty = <p className={styles.empty}>등록된 시약이 없어요</p>;
+  // 시약 0종 (처음 · 시약 전체 삭제 뒤 — rules wipe.reagent 빈 목록): 데스크톱과 같은 ex-empty-state-card
+  if (items.length === 0) empty = <EmptyStateCard variant="outlined" title="등록된 시약이 없어요" />;
   else if (visible.length === 0 && chips.length > 0) {
     empty = (
       <EmptyStateCard variant="outlined" title="조건에 맞는 시약이 없어요" description="칩을 하나씩 빼거나 필터를 지워 보세요">
@@ -155,9 +156,6 @@ export function ReagentBrowser({
 
   return (
     <>
-      <div className={styles.switchRow}>
-        <InventorySwitch active="reagents" base={inventoryBase} />
-      </div>
       {canFindMsds && applied.noMsds ? <MsdsBulk targets={msdsTargets} /> : null}
       {selecting ? (
         <ListSelectToggle
@@ -170,7 +168,13 @@ export function ReagentBrowser({
       ) : (
         <div className={styles.listHead} data-name="list-head">
           <h1 className={styles.title}>{`시약 ${visible.length}종`}</h1>
-          {canSelect && items.length > 0 ? <ListSelectToggle selecting={false} onStart={select.start} disabled={visible.length === 0} /> : null}
+          {/* 시안 2-wipe-mobile head-actions: 선택 → page-more-menu ⋯ (admin) */}
+          {(canSelect && items.length > 0) || wipeSchoolName ? (
+            <div className={styles.headActions} data-name="head-actions">
+              {canSelect && items.length > 0 ? <ListSelectToggle selecting={false} onStart={select.start} disabled={visible.length === 0} /> : null}
+              {wipeSchoolName ? <ReagentWipeFlow count={items.length} schoolName={wipeSchoolName} /> : null}
+            </div>
+          ) : null}
         </div>
       )}
       <div className={styles.toolbar}>

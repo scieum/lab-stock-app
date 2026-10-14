@@ -1,17 +1,17 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { inventoryHref, useLastInventory } from "@/components/inventory-switch";
 import { TabItem } from "@/components/tab-item";
 import { MOBILE_MEDIA_QUERY } from "@/lib/breakpoints";
+import type { TabKey } from "@/lib/manage-menu";
 import styles from "./styles.module.css";
 
-export type TabKey = "home" | "reagents" | "scan" | "records";
+export type { TabKey };
 
-// rules.json tab_bar.labels 순서: 홈 · 시약 · QR 스캔 · 기록
-const TABS: { key: TabKey; label: string; href: string; icon: "home" | "flask" | "qr" | "record" }[] = [
+// rules.json 1.29 tab_bar.labels 순서: 홈 · 관리 · QR 스캔 · 기록 ('관리' = 화면 18 /manage, 격자 아이콘)
+const TABS: { key: TabKey; label: string; href: string; icon: "home" | "grid" | "qr" | "record" }[] = [
   { key: "home", label: "홈", href: "/", icon: "home" },
-  { key: "reagents", label: "시약", href: "/reagents", icon: "flask" },
+  { key: "manage", label: "관리", href: "/manage", icon: "grid" },
   { key: "scan", label: "QR 스캔", href: "/scan", icon: "qr" },
   { key: "records", label: "기록", href: "/usage", icon: "record" },
 ];
@@ -25,10 +25,10 @@ function subscribe(cb: () => void) {
 const isMobile = () => window.matchMedia(MOBILE_MEDIA_QUERY).matches;
 
 /**
- * 둘러보기(/demo) 탭: 홈·시약은 데모 경로(dev-rules.json routes 13-guest·2-guest),
+ * 둘러보기(/demo) 탭: 홈·관리는 데모 경로(dev-rules.json routes 13-guest·18-guest),
  * QR 스캔·기록은 잠금 (design/rules.json guest.locked_tabs, tab_locks 2)
  */
-const GUEST_HREF: Partial<Record<TabKey, string>> = { home: "/demo", reagents: "/demo/reagents" };
+const GUEST_HREF: Partial<Record<TabKey, string>> = { home: "/demo", manage: "/demo/manage" };
 const GUEST_LOCKED: TabKey[] = ["scan", "records"];
 
 type Props = {
@@ -45,13 +45,8 @@ type Props = {
 /** 모바일 하단 탭바 — 전폭 사각형(radius 0), 탭 4개 */
 export function TabBar({ active, responsive = true, guest = false }: Props) {
   const mobile = useSyncExternalStore(subscribe, isMobile, () => true);
-  // "시약" 탭 = 시약 | 센서 중 마지막으로 고른 쪽 (rules tab_bar.sensor_entry)
-  const inventory = useLastInventory();
   if (responsive && !mobile) return null;
-  const hrefOf = (t: (typeof TABS)[number]) => {
-    if (t.key === "reagents") return inventoryHref(inventory, guest ? "/demo" : "");
-    return guest ? (GUEST_HREF[t.key] ?? t.href) : t.href;
-  };
+  const hrefOf = (t: (typeof TABS)[number]) => (guest ? (GUEST_HREF[t.key] ?? t.href) : t.href);
   return (
     <nav
       data-component="tab-bar"

@@ -139,7 +139,9 @@ const UNASSIGNED_CAPTION_FILL = unassignedNodes.find((n) => n.name === "slot-cap
 const SAVE_LABEL = labelIn(groups(under(mainNodes, "bottom-actions"), "button-primary")[0]);
 const DELETE_LABEL_FILL = mainNodes.find((n) => n.name === "label" && n.path.includes("link-delete"))!.fills[0];
 /** 데스크탑 시안 11-desktop: 편집 카드(cabinet-edit) 안에 든 컴포넌트 (모바일 시안은 같은 묶음을 세로로 펼쳐 그린다) */
-const EDIT_INSIDE = [...new Set(under(desktopNodes, "cabinet-edit").map(leaf).filter((n) => Object.keys(dev.components).includes(n)))];
+// 화면 11 소속 컴포넌트만 (dev-rules components 에 11) — 시안 11 cabinet-edit 안 레이어 이름 "manage-row"(관리 줄)는
+// 1.29 의 화면 18 전용 manage-row 컴포넌트와 이름만 같다 (d7 §29)
+const EDIT_INSIDE = [...new Set(under(desktopNodes, "cabinet-edit").map(leaf).filter((n) => (dev.components[n] ?? []).includes(SCREEN)))];
 
 const EMPTY = {
   pageTitle: texts(emptyNodes, "page-title")[0],
@@ -170,7 +172,8 @@ const SHELL = ["nav-pill", rules.tab_bar.component, rules.tab_bar.item];
 const countByName = (nodes: FrameNode[]) => {
   const out: Record<string, number> = {};
   for (const n of nodes) {
-    if (!componentNames.includes(leaf(n))) continue;
+    // 화면 11 소속 컴포넌트만 (cabinet-edit 안 레이어 "manage-row" 는 1.29 화면 18 manage-row 와 이름만 같다)
+    if (!componentNames.includes(leaf(n)) || !dev.components[leaf(n)].includes(SCREEN)) continue;
     if (n.path.some((p) => SHELL.includes(p))) continue;
     out[leaf(n)] = (out[leaf(n)] ?? 0) + 1;
   }
@@ -525,8 +528,8 @@ test(`[K1][S${SCREEN}] /gallery DOM 에 화면 ${SCREEN} 전용 컴포넌트(화
 
 test(`[K1][S${SCREEN}] /gallery/cabinets DOM 에 화면 ${SCREEN} 컴포넌트(dev-rules, tab-bar 제외)가 각각 1개 이상, 새 data-component 이름 없음`, async ({ page }) => {
   // 데스크톱 셸(rules 1.22 desktop_shell app-sidebar · sidebar-item)은 /gallery/sidebar 에 있다
-  // mobile-menu-button(rules 1.28 mobile_menu.button) = nav-pill 맨 왼쪽 셸 — /gallery/menu 에 있다 (gallery-28-components)
-  const want = componentNames.filter((n) => dev.components[n].includes(SCREEN) && ![rules.tab_bar.component, rules.tab_bar.item, "mobile-menu-button", ...DESKTOP_SHELL_NAMES].includes(n));
+  // manage-back(rules 1.29 manage.back) = 모바일 nav-pill 왼쪽 셸 부분 — /gallery · /gallery/manage 에 있다 (gallery-29-components). ☰ 는 1.29 에서 없앰
+  const want = componentNames.filter((n) => dev.components[n].includes(SCREEN) && ![rules.tab_bar.component, rules.tab_bar.item, "manage-back", ...DESKTOP_SHELL_NAMES].includes(n));
   expect(want.length, "dev-rules 화면 11 컴포넌트").toBeGreaterThan(8);
   await open(page);
   for (const n of want) expect(await page.locator(sel(n)).count(), `/gallery/cabinets ${n}`).toBeGreaterThanOrEqual(1);

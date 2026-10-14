@@ -1,0 +1,9 @@
+
+> Build error occurred
+Error: EBUSY: resource busy or locked, unlink 'C:\Users\User\OneDrive - 한국교원대학교\Claude Code\lab-stock-app\.next\static\media\PretendardVariable.subset.3.1-l5rrvcrkjj2.woff2'
+    at ignore-listed frames {
+  errno: -4082,
+  code: 'EBUSY',
+  syscall: 'unlink',
+  path: 'C:\\Users\\User\\OneDrive - 한국교원대학교\\Claude Code\\lab-stock-app\\.next\\static\\media\\PretendardVariable.subset.3.1-l5rrvcrkjj2.woff2'
+}

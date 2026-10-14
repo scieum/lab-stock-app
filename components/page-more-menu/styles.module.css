@@ -1,0 +1,53 @@
+/* ⋯ 버튼 자리 (안쪽 reagent-more-menu 모양 그대로) */
+.wrap {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+/* page-more-menu 항목 (reagent-delete · invite-cancel 항목과 같은 모양) — 비활성 = text-faint + caption 12 */
+.item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--button-min-height);
+  padding: var(--space-4) var(--space-12);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.item:hover:not(:disabled),
+.item:focus-visible {
+  background: var(--color-surface-muted);
+}
+
+.item:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.item:disabled {
+  border-radius: var(--radius-md);
+  color: var(--color-text-placeholder);
+  cursor: not-allowed;
+}
+
+.label {
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.caption {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}

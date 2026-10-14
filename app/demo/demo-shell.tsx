@@ -4,9 +4,9 @@ import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { GuestBanner } from "@/components/guest-banner";
 import { GuestToastProvider } from "@/components/guest-lock/toast";
-import { MobileMenu } from "@/components/mobile-menu-sheet/menu";
 import { NavPill, type NavLinkItem } from "@/components/nav-pill";
-import { TabBar, type TabKey } from "@/components/tab-bar";
+import { TabBar } from "@/components/tab-bar";
+import { guestTabActiveKey, manageBackHref } from "@/lib/manage-menu";
 import { guestSidebarActiveKey, guestSidebarMenu } from "@/lib/sidebar-menu";
 import { useIsDesktop } from "@/lib/use-viewport";
 import shell from "@/app/(app)/shell.module.css";
@@ -22,15 +22,6 @@ const LINKS: { label: string; href: string; locked?: boolean }[] = [
 
 function isActive(pathname: string, href: string) {
   return href === "/demo" ? pathname === "/demo" : pathname === href || pathname.startsWith(href + "/");
-}
-
-function activeTab(pathname: string): TabKey | undefined {
-  if (pathname === "/demo") return "home";
-  if (isActive(pathname, "/demo/reagents")) return "reagents";
-  if (isDemoMsdsPath(pathname)) return "reagents";
-  // 화면 17g 센서: "시약" 탭 안 inventory-switch
-  if (isActive(pathname, "/demo/sensors")) return "reagents";
-  return undefined;
 }
 
 /** 화면 16 둘러보기 /demo/msds/[id] — 모바일 nav 제목을 페이지가 알아 nav-pill·guest-banner 는 페이지가 DemoNav 로 그린다 */
@@ -74,17 +65,17 @@ function MobileDemoNav({ schoolName, page }: DemoNavProps) {
     ...l,
     active: !l.locked && (page ? l.href === page.activeHref : isActive(pathname, l.href)),
   }));
+  // 둘러보기 관리 아래 화면(2g · 17g) = manage-back '‹ 관리' → /demo/manage (d7 §29)
+  const back = page ? null : manageBackHref(pathname);
   return (
     <>
       <NavPill
         schoolName={schoolName}
+        manageBackHref={back ?? undefined}
         links={links}
         title={page ? page.title : detail ? "시약 상세" : sensorDetail ? "센서 상세" : undefined}
         backHref={page ? page.backHref : detail ? "/demo/reagents" : sensorDetail ? "/demo/sensors" : undefined}
         desktopWordmark={page ? true : undefined}
-        // rules 1.28 mobile_menu.guest: 둘러보기도 같은 ☰ 시트(데모 학교 · 홈·시약·센서 · 기록·QR 잠금 · 관리 없음 · '가입하기').
-        // 센서 상세(화면 17 하위 화면 ‹)에는 없음 — 로그인 후 셸과 같은 규칙
-        menu={sensorDetail ? undefined : <MobileMenu guest={{ signupHref: "/signup" }} schoolName={schoolName} />}
       />
       <GuestBanner signupHref="/signup" className={styles.banner} />
     </>
@@ -122,7 +113,7 @@ export function DemoShell({ schoolName, children }: Props) {
           )}
           <main className={[shell.main, desk ? styles.flush : styles.pageBody].join(" ")}>{children}</main>
         </div>
-        <TabBar guest active={activeTab(pathname)} />
+        <TabBar guest active={guestTabActiveKey(pathname)} />
       </div>
     </GuestToastProvider>
   );

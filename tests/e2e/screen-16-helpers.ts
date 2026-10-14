@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type Locator, type Page, type Response } from "@playwright/test";
-import { devRules, routeOf, rules, sel, type ViewportName, tabItemLabels } from "./screen-helpers";
+import { devRules, routeOf, rules, sel, type ViewportName, tabItemLabels, mobileActiveTab } from "./screen-helpers";
 import { framePath } from "../frames";
 import { drawer, isDeskPage, newFrame, waitWidthSettled } from "./desk-helpers";
 
@@ -90,12 +90,11 @@ export const FRAME = {
   })(),
   ghsWidth: F16.find((n) => n.name === GHS)?.width ?? NaN,
   diamondBox: F16.find((n) => n.name === "diamond-box")?.width ?? NaN,
-  /** 시안의 활성 탭 = 라벨 글자가 ink 인 tab-item */
-  activeTab: (() => {
-    const labels = F16.filter((n) => n.name === "label" && n.path.includes("tab-item") && n.text);
-    const ink = FRAME_INK();
-    return labels.find((n) => (n.fills[0] ?? "").toLowerCase() === ink)?.text?.characters ?? "";
-  })(),
+  /**
+   * 활성 탭 — rules 1.29 tab_bar.labels_source (d7 §29: 화면 16 = '관리'). 시안 16(1.28 이전)의 ink 탭 '시약' 은 1.29 에서 '관리' 로 바뀌었다
+   * (labels_source "'시약' 탭 → '관리' 탭").
+   */
+  activeTab: mobileActiveTab(SCREEN),
 };
 function FRAME_INK(): string {
   return (F16.find((n) => n.name === "section-title")?.fills[0] ?? "").toLowerCase();

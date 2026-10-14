@@ -11,7 +11,7 @@ import styles from "./styles.module.css";
 type Props = {
   label: string;
   href: string;
-  icon: "home" | "flask" | "qr" | "record";
+  icon: "home" | "flask" | "grid" | "qr" | "record";
   active?: boolean;
   /**
    * 둘러보기 잠금 (시안 13·2·3-guest tab-bar: QR 스캔·기록). 링크 대신 버튼 — 아이콘 오른쪽 위에 guest-lock,

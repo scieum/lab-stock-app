@@ -1,6 +1,7 @@
-// d7 §28 새 컴포넌트 11개 — 갤러리(/gallery · /gallery/sensor-catalog · /gallery/menu, 비로그인 공개) 대상 K1.
+// d7 §28 새 컴포넌트 — 갤러리(/gallery · /gallery/sensor-catalog · /gallery/menu, 비로그인 공개) 대상 K1.
 //   sensor-type-sheet · sensor-type-group · sensor-model-suggest · catalog-fill-note · sensor-doc-add · sensor-link · new-sensor-fields
-//   · mobile-menu-button · mobile-menu-sheet · invite-more-menu · invite-cancel (+ sensor-type-select box)
+//   · invite-more-menu · invite-cancel (+ sensor-type-select box). 1.28 의 mobile-menu-button · mobile-menu-sheet 는 rules 1.29
+//   mobile_menu.removed(d7 §29)로 없앴다 — 갤러리에 0 인지만 본다.
 // 기준: harness/d7-data.md §28, harness/dev-rules.json 1.20 components, design/rules.json 1.28 sensor.type_select · filter · catalog · doc ·
 //       mobile_menu · invite_cancel · colors, design/frames 17-type · 17-filter · 17-model · 17-desktop · 17-doc-review · 13-menu-mobile ·
 //       13-mobile · 8-invite-cancel (구조 · 글자 · 크기 · 색). 기대값은 프레임 · rules · d7 문장에서 읽는다 (구현 상수를 읽지 않는다).
@@ -36,7 +37,7 @@ type Rules = {
     catalog: { maker: string; suggest: string; fill: string };
     doc: Record<string, string>;
   };
-  mobile_menu: Record<string, string>;
+  mobile_menu: { removed: string };
   invite_cancel: { entry: string; confirm: string; after: string };
   colors: {
     allowed: string[];
@@ -55,6 +56,8 @@ const D7 = readFileSync(join(root, "harness/d7-data.md"), "utf8").replace(/\r\n/
 const D7_28 = D7.slice(D7.indexOf("## 28."), D7.indexOf("\n## ", D7.indexOf("## 28.") + 1));
 const d7Row = (head: string) => D7_28.split("\n").find((l) => l.startsWith(`| ${head} |`)) ?? "";
 const singleQuoted = (s: string) => [...s.matchAll(/'([^']+)'/g)].map((m) => m[1]);
+/** rules 1.29 mobile_menu.removed: 없앤 ☰ (mobile-menu-button · mobile-menu-sheet) */
+const REMOVED_MENU = rules.mobile_menu.removed.split("없앰")[0].match(/[a-z]+(?:-[a-z]+)+/g) ?? [];
 
 const NEW = [
   "sensor-type-sheet",
@@ -64,8 +67,6 @@ const NEW = [
   "sensor-doc-add",
   "sensor-link",
   "new-sensor-fields",
-  "mobile-menu-button",
-  "mobile-menu-sheet",
   "invite-more-menu",
   "invite-cancel",
 ] as const;
@@ -85,8 +86,6 @@ const F_FILTER = frame("17-filter-mobile");
 const F_MODEL = frame("17-model-mobile");
 const F_DESK = frame("17-desktop");
 const F_REVIEW = frame("17-doc-review-mobile");
-const F_MENU = frame("13-menu-mobile");
-const F_HOME = frame("13-mobile");
 const F_INVITE = frame("8-invite-cancel-mobile");
 
 const TYPE = {
@@ -139,27 +138,6 @@ const NEW_FIELDS = {
   inside: [...new Set(under(F_REVIEW, "new-sensor-fields").map(leaf).filter((n) => Object.keys(dev.components).includes(n)))],
   segments: texts(F_REVIEW, "label", "segmented-control").map((t) => t.characters),
 };
-const MENU = {
-  sheet: node(F_MENU, "mobile-menu-sheet"),
-  school: texts(F_MENU, "school-name", "mobile-menu-sheet")[0],
-  user: texts(F_MENU, "user", "mobile-menu-sheet")[0],
-  item: node(F_MENU, "menu-item", "mobile-menu-sheet"),
-  activeItem: under(F_MENU, "mobile-menu-sheet").find((n) => leaf(n) === "menu-item" && (n.fills ?? []).length > 0)!,
-  labels: texts(F_MENU, "label", "menu-list").map((t) => t.characters),
-  groupTitles: texts(F_MENU, "caption", "menu-list").map((t) => t.characters),
-  logout: texts(F_MENU, "label", "menu-logout")[0],
-  /** 첫 묶음 제목(menu-group-title) 앞의 항목 글자 — 노드 순서 */
-  firstGroup: (() => {
-    const out: string[] = [];
-    for (const n of under(F_MENU, "menu-list")) {
-      if (leaf(n) === "menu-group-title") break;
-      if (leaf(n) === "label" && n.path.includes("menu-item")) out.push(n.text!.characters);
-    }
-    return out;
-  })(),
-  buttonOpen: node(F_MENU, "mobile-menu-button"),
-  buttonClosed: node(F_HOME, "mobile-menu-button"),
-};
 const INVITE = {
   more: node(F_INVITE, "invite-more-menu"),
   title: texts(F_INVITE, "sheet-title", "ex-modal-card")[0],
@@ -175,8 +153,6 @@ const FILL_NOTE = singleQuoted(rules.sensor.catalog.fill).find((q) => q.startsWi
 const DOC_CHOICE = /'([^']+) \/ ([^']+)'/.exec(d7Row("센서 서류로 등록"))!.slice(1, 3);
 const DOC_PATH = /경로 `([^`]+)`/.exec(d7Row("센서 서류로 등록"))![1];
 const CATALOG_BADGE = singleQuoted(rules.sensor.doc.new_sensor).find((q) => q === "카탈로그")!;
-const GUEST_SIGNUP = singleQuoted(rules.mobile_menu.guest).find((q) => q.includes("가입"))!;
-const GUEST_SCHOOL = singleQuoted(rules.mobile_menu.guest).find((q) => q.includes("학교"))!;
 
 // ---------- 색 ----------
 const rgb = (hex: string) => {
@@ -224,11 +200,6 @@ async function expectText(l: Locator, t: { characters: string; fontSize: number;
   if (fill) expect(s.color, `${what} 색`).toBe(rgb(fill));
 }
 
-/** 데스크톱 폭 (dev-rules viewports desktop 1440 — playwright desktop 프로젝트) */
-async function isDesktop(page: Page): Promise<boolean> {
-  return (page.viewportSize()?.width ?? 0) >= 1024;
-}
-
 async function box(l: Locator) {
   const b = await l.boundingBox();
   expect(b, "보이는 상자").not.toBeNull();
@@ -274,10 +245,9 @@ async function expectPalette(scope: Locator, what: string): Promise<void> {
 // =====================================================================
 
 test(`[K1][S*] 기대값 원본: dev-rules components 에 새 ${NEW.length}개 · 각각 프레임에 있음 · rules ${rules.version} 문구 · d7 §28 경로`, () => {
-  expect(rules.version).toBe("1.28");
   const names = Object.keys(dev.components);
   for (const n of NEW) expect(names, `dev-rules components ${n}`).toContain(n);
-  const frames = [F_TYPE, F_FILTER, F_MODEL, F_DESK, F_REVIEW, F_MENU, F_HOME, F_INVITE];
+  const frames = [F_TYPE, F_FILTER, F_MODEL, F_DESK, F_REVIEW, F_INVITE];
   // invite-cancel 은 메뉴 항목이라 시안에 열린 메뉴가 그려지지 않았다 → rules invite_cancel.entry 문장에서 확인
   for (const n of NEW) {
     const inFrame = frames.some((f) => f.some((x) => leaf(x) === n));
@@ -296,9 +266,6 @@ test(`[K1][S*] 기대값 원본: dev-rules components 에 새 ${NEW.length}개 �
   expect(DOC_PATH).toBe("/sensors/doc");
   expect(DOC_ADD.label.characters).toBe(DOC_CHOICE[0]);
   expect(MODEL_SELECTED_INDEX, "17-model 고른 행 1").toBeGreaterThanOrEqual(0);
-  expect(MENU.labels, "13-menu QR 스캔").toContain("QR 스캔");
-  expect(GUEST_SCHOOL).toBe("데모 학교");
-  expect(GUEST_SIGNUP).toBe("가입하기");
   expect(INVITE.title.characters).toContain(" 초대를 취소할까요?");
   expect([INVITE.close.characters, INVITE.confirm.characters]).toEqual(["닫기", "초대 취소"]);
 });
@@ -307,22 +274,23 @@ test(`[K1][S*] 기대값 원본: dev-rules components 에 새 ${NEW.length}개 �
 // K1 — 갤러리에 등장
 // =====================================================================
 
-test(`[K1][S*] /gallery 에 새 컴포넌트 ${NEW.length}개 data-component 가 각각 1개 이상 · /gallery/sensor-catalog · /gallery/menu 연결`, async ({ page }) => {
+test(`[K1][S*] /gallery 에 새 컴포넌트 ${NEW.length}개 data-component 가 각각 1개 이상 · /gallery/sensor-catalog 연결 · 없앤 ☰(rules 1.29 mobile_menu.removed) 0`, async ({ page }) => {
   await open(page, GALLERY);
   for (const n of NEW) expect(await page.locator(sel(n)).count(), `/gallery ${n}`).toBeGreaterThanOrEqual(1);
   await expect(page.locator(`a[href="${SENSOR_GALLERY}"]`).first()).toBeAttached();
-  await expect(page.locator(`a[href="${MENU_GALLERY}"]`).first()).toBeAttached();
+  for (const n of REMOVED_MENU) await expect(page.locator(sel(n)), `/gallery ${n} 0`).toHaveCount(0);
 });
 
-test("[K1][S*] /gallery/sensor-catalog · /gallery/menu: 컴포넌트가 각각 1개 이상 (센서 7개 + sensor-type-select · 메뉴 · 초대 4개)", async ({ page }) => {
+test("[K1][S*] /gallery/sensor-catalog · /gallery/menu: 컴포넌트가 각각 1개 이상 (센서 7개 + sensor-type-select · 초대 2개) · ☰ 0", async ({ page }) => {
   await open(page, SENSOR_GALLERY);
   for (const n of ["sensor-type-sheet", "sensor-type-group", "sensor-type-select", "sensor-model-suggest", "catalog-fill-note", "sensor-doc-add", "sensor-link", "new-sensor-fields"]) {
     expect(await page.locator(sel(n)).count(), `${SENSOR_GALLERY} ${n}`).toBeGreaterThanOrEqual(1);
   }
   await open(page, MENU_GALLERY);
-  for (const n of ["mobile-menu-button", "mobile-menu-sheet", "invite-more-menu", "invite-cancel"]) {
+  for (const n of ["invite-more-menu", "invite-cancel"]) {
     expect(await page.locator(sel(n)).count(), `${MENU_GALLERY} ${n}`).toBeGreaterThanOrEqual(1);
   }
+  for (const n of REMOVED_MENU) await expect(page.locator(sel(n)), `${MENU_GALLERY} ${n} 0`).toHaveCount(0);
 });
 
 // =====================================================================
@@ -635,136 +603,6 @@ test(`[C1][S17] new-sensor-fields 시안 17-doc-review: 라벨 ${NEW_FIELDS.labe
   expect((await style(cat.getByText(CATALOG_BADGE, { exact: true }).first(), ["color"])).color, "caption muted").toBe(rgb("#707070"));
   await expectPalette(area(page, "sensor-link"), "new-sensor-fields");
   await expectPalette(area(page, "new-sensor-fields-static"), "new-sensor-fields 카탈로그");
-});
-
-// =====================================================================
-// 모바일 전체 메뉴 (13-menu-mobile) · 버튼 (13-mobile)
-// =====================================================================
-
-test(`[C1][S13] mobile-menu-button 시안 13-mobile · 13-menu-mobile: ${MENU.buttonClosed.width}×${MENU.buttonClosed.height} 동그라미 · 글자 없음 · 열림 = highlight-soft`, async ({ page }) => {
-  await open(page, MENU_GALLERY);
-  const btns = area(page, "menu-button").locator(sel("mobile-menu-button"));
-  await expect(btns).toHaveCount(2);
-  if (await isDesktop(page)) {
-    // rules mobile_menu.button "모바일 nav-pill" — 데스크톱(사이드바가 있는 폭)에서는 보이지 않는다
-    for (let i = 0; i < 2; i++) await expect(btns.nth(i), "데스크톱 숨김").toBeHidden();
-    return;
-  }
-  for (let i = 0; i < 2; i++) {
-    const b = await box(btns.nth(i));
-    expect(Math.round(b.width), "폭").toBe(MENU.buttonClosed.width);
-    expect(Math.round(b.height), "높이").toBe(MENU.buttonClosed.height);
-    expect((await btns.nth(i).innerText()).trim(), "글자 없음").toBe("");
-    await expect(btns.nth(i), "이름 있음(보조기기)").toHaveAttribute("aria-label", /.+/);
-    const s = await style(btns.nth(i), ["border-top-left-radius"]);
-    expect(parseFloat(s["border-top-left-radius"]), "동그라미").toBeGreaterThanOrEqual(MENU.buttonClosed.height! / 2);
-  }
-  const closed = (await style(btns.nth(0), ["background-color"]))["background-color"];
-  expect(TRANSPARENT(closed) || closed === rgb("#f3f3f3"), `닫힘 바탕 (프레임 ${MENU.buttonClosed.fills?.join(",") || "없음"})`).toBe(true);
-  expect((await style(btns.nth(1), ["background-color"]))["background-color"], "열림 = highlight-soft").toBe(rgb(MENU.buttonOpen.fills![0]));
-  await expect(btns.nth(1)).toHaveAttribute("aria-expanded", "true");
-  const iconColor = await btns.nth(0).locator("svg").evaluate((e) => getComputedStyle(e).color);
-  expect(iconColor, "아이콘 ink").toBe(rgb(under(F_MENU, "icon-menu")[0].strokes![0]));
-  await expectPalette(area(page, "menu-button"), "mobile-menu-button");
-});
-
-test(`[C1][S13] mobile-menu-sheet admin 시안 13-menu-mobile: '${MENU.school.characters}' · '${MENU.user.characters}' · 항목 ${MENU.labels.length}개 · 묶음 ${MENU.groupTitles.join("·")} · 홈 활성 · QR 스캔 정상(준비 중 없음 — d7 §28)`, async ({ page }) => {
-  await open(page, MENU_GALLERY);
-  const sheet = area(page, "menu-admin").locator(sel("mobile-menu-sheet"));
-  await expect(sheet).toHaveCount(1);
-  await expectText(sheet.getByRole("heading", { name: MENU.school.characters }), MENU.school, "학교명", node(F_MENU, "school-name", "mobile-menu-sheet").fills![0]);
-  await expectText(sheet.getByText(MENU.user.characters, { exact: true }), MENU.user, "이름 · 역할", node(F_MENU, "user", "mobile-menu-sheet").fills![0]);
-  const items = sheet.locator(dn("menu-item"));
-  const shown = (await items.locator("span:not([data-pending])").allInnerTexts()).map((t) => t.trim()).filter(Boolean);
-  expect(shown, "항목 글자 = 시안 (준비 중 빼고)").toEqual(MENU.labels);
-  expect(await sheet.getByText("준비 중").count(), "준비 중 0 (화면 12 있음)").toBe(0);
-  await expect(items).toHaveCount(MENU.labels.length);
-  const titles = (await sheet.locator(dn("menu-group-title")).allInnerTexts()).map((t) => t.trim());
-  expect(titles, "묶음 제목").toEqual(MENU.groupTitles);
-  for (let i = 0; i < MENU.labels.length; i++) {
-    expect(Math.round((await box(items.nth(i))).height), `항목 ${i + 1} 높이`).toBe(MENU.item.height);
-    const s = await style(items.nth(i), ["border-top-left-radius"]);
-    expect(s["border-top-left-radius"], "사각").toBe("0px");
-  }
-  // 활성 = 홈: highlight-soft + highlight 아이콘 + aria-current
-  const activeLabel = texts(F_MENU, "label", "menu-item").find((t) => t.fontWeight === 600)!;
-  const active = items.filter({ hasText: activeLabel.characters }).first();
-  await expect(active).toHaveAttribute("aria-current", "page");
-  expect((await style(active, ["background-color"]))["background-color"], "활성 바탕").toBe(rgb(MENU.activeItem.fills![0]));
-  expect(await active.locator("svg").first().evaluate((e) => getComputedStyle(e).color), "활성 아이콘 = highlight").toBe(HIGHLIGHT);
-  await expect(sheet.locator('[aria-current="page"]'), "활성 1").toHaveCount(1);
-  // QR 스캔 = /scan, ink 글자 (회색 준비 중 아님)
-  const qr = items.filter({ hasText: "QR 스캔" });
-  await expect(qr).toHaveAttribute("href", dev.routes["12"]);
-  expect((await style(qr.getByText("QR 스캔", { exact: true }), ["color"])).color, "QR 스캔 글자 = 다른 항목과 같은 ink (준비 중 회색 아님)").toBe(rgb(node(F_MENU, "label", "menu-item").fills![0]));
-  const inactive = items.filter({ hasText: MENU.labels[1] }).first();
-  await expectText(inactive.getByText(MENU.labels[1], { exact: true }), texts(F_MENU, "label", "menu-item")[1], "비활성 항목");
-  // 시트 모양: 위 radius · 테두리
-  const ss = await style(sheet, ["border-top-left-radius", "border-bottom-left-radius", "background-color"]);
-  const r = MENU.sheet.cornerRadius as number[];
-  expect(ss["border-top-left-radius"], "위 radius").toBe(`${r[0]}px`);
-  expect(ss["border-bottom-left-radius"], "아래 0").toBe("0px");
-  expect(ss["background-color"]).toBe(rgb(MENU.sheet.fills![0]));
-  // 주소 = 데스크톱 사이드바와 같은 화면 (dev-rules routes)
-  for (const [label, screen] of [["홈", "13"], ["시약", "2"], ["센서", "17"], ["시약장", "11"], ["입고", "7"], ["실험 매뉴얼", "5"], ["재주문 알림", "6"], ["사용자", "8"], ["판매처", "9"]] as const) {
-    await expect(items.filter({ hasText: new RegExp(`^${label}$`) }), `${label} 주소`).toHaveAttribute("href", dev.routes[screen]);
-  }
-  await expectPalette(sheet, "mobile-menu-sheet admin");
-});
-
-test("[C1][S13] mobile-menu-sheet 학생 · 둘러보기 (rules mobile_menu.guest): 학생 = 관리 묶음 없음 · 둘러보기 = 데모 학교 · 기록·QR 스캔 guest-lock · 가입하기 · 로그아웃 없음", async ({ page }) => {
-  await open(page, MENU_GALLERY);
-  const st = area(page, "menu-student").locator(sel("mobile-menu-sheet"));
-  const stLabels = (await st.locator(`${dn("menu-item")} span:not([data-pending])`).allInnerTexts()).map((t) => t.trim()).filter(Boolean);
-  expect(stLabels, "학생 = 첫 묶음 (관리 · 학교 설정 없음)").toEqual(MENU.firstGroup);
-  await expect(st.locator(dn("menu-group-title")), "학생 묶음 제목 0").toHaveCount(0);
-  await expect(st.locator('[aria-current="page"]')).toHaveText(/시약/);
-
-  const g = area(page, "menu-guest").locator(sel("mobile-menu-sheet"));
-  await expect(g.getByRole("heading", { name: GUEST_SCHOOL })).toHaveCount(1);
-  await expect(g.locator(dn("menu-group-title")), "관리 묶음 숨김").toHaveCount(0);
-  const gItems = g.locator(dn("menu-item"));
-  expect((await gItems.locator("span:not([data-pending])").allInnerTexts()).map((t) => t.trim()).filter(Boolean)).toEqual(["홈", "시약", "센서", "기록", "QR 스캔"]);
-  for (const t of ["기록", "QR 스캔"]) {
-    const it = gItems.filter({ hasText: t });
-    await expect(it.locator(sel("guest-lock")), `${t} guest-lock`).toHaveCount(1);
-    expect(await it.evaluate((e) => e.tagName.toLowerCase()), `${t} 이동 없음`).toBe("button");
-  }
-  for (const t of ["홈", "시약", "센서"]) {
-    await expect(gItems.filter({ hasText: t }).locator(sel("guest-lock")), `${t} 잠금 없음`).toHaveCount(0);
-    await expect(gItems.filter({ hasText: new RegExp(`^${t}$`) }), `${t} 둘러보기 주소`).toHaveAttribute("href", /^\/demo/);
-  }
-  await expect(g.locator(sel("button-primary")), GUEST_SIGNUP).toHaveText(GUEST_SIGNUP);
-  await expect(g.getByText(MENU.logout.characters, { exact: true }), "둘러보기 로그아웃 없음").toHaveCount(0);
-  await expectPalette(st, "mobile-menu-sheet 학생");
-  await expectPalette(g, "mobile-menu-sheet 둘러보기");
-});
-
-test(`[C1][S13] mobile-menu-button → mobile-menu-sheet: 누르면 열림 · 맨 아래 '${MENU.logout.characters}' ${MENU.logout.fontSize}px muted · 닫기 ×`, async ({ page }) => {
-  await open(page, MENU_GALLERY);
-  const sec = area(page, "menu-demo");
-  await hydrated(page, "mobile-menu-button");
-  const btn = sec.locator(sel("mobile-menu-button"));
-  if (await isDesktop(page)) {
-    await expect(btn, "데스크톱 숨김 (rules mobile_menu.button 모바일)").toBeHidden();
-    return;
-  }
-  await expect(sec.locator(sel("mobile-menu-sheet")), "처음 닫힘").toHaveCount(0);
-  await btn.click();
-  const sheet = sec.locator(sel("mobile-menu-sheet"));
-  await expect(sheet).toHaveCount(1);
-  await expect(btn).toHaveAttribute("aria-expanded", "true");
-  const logout = sheet.getByRole("button", { name: MENU.logout.characters, exact: true });
-  await expectText(logout, MENU.logout, "로그아웃", node(F_MENU, "label", "menu-logout").fills![0]);
-  const lb = await box(logout);
-  const items = await sheet.locator(dn("menu-item")).evaluateAll((els) => els.map((e) => e.getBoundingClientRect().bottom));
-  expect(lb.y, "로그아웃은 맨 아래").toBeGreaterThanOrEqual(Math.max(...items) - 1);
-  await sheet.getByRole("button", { name: "닫기" }).click();
-  await expect(sec.locator(sel("mobile-menu-sheet")), "× 로 닫힘").toHaveCount(0);
-  await btn.click();
-  await expect(sheet).toHaveCount(1);
-  await logout.click();
-  await expect(sec.locator(sel("mobile-menu-sheet")), "로그아웃 누르면 닫힘(데모)").toHaveCount(0);
 });
 
 // =====================================================================

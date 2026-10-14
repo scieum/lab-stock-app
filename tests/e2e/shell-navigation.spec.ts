@@ -14,7 +14,7 @@ import { landingSampleNames } from "./pre-login-helpers";
 import { test, expect, type Browser, type BrowserContext, type Page, type TestInfo } from "@playwright/test";
 import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
-import { PROFILE_ROLE, browserSession, countComponent, roleChecks, routeOf, rules, screenOfPath, sel, type ViewportName, tabItemLabels } from "./screen-helpers";
+import { MANAGE_SCREEN, PROFILE_ROLE, browserSession, mobileActiveTab, countComponent, roleChecks, routeOf, rules, screenOfPath, sel, type ViewportName, tabItemLabels } from "./screen-helpers";
 import { detailPath, seedReagents, seedSchoolOf } from "./screen-3-helpers";
 import {
   ALL_COMPONENTS,
@@ -39,6 +39,7 @@ import {
   schoolDataWords,
   schoolNamesIn,
   shellLink,
+  shellNavScreen,
   shellSchoolScope,
   waitContent,
   waitHydrated,
@@ -71,12 +72,18 @@ async function openGated(browser: Browser, info: TestInfo, role: Role, start: nu
 }
 
 /** 셸 링크를 눌러 화면을 옮긴다 (문지기가 열려 있을 때) */
-async function softNav(page: Page, viewport: ViewportName, target: number): Promise<void> {
-  const link = shellLink(page, viewport, target);
+async function softNav(page: Page, viewport: ViewportName, target: number): Promise<number> {
+  // rules 1.29 tab_bar: 390 에서 화면 2 쪽 탭은 '관리'(→ 화면 18) — 실제 도착 화면을 돌려준다
+  const dest = shellNavScreen(viewport, target);
+  const link = shellLink(page, viewport, dest);
   await waitHydrated(link);
   await link.click();
-  await waitContent(page, target);
+  await waitContent(page, dest);
+  return dest;
 }
+
+/** 지금 화면에서 보이는 aria-current 링크의 href: 1440 = 그 화면 사이드바 메뉴, 390 = 활성 탭이 가는 곳 (rules 1.29 tab_bar.labels_source) */
+const currentHref = (viewport: ViewportName, screen: number): string => routeOf(shellNavScreen(viewport, screen));
 
 // =====================================================================
 // 1) `/` — 로그인 전 화면 15, 로그인 후 화면 13
@@ -227,30 +234,41 @@ const SKELETON_ROLES: Role[] = ["student", "admin", "schoolB"];
 
 for (const { start, target } of SKELETON_MOVES) {
   for (const role of SKELETON_ROLES) {
-    test(`[N1-ui][S${target}] ${ROLE_LABEL[role]} 화면 ${start} → ${target} 응답 대기 중: 본문에 학교 데이터(시약명·사용자 이름·학교명) 0 · 자리 표시 안 컴포넌트 0 · 학교명 종류 = distinct_school_names · 응답 뒤 직접 연 화면과 같은 구성`, async ({ browser }, info) => {
+    test(`[N1-ui][S${target}] ${ROLE_LABEL[role]} 화면 ${start} → ${target}${shellNavScreen("mobile", target) !== target ? ` (390: '${mobileActiveTab(target)}' 탭 → 화면 ${MANAGE_SCREEN} 행)` : ""} 응답 대기 중: 본문에 학교 데이터(시약명·사용자 이름·학교명) 0 · 자리 표시 안 컴포넌트 0 · 학교명 종류 = distinct_school_names · 응답 뒤 직접 연 화면과 같은 구성`, async ({ browser }, info) => {
       test.setTimeout(240_000);
       const tb = rules.tab_bar;
       const { context, page, viewport, gate } = await openGated(browser, info, role, start);
+      // 390: 화면 2 쪽 탭 = '관리' → 화면 18 (rules 1.29 tab_bar) — 화면 2 는 화면 18 의 manage-row 로 간다
+      const viaManage = shellNavScreen(viewport, target) !== target;
+      const dest = target;
+      /** 출발 화면에서 도착 화면으로 가는 링크 (390 화면 2 = 화면 18 을 거쳐 manage-row) */
+      const toTarget = async () => {
+        if (!viaManage) return shellLink(page, viewport, dest);
+        await page.goto(routeOf(MANAGE_SCREEN));
+        await waitContent(page, MANAGE_SCREEN);
+        return page.locator(`main ${sel("manage-row")}[href="${routeOf(dest)}"]`);
+      };
       try {
         const me = await browserSession(page);
         expect(me.role, "테스트 계정 역할").toBe(PROFILE_ROLE[role]);
         const words = await schoolDataWords(page);
         // 양성 대조: 출발 화면 본문에는 학교 데이터가 있다 (같은 판정이 빈 화면에서만 통과하는 것이 아니다)
+        // (390 화면 18 을 거치면 관리 목록에는 시약명이 없다 — 대조는 도착 뒤 본문으로 본다)
         const before = await page.locator("main").innerText();
         expect(words.some((w) => before.includes(w)) || before.includes(me.schoolName), "대조: 출발 화면 본문에 학교 데이터").toBe(true);
 
-        const link = shellLink(page, viewport, target);
+        const link = await toTarget();
         await waitHydrated(link);
         // 자리 표시를 누른 즉시 보여 주려면 그 화면의 미리 받기가 끝나 있어야 한다
-        await expect.poll(() => gate.prefetched(), { message: `${routeOf(target)} 미리 받기`, timeout: 30_000 }).toContain(routeOf(target));
+        await expect.poll(() => gate.prefetched(), { message: `${routeOf(dest)} 미리 받기`, timeout: 30_000 }).toContain(routeOf(dest));
 
         gate.hold();
         await link.click();
-        await expect.poll(() => gate.held(), { message: "전환 요청이 붙잡혔다 (응답 전)", timeout: 30_000 }).toContain(routeOf(target));
+        await expect.poll(() => gate.held(), { message: "전환 요청이 붙잡혔다 (응답 전)", timeout: 30_000 }).toContain(routeOf(dest));
         const busy = page.locator(BUSY);
         await expect(busy, "본문 자리 표시 (aria-busy)").toBeVisible({ timeout: 30_000 });
         await expect(busy).toHaveCount(1);
-        expect(gate.held(), "여전히 응답 전").toContain(routeOf(target));
+        expect(gate.held(), "여전히 응답 전").toContain(routeOf(dest));
 
         // --- 응답 전 화면 ---
         const main = page.locator("main");
@@ -261,7 +279,7 @@ for (const { start, target } of SKELETON_MOVES) {
         expect(await componentCounts(busy), "자리 표시 안 컴포넌트").toEqual(Object.fromEntries(ALL_COMPONENTS.map((n) => [n, 0])));
         expect(await busy.locator("a, button, input, select, textarea").count(), "자리 표시 안 조작 요소").toBe(0);
         // 셸은 규칙 개수 그대로
-        await expectShell(page, viewport, target, "응답 전");
+        await expectShell(page, viewport, dest, "응답 전");
         if (viewport === "mobile") {
           const labels = (await tabItemLabels(page.locator(`${sel(tb.component)} ${sel(tb.item)}`)));
           expect(labels, "응답 전 탭 라벨 순서").toEqual(tb.labels);
@@ -270,34 +288,43 @@ for (const { start, target } of SKELETON_MOVES) {
         const names = await schoolNamesIn(page.locator("body"));
         expect(names, "응답 전 학교명 종류").toHaveLength(N1.distinct_school_names);
         for (const n of names) expect(me.schoolName, `보이는 학교명 '${n}' 은 자기 학교명의 일부`).toContain(n);
-        for (const c of roleChecks(target, RULE_ROLE[role]).filter((c) => c.op === "max")) {
+        for (const c of roleChecks(dest, RULE_ROLE[role]).filter((c) => c.op === "max")) {
           expect(await countComponent(page, c.component), `응답 전 ${c.rule} ${c.component} ≤ ${c.value}`).toBeLessThanOrEqual(c.value);
         }
 
         // --- 응답 뒤: 자리 표시가 본문으로 바뀌고, 직접 연 화면과 같은 구성 ---
         gate.release();
-        await waitContent(page, target);
-        await expectShell(page, viewport, target, "응답 뒤");
+        await waitContent(page, dest);
+        await expectShell(page, viewport, dest, "응답 뒤");
         let first = true;
         await expect(async () => {
           if (!first) {
             // 다른 테스트의 쓰기로 목록 길이가 그 사이 달라졌을 수 있다 — 전환부터 다시 해서 비교한다
             await page.goto(routeOf(start));
             await waitContent(page, start);
-            await softNav(page, viewport, target);
+            if (viaManage) {
+              const again = await toTarget();
+              await waitHydrated(again);
+              await again.click();
+              await waitContent(page, dest);
+            } else await softNav(page, viewport, target);
           }
           first = false;
           const soft = await componentCounts(page.locator("body"));
           await page.reload();
-          await waitContent(page, target);
-          await expectShell(page, viewport, target, "직접 연 화면");
+          await waitContent(page, dest);
+          await expectShell(page, viewport, dest, "직접 연 화면");
           const hard = await componentCounts(page.locator("body"));
           expect(soft, "전환으로 온 화면의 컴포넌트 개수 = 직접 연 화면").toEqual(hard);
         }).toPass({ timeout: 150_000 });
+        if (viaManage) {
+          const arrived = await page.locator("main").innerText();
+          expect(words.some((w) => arrived.includes(w)), "대조: 도착 화면 본문에 학교 데이터 (390 관리 경유)").toBe(true);
+        }
         const after = await schoolNamesIn(page.locator("body"));
         expect(after, "응답 뒤 학교명 종류").toHaveLength(N1.distinct_school_names);
         // 역할 상한 (하한은 시트를 연 상태 등 화면별 스펙이 본다 — 여기서는 직접 연 화면과 개수가 같음을 위에서 봤다)
-        for (const c of roleChecks(target, RULE_ROLE[role]).filter((c) => c.op === "max")) {
+        for (const c of roleChecks(dest, RULE_ROLE[role]).filter((c) => c.op === "max")) {
           expect(await countComponent(page, c.component), `응답 뒤 ${c.rule} ${c.component} ≤ ${c.value}`).toBeLessThanOrEqual(c.value);
         }
       } finally {
@@ -322,30 +349,32 @@ for (const { start, target } of TAB_MOVES) {
   test(`[C2][S${start}] 학교A 교사 화면 ${start} 에서 화면 ${target} 탭·nav 링크: 응답 전에도 누른 링크 표식 또는 본문 자리 표시 · 보이는 aria-current="page" 는 내내 1개 · 셸 개수 유지`, async ({ browser }, info) => {
     test.setTimeout(180_000);
     const { context, page, viewport, gate } = await openGated(browser, info, "teacher", start);
+    // 390: 화면 2 쪽 탭 = '관리' → 화면 18 (rules 1.29 tab_bar) — 실제 도착 화면 · 현재 위치 = 활성 탭의 href
+    const dest = shellNavScreen(viewport, target);
     try {
-      const link = shellLink(page, viewport, target);
+      const link = shellLink(page, viewport, dest);
       await waitHydrated(link);
-      expect(await ariaCurrentHrefs(page), "누르기 전 현재 위치").toEqual([routeOf(start)]);
+      expect(await ariaCurrentHrefs(page), "누르기 전 현재 위치").toEqual([currentHref(viewport, start)]);
       await expect(link.locator(PENDING), "누르기 전 표식 없음").toHaveCount(0);
       await watchAriaCurrent(page);
 
       gate.hold();
       await link.click();
-      await expect.poll(() => gate.held(), { message: "전환 요청이 붙잡혔다 (응답 전)", timeout: 30_000 }).toContain(routeOf(target));
+      await expect.poll(() => gate.held(), { message: "전환 요청이 붙잡혔다 (응답 전)", timeout: 30_000 }).toContain(routeOf(dest));
       await expect
         .poll(async () => (await link.locator(PENDING).count()) + (await page.locator(BUSY).count()), { message: "누른 링크 표식 또는 본문 자리 표시", timeout: 15_000 })
         .toBeGreaterThan(0);
-      expect(gate.held(), "여전히 응답 전").toContain(routeOf(target));
+      expect(gate.held(), "여전히 응답 전").toContain(routeOf(dest));
       const during = await ariaCurrentHrefs(page);
       expect(during, "응답 전 현재 위치 표시 1개").toHaveLength(1);
-      expect([routeOf(start), routeOf(target)], "응답 전 현재 위치 = 출발 또는 도착 화면").toContain(during[0]);
+      expect([currentHref(viewport, start), routeOf(dest)], "응답 전 현재 위치 = 출발 또는 도착 화면").toContain(during[0]);
       expect(await ariaCurrentSeen(page), "응답 전: 보이는 aria-current 개수 기록").toEqual([1]);
       await expectShell(page, viewport, start, "응답 전");
 
       gate.release();
-      await waitContent(page, target);
-      await expectShell(page, viewport, target, "응답 뒤");
-      await expect.poll(() => ariaCurrentHrefs(page), { message: "응답 뒤 현재 위치" }).toEqual([routeOf(target)]);
+      await waitContent(page, dest);
+      await expectShell(page, viewport, dest, "응답 뒤");
+      await expect.poll(() => ariaCurrentHrefs(page), { message: "응답 뒤 현재 위치" }).toEqual([routeOf(dest)]);
       await expect(page.locator(PENDING), "응답 뒤 표식 없음").toHaveCount(0);
       expect(await ariaCurrentSeen(page), "전환 내내 보이는 aria-current 개수 기록").toEqual([1]);
     } finally {
@@ -390,7 +419,7 @@ for (const { start, target, pick, done } of DEEP_MOVES) {
       await expect(link.locator(PENDING), "응답 전 누른 링크 표식").toHaveCount(1);
       await expect(page.locator(PENDING), "표식은 누른 링크에만").toHaveCount(1);
       expect(new URL(page.url()).pathname, "응답 전 주소").toBe(routeOf(start));
-      expect(await ariaCurrentHrefs(page), "응답 전 현재 위치").toEqual([routeOf(start)]);
+      expect(await ariaCurrentHrefs(page), "응답 전 현재 위치").toEqual([currentHref(viewport, start)]);
       expect(await ariaCurrentSeen(page), "응답 전: 보이는 aria-current 개수 기록").toEqual([1]);
       await expectShell(page, viewport, start, "응답 전");
 
@@ -439,8 +468,8 @@ for (const { role, path } of TOURS) {
         (window as unknown as { __sameDocument: boolean }).__sameDocument = true;
       });
 
-      for (const screen of path.slice(1)) {
-        await softNav(page, viewport, screen);
+      for (const step of path.slice(1)) {
+        const screen = await softNav(page, viewport, step);
         await expectShell(page, viewport, screen, `화면 ${screen}`);
         expect(await page.evaluate(() => (window as unknown as { __sameDocument?: boolean }).__sameDocument === true), `화면 ${screen}: 문서를 다시 받지 않았다`).toBe(true);
         for (const name of shellParts) {
@@ -474,7 +503,7 @@ for (const { role, screen } of [
     const { context, page, viewport, gate } = await openGated(browser, info, role, screen);
     try {
       // 대조: 이미 있는 화면은 미리 받는다 (요청 감시가 살아 있다)
-      const other = screen === HOME ? LIST : HOME;
+      const other = shellNavScreen(viewport, screen === HOME ? LIST : HOME);
       await waitHydrated(shellLink(page, viewport, other));
       await expect.poll(() => gate.prefetched(), { message: `${routeOf(other)} 미리 받기`, timeout: 30_000 }).toContain(routeOf(other));
 

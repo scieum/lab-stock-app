@@ -14,7 +14,7 @@ import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 import { expect, type Locator, type Page, type TestInfo } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { browserClient, devRules, routeOf, rules, sel, type ViewportName, tabItemLabels } from "./screen-helpers";
+import { browserClient, devRules, routeOf, rules, sel, type ViewportName, tabItemLabels, mobileActiveTab } from "./screen-helpers";
 import { tempSchoolLike,
   addMember,
   clientFor,
@@ -131,7 +131,8 @@ export const shrinkNotice = (n: number) => `이 변경으로 시약 ${n}종이 '
 export const SHRINK_NOTICE = /이 변경으로 시약 \d+종이 '칸 없음'이 돼요/;
 export const unassignedHeading = (n: number) => `${CAB.unassigned_label} 시약 (${n})`;
 export const UNASSIGNED_HEADING = /^\s*칸 없음 시약 \((\d+)\)\s*$/;
-export const ACTIVE_TAB_LABEL = "시약";
+/** rules 1.29 tab_bar.labels_source (d7 §29): 화면 11 모바일 활성 탭 */
+export const ACTIVE_TAB_LABEL = mobileActiveTab(11);
 /** s2-spec 11-slot · 11-print · 3-location: 시트 오른쪽 위 × (읽기 이름 "닫기") */
 export const CLOSE_LABEL = "닫기";
 /** s2-spec 11-unsaved · rules.json cabinet.unsaved_confirm */
@@ -153,7 +154,9 @@ export function frameCounts(name: string): Record<string, number> {
     frames: { nodes: { name: string }[] }[];
   };
   const out: Record<string, number> = {};
-  for (const n of j.frames[0].nodes) if (devRules.components[n.name]) out[n.name] = (out[n.name] ?? 0) + 1;
+  // 그 화면 소속 이름만 — 시안 11 cabinet-edit 안 레이어 "manage-row"(관리 줄)는 1.29 화면 18 manage-row 컴포넌트와 이름만 같다 (d7 §29)
+  const screen = Number(/^(\d+)-/.exec(name.replace(/^.*[\/]/, ""))?.[1]);
+  for (const n of j.frames[0].nodes) if ((devRules.components[n.name] ?? []).includes(screen)) out[n.name] = (out[n.name] ?? 0) + 1;
   // 예전 데스크톱 프레임의 nav-pill → 지금 셸 app-sidebar (rules 1.22 desktop_shell, d7 §23)
   return adjustPreDesktopShell(name, out);
 }

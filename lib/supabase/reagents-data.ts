@@ -18,7 +18,7 @@ export type ReagentListItem = FilterableReagent & {
   lowStock: boolean;
 };
 
-export type ReagentListData = { role: Role; items: ReagentListItem[]; cabinets: FilterCabinet[] };
+export type ReagentListData = { role: Role; schoolName: string; items: ReagentListItem[]; cabinets: FilterCabinet[] };
 
 /** 목록 조회 열 — 로그인·둘러보기 공통 (칸은 cabinet_slots 조인: 문·단·시약장 id) */
 export const REAGENT_LIST_COLUMNS =
@@ -94,6 +94,7 @@ export const getReagentList = cache(async function getReagentList(): Promise<Rea
 
   return {
     role: me.role,
+    schoolName: me.school.name,
     items: ((reagents.data ?? []) as ReagentListRow[]).map(toReagentListItem),
     cabinets: toFilterCabinets((cabinets.data ?? []) as CabinetListRow[]),
   };

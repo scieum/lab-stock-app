@@ -1,0 +1,32 @@
+/*
+ * 시안 18-mobile: top-bar(76) 아래 page-title(안쪽 위 24 · 좌우 16, 제목 24/700) → manage-list(390 전폭, canvas).
+ * 셸 content 는 안쪽 16 · nav 와 본문 사이 24 — 제목은 nav 아래 36(= 12 + 24), 목록은 좌우 16 을 음수 여백으로 상쇄해 전폭.
+ */
+.page {
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  margin: var(--space-12) var(--space-0) var(--space-0);
+  color: var(--color-text);
+  font-size: var(--font-size-24);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}
+
+/* 시안 18-guest-mobile: guest-banner 아래 page-title 안쪽 위 24 = 셸 사이 24 */
+.guest .title {
+  margin-top: var(--space-0);
+}
+
+.list {
+  margin: var(--space-0) calc(var(--space-16) * -1);
+}
+
+/* 데스크톱 폭: 첫 그림(폭 모름)에도 보이지 않게 — 하이드레이션 뒤 / (둘러보기 /demo) 로 간다 */
+@media (min-width: 1024px) {
+  .page {
+    display: none;
+  }
+}

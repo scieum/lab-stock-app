@@ -15,7 +15,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, type Locator, type Page, type TestInfo } from "@playwright/test";
-import { browserClient, devRules, routeOf, sel, type ViewportName } from "./screen-helpers";
+import { browserClient, devRules, routeOf, sel, type ViewportName, mobileActiveTab } from "./screen-helpers";
 import { framePath } from "../frames";
 import { adjustPreDesktopShell } from "../desktop-shell";
 import { PAGE_SIZE, drawer, isDeskPage, newFrame, pagination, waitWidthSettled } from "./desk-helpers";
@@ -71,7 +71,8 @@ export const recordedCaption = (ymd: string) => `${Number(ymd.slice(5, 7))}월 $
 export const MSDS_LABEL = "MSDS 보기";
 export const CLOSE_LABEL = "닫기";
 export const MEMO_NONE = "-";
-export const ACTIVE_TAB_LABEL = "기록";
+/** rules 1.29 tab_bar.labels_source (d7 §29): 화면 10 모바일 활성 탭 */
+export const ACTIVE_TAB_LABEL = mobileActiveTab(10);
 export const ENTRY_LABEL = "사용 기록 입력";
 /** s2-spec: 누른 행 배경 #e6f4fc */
 export const PRESSED_ROW_BG = "rgb(230, 244, 252)";

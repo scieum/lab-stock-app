@@ -14,7 +14,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type BrowserContext, type Locator, type Page } from "@playwright/test";
-import { devRules, routeOf, rules, sel, type ViewportName, tabItemLabels } from "./screen-helpers";
+import { MANAGE_BACK_SCREENS, MANAGE_SCREEN, devRules, routeOf, rules, sel, type ViewportName, tabItemLabels, mobileActiveTab } from "./screen-helpers";
 import { service } from "./screen-8-helpers";
 import { exact, hydrated, type Fx } from "./screen-6-9-helpers";
 import { framePath } from "../frames";
@@ -149,8 +149,8 @@ export const OUR_REAGENT = "우리 학교 시약";
 /** d7 §13 에 그대로 적혀 있어야 하는 문구 (자체 점검용) */
 export const D7_QUOTES = [`"${EXTRACT}"`, `"${PROGRESS_LABEL}"`, `"${SAVE}"`, `"${RETRY}"`, `"${TOAST_SAVED}"`, `"${UNLINKED}"`, `"${OUR_REAGENT}"`, '"기존 기준 N"'];
 export const BASIS_RE = /기존 기준 ([\d.,]+) ?(\S+)/;
-/** rules.json tab_bar · s2-spec 화면 5: 모바일 활성 탭 */
-export const ACTIVE_TAB_LABEL = "기록";
+/** rules 1.29 tab_bar.labels_source (d7 §29): 화면 5 모바일 활성 탭 */
+export const ACTIVE_TAB_LABEL = mobileActiveTab(5);
 
 // ---------- 서버에 Gemini 키가 있는가 (값은 읽어 쓰지 않는다 — screen-5-extract-api.spec 과 같은 판단) ----------
 const KEY_NAME = "GEMINI_API_KEY";
@@ -335,10 +335,22 @@ export const titleScope = (page: Page) => (isDesktopPage(page) ? main(page) : na
 export const DESK_BACK = m5d.some((n) => n.path.includes("main") && (n.name === "icon-back" || n.name === "back-link"));
 /** 이 폭에서 화면 5 뒤로가기(→ 화면 6)가 있어야 하는가 */
 export const backExpected = (page: Page): boolean => !isDesktopPage(page) || DESK_BACK;
+/**
+ * rules 1.29 manage.back (d7 §29): 화면 5 는 관리 아래 화면 — 모바일 머리 왼쪽 = manage-back '‹ 관리' → routes[18] (/manage).
+ * (1.17 프레임 5-mobile 의 icon-back + nav-title 은 1.29 전 그림 — rules 가 우선). 데스크톱은 그대로 (DESK_BACK).
+ */
+export const MOBILE_MANAGE_BACK = MANAGE_BACK_SCREENS.includes(MANUAL_SCREEN);
+export const MANAGE_HREF = routeOf(MANAGE_SCREEN);
+/** 이 폭에서 뒤로가기가 가는 곳: 390 = /manage (manage-back), 1440 = 화면 6 */
+export const backHref = (page: Page): string => (isDesktopPage(page) || !MOBILE_MANAGE_BACK ? REORDER_HREF : MANAGE_HREF);
+/** 이 폭에서 제목(nav-title / page-head)이 보이는가: 390 manage-back 화면은 머리 왼쪽이 '‹ 관리' 뿐 (시안 2-mobile · 17-mobile 과 같음) */
+export const titleExpected = (page: Page): boolean => isDesktopPage(page) || !MOBILE_MANAGE_BACK;
 export const backLink = (page: Page) =>
   isDesktopPage(page)
     ? main(page).getByRole("link", { name: "뒤로", exact: true }).and(page.locator(`a[href="${REORDER_HREF}"]`))
-    : nav(page).locator(`a[href="${REORDER_HREF}"]:not(nav a)`);
+    : MOBILE_MANAGE_BACK
+      ? nav(page).locator(`${sel("manage-back")}[href="${MANAGE_HREF}"]`)
+      : nav(page).locator(`a[href="${REORDER_HREF}"]:not(nav a)`);
 /** 화면 5 의 업로드 영역 = 파일 입력을 가진 manual-upload */
 export const uploadArea = (page: Page) => main(page).locator(sel(UPLOAD)).filter({ has: page.locator('input[type="file"]') });
 export const fileInput = (page: Page) => uploadArea(page).locator('input[type="file"]');

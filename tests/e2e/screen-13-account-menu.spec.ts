@@ -18,6 +18,8 @@ const SCREENS = (devRules.components[MENU] ?? []).slice().sort((a, b) => a - b);
 const ROUTE_AUTH = (devRules as unknown as { route_auth: Record<string, string> }).route_auth;
 const EXCEPTION = (rules as unknown as { app_exceptions: Record<string, string> }).app_exceptions[MENU];
 const LOGOUT = "로그아웃";
+/** rules frames.mobile_only_screens (1.29 — 18 관리): 데스크톱 폭에서는 / 로 보낸다 → 1440 에서는 셸 화면 순회에서 뺀다 */
+const MOBILE_ONLY: number[] = (rules as unknown as { frames: { mobile_only_screens?: number[] } }).frames.mobile_only_screens ?? [];
 
 /** dev-rules route_auth 로 이 역할이 그 화면에 들어갈 수 있는지 ("admin만" · "교사·admin만") */
 function canOpen(role: "student" | "teacher" | "admin", screen: number): boolean {
@@ -40,8 +42,10 @@ test(`[C1][S${SCREEN}] 기대값 원본: rules.json app_exceptions["${MENU}"] = 
   expect(EXCEPTION).toContain(`'${LOGOUT}' 1개`);
   // 1.26: 화면 17 센서도 로그인 후 셸 (프레임 17-mobile · 17-desktop 에 nav-account-menu)
   // d7 §26 (dev-rules 1.19): 화면 12 QR 스캔도 로그인 후 셸 (프레임 12-mobile · 12-desktop 에 nav-account-menu)
-  expect(SCREENS, "셸 화면").toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 17]);
-  for (const f of ["12-mobile", "12-desktop", "17-mobile", "17-desktop"]) expect(newFrame(f).filter((n) => n.name === MENU).length, `프레임 ${f} ${MENU} 1`).toBe(1);
+  // 1.29 (d7 §29): 화면 18 관리(모바일 전용 — frames.mobile_only_screens)도 로그인 후 셸 (프레임 18-mobile 에 nav-account-menu)
+  expect(SCREENS, "셸 화면").toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 17, 18]);
+  expect(MOBILE_ONLY, "rules frames.mobile_only_screens").toContain(18);
+  for (const f of ["12-mobile", "12-desktop", "17-mobile", "17-desktop", "18-mobile"]) expect(newFrame(f).filter((n) => n.name === MENU).length, `프레임 ${f} ${MENU} 1`).toBe(1);
   for (const s of [1, 14, 15]) expect(SCREENS, `로그인 전 화면 ${s} 에 없음`).not.toContain(s);
   expect(ROUTE_AUTH.logout, "route_auth.logout: 둘러보기·로그인 전·NoSchoolScreen 에는 없음").toMatch(/둘러보기·로그인 전·NoSchoolScreen 에는 없음/);
 });
@@ -59,6 +63,7 @@ for (const role of SCHOOL_A_ROLES as ("student" | "teacher" | "admin")[]) {
       const shell = viewport === "mobile" ? "nav-pill" : rules.desktop_shell.component;
       const buttonText = await shellAccountLabel(page, viewport);
       for (const screen of open) {
+        if (viewport === "desktop" && MOBILE_ONLY.includes(screen)) continue; // 모바일 전용 (1440 → /)
         const path = await pathOf(page, screen);
         const res = await page.goto(path);
         expect(res?.status(), `화면 ${screen} ${path} 응답`).toBe(200);

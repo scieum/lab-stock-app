@@ -35,7 +35,8 @@ import {
   waitUsage,
 } from "./screen-4-helpers";
 import { NEW_FRAMES_DIR, framePath } from "../frames";
-import { MOBILE_MENU_BUTTON, SHELL_COMPONENTS, expectShell, isShellComponent } from "./shell-helpers";
+import { SHELL_COMPONENTS, expectShell, isShellComponent } from "./shell-helpers";
+import { REMOVED_MOBILE_MENU } from "./screen-helpers";
 import { deskOnlyComponents } from "../desktop-shell";
 import { DRAWER, countScoped, isDeskPage, mobileOnlyOf } from "./desk-helpers";
 import { watchActions } from "./screen-11-helpers";
@@ -120,11 +121,10 @@ for (const role of ROLES) {
         expect(await count(name), `screens_required ${name}`).toBeGreaterThanOrEqual(1);
       }
       const appEx = (rules as unknown as { app_exceptions: Record<string, string> }).app_exceptions;
-      // rules 1.28 mobile_menu.button (d7 §28): 화면 4 기본 화면 nav-pill 맨 왼쪽 ☰(‹ 는 그 오른쪽) — 폭 390 = 1 · 1440 = 0. 새 4 프레임(1.28 이전)에는 없어 따로 센다
-      expect(devRules.components[MOBILE_MENU_BUTTON] ?? [], `dev-rules ${MOBILE_MENU_BUTTON} 에 화면 ${SCREEN}`).toContain(SCREEN);
-      await expect(page.locator(sel(MOBILE_MENU_BUTTON)), `${MOBILE_MENU_BUTTON} (폭 ${viewport})`).toHaveCount(desk ? 0 : 1, { timeout: 30_000 });
+      // rules 1.29 mobile_menu.removed (d7 §29): ☰ 없앰 — 두 폭 모두 0
+      for (const gone of REMOVED_MOBILE_MENU) await expect(page.locator(sel(gone)), `${gone} (폭 ${viewport}) 0`).toHaveCount(0);
       for (const name of fromDev) {
-        if (isShellComponent(name) || widthOff.includes(name) || name === MOBILE_MENU_BUTTON) continue;
+        if (isShellComponent(name) || widthOff.includes(name)) continue;
         if (name in appEx) {
           expect(await count(name), `셸 ${name} = 1`).toBe(1);
           continue;

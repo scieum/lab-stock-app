@@ -12,6 +12,7 @@ export async function DeskList() {
       cabinets={data.cabinets}
       canFindMsds={data.role === "teacher" || data.role === "admin"}
       canSelect={data.role === "teacher" || data.role === "admin"}
+      wipeSchoolName={data.role === "admin" ? data.schoolName : undefined}
     />
   );
 }

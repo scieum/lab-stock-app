@@ -11,7 +11,10 @@ import { ROLE_LABEL } from "./db-helpers";
 import { openAs, type RolePage } from "./auth-state";
 import { PROFILE_ROLE, ROLE_NAME, browserClient, browserSession, countComponent, devRules, roleChecks, routeOf, rules, sel } from "./screen-helpers";
 import { HAS_SERVICE, anonContext } from "./screen-8-helpers";
-import { MOBILE_MENU_BUTTON, expectShell, locationPath, shellSchoolScope } from "./shell-helpers";
+import { expectShell, locationPath, shellSchoolScope } from "./shell-helpers";
+
+/** rules 1.29 manage.back "manage-back: 관리 아래 화면(2·5·…) 모바일 머리 왼쪽 '‹ 관리'" */
+const MANAGE_BACK = /^([a-z][a-z-]*):/.exec((rules as unknown as { manage: { back: string } }).manage.back)![1];
 import {
   BUSY,
   MANUAL_BUTTON,
@@ -61,7 +64,6 @@ import {
   OVERLAY,
   PRIMARY,
   PROGRESS_LABEL,
-  REORDER_HREF,
   REORDER_SCREEN,
   RETRY,
   SAVE,
@@ -74,6 +76,9 @@ import {
   amountInput,
   backLink,
   backExpected,
+  backHref,
+  titleExpected,
+  MANAGE_HREF,
   blockSaves,
   bodyRows,
   bottomEdgeOnTop,
@@ -177,7 +182,7 @@ test(`[C1][S${SCREEN}] 기대값 원본: 프레임 5 의 문구·4행·조 수�
   expect((rules as unknown as { app_exceptions: Record<string, string> }).app_exceptions, "rules app_exceptions nav-account-menu").toHaveProperty("nav-account-menu");
   // 1.22: 데스크톱 셸 app-sidebar · sidebar-item (rules desktop_shell, dev-rules 1.11) 도 로그인 후 셸 화면 모두에 더해졌다
   const ds = (rules as unknown as { desktop_shell: { component: string; item: string } }).desktop_shell;
-  expect(screenComponents().sort(), "dev-rules 화면 5 컴포넌트").toEqual([OVERLAY, OUTLINE, PRIMARY, CELL, TOAST, TABLE, UPLOAD, "nav-pill", "nav-account-menu", "tab-bar", "tab-item", ds.component, ds.item, INPUT, MOBILE_MENU_BUTTON].sort()); // tab-soon 은 dev-rules 1.19 에서 빠졌다 (d7 §26) · rules 1.28 mobile_menu.button (모바일 2~13·16·17, d7 §28)
+  expect(screenComponents().sort(), "dev-rules 화면 5 컴포넌트").toEqual([OVERLAY, OUTLINE, PRIMARY, CELL, TOAST, TABLE, UPLOAD, "nav-pill", "nav-account-menu", "tab-bar", "tab-item", ds.component, ds.item, INPUT, MANAGE_BACK].sort()); // tab-soon 은 dev-rules 1.19 에서 빠졌다 (d7 §26) · ☰ 는 rules 1.29 mobile_menu.removed 로 빠지고 manage-back(관리 아래 화면, d7 §29)이 들어왔다
   expect(BOTTOM_GAP, "시안 bottom-actions 아래 여백").toBeGreaterThan(0);
 });
 
@@ -299,7 +304,7 @@ for (const role of STAFF) {
     }
   });
 
-  test(`[R-ui][S${SCREEN}] ${ROLE_LABEL[role]} 화면 ${REORDER_SCREEN} 의 "${MANUAL_BUTTON}" 을 누르면 ${MANUAL_HREF} 에 실제로 도착(업로드 영역 표시) · nav-pill 뒤로가기를 누르면 ${REORDER_HREF}`, async ({ browser }, info) => {
+  test(`[R-ui][S${SCREEN}] ${ROLE_LABEL[role]} 화면 ${REORDER_SCREEN} 의 "${MANUAL_BUTTON}" 을 누르면 ${MANUAL_HREF} 에 실제로 도착(업로드 영역 표시) · nav-pill 뒤로가기(390 manage-back → ${MANAGE_HREF})`, async ({ browser }, info) => {
     test.setTimeout(180_000);
     const { context, page } = await openAs(browser, info, role, REORDER_SCREEN);
     const saves = await blockSaves(context);
@@ -313,7 +318,7 @@ for (const role of STAFF) {
       }).toPass({ timeout: 45_000 });
       await waitManual(page);
       await expect(extractButton(page), `"${EXTRACT}"`).toHaveCount(1);
-      await expect(titleScope(page).getByText(exact(NAV_TITLE)).first(), `제목 "${NAV_TITLE}"`).toBeVisible();
+      if (titleExpected(page)) await expect(titleScope(page).getByText(exact(NAV_TITLE)).first(), `제목 "${NAV_TITLE}"`).toBeVisible();
 
       const back = backLink(page);
       if (!backExpected(page)) {
@@ -322,10 +327,14 @@ for (const role of STAFF) {
         expect(saves.count(), "저장 요청 0건").toBe(0);
         return;
       }
-      await expect(back, "뒤로가기 링크").toHaveCount(1);
+      await expect(back, `뒤로가기 링크 → ${backHref(page)}`).toHaveCount(1);
       await expect(back).toBeVisible();
       await back.click();
-      await waitReorder(page);
+      if (backHref(page) === MANAGE_HREF) {
+        // 390 (rules 1.29 manage.back): '‹ 관리' → 화면 18 관리 목록
+        await page.waitForURL((u) => u.pathname === MANAGE_HREF, { timeout: 30_000 });
+        await expect(page.locator(`main ${sel("manage-list")}`), "화면 18 manage-list").toBeVisible({ timeout: 30_000 });
+      } else await waitReorder(page);
       expect(saves.count(), "저장 요청 0건").toBe(0);
     } finally {
       await context.close();
@@ -338,7 +347,7 @@ for (const role of STAFF) {
 // =====================================================================
 
 for (const role of STAFF) {
-  test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]} 1단계 구성: nav-pill 뒤로가기(→ ${REORDER_HREF}) + 제목 "${NAV_TITLE}" · ${UPLOAD} 1 + 안내 "${GUIDE}" · ${INPUT} "${GROUPS_LABEL}"(빈 값) · ${PRIMARY} "${EXTRACT}" 비활성 → 파일 + 조 수 ${GROUPS} → 활성 · 조 수 ${G_MIN - 1}·${G_MAX + 1}·문자는 비활성 · 파일 이름은 ${OVERLAY} · 화면 ${SCREEN} 밖 컴포넌트 0`, async ({ browser }, info) => {
+  test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]} 1단계 구성: nav-pill 뒤로가기(390 manage-back → ${MANAGE_HREF}) + 제목 "${NAV_TITLE}"(1440) · ${UPLOAD} 1 + 안내 "${GUIDE}" · ${INPUT} "${GROUPS_LABEL}"(빈 값) · ${PRIMARY} "${EXTRACT}" 비활성 → 파일 + 조 수 ${GROUPS} → 활성 · 조 수 ${G_MIN - 1}·${G_MAX + 1}·문자는 비활성 · 파일 이름은 ${OVERLAY} · 화면 ${SCREEN} 밖 컴포넌트 0`, async ({ browser }, info) => {
     test.setTimeout(180_000);
     const o = await openManual(browser, info, role);
     const { context, page, viewport } = o;
@@ -347,10 +356,11 @@ for (const role of STAFF) {
       await expectShell(page, viewport, SCREEN, "1단계");
       const back = backLink(page);
       if (backExpected(page)) {
-        await expect(back, `뒤로가기 → ${REORDER_HREF}`).toHaveCount(1);
+        await expect(back, `뒤로가기 → ${backHref(page)}`).toHaveCount(1);
         await expect(back).toBeVisible();
       } else await expect(back, "1440 뒤로가기 없음 (새 프레임 5-desktop page-head = 제목만)").toHaveCount(0);
-      await expect(titleScope(page).getByText(exact(NAV_TITLE)).first(), `제목 "${NAV_TITLE}"`).toBeVisible();
+      // 390: 머리 왼쪽 = manage-back '‹ 관리' 뿐 (rules 1.29 manage.back) — 제목은 1440 본문 page-head
+      if (titleExpected(page)) await expect(titleScope(page).getByText(exact(NAV_TITLE)).first(), `제목 "${NAV_TITLE}"`).toBeVisible();
       const me = await browserSession(page);
       await expect(shellSchoolScope(page, viewport), "셸에 자기 학교명").toContainText(me.schoolName);
 

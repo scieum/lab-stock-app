@@ -32,6 +32,7 @@ export default async function ReagentsPage({ searchParams }: Props) {
         initialListFilter={parseListFilter(params, data.cabinets)}
         canFindMsds={data.role === "teacher" || data.role === "admin"}
         canSelect={data.role === "teacher" || data.role === "admin"}
+        wipeSchoolName={data.role === "admin" ? data.schoolName : undefined}
       />
     </div>
     </MobileOnly>

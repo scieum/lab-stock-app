@@ -1,0 +1,45 @@
+/* 시안 1.29 2-wipe ex-modal-card: modal-head(reagent-wipe = icon-warning 24 ink + heading 20/700, 사이 8) · body 15 ink 두 줄 ·
+ * school-name-confirm(위 16) · modal-actions(위 16, 버튼 반씩 사이 8). 묶음 사이 8 */
+.heading {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--space-8);
+}
+
+.warning {
+  flex-shrink: 0;
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+  color: var(--color-text);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.text {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-8);
+  padding-top: var(--space-16);
+}
+
+.button {
+  flex: 1;
+}
+
+.error {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}

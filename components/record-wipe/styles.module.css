@@ -1,0 +1,17 @@
+/* 시안 1.29 10-record-wipe: sheet-body 묶음 사이 24 (range · preview · school-name-confirm), sheet-actions 버튼 전폭 */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+.actions {
+  display: flex;
+}
+
+.error {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}

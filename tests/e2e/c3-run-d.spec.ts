@@ -28,9 +28,15 @@ import {
   hexesIn,
   scrollThrough,
 } from "./pre-login-helpers";
-import { devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
+import { REMOVED_INVENTORY_SWITCH, devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
 
 const VIEW_W = devRules.viewports.desktop[0];
+/**
+ * rules 1.29 frames.mobile_only_screens (d7 §29): 모바일에만 있는 화면(18 관리) — 데스크톱 프레임이 없고 1440 은 사이드바가 대신한다
+ * (1440 에서 /manage · /demo/manage 는 / · /demo 로 간다). 데스크톱 재구성(C3) 대상이 아니다 — 화면 18 은 screen-18-manage.spec 에서 본다.
+ */
+const MOBILE_ONLY_SCREENS: number[] = (rules as unknown as { frames: { mobile_only_screens?: number[] } }).frames.mobile_only_screens ?? [];
+const deskScreen = (s: number) => !MOBILE_ONLY_SCREENS.includes(s);
 const LANDING = 15;
 const SIGNUP = 14;
 const LOGIN = 1;
@@ -106,7 +112,9 @@ test(`[C3][S*] 기대값 원본 (run d): pre_login.screens ${PRE.screens.join("�
   for (const n of REQ15) expect(devRules.components[n], `dev-rules components ${n} = [15]`).toEqual([LANDING]);
   for (const s of PRE.screens) expect(DESKTOP_SHELL.screens, `로그인 전 ${s} 은 사이드바 셸 대상 아님`).not.toContain(s);
   const migrated = desktopMigratedScreens();
-  for (const s of devRules.mvp_screens) expect(migrated, `mvp 화면 ${s} 이전됨 (run d 끝 = 전부)`).toContain(s);
+  // 모바일 전용 화면(frames.mobile_only_screens — 18)은 데스크톱 재구성 대상이 아니다
+  expect(MOBILE_ONLY_SCREENS, "rules frames.mobile_only_screens 는 mvp 화면").toEqual(MOBILE_ONLY_SCREENS.filter((s) => devRules.mvp_screens.includes(s)));
+  for (const s of devRules.mvp_screens.filter(deskScreen)) expect(migrated, `mvp 화면 ${s} 이전됨 (run d 끝 = 전부, 모바일 전용 ${MOBILE_ONLY_SCREENS.join("·")} 제외)`).toContain(s);
   // typography: 큰 글자는 본문 크기 목록 밖 + 시안 15-desktop 의 40·48 글자는 허용 컴포넌트 안
   const bodySizes = (R.typography as unknown as { sizes: number[] }).sizes;
   for (const s of DISPLAY.sizes) expect(bodySizes, `큰 글자 ${s} 는 본문 크기 목록 밖`).not.toContain(s);
@@ -129,7 +137,7 @@ test(`[C3][S*] 기대값 원본 (run d): pre_login.screens ${PRE.screens.join("�
   const bands = frameBandFills();
   for (const b of bands) expect(bandHex, `시안 띠 ${b}`).toContain(b);
   // 둘러보기 사이드바 잠금: 시안 4장 모두 사이드바 안 guest-lock = sidebar_locks
-  expect(GUEST.screens.filter((g) => !hasGuestFrame(g, "desktop")), "시안 프레임이 없는 둘러보기 화면 = 17 (dev-rules 1.18: 17g 는 구조만)").toEqual([17]);
+  expect(GUEST.screens.filter((g) => deskScreen(g) && !hasGuestFrame(g, "desktop")), "시안 프레임이 없는 둘러보기 화면 = 17 (dev-rules 1.18: 17g 는 구조만 · 모바일 전용 18g 제외)").toEqual([17]);
   expect(GUEST_MENU_ADDED, "rules guest.desktop 1.26 더한 메뉴").toBe("센서");
   for (const s of GUEST.screens.filter((g) => hasGuestFrame(g, "desktop"))) {
     const locks = frameOf(`${s}-guest-desktop`).nodes.filter((n) => n.name === GUEST.lock && n.path.includes(DESKTOP_SHELL.component)).length;
@@ -687,7 +695,7 @@ async function guestPaths(): Promise<Record<number, string>> {
   };
 }
 
-for (const g of GUEST.screens) {
+for (const g of GUEST.screens.filter(deskScreen)) {
   test(`[C3][S${g}g] 둘러보기 1440: ${DESKTOP_SHELL.component} 1(폭 ${SIDEBAR_W}·radius 0·위 "${GUEST.school_name}") · ${DESKTOP_SHELL.item} = 시안 ${g}-guest-desktop(글자·순서·활성) · 잠금 ${SIDEBAR_LOCKS}(기록·QR 찾기 = 버튼) · 아래 "둘러보는 중" + 로그인 · 본문 위 ${GUEST.banner} · nav-pill·tab-bar·계정 메뉴 0 · 구조 컴포넌트 = 시안 / 390 = 사이드바·표·드로어 0 · nav-pill·tab-bar 1`, async ({ browser }, info) => {
     test.setTimeout(120_000);
     const path = (await guestPaths())[g];
@@ -898,7 +906,7 @@ const MOBILE_STRUCTURAL = [
   "msds-original-link",
 ];
 
-for (const g of GUEST.screens) {
+for (const g of GUEST.screens.filter(deskScreen)) {
   test(`[C3][S${g}g] 새 프레임 대조 ${g}-guest-{mobile|desktop}: 구조 컴포넌트 수 = 시안 (390 은 보이는 ${GUEST.lock} 포함 · 1440 은 위 사이드바 테스트) · 사이드바·표·드로어는 1440 만`, async ({ browser }, info) => {
     test.setTimeout(120_000);
     const path = (await guestPaths())[g];
@@ -914,7 +922,9 @@ for (const g of GUEST.screens) {
           for (const n of [DESKTOP_SHELL.component, TABLE]) await expect(page.locator(sel(n)), `17g 1440 ${n} 1`).toHaveCount(1);
           return;
         }
-        for (const n of ["nav-pill", rules.tab_bar.component, GUEST.banner, "inventory-switch", ...(rules.screens_required["17"] as string[])]) await expect(page.locator(sel(n)).first(), `17g 390 ${n}`).toBeAttached();
+        for (const n of ["nav-pill", rules.tab_bar.component, GUEST.banner, ...(rules.screens_required["17"] as string[])]) await expect(page.locator(sel(n)).first(), `17g 390 ${n}`).toBeAttached();
+        // rules 1.29 tab_bar.sensor_entry: inventory-switch '시약 | 센서' 없앰
+        await expect(page.locator(sel(REMOVED_INVENTORY_SWITCH)), `17g 390 ${REMOVED_INVENTORY_SWITCH} 0`).toHaveCount(0);
         await expect(page.locator(sel(rules.tab_bar.item)), "tab-item").toHaveCount(rules.tab_bar.items);
         await expect(page.locator(`${sel(rules.tab_bar.component)} ${sel(GUEST.lock)}`), `탭바 잠금 ${GUEST.tab_locks}`).toHaveCount(GUEST.tab_locks);
         for (const n of [DESKTOP_SHELL.component, TABLE, DRAWER, HEADER]) await expect(page.locator(sel(n)), `390 ${n} 0`).toHaveCount(0);

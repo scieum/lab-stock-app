@@ -7,7 +7,7 @@
 import { waitWidthSettled } from "./desk-helpers";
 import { expect, type Browser, type BrowserContext, type Locator, type Page, type Request, type TestInfo } from "@playwright/test";
 import type { Role } from "./db-helpers";
-import { ROLE_NAME, browserClient, devRules, routeOf, rules, sel, seedRows, type ViewportName } from "./screen-helpers";
+import { MANAGE_BACK_SCREENS, MANAGE_SCREEN, MOBILE_ACTIVE_TAB, REMOVED_MOBILE_MENU, mobileActiveTab, ROLE_NAME, browserClient, devRules, routeOf, rules, screenOfPath, sel, seedRows, type ViewportName } from "./screen-helpers";
 import { frameActiveLabel } from "../desktop-shell";
 
 export const HOME = 13;
@@ -40,15 +40,11 @@ export const SCAN_ROUTE = devRules.routes["12"];
 export const SHELL_COMPONENTS: string[] = ["nav-pill", rules.tab_bar.component, rules.tab_bar.item, rules.desktop_shell.component, rules.desktop_shell.item];
 export const isShellComponent = (name: string): boolean => SHELL_COMPONENTS.includes(name);
 /**
- * rules 1.28 mobile_menu.button (d7 §28, 개발 세션 요청 8 6): 로그인 후 모바일 nav-pill 맨 왼쪽 메뉴 버튼 이름.
- * dev-rules components 의 소속 화면(모바일 2~13·16·17) 기본 화면에 폭 390 = 1개, 폭 1440 = 0개 (nav-pill 이 없다).
- * 프레임은 8·13·17 만 1.28 로 갱신 — 그 전 프레임(상태 프레임 포함)과 대조할 때는 이 값으로 따로 본다.
+ * rules 1.29 mobile_menu.removed (d7 §29, 개발 세션 요청 9 3): ☰ mobile-menu-button · mobile-menu-sheet 는 없앴다 — 어느 화면 · 폭에서도 0.
+ * (1.28 에서는 모바일 nav-pill 맨 왼쪽 ☰ 였다.) 계정 · 로그아웃은 nav-pill 학교명 ▾(nav-account-menu).
  */
-export const MOBILE_MENU_BUTTON: string = (() => {
-  const m = /^([a-z][a-z-]*):/.exec((rules as unknown as { mobile_menu: { button: string } }).mobile_menu.button);
-  if (!m) throw new Error("rules.json mobile_menu.button 에서 컴포넌트 이름을 읽지 못함");
-  return m[1];
-})();
+export const MOBILE_MENU_BUTTON: string = REMOVED_MOBILE_MENU[0];
+export const MOBILE_MENU_SHEET: string = REMOVED_MOBILE_MENU[1];
 
 /** dev-rules.json components 의 모든 컴포넌트 이름 */
 export const ALL_COMPONENTS = Object.keys(devRules.components);
@@ -177,6 +173,25 @@ export async function installNavGate(page: Page, info: TestInfo): Promise<NavGat
  * 셸의 화면 이동 링크: 폭 390 = tab-bar 의 tab-item, 폭 1440 = app-sidebar 의 sidebar-item
  * (design/rules.json 1.22 desktop_shell — 데스크톱은 nav-pill 대신 왼쪽 사이드바, d7 §23)
  */
+/**
+ * rules 1.29 tab_bar (d7 §29): 모바일 탭 4개가 가는 화면 — '관리' = manage.screen(18 /manage), 나머지(홈 · QR 스캔 · 기록)는
+ * tab_bar.labels_source 에서 그 탭이 활성인 화면이 하나뿐인 화면(13 · 12 · 10).
+ */
+export function tabRootScreen(label: string): number {
+  if (label === mobileActiveTab(MANAGE_SCREEN)) return MANAGE_SCREEN;
+  const own = Object.entries(MOBILE_ACTIVE_TAB).filter(([, l]) => l === label).map(([s]) => Number(s));
+  if (own.length !== 1) throw new Error(`rules tab_bar.labels_source: '${label}' 탭이 활성인 화면이 하나가 아님 (${own.join("·")})`);
+  return own[0];
+}
+
+/**
+ * 셸 링크로 화면 N "쪽"으로 갈 때 실제로 누르는 링크의 도착 화면:
+ * 폭 1440 = N (사이드바 메뉴), 폭 390 = N 의 활성 탭이 가는 화면 (rules 1.29 — 화면 2 는 '관리' 탭 → 화면 18).
+ */
+export function shellNavScreen(viewport: ViewportName, screen: number): number {
+  return viewport === "mobile" ? tabRootScreen(mobileActiveTab(screen)) : screen;
+}
+
 export function shellLink(page: Page, viewport: ViewportName, screen: number): Locator {
   const href = routeOf(screen);
   const tb = rules.tab_bar;
@@ -232,6 +247,17 @@ export async function expectShellHeader(
   if (viewport === "mobile") {
     const nav = page.locator(sel("nav-pill"));
     await expect(nav, `${where}: nav-pill 1개`).toHaveCount(1);
+    // rules 1.29 manage.back (d7 §29): 관리 아래 화면(2·5·6·7·8·9·11·17) 모바일 머리 왼쪽 = manage-back '‹ 관리'(→ /manage) 1개 —
+    // 워드마크 · 제목 자리 (시안 2-mobile · 17-mobile nav-left = manage-back 만). 학교명은 그대로
+    const screen = screenOfPath(new URL(page.url()).pathname);
+    if (screen !== null && MANAGE_BACK_SCREENS.includes(screen)) {
+      const back = nav.locator(sel("manage-back"));
+      await expect(back, `${where}: nav-pill manage-back 1 (rules manage.back)`).toHaveCount(1);
+      await expect(back, `${where}: manage-back → ${routeOf(MANAGE_SCREEN)}`).toHaveAttribute("href", routeOf(MANAGE_SCREEN));
+      await expect(back, `${where}: manage-back 보임`).toBeVisible();
+      if (want.schoolName) await expect(nav, `${where}: nav-pill "${want.schoolName}"`).toContainText(want.schoolName);
+      return;
+    }
     for (const t of [want.wordmark, want.title, want.schoolName]) if (t) await expect(nav, `${where}: nav-pill "${t}"`).toContainText(t);
     return;
   }
@@ -293,6 +319,8 @@ export async function waitContent(page: Page, screen: number): Promise<void> {
     [HOME]: `main ${sel("home-summary")}`,
     [LIST]: desk ? `main ${sel("data-table")} ${sel("ex-data-table-cell")}` : `main ${sel("reagent-row")}`,
     [HISTORY]: `main ${sel("segmented-control")}`,
+    // 화면 18 관리 (rules 1.29 manage, 모바일 전용): manage-list
+    [MANAGE_SCREEN]: `main ${sel("manage-list")}`,
   };
   const m = marker[screen];
   if (!m) throw new Error(`waitContent: 화면 ${screen} 표식 없음`);

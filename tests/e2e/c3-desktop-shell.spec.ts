@@ -23,7 +23,7 @@ import {
 import { openAs } from "./auth-state";
 import { ROLE_LABEL } from "./db-helpers";
 import { demoReagents, guestDetailPath } from "./guest-helpers";
-import { browserClient, browserSession, devRules, routeOf, rules, sel, type ViewportName, tabItemLabels } from "./screen-helpers";
+import { MANAGE_BACK_SCREENS, MANAGE_SCREEN, browserClient, browserSession, devRules, routeOf, rules, sel, type ViewportName, tabItemLabels } from "./screen-helpers";
 import { HAS_SERVICE, forgetSession, openTemp, sweep, tempSchool, NO_RESIDUE } from "./screen-8-helpers";
 import { anonContext, expectShell, shellAccountButton, shellAccountLabel } from "./shell-helpers";
 import { newFrame } from "./desk-helpers";
@@ -328,7 +328,7 @@ const PAGE_HEADS: { screen: number; title: string; back: number | null; deskBack
 ];
 
 for (const h of PAGE_HEADS) {
-  test(`[C3][S${h.screen}] 학교A ${ROLE_LABEL[h.role]} ${routeOf(h.screen)}: 1440 제목 "${h.title}"(새 프레임) 보이는 것 1 · 뒤로 ${h.deskBack === null ? "없음 (새 프레임)" : `→ ${routeOf(h.deskBack)} (누르면 도착)`}${h.screen === 4 ? " (화면 4 1440 = 본문 페이지 page-head, 1.25)" : ""} · nav-pill 0 / 390 = nav-pill 뒤로 ${h.back === null ? "없음" : `→ ${routeOf(h.back)}`}`, async ({ browser }, info) => {
+  test(`[C3][S${h.screen}] 학교A ${ROLE_LABEL[h.role]} ${routeOf(h.screen)}: 1440 제목 "${h.title}"(새 프레임) 보이는 것 1 · 뒤로 ${h.deskBack === null ? "없음 (새 프레임)" : `→ ${routeOf(h.deskBack)} (누르면 도착)`}${h.screen === 4 ? " (화면 4 1440 = 본문 페이지 page-head, 1.25)" : ""} · nav-pill 0 / 390 = ${MANAGE_BACK_SCREENS.includes(h.screen) ? `manage-back → ${routeOf(MANAGE_SCREEN)}` : `nav-pill 뒤로 ${h.back === null ? "없음" : `→ ${routeOf(h.back)}`}`}`, async ({ browser }, info) => {
     test.setTimeout(150_000);
     expect(h.title, "프레임 제목").toBeTruthy();
     const { context, page, viewport } = await openAs(browser, info, h.role, h.screen);
@@ -356,6 +356,15 @@ for (const h of PAGE_HEADS) {
         expect(h1.filter((s) => s === h.title).length, `h1 "${h.title}" 은 최대 1`).toBeLessThanOrEqual(1);
       } else {
         await expect(page.locator(sel("nav-pill")), "390 nav-pill 1").toHaveCount(1);
+        if (MANAGE_BACK_SCREENS.includes(h.screen)) {
+          // rules 1.29 manage.back (d7 §29): 관리 아래 화면의 390 머리 왼쪽 = manage-back '‹ 관리' → /manage (‹ 뒤로 대신)
+          const mback = page.locator(`${sel("nav-pill")} ${sel("manage-back")}`);
+          await expect(mback, "390 manage-back 1").toHaveCount(1);
+          await expect(mback).toBeVisible();
+          await expect(mback, `manage-back → ${routeOf(MANAGE_SCREEN)}`).toHaveAttribute("href", routeOf(MANAGE_SCREEN));
+          await expect(back, "390 ‹ 뒤로 0 (manage-back 이 대신)").toHaveCount(0);
+          return;
+        }
       }
       const backTo = viewport === "desktop" ? h.deskBack : h.back;
       if (backTo === null) {

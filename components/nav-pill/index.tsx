@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/icons";
 import { LinkPending } from "@/components/link-pending";
+import { ManageBack } from "@/components/manage-back";
 import { NavAccountMenu } from "@/components/nav-account-menu";
 import { linkPrefetch } from "@/lib/link-prefetch";
 import { NavLinkLocked } from "./locked-link";
@@ -40,19 +41,20 @@ type Props = {
    */
   onLogout?: () => void | Promise<void>;
   /**
-   * nav-pill 맨 왼쪽 — 모바일 전체 메뉴 ☰ (rules 1.28 mobile_menu.button, MobileMenu). 로그인 후·둘러보기 모바일 기본 화면만.
-   * 있으면 왼쪽 안쪽 여백 4(시안 13-mobile nav-pill padding 4·24·4·4), 뒤로가기·제목·워드마크는 그 오른쪽.
+   * 관리 아래 화면(2·5·6·7·8·9·11·17) 모바일 머리 왼쪽 manage-back '‹ 관리' 가 갈 곳 (rules 1.29 manage.back, d7 §29).
+   * 있으면 워드마크·제목 대신 manage-back 만 그린다 (시안 2-mobile · 17-mobile nav-left).
    */
-  menu?: React.ReactNode;
+  manageBackHref?: string;
 };
 
 /** 상단 내비게이션 stadium pill */
-export function NavPill({ title, backHref, backIcon = "back", desktopWordmark = false, schoolName, endTitle, links, sectionTitle, onLogout, menu }: Props) {
+export function NavPill({ title, backHref, backIcon = "back", desktopWordmark = false, schoolName, endTitle, links, sectionTitle, onLogout, manageBackHref }: Props) {
   return (
-    <header data-component="nav-pill" className={[styles.nav, menu ? styles.withMenu : ""].filter(Boolean).join(" ")}>
+    <header data-component="nav-pill" className={[styles.nav, manageBackHref ? styles.withManageBack : ""].filter(Boolean).join(" ")}>
       <div className={styles.left}>
-        {menu}
-        {title ? (
+        {manageBackHref ? (
+          <ManageBack href={manageBackHref} />
+        ) : title ? (
           <>
             <span className={[styles.titleGroup, desktopWordmark ? styles.mobileOnly : ""].filter(Boolean).join(" ")}>
               {backHref ? (

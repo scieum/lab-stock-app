@@ -16,7 +16,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type BrowserContext, type Locator, type Page, type TestInfo } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { browserClient, devRules, routeOf, rules, sel, type ViewportName, tabItemLabels } from "./screen-helpers";
+import { browserClient, devRules, routeOf, rules, sel, type ViewportName, tabItemLabels, mobileActiveTab } from "./screen-helpers";
 import { tempSchoolLike, exact, service, sweep, todayDots, type Residue } from "./screen-8-helpers";
 import { makeFixture, type S11Fixture } from "./screen-11-helpers";
 import { framePath } from "../frames";
@@ -90,7 +90,9 @@ export const EMPTY_VENDORS = "등록한 판매처가 없어요";
 export const TOAST_SAVED = "판매처를 저장했어요";
 export const TOAST_DELETED = "판매처를 삭제했어요";
 export const COMMON_HEAD = ["판매처명", "부가 정보"];
-export const ACTIVE_TAB_LABEL = "시약";
+/** rules 1.29 tab_bar.labels_source (d7 §29): 화면 6 모바일 활성 탭 */
+export const ACTIVE_TAB_LABEL = mobileActiveTab(6);
+if (mobileActiveTab(9) !== ACTIVE_TAB_LABEL) throw new Error("rules tab_bar.labels_source: 화면 6 · 9 활성 탭이 다름");
 /** s2-spec 화면 9: 버튼 아래 끝과 tab-bar 위쪽 선 사이 16 */
 export const BUTTON_TAB_GAP = 16;
 

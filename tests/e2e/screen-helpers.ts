@@ -21,7 +21,19 @@ type RoleRule = {
 export type DesignRules = {
   roles: Record<string, RoleRule>;
   screens_required: Record<string, string[] | string>;
-  tab_bar: { component: string; item: string; items: number; labels: string[]; mobile_screens: number[] };
+  tab_bar: {
+    component: string;
+    item: string;
+    items: number;
+    labels: string[];
+    mobile_screens: number[];
+    /** 1.29: 화면별 활성 탭 ("화면 2·3·… 모바일에서 '관리'가 활성, 13 홈·10 기록·12 QR은 각자 탭") */
+    labels_source: string;
+    /** 1.29: "inventory-switch '시약 | 센서'는 없앰" */
+    sensor_entry: string;
+  };
+  /** 1.29: ☰ 없앰 ("☰ mobile-menu-button·mobile-menu-sheet 없앰. …") */
+  mobile_menu: { removed: string };
   /** 1.22 데스크톱 셸 (d7 §23, d5 C3) */
   desktop_shell: {
     component: string;
@@ -107,6 +119,61 @@ export function implementedGuestScreens(): { screens: number[]; pending: number[
   return { screens, pending };
 }
 export const devRules = readJson<DevRules>("harness/dev-rules.json");
+
+/**
+ * rules 1.29 tab_bar.labels_source (d7 §29): 모바일 화면별 활성 탭 글자 — "화면 2·3·4·…·18 모바일에서 '관리'가 활성,
+ * 13 홈·10 기록·12 QR은 각자 탭". 'QR' 은 tab_bar.labels 의 'QR 스캔' 으로 읽는다.
+ */
+export const MOBILE_ACTIVE_TAB: Record<number, string> = (() => {
+  const tb = rules.tab_bar;
+  const m = /화면 ([\d·]+) 모바일에서 '([^']+)'가 활성, (.+?)은 각자 탭/.exec(tb.labels_source ?? "");
+  if (!m) throw new Error("rules tab_bar.labels_source 에서 화면별 활성 탭을 읽지 못함");
+  const full = (label: string) => {
+    const l = tb.labels.find((x) => x === label || x.startsWith(label));
+    if (!l) throw new Error(`tab_bar.labels 에 ${label} 없음`);
+    return l;
+  };
+  const out: Record<number, string> = {};
+  for (const n of m[1].split("·")) out[Number(n)] = full(m[2]);
+  for (const pair of m[3].split("·")) {
+    const [n, label] = pair.trim().split(/\s+/);
+    out[Number(n)] = full(label);
+  }
+  return out;
+})();
+
+/** 화면 N 의 모바일 활성 탭 글자 (rules tab_bar.labels_source) */
+export function mobileActiveTab(screen: number): string {
+  const l = MOBILE_ACTIVE_TAB[screen];
+  if (!l) throw new Error(`rules tab_bar.labels_source 에 화면 ${screen} 활성 탭 없음`);
+  return l;
+}
+
+/**
+ * rules 1.29 에서 없앤 컴포넌트 (d7 §29): mobile_menu.removed 의 ☰ 두 개(mobile-menu-button · mobile-menu-sheet) +
+ * tab_bar.sensor_entry 의 inventory-switch. 어느 화면 · 어느 폭에서도 0.
+ */
+export const REMOVED_MOBILE_MENU: string[] = rules.mobile_menu.removed.split("없앰")[0].match(/[a-z]+(?:-[a-z]+)+/g) ?? [];
+export const REMOVED_INVENTORY_SWITCH: string = (() => {
+  const m = /([a-z]+(?:-[a-z]+)+) '[^']*'는 없앰/.exec(rules.tab_bar.sensor_entry ?? "");
+  if (!m) throw new Error("rules tab_bar.sensor_entry 에서 없앤 전환 이름을 읽지 못함");
+  return m[1];
+})();
+if (REMOVED_MOBILE_MENU.length !== 2) throw new Error("rules mobile_menu.removed 에서 없앤 ☰ 컴포넌트 2개를 읽지 못함");
+
+/**
+ * rules 1.29 manage (d7 §29): 화면 18 관리(모바일 전용) · manage-back '‹ 관리' 를 두는 관리 아래 화면 (manage.back "관리 아래 화면(2·5·6·7·8·9·11·17)").
+ * 그 화면들의 모바일 nav-pill 머리 왼쪽 = manage-back(→ routes[18]) — 워드마크 · 제목 자리 (시안 2-mobile · 17-mobile nav-left = manage-back 만).
+ */
+export const MANAGE_RULES = (rules as unknown as { manage: { screen: number; back: string; list: string; row: string; guest: string; desktop: string } }).manage;
+export const MANAGE_SCREEN: number = MANAGE_RULES.screen;
+export const MANAGE_BACK_SCREENS: number[] = (() => {
+  const m = /관리 아래 화면\(([\d·]+)\)/.exec(MANAGE_RULES.back);
+  if (!m) throw new Error("rules manage.back 에서 관리 아래 화면 목록을 읽지 못함");
+  return m[1].split("·").map(Number);
+})();
+/** rules frames.mobile_only_screens (1.29 — 18): 데스크톱 프레임 없음 · 1440 은 사이드바가 대신 */
+export const MOBILE_ONLY_SCREENS: number[] = (rules as unknown as { frames: { mobile_only_screens?: number[] } }).frames.mobile_only_screens ?? [];
 
 export function routeOf(screen: number): string {
   const r = devRules.routes[String(screen)];

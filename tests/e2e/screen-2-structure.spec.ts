@@ -18,9 +18,12 @@ import {
   routeOf,
   rules,
   sel, tabItemLabels,
+  REMOVED_INVENTORY_SWITCH,
+  REMOVED_MOBILE_MENU,
+  mobileActiveTab,
 } from "./screen-helpers";
 import { framePath } from "../frames";
-import { MOBILE_MENU_BUTTON, SHELL_COMPONENTS, expectShell, isShellComponent } from "./shell-helpers";
+import { SHELL_COMPONENTS, expectShell, isShellComponent } from "./shell-helpers";
 import { deskOnlyComponents } from "../desktop-shell";
 import { mobileOnlyOf, waitWidthSettled } from "./desk-helpers";
 
@@ -59,6 +62,11 @@ async function lowStockCount(page: Page): Promise<number> {
 }
 
 const MSDS_BANNER = "msds-bulk-banner";
+const PAGE_MORE = "page-more-menu";
+/** rules 1.29 wipe.roles (시약 전체 삭제 · 기록 삭제 = admin 만) */
+const WIPE_ROLES: string[] = (rules as unknown as { wipe: { roles: string[] } }).wipe.roles;
+/** rules roles 의 역할 이름 (학교 B 계정 = 교사) */
+const RULE_ROLE_OF: Record<Role, string> = { student: "학생", teacher: "교사", admin: "admin", schoolB: "교사" };
 
 /** 자기 세션(RLS)으로 읽은 MSDS 없는(msds_url 비어 있음) 시약 수 */
 async function noMsdsCount(page: Page): Promise<number> {
@@ -89,7 +97,8 @@ for (const role of ROLES) {
     const baseFrame = frameNames(`${SCREEN}-${info.project.name}`);
     const variantOnly = [...new Set(Object.values(VARIANTS2).flat())].filter((n) => fromDev.includes(n) && !baseFrame.has(n));
     // 1.26: variants[2].select · bulk-delete (선택 모드 · 확인 모달) — 기본 상태 0, 선택 모드는 screen-2-bulk-delete.spec 에서 본다
-    expect(variantOnly.sort(), "variants[2] 에만 있는 화면 2 컴포넌트").toEqual(["bulk-action-bar", "ex-empty-state-card", "ex-modal-card", "filter-chip-row", "list-filter-sheet", "msds-candidates", "select-checkbox", "storage-class-chip"]);
+    // 1.29: variants[2].wipe (page-more-menu ⋯ · reagent-wipe · school-name-confirm — 시약 전체 삭제, admin 만) — 흐름은 screen-2-wipe.spec
+    expect(variantOnly.sort(), "variants[2] 에만 있는 화면 2 컴포넌트").toEqual(["bulk-action-bar", "ex-empty-state-card", "ex-modal-card", "filter-chip-row", "list-filter-sheet", "msds-candidates", "page-more-menu", "reagent-wipe", "school-name-confirm", "select-checkbox", "storage-class-chip"]);
     // 역할로 금지된 것 (R5 학생: list-select-toggle 등) — 그 역할 화면에서는 0 (screen-2 R-ui 와 같은 기준)
     const forbidden = new Set(roleChecks(SCREEN, ROLE_NAME[role as keyof typeof ROLE_NAME]).filter((c) => c.op === "max" && c.value === 0).map((c) => c.component));
     expect(VARIANTS2["msds-bulk"] ?? [], "variants[2].msds-bulk 에 msds-bulk-banner").toContain(MSDS_BANNER);
@@ -111,14 +120,16 @@ for (const role of ROLES) {
       // 1440 = data-table(reagent-row 0) / 390 = reagent-row(data-table 0) — 폭마다 다른 쪽은 0
       const deskOnly = deskOnlyComponents();
       const mobileOnly = mobileOnlyOf(SCREEN, SHELL_COMPONENTS);
-      // 1.26: inventory-switch "시약 | 센서" 는 모바일 전용 (데스크톱 = 사이드바 '센서', 프레임 2-desktop 에 없음)
-      expect(mobileOnly, "새 프레임: 화면 2 모바일 전용 = inventory-switch · reagent-row").toEqual(["inventory-switch", "reagent-row"]);
-      // rules 1.28 mobile_menu.button (d7 §28): 기본 화면 nav-pill 맨 왼쪽 ☰ — 폭 390 = 1 · 1440 = 0. 프레임 2-{폭}(1.28 이전)에는 없어 따로 센다
-      expect(devRules.components[MOBILE_MENU_BUTTON] ?? [], `dev-rules ${MOBILE_MENU_BUTTON} 에 화면 ${SCREEN}`).toContain(SCREEN);
-      await expect(page.locator(sel(MOBILE_MENU_BUTTON)), `${MOBILE_MENU_BUTTON} (폭 ${viewport})`).toHaveCount(viewport === "desktop" ? 0 : 1, { timeout: 30_000 });
+      // 1.29 (d7 §29): inventory-switch 없앰 · 모바일 머리 왼쪽 manage-back '‹ 관리' (데스크톱 = 사이드바, 프레임 2-desktop 에 없음)
+      expect([...mobileOnly].sort(), "새 프레임: 화면 2 모바일 전용 = manage-back · reagent-row").toEqual(["manage-back", "reagent-row"]);
+      // rules 1.29 mobile_menu.removed · tab_bar.sensor_entry: ☰ · 시약|센서 전환은 없앴다 — 두 폭 모두 0
+      for (const gone of [...REMOVED_MOBILE_MENU, REMOVED_INVENTORY_SWITCH]) {
+        expect(devRules.components[gone], `dev-rules components 에 ${gone} 없음`).toBeUndefined();
+        await expect(page.locator(sel(gone)), `${gone} (폭 ${viewport}) 0`).toHaveCount(0);
+      }
       for (const name of fromDev) {
         // 셸(탭바·nav-pill·사이드바)은 위 expectShell 에서 폭별 기대값으로 봤다
-        if (isShellComponent(name) || name === MOBILE_MENU_BUTTON) continue;
+        if (isShellComponent(name)) continue;
         if ((viewport === "mobile" && deskOnly.includes(name)) || (viewport === "desktop" && mobileOnly.includes(name))) {
           await expect(page.locator(sel(name)), `${name} — ${viewport === "mobile" ? "데스크톱" : "모바일"} 전용 (폭 ${viewport}: 0)`).toHaveCount(0, { timeout: 30_000 });
           continue;
@@ -138,6 +149,12 @@ for (const role of ROLES) {
           }
           if (low > 0) expect(await countComponent(page, name), `${name} (부족 ${low}종)`).toBeGreaterThanOrEqual(1);
           else expect(await countComponent(page, name), `${name} (부족 0종)`).toBe(0);
+          continue;
+        }
+        if (name === PAGE_MORE) {
+          // rules 1.29 wipe.entry: 페이지 머리 ⋯ 는 기본 상태에도 있다 — admin(wipe.roles) 1 · 교사(R8) · 학생(R5) 0 (학교 B 계정 = 교사)
+          const n = WIPE_ROLES.includes(RULE_ROLE_OF[role]) ? 1 : 0;
+          await expect(page.locator(`main ${sel(name)}`), `${name} (${ROLE_LABEL[role]}: rules wipe.roles ${WIPE_ROLES.join("·")} → ${n})`).toHaveCount(n);
           continue;
         }
         if (variantOnly.includes(name) || name === MSDS_BANNER) {
@@ -197,7 +214,7 @@ for (const role of ROLES) {
 
 // ---------- C2 ----------
 for (const role of ROLES) {
-  test(`[C2][S${SCREEN}] ${ROLE_LABEL[role]}: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서, 1440 미표시)`, async ({ browser }, info) => {
+  test(`[C2][S${SCREEN}] ${ROLE_LABEL[role]}: 탭바 = rules.json tab_bar 기준 (390 표시·항목 수·라벨 순서·활성 "${mobileActiveTab(SCREEN)}", 1440 미표시)`, async ({ browser }, info) => {
     test.setTimeout(120_000);
     const tb = rules.tab_bar;
     const { context, page, viewport } = await openAs(browser, info, role, SCREEN);
@@ -213,7 +230,10 @@ for (const role of ROLES) {
         await expect(items, "tab-item 은 tab-bar 안에").toHaveCount(tb.items);
         const labels = (await tabItemLabels(items));
         expect(labels, "탭 라벨 순서").toEqual(tb.labels);
-        // 활성 탭 표시: rules.json tab_bar 에 활성 기준 항목이 없어 검사하지 않는다
+        // 1.29 rules tab_bar.labels_source: 화면 2 모바일 활성 탭 = '관리'
+        const active = page.locator(`${sel(tb.component)} ${sel(tb.item)}[aria-current="page"]`);
+        await expect(active, "활성 tab-item 1개").toHaveCount(1);
+        await expect(active).toHaveText(new RegExp(`^\\s*${mobileActiveTab(SCREEN)}\\s*$`));
       }
     } finally {
       await context.close();

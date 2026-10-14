@@ -10,7 +10,8 @@ import { deskOnlyComponents } from "../desktop-shell";
 import { isDeskPage, newFrame } from "./desk-helpers";
 import { test, expect, type TestInfo } from "@playwright/test";
 import { countComponent, routeOf, rules, sel } from "./screen-helpers";
-import { MOBILE_MENU_BUTTON, expectShell, isShellComponent, shellNavLabel, shellNavLabels, shellSchoolScope } from "./shell-helpers";
+import { MANAGE_BACK_SCREENS, REMOVED_MOBILE_MENU } from "./screen-helpers";
+import { expectShell, isShellComponent, shellNavLabel, shellNavLabels, shellSchoolScope } from "./shell-helpers";
 import {
   CANCEL_BUTTON,
   CHANGE_BUTTON,
@@ -103,6 +104,7 @@ import {
 test.describe.configure({ mode: "default" });
 
 const GROUP = "write";
+const MANAGE_BACK = "manage-back";
 const USERS_HREF = routeOf(SCREEN);
 const HOME = routeOf(HOME_SCREEN);
 /** 저장 요청 + 목록 갱신까지 기다리는 한도 (토스트는 잠깐만 떠 있으므로 뜨는 순간을 잡는다) */
@@ -186,8 +188,8 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin, 시안 1.17 과 같은 상태(멤
     // rules 1.28 invite_cancel.entry (d7 §28): invite-cancel '초대 취소' 는 초대 대기 행의 ⋯ 를 연 동안만 있는 메뉴 항목 — 프레임에 없다 (dev-rules components_note)
     const inviteCancel = /→ ([a-z][a-z-]*) '/.exec((rules as unknown as { invite_cancel: { entry: string } }).invite_cancel.entry)?.[1];
     expect(inviteCancel, "rules invite_cancel.entry 의 메뉴 항목 이름").toBe("invite-cancel");
-    // rules 1.28 mobile_menu.button: ☰ 는 시안 8-mobile 에만(1) — 1440 은 app-sidebar 가 같은 메뉴라 0 (프레임 8-desktop 에 없음)
-    const absent = [PILL_SOFT, SEGMENT, SEGMENT_ACTIVE, EMPTY, TOAST, inviteCancel!, ...(viewport === "mobile" ? deskOnlyComponents() : [MOBILE_MENU_BUTTON])];
+    // rules 1.29 mobile_menu.removed (d7 §29): ☰ 는 없앴다 — 시안 8-mobile(1.28)에 남아 있어도 두 폭 모두 0
+    const absent = [PILL_SOFT, SEGMENT, SEGMENT_ACTIVE, EMPTY, TOAST, inviteCancel!, ...REMOVED_MOBILE_MENU, ...(viewport === "mobile" ? deskOnlyComponents() : [])];
     let checked = 0;
     // 셸은 폭별 기대값 (390 nav-pill 1 · 탭바 / 1440 app-sidebar 1 · nav-pill 0 — rules 1.22 desktop_shell, C2 · C3)
     await expectShell(page, viewport, SCREEN, "삭제 확인 시트");
@@ -201,6 +203,11 @@ test(`[C1][S${SCREEN}] 일회용 학교 admin, 시안 1.17 과 같은 상태(멤
         continue;
       }
       const n = await countComponent(page, name);
+      if (name === MANAGE_BACK) {
+        // rules 1.29 manage.back (d7 §29): 관리 아래 화면 8 의 모바일 머리 왼쪽 '‹ 관리' 1 · 데스크톱 0 (시안 8-mobile 은 1.28 그림 — rules 우선)
+        expect(n, `${name} (폭 ${viewport}, rules manage.back)`).toBe(viewport === "mobile" && MANAGE_BACK_SCREENS.includes(SCREEN) ? 1 : 0);
+        continue;
+      }
       if (want === 0) {
         // 프레임에 없는 상태(초대 시트·검색 0건·저장 직후)의 컴포넌트 — 이 상태에서는 없어야 한다 (dev-rules components_note)
         expect(absent, `프레임에 없는 화면 ${SCREEN} 컴포넌트 ${name}`).toContain(name);

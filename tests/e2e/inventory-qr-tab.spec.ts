@@ -1,21 +1,30 @@
-// 모바일 'QR 스캔' 탭 · 데스크톱 'QR 찾기' (qr_pending 끝 — 화면 12 연결) · 시약 탭 안 inventory-switch "시약 | 센서" — C2 · C1 · GM-ui (390 · 1440).
+// 모바일 'QR 스캔' 탭 · 데스크톱 'QR 찾기' (qr_pending 끝 — 화면 12 연결) · '관리' 탭(1.29, inventory-switch 없앰) — C2 · C1 · GM-ui (390 · 1440).
 // 기준(구현이 아니라 여기서 도출): harness/d7-data.md §26 "화면 12 경로·권한" · "탭·사이드바"(화면 12 가 생기면 rules tab_bar.qr_pending 끝:
 //   모바일 tab-item "QR 스캔" 정상(회색·tab-soon 없음) → /scan, 데스크톱 sidebar-item "QR 찾기" → /scan 툴팁 없음, tab-soon 컴포넌트 ·
 //   "준비 중이에요" 토스트는 지운다, 둘러보기는 탭바 QR guest-lock 그대로), §25 "무선 센서 (화면 17)"(모바일 = 시약 탭 안 inventory-switch,
 //   마지막 고른 쪽 기억, 화면 17 에서 시약 탭 활성), design/rules.json 1.26 tab_bar(labels · items · mobile_screens · sensor_entry) ·
 //   desktop_shell.menu · guest, harness/dev-rules.json 1.19 (mvp_screens 에 12 · routes 12 = /scan · components 에 tab-soon 없음).
+// 2026-10-13 d7 §29 · rules 1.29 tab_bar(labels '시약' → '관리' · labels_source · sensor_entry): '관리' 탭 → /manage(둘러보기 /demo/manage),
+//   inventory-switch · 마지막 고른 쪽 기억은 없앴다 — 화면 2 · 17 모바일 활성 탭 = '관리', 센서 진입 = 관리 탭 '센서' 행 · 데스크톱 사이드바 '센서'.
 // 화면 12(/scan) 본문은 D3 [S12] 에서 본다 — 여기서는 다른 화면의 셸 항목이 /scan 으로 이어지는지만 (눌러서 /scan 을 열지 않는다).
 // 공용 학교 A admin 계정으로 읽기만 한다 (쓰기 없음).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test, expect } from "@playwright/test";
 import { openAs } from "./auth-state";
-import { devRules, routeOf, rules, sel } from "./screen-helpers";
+import { REMOVED_INVENTORY_SWITCH, devRules, mobileActiveTab, routeOf, rules, sel } from "./screen-helpers";
 import { seedReagents, seedSchoolOf } from "./screen-3-helpers";
 import { newFrame } from "./desk-helpers";
 
-type TabBarRules = typeof rules.tab_bar & { sensor_entry: string };
-const TAB = rules.tab_bar as TabBarRules;
+const TAB = rules.tab_bar;
+/** rules 1.29 tab_bar.labels_source "'시약' 탭 → '관리' 탭" */
+const RENAMED = (() => {
+  const m = /'([^']+)' 탭 → '([^']+)' 탭/.exec(TAB.labels_source);
+  if (!m) throw new Error("rules tab_bar.labels_source 에서 바뀐 탭 이름을 읽지 못함");
+  return { from: m[1], to: m[2] };
+})();
+/** '관리' 탭 → 화면 18 (둘러보기 18-guest) */
+const MANAGE_TAB = RENAMED.to;
 type GuestRules = { lock: string; locked_tabs: string[] };
 const GUEST = (rules as unknown as { guest: GuestRules }).guest;
 /** 'QR 스캔' 탭 = tab_bar.labels 의 QR · 'QR 찾기' = desktop_shell.menu.all 의 QR */
@@ -60,8 +69,9 @@ test(`[C2][S*] 기대값 원본: d7 §26 qr_pending 끝 — '${QR_TAB}' → ${SC
   expect(GUEST.locked_tabs, "rules guest.locked_tabs 에 QR 스캔 (둘러보기 잠금 유지)").toContain(QR_TAB);
   expect(TAB.items, "탭 4개 유지").toBe(TAB.labels.length);
   for (const f of ["12-mobile", "12-result-mobile"]) {
-    const labels = newFrame(f).filter((n) => n.name === "label" && n.text && n.path.includes(TAB.item)).map((n) => n.text!.characters);
-    expect(labels, `${f} tab-bar 라벨 = rules tab_bar.labels`).toEqual(TAB.labels);
+    // 프레임 12(1.29 이전)의 '시약' 탭은 rules 1.29 labels_source "'시약' 탭 → '관리' 탭" 으로 이름만 바뀐다
+    const labels = newFrame(f).filter((n) => n.name === "label" && n.text && n.path.includes(TAB.item)).map((n) => (n.text!.characters === RENAMED.from ? RENAMED.to : n.text!.characters));
+    expect(labels, `${f} tab-bar 라벨(이름 바뀐 탭 반영) = rules tab_bar.labels`).toEqual(TAB.labels);
     expect(newFrame(f).filter((n) => n.name === REMOVED).length, `${f} 프레임 ${REMOVED} 0`).toBe(0);
   }
 });
@@ -135,15 +145,19 @@ test(`[GM-ui][S13g] 둘러보기 /demo: 390 '${QR_TAB}' tab-item = ${GUEST.lock}
   }
 });
 
-test(`[C1][S2] [C1][S17] [C2][S17] 390 inventory-switch '시약 | 센서': /reagents 시약 활성 → '센서' → /sensors(센서 활성 · 탭바 '시약' 활성) → 홈 → '시약' 탭 = /sensors(마지막 고른 쪽 기억) → '시약' → /reagents → 홈 → '시약' 탭 = /reagents / 1440 inventory-switch 0 · 사이드바 '센서'(시약 아래) → /sensors`, async ({ browser }, info) => {
+const exactRe = (s: string) => new RegExp(`^\\s*${s}\\s*$`);
+
+test(`[C2][S2] [C2][S17] [C1][S17] 390: /reagents · /sensors 에 ${REMOVED_INVENTORY_SWITCH} 0 · 탭바 '${MANAGE_TAB}' 활성(rules labels_source) · '${MANAGE_TAB}' 탭 → ${routeOf(18)} (마지막 고른 쪽 기억 없음) / 1440: ${REMOVED_INVENTORY_SWITCH} 0 · 사이드바 '센서'(시약 아래) → /sensors`, async ({ browser }, info) => {
   test.setTimeout(240_000);
+  expect(RENAMED, "rules 1.29: '시약' 탭 → '관리' 탭").toEqual({ from: "시약", to: "관리" });
+  expect(TAB.labels, "rules tab_bar.labels 에 관리").toContain(MANAGE_TAB);
+  expect([mobileActiveTab(2), mobileActiveTab(17)], "rules labels_source: 화면 2 · 17 활성 = 관리").toEqual([MANAGE_TAB, MANAGE_TAB]);
   const { page, context } = await openAs(browser, info, "teacher", 2);
   try {
     await page.waitForLoadState("load");
     if (info.project.name === "desktop") {
       await expect(page.locator(sel("app-sidebar")), "사이드바").toHaveCount(1, { timeout: 45_000 });
-      for (const f of ["2-desktop", "17-desktop"]) expect(newFrame(f).filter((n) => n.name === "inventory-switch").length, `${f} 프레임 inventory-switch 0`).toBe(0);
-      await expect(page.locator(sel("inventory-switch")), "1440 /reagents inventory-switch 0").toHaveCount(0, { timeout: 45_000 });
+      await expect(page.locator(sel(REMOVED_INVENTORY_SWITCH)), `1440 /reagents ${REMOVED_INVENTORY_SWITCH} 0`).toHaveCount(0, { timeout: 45_000 });
       const items = page.locator(`${sel("app-sidebar")} ${sel("sidebar-item")}`);
       const labels = (await items.allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim());
       const all = rules.desktop_shell.menu.all;
@@ -153,40 +167,29 @@ test(`[C1][S2] [C1][S17] [C2][S17] 390 inventory-switch '시약 | 센서': /reag
       await items.nth(iReagent + 1).click();
       await expect(page, "사이드바 센서 → /sensors").toHaveURL(new RegExp(`${routeOf(17)}(\\?|$)`));
       await expect(page.locator(`${sel("app-sidebar")} ${sel("sidebar-item")}[aria-current="page"]`), "센서 활성").toHaveText(/센서/);
-      await expect(page.locator(sel("inventory-switch")), "1440 /sensors inventory-switch 0").toHaveCount(0);
+      await expect(page.locator(sel(REMOVED_INVENTORY_SWITCH)), `1440 /sensors ${REMOVED_INVENTORY_SWITCH} 0`).toHaveCount(0);
       return;
     }
-    const sw = () => page.locator(`main ${sel("inventory-switch")}`);
-    const tabReagent = () => page.locator(`${sel("tab-bar")} ${sel("tab-item")}`).filter({ hasText: TAB.labels[1] });
-    const tabHome = () => page.locator(`${sel("tab-bar")} ${sel("tab-item")}`).filter({ hasText: TAB.labels[0] });
-    await expect(sw(), "/reagents inventory-switch 1").toHaveCount(1, { timeout: 45_000 });
-    await expect(sw().locator('[role="tab"]'), "'시약 | 센서'").toHaveText(["시약", "센서"]);
-    await expect(sw().locator(sel("segmented-control-active")), "시약 활성").toHaveText("시약");
-    await page.waitForFunction(() => {
-      const el = document.querySelector('main [data-component="inventory-switch"]');
-      return !!el && Object.keys(el).some((k) => k.startsWith("__react"));
-    });
-    await sw().getByRole("tab", { name: "센서" }).click();
-    await expect(page, "→ /sensors").toHaveURL(new RegExp(`${routeOf(17)}(\\?|$)`), { timeout: 45_000 });
-    await expect(sw().locator(sel("segmented-control-active")), "센서 활성").toHaveText("센서", { timeout: 45_000 });
-    await expect(tabReagent(), "화면 17 탭바 '시약' 활성").toHaveAttribute("aria-current", "page");
-    await tabHome().click();
-    await expect(page, "홈").toHaveURL(new RegExp(`${routeOf(13)}$`), { timeout: 45_000 });
-    await expect(tabReagent(), "'시약' 탭 → 마지막 고른 /sensors").toHaveAttribute("href", routeOf(17), { timeout: 15_000 });
-    await tabReagent().click();
-    await expect(page, "'시약' 탭 → /sensors").toHaveURL(new RegExp(`${routeOf(17)}(\\?|$)`), { timeout: 45_000 });
-    await expect(sw(), "/sensors inventory-switch 1").toHaveCount(1, { timeout: 45_000 });
-    await sw().getByRole("tab", { name: "시약" }).click();
-    await expect(page, "→ /reagents").toHaveURL(new RegExp(`${routeOf(2)}(\\?|$)`), { timeout: 45_000 });
-    await tabHome().click();
-    await expect(page, "홈").toHaveURL(new RegExp(`${routeOf(13)}$`), { timeout: 45_000 });
-    await expect(tabReagent(), "'시약' 탭 → 마지막 고른 /reagents").toHaveAttribute("href", routeOf(2), { timeout: 15_000 });
+    const tab = (label: string) => page.locator(`${sel("tab-bar")} ${sel("tab-item")}`).filter({ hasText: exactRe(label) });
+    const active = page.locator(`${sel("tab-bar")} ${sel("tab-item")}[aria-current="page"]`);
+    for (const screen of [2, 17, 13]) {
+      if (screen !== 2) {
+        await page.goto(routeOf(screen));
+        await page.waitForLoadState("load");
+      }
+      await expect(page.locator(sel("tab-bar")), `${routeOf(screen)} tab-bar 1`).toHaveCount(1, { timeout: 45_000 });
+      await expect(page.locator(sel(REMOVED_INVENTORY_SWITCH)), `${routeOf(screen)} ${REMOVED_INVENTORY_SWITCH} 0`).toHaveCount(0);
+      await expect(active, `${routeOf(screen)} 활성 = '${mobileActiveTab(screen)}'`).toHaveText(exactRe(mobileActiveTab(screen)));
+      // '관리' 탭은 어디서나 /manage (1.26 의 '마지막 고른 쪽 기억'으로 바뀌지 않음)
+      await expect(tab(MANAGE_TAB), `${routeOf(screen)} '${MANAGE_TAB}' → ${routeOf(18)}`).toHaveAttribute("href", routeOf(18));
+      await expect(tab(RENAMED.from), `${routeOf(screen)} '${RENAMED.from}' 탭 0`).toHaveCount(0);
+    }
   } finally {
     await context.close();
   }
 });
 
-test(`[GM-ui][S2g] [GM-ui][S17g] 둘러보기: 390 inventory-switch /demo/reagents ↔ /demo/sensors (탭바 '시약' = 둘러보기 경로) / 1440 inventory-switch 0 · 사이드바 '센서' → /demo/sensors (rules guest.desktop)`, async ({ browser }, info) => {
+test(`[GM-ui][S2g] [GM-ui][S17g] 둘러보기: 390 /demo/reagents · /demo/sensors ${REMOVED_INVENTORY_SWITCH} 0 · 탭바 '${MANAGE_TAB}' = ${devRules.routes["18-guest"]} · 활성 / 1440 ${REMOVED_INVENTORY_SWITCH} 0 · 사이드바 '센서' → /demo/sensors (rules guest.desktop)`, async ({ browser }, info) => {
   test.setTimeout(180_000);
   const vp = devRules.viewports[info.project.name as "mobile" | "desktop"];
   const ctx = await browser.newContext({ baseURL: info.project.use.baseURL, viewport: { width: vp[0], height: vp[1] } });
@@ -196,23 +199,24 @@ test(`[GM-ui][S2g] [GM-ui][S17g] 둘러보기: 390 inventory-switch /demo/reagen
     await page.waitForLoadState("load");
     if (info.project.name === "desktop") {
       await expect(page.locator(sel("app-sidebar")), "사이드바").toHaveCount(1, { timeout: 45_000 });
-      await expect(page.locator(sel("inventory-switch")), "1440 inventory-switch 0").toHaveCount(0, { timeout: 45_000 });
+      await expect(page.locator(sel(REMOVED_INVENTORY_SWITCH)), `1440 ${REMOVED_INVENTORY_SWITCH} 0`).toHaveCount(0, { timeout: 45_000 });
       const sensor = page.locator(`${sel("app-sidebar")} ${sel("sidebar-item")}`).filter({ hasText: /^\s*센서\s*$/ });
       await expect(sensor, "사이드바 '센서' 1").toHaveCount(1);
       expect(new URL((await sensor.getAttribute("href"))!, "http://x").pathname, "'센서' → /demo/sensors").toBe(devRules.routes["17-guest"]);
       return;
     }
-    const sw = page.locator(`main ${sel("inventory-switch")}`);
-    await expect(sw, "둘러보기 inventory-switch").toHaveCount(1, { timeout: 45_000 });
-    await expect(sw.locator(sel("segmented-control-active"))).toHaveText("시약");
-    expect(await sw.getByRole("tab", { name: "센서" }).getAttribute("href"), "센서 → /demo/sensors").toBe(devRules.routes["17-guest"]);
-    await page.waitForFunction(() => {
-      const el = document.querySelector('main [data-component="inventory-switch"]');
-      return !!el && Object.keys(el).some((k) => k.startsWith("__react"));
-    });
-    await sw.getByRole("tab", { name: "센서" }).click();
-    await expect(page).toHaveURL(new RegExp(`${devRules.routes["17-guest"]}(\\?|$)`), { timeout: 45_000 });
-    await expect(page.locator(`${sel("tab-bar")} ${sel("tab-item")}`).filter({ hasText: TAB.labels[1] }), "탭바 '시약' → /demo/sensors").toHaveAttribute("href", devRules.routes["17-guest"], { timeout: 15_000 });
+    for (const path of [devRules.routes["2-guest"], devRules.routes["17-guest"]]) {
+      if (path !== devRules.routes["2-guest"]) {
+        await page.goto(path);
+        await page.waitForLoadState("load");
+      }
+      const bar = page.locator(sel("tab-bar"));
+      await expect(bar, `${path} tab-bar 1`).toHaveCount(1, { timeout: 45_000 });
+      await expect(page.locator(sel(REMOVED_INVENTORY_SWITCH)), `${path} ${REMOVED_INVENTORY_SWITCH} 0`).toHaveCount(0);
+      const manage = bar.locator(sel("tab-item")).filter({ hasText: exactRe(MANAGE_TAB) });
+      await expect(manage, `${path} '${MANAGE_TAB}' → ${devRules.routes["18-guest"]}`).toHaveAttribute("href", devRules.routes["18-guest"]);
+      await expect(manage, `${path} '${MANAGE_TAB}' 활성`).toHaveAttribute("aria-current", "page");
+    }
   } finally {
     await ctx.close();
   }

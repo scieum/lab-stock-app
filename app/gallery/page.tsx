@@ -126,7 +126,6 @@ import { sampleFilterCabinets } from "./filter/sample";
 import { sampleMsdsCandidates } from "./msds/sample";
 import { SAMPLE_TODAY as DOC_TODAY, sampleDocReagents, sampleDocRows } from "./intake/sample";
 import { BulkActionBar } from "@/components/bulk-action-bar";
-import { InventorySwitch } from "@/components/inventory-switch";
 import { ListSelectToggle } from "@/components/list-select-toggle";
 import { RecordAdd } from "@/components/record-add";
 import { SelectCheckbox } from "@/components/select-checkbox";
@@ -148,11 +147,19 @@ import { CatalogFillNote } from "@/components/catalog-fill-note";
 import { SensorDocAdd } from "@/components/sensor-doc-add";
 import { SensorLink } from "@/components/sensor-link";
 import { NewSensorFields } from "@/components/new-sensor-fields";
-import { MobileMenuButton } from "@/components/mobile-menu-button";
-import { MobileMenuSheet } from "@/components/mobile-menu-sheet";
 import { InviteMoreMenu } from "@/components/invite-more-menu";
 import { InviteCancel } from "@/components/invite-cancel";
-import { mobileMenu } from "@/lib/sidebar-menu";
+import { ManageList } from "@/components/manage-list";
+import { ManageBack } from "@/components/manage-back";
+import { ManageGroup } from "@/components/manage-group";
+import { ManageRow } from "@/components/manage-row";
+import { PageMoreMenu } from "@/components/page-more-menu";
+import { ReagentWipeItem } from "@/components/reagent-wipe";
+import { RecordWipeItem } from "@/components/record-wipe";
+import { RecordWipeRange } from "@/components/record-wipe-range";
+import { WipePreview } from "@/components/wipe-preview";
+import { SchoolNameConfirm } from "@/components/school-name-confirm";
+import { manageMenu } from "@/lib/manage-menu";
 import { SENSOR_TYPE_GROUPS } from "@/lib/sensor-rules";
 import { SignupErrorSummary } from "@/components/signup-error-summary";
 import { QrManualEntry } from "@/components/qr-manual-entry";
@@ -1062,11 +1069,6 @@ export default function GalleryPage() {
           </Link>
         </Item>
 
-        <Item name="inventory-switch (디자인 1.26 — 모바일 시약 탭 안 시약 | 센서)">
-          <InventorySwitch active="reagents" />
-          <InventorySwitch active="sensors" />
-        </Item>
-
         <Item name="qr-scan · qr-manual-entry · qr-result-sheet (디자인 1.26 화면 12 · 12-result — 카메라 없이 모양만)">
           <QrScan />
           <QrManualEntry variant="button" href="/gallery/scan" />
@@ -1221,15 +1223,36 @@ export default function GalleryPage() {
           />
         </Item>
 
-        <Item name="mobile-menu-button · mobile-menu-sheet (디자인 1.28 — 시안 13-menu-mobile: 모바일 전체 메뉴, admin)">
-          <div className={styles.row}>
-            <MobileMenuButton />
-            <MobileMenuButton open />
-          </div>
-          <MobileMenuSheet schoolName={SAMPLE_SCHOOL} account="정OO · admin" groups={mobileMenu("admin")} active="home" floating={false} />
-          <Link href="/gallery/menu" className={styles.more}>
-            학생 · 둘러보기 메뉴 · 초대 취소 확인 보기 (/gallery/menu)
+        <Item name="manage-list · manage-group · manage-row · manage-back (디자인 1.29 — 시안 18-mobile 관리 탭, admin)">
+          <ManageBack href="/manage" />
+          <ManageList
+            groups={manageMenu("admin")}
+            counts={{
+              reagents: { total: 42, low: 3 },
+              sensors: { total: 7, broken: 1 },
+              cabinets: 2,
+              reorder: 3,
+              users: { student: 3, teacher: 1, admin: 1 },
+              vendors: 4,
+            }}
+          />
+          <ManageGroup group={{ title: "재고", items: [{ key: "cabinets", label: "시약장", icon: "cabinet", href: "/cabinets" }] }} counts={{ cabinets: 2 }} />
+          <ManageRow href="/intake" label="입고" icon="download" />
+          <Link href="/gallery/manage" className={styles.more}>
+            교사 · 학생 · 둘러보기 관리 목록 · 시약 전체 삭제 · 기록 삭제 보기 (/gallery/manage)
           </Link>
+        </Item>
+
+        <Item name="page-more-menu · reagent-wipe · record-wipe · record-wipe-range · wipe-preview · school-name-confirm (디자인 1.29 — 시안 2-wipe · 10-record-wipe, admin)">
+          <div className={styles.row}>
+            <PageMoreMenu label="시약 목록 더보기" defaultOpen>
+              <ReagentWipeItem count={42} />
+              <RecordWipeItem empty />
+            </PageMoreMenu>
+          </div>
+          <RecordWipeRange range="before" date="2026-09-01" today="2026-10-13" />
+          <WipePreview counts={{ usage: 24, intake: 6 }} />
+          <SchoolNameConfirm schoolName={SAMPLE_SCHOOL} value="" />
         </Item>
 
         <Item name="invite-more-menu · invite-cancel (디자인 1.28 — 시안 8-invite-cancel: 초대 대기 행 ⋯ → 초대 취소)">
@@ -1254,8 +1277,9 @@ export default function GalleryPage() {
 
         <Item name="tab-bar · tab-item">
           <TabBar active="home" responsive={false} />
+          <TabBar active="manage" responsive={false} />
           <div className={styles.row}>
-            <TabItem label="시약" href="/reagents" icon="flask" active />
+            <TabItem label="관리" href="/manage" icon="grid" active />
             <TabItem label="기록" href="/usage" icon="record" />
           </div>
         </Item>

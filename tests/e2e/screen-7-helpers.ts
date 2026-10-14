@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { S7_UI_TEMP_PREFIX, signIn, uniqueTag, type Role } from "./db-helpers";
-import { browserClient, devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
+import { browserClient, devRules, routeOf, rules, sel, type ViewportName, mobileActiveTab } from "./screen-helpers";
 import { framePath } from "../frames";
 import { adjustPreDesktopShell } from "../desktop-shell";
 
@@ -38,7 +38,8 @@ export const EMPTY_TITLE = "찾는 시약이 없어요";
 export const EMPTY_BODY = "시약명을 확인하거나 새로 등록하세요";
 export const TOAST_INTAKE = "입고를 기록했어요";
 export const TOAST_REGISTER = "시약을 등록했어요";
-export const ACTIVE_TAB_LABEL = "시약";
+/** rules 1.29 tab_bar.labels_source (d7 §29): 화면 7 모바일 활성 탭 */
+export const ACTIVE_TAB_LABEL = mobileActiveTab(7);
 export const NAV_LABEL = "입고·시약 등록";
 /** 모바일: 버튼 아래 끝과 tab-bar 위쪽 선 사이 (s2-spec button-primary) */
 export const BUTTON_TAB_GAP = 16;

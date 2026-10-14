@@ -7,7 +7,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { anonClient } from "./db-helpers";
 import { openAs } from "./auth-state";
-import { devRules, routeOf, rules, sel } from "./screen-helpers";
+import { REMOVED_INVENTORY_SWITCH, devRules, routeOf, rules, sel } from "./screen-helpers";
 import { GUEST, checkBanner, checkHidden, checkSchoolName, checkTabBar, demoSchool, openGuest } from "./guest-helpers";
 import { D7_25, SCREEN, d7Row, detailPath, guestListPath, isDesk, quotes, rowNamed, rowsOf, statusLabel, waitSensorList } from "./sensor-helpers";
 
@@ -47,7 +47,7 @@ test(`[GM-ui][${TAG}] 기대값 원본: guest.screens · dev-rules guest_screens
   expect(DEMO_RANGE).toEqual([4, 6]);
 });
 
-test(`[GM-ui][${TAG}] /demo/sensors 비로그인: 200 · guest-banner(가입 → /signup) · hidden_components 0 · 행 = anon 데모 센서(${DEMO_RANGE.join("~")}개, 상태 배지 글자) · 학교명 '데모 학교'만 · 390 탭바(4 · 잠금 ${GUEST.tab_locks}) + inventory-switch → /demo/reagents · 1440 사이드바 '센서' 활성 + 잠금 · V1`, async ({ browser }, info) => {
+test(`[GM-ui][${TAG}] /demo/sensors 비로그인: 200 · guest-banner(가입 → /signup) · hidden_components 0 · 행 = anon 데모 센서(${DEMO_RANGE.join("~")}개, 상태 배지 글자) · 학교명 '데모 학교'만 · 390 탭바(4 · 잠금 ${GUEST.tab_locks}) · inventory-switch 0 (rules 1.29) · 1440 사이드바 '센서' 활성 + 잠금 · V1`, async ({ browser }, info) => {
   test.setTimeout(180_000);
   const demo = await demoSensors();
   expect(demo.length, "데모 센서 수 (d7 §25)").toBeGreaterThanOrEqual(DEMO_RANGE[0]);
@@ -70,11 +70,8 @@ test(`[GM-ui][${TAG}] /demo/sensors 비로그인: 200 · guest-banner(가입 →
       const active = page.locator(`${sel("app-sidebar")} ${sel("sidebar-item")}[aria-current="page"]`);
       await expect(active, "사이드바 '센서' 활성 (rules guest.desktop)").toHaveText(/센서/);
     } else {
-      const sw = page.locator(`main ${sel("inventory-switch")}`);
-      await expect(sw, "inventory-switch 1").toHaveCount(1);
-      await expect(sw.locator(sel("segmented-control-active")), "센서 활성").toHaveText(/센서/);
-      const reagentLink = sw.getByRole("tab", { name: "시약" });
-      expect(new URL((await reagentLink.getAttribute("href"))!, "http://x").pathname, "시약 쪽 → /demo/reagents").toBe(devRules.routes["2-guest"]);
+      // rules 1.29 tab_bar.sensor_entry: inventory-switch 없앰 — 둘러보기도 0
+      await expect(page.locator(sel(REMOVED_INVENTORY_SWITCH)), `${REMOVED_INVENTORY_SWITCH} 0`).toHaveCount(0);
     }
     await page.screenshot({ path: `test-results/v1-17g-${info.project.name}.png` });
     // 상세: 읽기 전용 (수정 · 삭제 없음)

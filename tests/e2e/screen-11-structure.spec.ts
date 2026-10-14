@@ -258,7 +258,8 @@ for (const role of SCHOOL_A_ROLES) {
         await expect(nav.locator('a[aria-current="page"]'), "현재 메뉴 링크").toHaveText(exact(shellNavLabel(viewport, SCREEN, NAV_LABEL)));
         await expectShellHeader(page, viewport, { schoolName: me.schoolName }, "화면 11");
       } else {
-        await expect(nav.getByText(exact(NAV_LABEL)).first(), `nav-pill 제목 "${NAV_LABEL}"`).toBeVisible();
+        // rules 1.29 manage.back: 관리 아래 화면 11 의 390 머리 = manage-back '‹ 관리'(제목 자리) — expectShellHeader 가 manage-back 을 본다
+        await expectShellHeader(page, viewport, { wordmark: "Lab_Stock", title: NAV_LABEL, schoolName: me.schoolName }, "화면 11");
       }
       await expect(nav, "셸 학교명").toContainText(me.schoolName);
       expect(actions.count(), "쓰기 요청 0건").toBe(0);
