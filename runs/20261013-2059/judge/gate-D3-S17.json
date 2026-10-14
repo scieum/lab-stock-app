@@ -1,0 +1,37 @@
+{
+  "gate": "gate-D3-S17",
+  "pass": true,
+  "exit": 0,
+  "violations": [],
+  "logs": {},
+  "report": {
+    "V1": {
+      "screenshots": [
+        "test-results/v1-17-add-choice-mobile.png",
+        "test-results/v1-17-desktop.png",
+        "test-results/v1-17-detail-desktop.png",
+        "test-results/v1-17-detail-mobile.png",
+        "test-results/v1-17-doc-fail-desktop.png",
+        "test-results/v1-17-doc-fail-mobile.png",
+        "test-results/v1-17-doc-review-desktop.png",
+        "test-results/v1-17-doc-review-mobile.png",
+        "test-results/v1-17-doc-upload-desktop.png",
+        "test-results/v1-17-doc-upload-mobile.png",
+        "test-results/v1-17-empty-desktop.png",
+        "test-results/v1-17-empty-mobile.png",
+        "test-results/v1-17-filter-desktop.png",
+        "test-results/v1-17-filter-mobile.png",
+        "test-results/v1-17-form-desktop.png",
+        "test-results/v1-17-form-mobile.png",
+        "test-results/v1-17-mobile.png",
+        "test-results/v1-17-model-desktop.png",
+        "test-results/v1-17-model-mobile.png",
+        "test-results/v1-17-type-desktop.png",
+        "test-results/v1-17-type-mobile.png",
+        "test-results/v1-17g-desktop.png",
+        "test-results/v1-17g-mobile.png"
+      ],
+      "figma_page": "https://www.figma.com/design/yPF9ZLVjkg22kgSDD2aKEd?node-id=107-2"
+    }
+  }
+}
