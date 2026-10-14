@@ -25,6 +25,7 @@ import {
   toUsagePeriod,
   type UsagePeriod,
 } from "@/lib/usage-history-rules";
+import { useRecordWipe, type RecordWipeEntry } from "./record-wipe-flow";
 import { UsageHistoryDesk } from "./usage-history-desk";
 import styles from "./usage-history.module.css";
 
@@ -81,6 +82,8 @@ type Props = {
   truncated: boolean;
   /** 학교급별 최고 학년 (class-filter) */
   maxGrade: number;
+  /** admin 만 — 머리 줄 page-more-menu ⋯ '기록 삭제' (d7 §29). 교사·학생은 없음 */
+  wipe?: RecordWipeEntry;
 };
 
 export const SCOPES = [
@@ -219,7 +222,7 @@ function useFreshRows(): ReadonlySet<string> {
  * 데스크톱(≥ 1024)은 UsageHistoryDesk — data-table + 기록 상세 detail-drawer (d7 §23 run b).
  * 필터는 주소(?mine · ?period · ?q)에 두고 서버가 다시 조회한다. 학교·사용자 값은 보내지 않는다.
  */
-export function UsageHistoryScreen({ filter, groups, truncated, maxGrade }: Props) {
+export function UsageHistoryScreen({ filter, groups, truncated, maxGrade, wipe }: Props) {
   const filters = useUsageFilters(filter);
   const { pending, shown, text, changeText, sendQuery, changeScope, changePeriod, changeClass } = filters;
   const fresh = useFreshRows();
@@ -270,6 +273,8 @@ export function UsageHistoryScreen({ filter, groups, truncated, maxGrade }: Prop
   }, [openId]);
 
   const total = all.length;
+  // 기록 삭제 (모바일 바텀시트) — 열면 기록 상세 시트는 닫는다 (같은 자리)
+  const recordWipe = useRecordWipe(wipe, "sheet", () => setSelectedId(null));
 
   return (
     <>
@@ -278,7 +283,11 @@ export function UsageHistoryScreen({ filter, groups, truncated, maxGrade }: Prop
       {/* 시안 1.26 10-mobile list-head: "사용 기록 N건" + record-add "기록 추가" (모든 역할) */}
       <div className={styles.listHead} data-name="list-head">
         <h1 className={styles.title}>{`사용 기록 ${all.length}건`}</h1>
-        <RecordAdd />
+        {/* 시안 10-record-wipe-mobile head-actions: record-add → page-more-menu ⋯ (admin) */}
+        <div className={styles.headActions} data-name="head-actions">
+          <RecordAdd />
+          {recordWipe.menu}
+        </div>
       </div>
 
       <div className={styles.filters} role="search" aria-label="사용 기록 필터">
@@ -399,11 +408,13 @@ export function UsageHistoryScreen({ filter, groups, truncated, maxGrade }: Prop
           ) : null}
         </div>
       </div>
+      {recordWipe.panel}
+      {recordWipe.toast}
     </div>
     </MobileOnly>
     {/* 데스크톱 (d7 §23 run b): data-table + 기록 상세 오른쪽 드로어 (?id= 주소창) */}
     <DesktopOnly>
-      <UsageHistoryDesk filters={filters} groups={groups} truncated={truncated} maxGrade={maxGrade} fresh={fresh} />
+      <UsageHistoryDesk filters={filters} groups={groups} truncated={truncated} maxGrade={maxGrade} fresh={fresh} wipe={wipe} />
     </DesktopOnly>
     </>
   );

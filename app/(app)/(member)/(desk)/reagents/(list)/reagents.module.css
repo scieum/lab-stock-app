@@ -27,6 +27,13 @@
   min-height: var(--button-min-height);
 }
 
+.headActions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-8);
+}
+
 .listHead .title {
   font-size: var(--font-size-18);
 }

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { NavPill, type NavLinkItem } from "@/components/nav-pill";
 import { TabBar } from "@/components/tab-bar";
-import { tabActiveKey } from "@/lib/manage-menu";
+import { manageBackHref, tabActiveKey } from "@/lib/manage-menu";
 import { useRememberScanReturn, useScanReturnHref } from "@/lib/scan-return";
 import { sidebarAccountLabel, sidebarActiveKey, sidebarMenu, type SidebarRole } from "@/lib/sidebar-menu";
 import { useIsDesktop } from "@/lib/use-viewport";
@@ -166,9 +166,12 @@ function MobileNav({ schoolName, staff = false, admin = false, page }: AppNavPro
         href: l.href,
         active: page ? l.href === page.activeHref : isActive(pathname, l.href),
       }));
+  // 관리 아래 화면(2·5·6·7·8·9·11·17) = 머리 왼쪽 manage-back '‹ 관리' → /manage (d7 §29). 더 깊은 화면은 ‹ 뒤로 그대로
+  const back = page ? null : manageBackHref(pathname);
   return (
     <NavPill
       schoolName={schoolName}
+      manageBackHref={back ?? undefined}
       links={links}
       title={sub?.title}
       backHref={sub?.backHref}

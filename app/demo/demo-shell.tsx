@@ -6,7 +6,7 @@ import { GuestBanner } from "@/components/guest-banner";
 import { GuestToastProvider } from "@/components/guest-lock/toast";
 import { NavPill, type NavLinkItem } from "@/components/nav-pill";
 import { TabBar } from "@/components/tab-bar";
-import { guestTabActiveKey } from "@/lib/manage-menu";
+import { guestTabActiveKey, manageBackHref } from "@/lib/manage-menu";
 import { guestSidebarActiveKey, guestSidebarMenu } from "@/lib/sidebar-menu";
 import { useIsDesktop } from "@/lib/use-viewport";
 import shell from "@/app/(app)/shell.module.css";
@@ -65,10 +65,13 @@ function MobileDemoNav({ schoolName, page }: DemoNavProps) {
     ...l,
     active: !l.locked && (page ? l.href === page.activeHref : isActive(pathname, l.href)),
   }));
+  // 둘러보기 관리 아래 화면(2g · 17g) = manage-back '‹ 관리' → /demo/manage (d7 §29)
+  const back = page ? null : manageBackHref(pathname);
   return (
     <>
       <NavPill
         schoolName={schoolName}
+        manageBackHref={back ?? undefined}
         links={links}
         title={page ? page.title : detail ? "시약 상세" : sensorDetail ? "센서 상세" : undefined}
         backHref={page ? page.backHref : detail ? "/demo/reagents" : sensorDetail ? "/demo/sensors" : undefined}

@@ -41,6 +41,7 @@ import type { ReagentListItem } from "@/lib/supabase/reagents-data";
 import { useBulkSelect } from "@/lib/use-bulk-select";
 import { archiveReagentsAction } from "../reagents/bulk-actions";
 import { MsdsBulk } from "../reagents/(list)/msds-bulk";
+import { ReagentWipeFlow } from "../reagents/reagent-wipe-flow";
 import { useDeskBase } from "./desk-base";
 import styles from "./desk.module.css";
 
@@ -56,6 +57,8 @@ type Props = {
   canFindMsds: boolean;
   /** 교사·admin — 선택 모드 · 여러 개 삭제 (d7 §25 bulk_delete, R5). 학생 · 둘러보기 false */
   canSelect?: boolean;
+  /** admin 만 — 우리 학교 이름. 있으면 page-actions 끝 page-more-menu ⋯ '시약 전체 삭제' (d7 §29). 교사·학생·둘러보기는 없음 */
+  wipeSchoolName?: string;
 };
 
 /** 주소창 쿼리를 고친다 (Next 라우터와 함께 바뀐다 — useSearchParams 가 새 값을 준다). 목록 조건이 바뀌면 1쪽으로 */
@@ -83,7 +86,7 @@ const W_DRAWER = { name: undefined, cls: "10%", loc: "21%", stock: "10%", status
  * data-table(시약명↑ · 보관 분류 · 보관 위치 · 재고 · 상태 · 최근 입고일 · MSDS, 10행씩) → pagination.
  * 행을 누르면 오른쪽 드로어(시약 상세)가 열린다 — 주소 /reagents/[id]?{목록 쿼리}. 목록 상태는 모두 주소창에 둔다.
  */
-export function ReagentDeskTable({ items, cabinets, canFindMsds, canSelect = false }: Props) {
+export function ReagentDeskTable({ items, cabinets, canFindMsds, canSelect = false, wipeSchoolName }: Props) {
   const pathname = usePathname();
   const sp = useSearchParams();
   const selectedId = deskSelectedId(pathname, sp);
@@ -263,6 +266,8 @@ export function ReagentDeskTable({ items, cabinets, canFindMsds, canSelect = fal
           {canSelect ? (
             <ListSelectToggle variant="desktop" selecting={selecting} onStart={select.start} onCancel={select.cancel} disabled={visible.length === 0} />
           ) : null}
+          {/* 시안 2-wipe-desktop page-actions 끝: page-more-menu ⋯ (admin, 선택 모드와 섞지 않는다) */}
+          {wipeSchoolName && !guest && !selecting ? <ReagentWipeFlow count={items.length} schoolName={wipeSchoolName} /> : null}
         </div>
       </div>
 

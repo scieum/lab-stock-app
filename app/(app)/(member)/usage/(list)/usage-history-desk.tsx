@@ -24,6 +24,7 @@ import { TextInput, TextInputSelect } from "@/components/text-input";
 import { msdsSummaryPath } from "@/lib/msds-summary";
 import { TABLE_PAGE_SIZE, paginate, parsePage } from "@/lib/paginate";
 import { USAGE_HISTORY_LIMIT, USAGE_PERIOD_OPTIONS, USAGE_QUERY_MAX } from "@/lib/usage-history-rules";
+import { useRecordWipe, type RecordWipeEntry } from "./record-wipe-flow";
 import type { UsageFilters, UsageHistoryGroup, UsageHistoryItem } from "./usage-history-screen";
 import styles from "./usage-history.module.css";
 
@@ -45,6 +46,8 @@ type Props = {
   maxGrade: number;
   /** 기록 추가 뒤 새 기록 행 (잠깐 highlight-soft) */
   fresh?: ReadonlySet<string>;
+  /** admin 만 — page-actions 끝 page-more-menu ⋯ '기록 삭제' (d7 §29) */
+  wipe?: RecordWipeEntry;
 };
 
 /** 주소창만 바꾼다 (서버 조회 없음 — 열린 기록 · 쪽 · 정렬은 화면 상태). push = 뒤로가기로 되돌릴 수 있게 */
@@ -64,7 +67,7 @@ type Row = { kind: "group"; key: string; label: string } | { kind: "record"; rec
  * 행을 누르면 오른쪽 detail-drawer(모달 대신): 시약명 → 사용량(32/700) → 사용자 · 사용일 · 기록 시각 · 메모 → msds-entry → "닫기".
  * 열린 기록은 주소창 ?id= (새로고침·뒤로가기 유지), 쪽 ?page=, 사용일 정렬 ?order=asc(기본 최신순).
  */
-export function UsageHistoryDesk({ filters, groups, truncated, maxGrade, fresh = new Set() }: Props) {
+export function UsageHistoryDesk({ filters, groups, truncated, maxGrade, fresh = new Set(), wipe }: Props) {
   const { pending, shown, text, changeText, sendQuery, changeScope, changePeriod, changeClass } = filters;
   const sp = useSearchParams();
   const openId = sp.get("id");
@@ -89,6 +92,11 @@ export function UsageHistoryDesk({ filters, groups, truncated, maxGrade, fresh =
     }
     rows.push({ kind: "record", record: r });
   }
+
+  // 기록 삭제 (데스크톱 detail-drawer — 기록 상세 드로어 자리). 열면 기록 상세는 닫는다
+  const recordWipe = useRecordWipe(wipe, "drawer", () => {
+    if (openId) setParams((p) => p.delete("id"), "replace");
+  });
 
   const open = (id: string) => setParams((p) => p.set("id", id), "push");
   const close = () => setParams((p) => p.delete("id"), "push");
@@ -142,6 +150,8 @@ export function UsageHistoryDesk({ filters, groups, truncated, maxGrade, fresh =
           />
           {/* 시안 1.26 10-desktop page-actions: 검색 + record-add "기록 추가" */}
           <RecordAdd />
+          {/* 시안 10-record-wipe-desktop page-actions 끝: page-more-menu ⋯ (admin) */}
+          {recordWipe.menu}
           </div>
         </div>
 
@@ -217,7 +227,10 @@ export function UsageHistoryDesk({ filters, groups, truncated, maxGrade, fresh =
         ) : null}
       </div>
 
-      {selected ? (
+      {recordWipe.toast}
+      {recordWipe.open ? (
+        recordWipe.panel
+      ) : selected ? (
         <DetailDrawer
           key={selected.id}
           focusKey={selected.id}

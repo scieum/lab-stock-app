@@ -24,6 +24,7 @@ import {
 import type { ReagentListItem } from "@/lib/supabase/reagents-data";
 import { useBulkSelect } from "@/lib/use-bulk-select";
 import { archiveReagentsAction } from "../bulk-actions";
+import { ReagentWipeFlow } from "../reagent-wipe-flow";
 import { MsdsBulk } from "./msds-bulk";
 import styles from "./reagents.module.css";
 
@@ -48,6 +49,8 @@ type Props = {
   canFindMsds?: boolean;
   /** true = 교사·admin — 선택 모드 · 여러 개 삭제 (d7 §25 bulk_delete, R5). 학생·둘러보기는 false */
   canSelect?: boolean;
+  /** admin 만 — 우리 학교 이름. 있으면 목록 머리 오른쪽 page-more-menu ⋯ '시약 전체 삭제' (d7 §29). 교사·학생·둘러보기는 없음 */
+  wipeSchoolName?: string;
 };
 
 /** 주소창(?filter·?q + 필터 시트 값)을 화면 상태와 맞춘다 — 새로고침·뒤로가기에도 같은 목록 */
@@ -79,6 +82,7 @@ export function ReagentBrowser({
   detailBase = "/reagents",
   canFindMsds = false,
   canSelect = false,
+  wipeSchoolName,
 }: Props) {
   const [filter, setFilter] = useState<ReagentFilter>(initialFilter);
   const [query, setQuery] = useState(initialQuery);
@@ -163,7 +167,13 @@ export function ReagentBrowser({
       ) : (
         <div className={styles.listHead} data-name="list-head">
           <h1 className={styles.title}>{`시약 ${visible.length}종`}</h1>
-          {canSelect && items.length > 0 ? <ListSelectToggle selecting={false} onStart={select.start} disabled={visible.length === 0} /> : null}
+          {/* 시안 2-wipe-mobile head-actions: 선택 → page-more-menu ⋯ (admin) */}
+          {(canSelect && items.length > 0) || wipeSchoolName ? (
+            <div className={styles.headActions} data-name="head-actions">
+              {canSelect && items.length > 0 ? <ListSelectToggle selecting={false} onStart={select.start} disabled={visible.length === 0} /> : null}
+              {wipeSchoolName ? <ReagentWipeFlow count={items.length} schoolName={wipeSchoolName} /> : null}
+            </div>
+          ) : null}
         </div>
       )}
       <div className={styles.toolbar}>

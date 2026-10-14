@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { formatDateTimeDashes, formatMonthDayOf, formatStock, formatTimeHm } from "@/lib/format";
+import { getServerSession } from "@/lib/supabase/server";
 import { getUsageHistory } from "@/lib/supabase/usage-history";
+import { countWipeRecords } from "@/lib/supabase/wipe";
+import { wipeTotal } from "@/lib/wipe-rules";
 import {
   monthDayLabel,
   normalizeUsageQuery,
@@ -44,13 +47,23 @@ function safeUrl(v: string | null): string | null {
  */
 export default async function UsageHistoryPage({ searchParams }: Props) {
   const sp = await searchParams;
-  const result = await getUsageHistory({
-    onlyMine: first(sp.mine) === "1",
-    period: toUsagePeriod(first(sp.period)),
-    query: normalizeUsageQuery(first(sp.q)),
-    grade: first(sp.grade),
-    classNo: first(sp.cls),
-  });
+  // d7 §29 기록 삭제 진입 = admin 만. 지울 기록(사용 + 입고 전체)이 0건이면 메뉴 항목 비활성 — count_wipe_records(null), 목록과 함께 읽는다
+  const wipeEntry = async () => {
+    const me = await getServerSession();
+    if (me.kind !== "member" || me.role !== "admin") return null;
+    const all = await countWipeRecords(null);
+    return { schoolName: me.school.name, empty: all.ok ? wipeTotal(all.counts) === 0 : false };
+  };
+  const [result, wipeBase] = await Promise.all([
+    getUsageHistory({
+      onlyMine: first(sp.mine) === "1",
+      period: toUsagePeriod(first(sp.period)),
+      query: normalizeUsageQuery(first(sp.q)),
+      grade: first(sp.grade),
+      classNo: first(sp.cls),
+    }),
+    wipeEntry(),
+  ]);
   if (result.kind === "signed-out") redirect("/login");
 
   const { filter, records, truncated, maxGrade } = result.data;
@@ -86,5 +99,7 @@ export default async function UsageHistoryPage({ searchParams }: Props) {
     });
   }
 
-  return <UsageHistoryScreen filter={filter} groups={groups} truncated={truncated} maxGrade={maxGrade} />;
+  const wipe = wipeBase ? { ...wipeBase, today } : undefined;
+
+  return <UsageHistoryScreen filter={filter} groups={groups} truncated={truncated} maxGrade={maxGrade} wipe={wipe} />;
 }
