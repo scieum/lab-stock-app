@@ -142,7 +142,8 @@ export function ReagentBrowser({
   }, [open]);
 
   let empty: React.ReactNode = null;
-  if (items.length === 0) empty = <p className={styles.empty}>등록된 시약이 없어요</p>;
+  // 시약 0종 (처음 · 시약 전체 삭제 뒤 — rules wipe.reagent 빈 목록): 데스크톱과 같은 ex-empty-state-card
+  if (items.length === 0) empty = <EmptyStateCard variant="outlined" title="등록된 시약이 없어요" />;
   else if (visible.length === 0 && chips.length > 0) {
     empty = (
       <EmptyStateCard variant="outlined" title="조건에 맞는 시약이 없어요" description="칩을 하나씩 빼거나 필터를 지워 보세요">
