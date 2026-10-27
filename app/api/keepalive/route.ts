@@ -15,10 +15,11 @@ export async function GET(request: NextRequest) {
   }
   try {
     const supabase = createAnonClient();
-    const { error } = await supabase.from("vendors").select("id", { count: "exact", head: true }).limit(1);
+    const { error } = await supabase.from("schools").select("id", { count: "exact", head: true }).limit(1);
     if (error) throw error;
     return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });
-  } catch {
+  } catch (err) {
+    console.error("[keepalive] supabase query failed:", err instanceof Error ? err.message : (err as { message?: string })?.message ?? String(err));
     return NextResponse.json({ ok: false }, { status: 500, headers: { "Cache-Control": "no-store" } });
   }
 }
