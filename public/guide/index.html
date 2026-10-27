@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab_Stock 사용 가이드</title>
+<meta name="description" content="Lab_Stock 사용 가이드 — 과학실 시약·센서 관리. 교사 · 관리자 · 학생">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+/* 색·글꼴 = Lab_Stock 토큰 (design/rules.json colors·typography, styles/tokens.css 와 같은 값) */
+:root{
+  --ink:#141414;--ink-2:#262626;--mute:#707070;--faint:#adadad;--hair:#e0e0e0;--line:#f0f0f0;--soft:#f3f3f3;--white:#ffffff;
+  --accent:#d6246a;--accent-soft:#fbe9f0;--hl:#2b9fe0;--hl-soft:#e6f4fc;
+  --r-md:16px;--r-lg:24px;--pill:9999px;
+  --font:"Pretendard Variable","Pretendard",-apple-system,BlinkMacSystemFont,system-ui,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{margin:0;background:var(--white);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.7;word-break:keep-all;overflow-wrap:anywhere}
+a{color:var(--ink);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--faint)}
+a:hover{text-decoration-color:var(--ink)}
+.layout{display:grid;grid-template-columns:272px minmax(0,1fr);min-height:100vh}
+/* 목차 */
+nav.toc{position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--soft);padding:24px 16px 40px}
+.brand{display:flex;flex-direction:column;gap:2px;padding:0 8px 16px;margin-bottom:12px;border-bottom:1px solid var(--hair)}
+.brand b{font-size:17px}
+.brand span{font-size:12px;color:var(--mute)}
+.search{width:100%;height:44px;border:0;border-radius:var(--pill);background:var(--white);padding:0 16px;font:inherit;font-size:15px;color:var(--ink);outline:none;margin-bottom:8px}
+.search::placeholder{color:var(--faint)}
+.search:focus{box-shadow:0 0 0 2px var(--hl)}
+.toc-toggle{display:none}
+.toc h4{margin:16px 8px 4px;font-size:12px;font-weight:600;color:var(--mute)}
+.toc-list a{display:block;padding:8px 12px;border-radius:var(--pill);color:var(--ink-2);font-size:15px;text-decoration:none}
+.toc-list a:hover{background:var(--line)}
+.toc-list a.on{background:var(--hl-soft);color:var(--ink);font-weight:700}
+/* 본문 */
+main{padding:0 48px 96px;min-width:0}
+main>section,main>footer,main>#empty{max-width:960px}
+.hero{margin:0 -48px 48px;padding:64px 48px 48px;background:var(--ink);color:var(--white)}
+.hero>*{max-width:960px}
+.hero small{color:var(--faint);font-weight:600;font-size:13px}
+.hero h1{font-size:40px;line-height:1.3;margin:8px 0 16px;font-weight:700}
+.hero p{color:var(--hair);max-width:640px;margin:0}
+.roles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:32px}
+.roles a{display:block;background:var(--ink-2);border-radius:var(--r-md);padding:16px;color:var(--white);text-decoration:none}
+.roles a:hover{box-shadow:inset 0 0 0 1px var(--mute)}
+.roles b{display:block;font-size:15px}
+.roles span{font-size:12px;color:var(--faint)}
+section{margin-bottom:64px}
+h2{font-size:28px;line-height:1.3;margin:0 0 8px;display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-weight:700}
+.lead{color:var(--mute);margin:0 0 24px}
+h3{font-size:18px;line-height:1.3;margin:32px 0 12px;font-weight:700}
+.card{background:var(--white);border:1px solid var(--hair);border-radius:var(--r-md);padding:24px;margin-bottom:16px;min-width:0}
+.card h3{margin-top:0}
+.card p{margin:0}
+.card ul,.card ol{margin:0;padding-left:20px}
+.card li{margin:4px 0}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.tag{display:inline-flex;align-items:center;height:24px;padding:0 12px;border-radius:var(--pill);font-size:12px;font-weight:600;white-space:nowrap;background:var(--soft);color:var(--ink)}
+.tag.staff{background:var(--hl-soft)}
+.tag.admin{background:var(--ink);color:var(--white)}
+.tag.low{background:var(--accent);color:var(--white)}
+.btn{display:inline-flex;align-items:center;height:26px;padding:0 12px;border-radius:var(--pill);border:1px solid var(--hair);background:var(--white);font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;vertical-align:1px}
+.btn.p{background:var(--ink);border-color:var(--ink);color:var(--white)}
+.shot{margin:16px 0 8px;border-radius:var(--r-md);border:1px solid var(--hair);overflow:hidden;background:var(--white)}
+.shot img{display:block;width:100%;height:auto}
+.shot.narrow{max-width:560px}
+.shot.phone{max-width:390px}
+.shot figcaption{font-size:13px;color:var(--mute);padding:12px 16px;border-top:1px solid var(--line)}
+.pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+.pair .shot{margin:0;max-width:none}
+.steps{counter-reset:s;list-style:none;padding:0 !important;margin:0}
+.steps li{counter-increment:s;position:relative;padding:12px 0 12px 40px !important;border-top:1px solid var(--line);margin:0 !important}
+.steps li:first-child{border-top:0}
+.steps li:before{content:counter(s);position:absolute;left:0;top:12px;width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--white);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.tip,.warn{border-radius:var(--r-md);padding:16px;font-size:15px;margin:12px 0}
+.tip{background:var(--hl-soft)}
+.warn{background:var(--soft);border-left:4px solid var(--ink)}
+.tip b,.warn b{margin-right:4px}
+.tbl{overflow-x:auto;border:1px solid var(--hair);border-radius:var(--r-md);margin:12px 0 16px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:12px 16px;border-top:1px solid var(--line);vertical-align:top}
+th{background:var(--soft);font-weight:600;color:var(--mute);font-size:13px;border-top:0}
+.flow{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.flow span{background:var(--soft);border-radius:var(--pill);padding:8px 16px;font-size:15px;font-weight:600}
+.flow i{font-style:normal;color:var(--faint);align-self:center}
+details{background:var(--white);border:1px solid var(--hair);border-radius:var(--r-md);margin-bottom:8px}
+summary{cursor:pointer;padding:16px 24px;font-weight:600;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary:after{content:"＋";float:right;color:var(--mute);margin-left:8px}
+details[open] summary:after{content:"－"}
+details p{margin:0;padding:0 24px 16px;color:var(--ink-2)}
+footer{color:var(--mute);font-size:13px;border-top:1px solid var(--hair);padding-top:24px;text-align:center}
+.hidden{display:none !important}
+.to-top{display:none}
+@media (max-width:900px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  nav.toc{position:static;height:auto;overflow:visible;padding:16px}
+  .brand{flex-direction:row;align-items:baseline;justify-content:space-between;gap:8px;padding:0 4px 12px}
+  .toc-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;height:44px;padding:0 16px;border:0;border-radius:var(--pill);background:var(--white);font:inherit;font-size:15px;font-weight:600;color:var(--ink);cursor:pointer}
+  .toc-toggle:after{content:"▾";color:var(--mute)}
+  .toc.open .toc-toggle:after{content:"▴"}
+  .toc-list{display:none;padding-top:8px}
+  .toc.open .toc-list{display:block}
+  .to-top{display:flex;position:fixed;right:16px;bottom:16px;z-index:40;height:44px;padding:0 16px;border:0;border-radius:var(--pill);background:var(--ink);color:var(--white);font:inherit;font-weight:600;align-items:center;cursor:pointer}
+  main{padding:0 16px 80px}
+  .hero{margin:0 -16px 32px;padding:40px 16px 32px}
+  .hero h1{font-size:28px}
+  .roles,.grid3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .grid2,.pair{grid-template-columns:minmax(0,1fr)}
+  h2{font-size:24px}
+  .card{padding:16px}
+  th,td{padding:12px}
+}
+@media (max-width:520px){.roles,.grid3{grid-template-columns:minmax(0,1fr)}}
+@media print{nav.toc,.to-top{display:none}.layout{display:block}.hero{background:var(--white);color:var(--ink)}.hero p{color:var(--ink-2)}.roles{display:none}section{break-inside:avoid-page}}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc" id="toc" aria-label="목차">
+  <div class="brand"><b>Lab_Stock 사용 가이드</b><span>2026. 10.</span></div>
+  <input class="search" id="q" type="search" placeholder="기능 찾기 (예: QR, 입고, MSDS)" aria-label="가이드에서 찾기">
+  <button class="toc-toggle" id="tocToggle" type="button" aria-controls="tocList" aria-expanded="false">목차 열기</button>
+  <div class="toc-list" id="tocList">
+    <h4>시작하기</h4>
+    <a href="#start">처음 들어가기</a>
+    <a href="#screen">화면 둘러보기</a>
+    <h4>매일 쓰는 것</h4>
+    <a href="#reagents">시약 찾기 · 사용 기록</a>
+    <h4>재고 관리 · 교사</h4>
+    <a href="#intake">입고 (직접 · AI 서류)</a>
+    <a href="#cabinets">시약장 · QR</a>
+    <a href="#reorder">재주문 알림 · 판매처</a>
+    <a href="#manual">실험 매뉴얼</a>
+    <a href="#sensors">센서</a>
+    <h4>학교 관리 · 관리자</h4>
+    <a href="#admin">사용자 · 전체 삭제</a>
+    <h4>학생</h4>
+    <a href="#student">학생 화면</a>
+    <h4>도움</h4>
+    <a href="#privacy">개인정보 · AI 원칙</a>
+    <a href="#faq">자주 묻는 질문</a>
+  </div>
+</nav>
+
+<main>
+<header class="hero">
+  <small>사용 가이드</small>
+  <h1>Lab_Stock<br>이렇게 써요</h1>
+  <p>무엇이 얼마나 남았는지, 누가 언제 썼는지. 우리 학교 과학실의 시약과 센서를 학교별로 따로 기록해요. 맡은 역할에 맞는 부분만 골라 읽으세요.</p>
+  <div class="roles">
+    <a href="#start"><b>처음이라면</b><span>가입 · 초대 · 학교</span></a>
+    <a href="#intake"><b>교사</b><span>입고 · 시약장 · 재주문</span></a>
+    <a href="#admin"><b>관리자 (admin)</b><span>사용자 · 판매처 · 전체 삭제</span></a>
+    <a href="#student"><b>학생</b><span>시약 보기 · 사용 기록</span></a>
+  </div>
+</header>
+
+<section id="start" data-k="가입 회원가입 로그인 초대 학교 NEIS 나이스 비밀번호 이메일 역할 admin 첫 가입 둘러보기 데모">
+  <h2>처음 들어가기</h2>
+  <p class="lead">개인 이메일로 가입하면서 우리 학교를 골라요. 학교는 계정에 묶여서, 그다음부터는 우리 학교 데이터만 보여요.</p>
+  <figure class="shot"><img src="landing.webp" width="1280" height="800" alt="Lab_Stock 첫 화면" loading="lazy"><figcaption>첫 화면 — 회원가입 · 로그인 · 둘러보기</figcaption></figure>
+  <div class="card"><h3>회원가입</h3>
+    <ol class="steps">
+      <li>첫 화면에서 <span class="btn p">회원가입하고 시작하기</span>를 눌러요.</li>
+      <li><b>학교 선택</b>: 시/도 → 지역(시/군/구) → 학교급(초등학교 · 중학교 · 고등학교) → 학교 순서로 골라요. 목록은 NEIS(나이스) 공식 학교 정보예요.</li>
+      <li><b>계정</b>: 이름 · 개인 이메일 · 비밀번호(8자 이상) · 비밀번호 확인을 적고, 서비스 이용약관 · 개인정보 수집·이용(둘 다 필수)에 동의해요.</li>
+      <li><span class="btn p">가입하기</span>를 누르면 확인 메일이 가요. 메일의 링크로 확인한 뒤 개인 이메일과 비밀번호로 로그인해요. 메일이 안 보이면 스팸함을 보세요.</li>
+    </ol>
+  </div>
+  <figure class="shot"><img src="signup.webp" width="1280" height="800" alt="회원가입 화면" loading="lazy"><figcaption>회원가입 — 1 학교 선택 → 2 계정</figcaption></figure>
+  <div class="warn"><b>학교는 가입할 때 한 번만 골라요.</b>가입한 뒤에는 바꿀 수 없어요. 로그인 화면에서는 학교를 다시 묻지 않아요.</div>
+  <div class="grid2">
+    <div class="card"><h3>역할은 어떻게 정해져요?</h3>
+      <ul>
+        <li>그 학교에서 <b>처음 가입한 사람</b>이 관리자(admin)가 돼요.</li>
+        <li>그다음 가입자는 <b>학생</b>으로 시작해요.</li>
+        <li>관리자가 미리 <b>초대</b>해 둔 이메일로 가입하면 초대한 역할(학생 · 교사)이 붙어요.</li>
+        <li>역할은 관리자가 <a href="#admin">사용자</a> 화면에서 바꿀 수 있어요.</li>
+      </ul>
+    </div>
+    <div class="card"><h3>초대 받기 · 보내기</h3>
+      <ul>
+        <li>초대는 메일을 보내지 않아요. 관리자가 이메일과 역할을 적어 두는 것이에요.</li>
+        <li>관리자가 <span class="btn">초대 링크 복사</span>로 회원가입 주소를 메신저 등으로 직접 전해요.</li>
+        <li>받은 사람은 <b>초대받은 그 이메일</b>로, <b>같은 학교</b>를 골라 가입하면 돼요.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>비밀번호를 잊었을 때</h3><p>로그인 화면의 <b>비밀번호 찾기</b>에서 이메일을 적으면 재설정 메일이 가요.</p></div>
+    <div class="card"><h3>가입 전에 둘러보기</h3><p>첫 화면의 <b>둘러보기</b>는 가짜 데이터가 든 <b>데모 학교</b>를 보여 줘요. 홈 · 시약 · 센서를 볼 수 있고, 저장 · 기록 · QR은 잠겨 있어요.</p></div>
+  </div>
+  <div class="tip"><b>관리자라면 이 순서로 시작해 보세요.</b><a href="#cabinets">시약장 만들기</a> → <a href="#intake">시약 입고</a> → <a href="#admin">선생님 초대</a> → <a href="#cabinets">QR 인쇄해 붙이기</a>.</div>
+</section>
+
+<section id="screen" data-k="화면 사이드바 메뉴 홈 모바일 탭 관리 탭 로그아웃 빠른 실행 지금 처리할 것">
+  <h2>화면 둘러보기</h2>
+  <p class="lead">컴퓨터에서는 왼쪽 사이드바, 휴대폰에서는 아래 탭으로 다녀요. 역할에 따라 보이는 메뉴가 달라요.</p>
+  <figure class="shot"><img src="home.webp" width="1280" height="800" alt="홈 화면 (데스크톱)" loading="lazy"><figcaption>홈 — 지금 처리할 것 · 최근 사용 기록 · 재고 부족 · 시약장 요약 (둘러보기 화면)</figcaption></figure>
+  <h3>컴퓨터 — 왼쪽 사이드바</h3>
+  <div class="tbl"><table>
+    <tr><th style="width:130px">묶음</th><th>메뉴</th><th style="width:140px">보이는 사람</th></tr>
+    <tr><td><b>(맨 위)</b></td><td>홈 · 시약 · 센서 · 기록 · 시약장 · QR 찾기</td><td>모두</td></tr>
+    <tr><td><b>관리</b></td><td>입고 · 실험 매뉴얼 · 재주문 알림</td><td>교사 · 관리자</td></tr>
+    <tr><td><b>학교 설정</b></td><td>사용자 · 판매처</td><td>관리자</td></tr>
+  </table></div>
+  <p>사이드바 맨 아래 계정 <b>▾</b>를 누르면 <b>로그아웃</b>이 있어요.</p>
+  <h3>휴대폰 — 아래 탭 4개</h3>
+  <div class="pair">
+    <figure class="shot"><img src="mobile.webp" width="390" height="844" alt="휴대폰 홈 화면" loading="lazy"><figcaption>휴대폰 홈 — 아래 탭: 홈 · 관리 · QR 스캔 · 기록</figcaption></figure>
+    <div>
+      <div class="card"><h3>탭</h3>
+        <ul>
+          <li><b>홈</b> — 오늘의 요약.</li>
+          <li><b>관리</b> — 메뉴 모음이에요. <b>재고</b>(시약 · 센서 · 시약장), <b>입고·주문</b>(입고 · 실험 매뉴얼 · 재주문 알림, 교사 · 관리자), <b>학교</b>(사용자 · 판매처, 관리자). 줄마다 "시약 18종 · 재고 부족 2" 같은 요약이 붙어요.</li>
+          <li><b>QR 스캔</b> — 시약장 QR을 찍어요.</li>
+          <li><b>기록</b> — 사용 기록 내역.</li>
+        </ul>
+      </div>
+      <div class="card"><h3>로그아웃</h3><p>화면 위 학교 이름 옆 <b>▾</b>를 누르면 로그아웃이 있어요.</p></div>
+    </div>
+  </div>
+  <h3>홈의 빠른 실행</h3>
+  <div class="tbl"><table>
+    <tr><th style="width:140px">역할</th><th>홈 위 버튼</th></tr>
+    <tr><td>학생</td><td>시약장 보기 · 사용 기록 입력</td></tr>
+    <tr><td>교사</td><td>사용 기록 입력 · 시약장 설정 · 입고</td></tr>
+    <tr><td>관리자</td><td>사용자 관리 · 시약장 설정 · 입고</td></tr>
+  </table></div>
+  <p><b>지금 처리할 것</b>에는 재고 부족 수가 나오고, 교사 · 관리자에게는 재주문 알림 · MSDS 없는 시약도 나와요. 고장이나 점검이 필요한 센서가 있으면 센서 알림도 보여요.</p>
+  <div class="tip"><b>권한이 없는 화면 주소로 들어가면</b>홈으로 돌아가고 "교사·관리자만 쓸 수 있는 화면이에요" 같은 안내가 한 번 떠요.</div>
+</section>
+
+<section id="reagents" data-k="시약 목록 검색 필터 정렬 상세 MSDS GHS 그림문자 사용 기록 입력 사용일 수업 메모 재고 기록 내역 삭제 선택">
+  <h2>시약 찾기 · 사용 기록 <span class="tag">모든 역할</span></h2>
+  <p class="lead">시약을 찾아 상세와 MSDS를 보고, 쓴 만큼 기록하면 재고가 바로 줄어요.</p>
+  <figure class="shot"><img src="reagents.webp" width="1280" height="800" alt="시약 목록과 오른쪽 상세" loading="lazy"><figcaption>시약 — 표에서 행을 누르면 오른쪽에 상세가 열려요 (휴대폰은 상세 화면으로 넘어가요)</figcaption></figure>
+  <div class="grid2">
+    <div class="card"><h3>찾기</h3>
+      <ul>
+        <li>이름으로 <b>검색</b>하고 <span class="btn">전체</span> <span class="btn">재고 부족</span>으로 나눠 봐요.</li>
+        <li><span class="btn">필터</span>: 정렬(이름순 · 재고 적은 순 · 최근 입고순), 보관 분류, 보관 위치(시약장 → 칸, "칸 없음만"), "MSDS 없는 시약만".</li>
+        <li>적용한 조건은 칩으로 보이고 × 로 하나씩 지워요. 주소에 남아서 새로고침해도 그대로예요.</li>
+      </ul>
+    </div>
+    <div class="card"><h3>상세</h3>
+      <ul>
+        <li><b>정보</b> 탭: 현재 재고 · 입고일 · 보관 위치 · 재주문 기준 · MSDS.</li>
+        <li><b>사용 기록</b> 탭: 이 시약을 누가 언제 얼마나 썼는지.</li>
+        <li>재고가 재주문 기준보다 적으면 <span class="tag low">재고 부족</span>이 붙어요.</li>
+        <li>교사 · 관리자는 여기서 <a href="#cabinets">위치 바꾸기</a>, <a href="#reorder">재주문 기준</a> 입력, 시약 삭제도 해요.</li>
+      </ul>
+    </div>
+  </div>
+  <h3>MSDS 보기</h3>
+  <figure class="shot"><img src="msds.webp" width="1280" height="800" alt="MSDS 요약" loading="lazy"><figcaption>MSDS 요약 — 신호어 · GHS 그림문자 · 항목 2 · 4 · 7 · 8</figcaption></figure>
+  <div class="card">
+    <ul>
+      <li>상세의 <span class="btn">MSDS 보기</span>를 누르면 한국산업안전보건공단 MSDS를 앱 안에서 요약해 보여 줘요: 신호어("위험" · "경고"), GHS 그림문자, <b>2. 유해·위험성 · 4. 응급조치 요령 · 7. 취급 및 저장방법 · 8. 노출방지 및 개인보호구</b>.</li>
+      <li>맨 아래 <span class="btn">원문 MSDS 보기</span>로 공단 원문을 새 창에서 열어요. 공단 주소가 아닌 MSDS는 요약 없이 원문 보기만 나와요.</li>
+      <li>상세의 <b>QR로 MSDS 열기</b> 타일을 휴대폰 카메라로 찍으면 MSDS 원문이 바로 열려요.</li>
+    </ul>
+  </div>
+  <div class="card"><h3>MSDS 찾기 <span class="tag staff">교사 · 관리자</span></h3>
+    <ul>
+      <li>MSDS가 없는 시약 상세에 <span class="btn">MSDS 찾기</span>가 있어요. 안전보건공단 목록에서 후보(물질명 · CAS)를 보여 주고, 하나 고르면 저장돼요.</li>
+      <li>"염산"처럼 공단에 다른 이름(염화수소)으로 올라 있는 시약도 학교에서 흔히 쓰는 이름 · CAS 번호로 찾아봐요. 그래도 없으면 AI가 공단식 이름을 추측해 다시 찾아요. 후보는 언제나 공단이 실제로 돌려준 것만 보여요.</li>
+      <li>목록 필터에서 "MSDS 없는 시약만"을 켜면 <b>"MSDS 없는 시약 N종 — 한 번에 찾기"</b> 띠가 떠요. 시약마다 차례로 고르거나 건너뛰어요(한 번에 20종까지).</li>
+    </ul>
+  </div>
+  <h3>사용 기록 입력</h3>
+  <figure class="shot narrow"><img src="usage.webp" width="560" height="308" alt="담은 시약과 사용량" loading="lazy"><figcaption>사용 기록 입력 — 시약을 여러 개 담고 시약마다 사용량을 적어요</figcaption></figure>
+  <div class="card">
+    <ol class="steps">
+      <li>홈의 <span class="btn">사용 기록 입력</span>, 시약 상세의 <span class="btn p">사용 기록</span>(그 시약이 담긴 채), 또는 기록 화면의 <span class="btn p">기록 추가</span>로 들어가요.</li>
+      <li>시약을 검색해 <b>담아요</b>. 한 번에 30개까지 담을 수 있어요.</li>
+      <li>시약마다 <b>사용량</b>을 적어요. 지금 재고보다 많이 적으면 경고가 뜨고 저장이 안 돼요.</li>
+      <li><b>사용일</b>(기본 오늘, 앞날은 안 돼요), <b>수업</b>(학년 · 반 · 수업명, 선택 — 최근에 쓴 조합 3개가 칩으로 나와요), <b>메모</b>(선택, 200자)를 정해요.</li>
+      <li><span class="btn p">사용 기록 저장 · N개</span>를 누르면 재고가 바로 줄고 들어온 화면으로 돌아가요.</li>
+    </ol>
+  </div>
+  <div class="card"><h3>기록 화면</h3>
+    <ul>
+      <li>사용일별로 묶여 최신순으로 보여요. 행: 시약명 · 사용자 · 기록 시각 · 사용량 · 수업.</li>
+      <li><span class="btn">전체</span> <span class="btn">내 기록</span>, 기간(최근 1개월 · 3개월 · 6개월 · 전체), 시약명 검색, 반 필터로 좁혀요.</li>
+      <li>행을 누르면 상세: 사용자 · 사용일 · 기록한 날 · 메모 · MSDS 보기.</li>
+      <li>지난 날짜로 기록하면 "10월 6일에 기록"처럼 기록한 날이 함께 보여요.</li>
+      <li>이름은 같은 학교 사용자끼리만 보여요. 학교에서 내보낸 사용자는 "삭제된 사용자"로 보여요.</li>
+    </ul>
+  </div>
+  <div class="card"><h3>시약 삭제 <span class="tag staff">교사 · 관리자</span></h3>
+    <ul>
+      <li>하나: 시약 상세의 <b>⋯</b> → <b>시약 삭제</b> → 확인.</li>
+      <li>여러 개: 목록의 <span class="btn">선택</span> → 행을 눌러 체크 → <b>N개 선택됨 · 삭제</b>. 전체 선택은 지금 검색 · 필터 결과 중 100개까지예요.</li>
+      <li>삭제한 시약은 목록 · 시약장 · 홈 · 재주문 알림에서 빠지지만, <b>사용 · 입고 기록은 남고</b> 기록 화면에 "삭제된 시약"으로 보여요. 되돌릴 수는 없어요.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="intake" data-k="입고 서류 AI 거래명세서 영수증 품의서 직접 입력 새 시약 등록 보관 분류 단위 입고일 위치 추천 Gemini 영어">
+  <h2>입고 <span class="tag staff">교사 · 관리자</span></h2>
+  <p class="lead">거래명세서 한 장으로 여러 품목을 한 번에 넣거나, 한 종씩 직접 넣어요. 입고 화면 맨 위에서 <b>서류로 입고 | 직접 입력</b>을 골라요(처음은 서류로 입고).</p>
+  <div class="flow"><span>① 서류 올리기</span><i>→</i><span>② AI로 읽기</span><i>→</i><span>③ 확인 · 고치기</span><i>→</i><span>④ 확인 후 입고</span><i>→</i><span>⑤ 위치 정하기</span></div>
+  <div class="pair" style="margin-top:16px">
+    <figure class="shot"><img src="intake.webp" width="560" height="1031" alt="서류로 입고 확인 표" loading="lazy"><figcaption>읽은 내용 확인 — 기존 시약 연결 · 새 시약 등록 · 시약 아님</figcaption></figure>
+    <div>
+      <div class="card"><h3>서류로 입고</h3>
+        <ol class="steps">
+          <li>품의서 · 영수증 · 거래명세서를 올려요. PDF · JPG · PNG, 4MB까지. 휴대폰은 바로 촬영해도 돼요.</li>
+          <li><span class="btn p">AI로 읽기</span>를 누르면 품목(품명 · 규격 · 수량)을 읽어 표로 보여 줘요.</li>
+          <li>품목마다 <b>우리 학교 시약</b>이 자동으로 연결돼요. <span class="btn">바꾸기</span> · <span class="btn">빼기</span> · <span class="btn">새 시약으로 등록</span>으로 고쳐요.</li>
+          <li><b>입고량</b>은 규격 × 수량으로 계산돼요(예: 500 mL × 4병 = 2,000 mL). 계산이 안 되면 직접 적어요. 언제든 고칠 수 있어요.</li>
+          <li><b>서류 날짜</b>가 입고일이 돼요(없으면 오늘, 앞날은 안 돼요).</li>
+          <li><span class="btn p">확인 후 입고</span>를 누르면 한 번에 저장돼요. 하나라도 틀리면 아무것도 저장되지 않아요.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="card"><h3>새 시약 행</h3><p>이름(기본 = 서류의 품명) · 보관 분류(AI가 고른 분류에 "추천") · 단위(병 · mL · g) · 재고량 · MSDS(찾기 또는 주소 직접 입력)를 정해요.</p></div>
+    <div class="card"><h3>시약 아닌 품목</h3><p>장갑 · 비커처럼 시약이 아닌 품목은 표 아래 <b>시약 아님 N개</b>로 접혀 있어요. 펼쳐서 "시약으로 넣기"로 표에 올릴 수 있어요.</p></div>
+    <div class="card"><h3>영어 서류</h3><p>영어로 된 서류도 시약명을 한국어로 바꿔 보여 주고, 아래에 "원문: …"을 함께 적어 줘요.</p></div>
+    <div class="card"><h3>AI는 읽기만</h3><p>올린 파일은 읽는 데만 쓰고 서버에 남기지 않아요. 선생님이 확인하고 누르기 전에는 아무것도 저장되지 않아요.</p></div>
+  </div>
+  <h3>직접 입력</h3>
+  <div class="grid2">
+    <div class="card"><h3>기존 시약 입고</h3><p>시약을 고르고 들어온 양과 입고일(앞날은 안 돼요)을 적어요. 재고가 늘고 입고 기록이 남아요. 최근 입고일은 더 늦은 날짜로만 바뀌어요.</p></div>
+    <div class="card"><h3>새 시약 등록</h3><p>이름 · 종류(보관 분류) · 재고량 · 단위(병 · mL · g) · 입고일 · MSDS. MSDS 칸 옆 <span class="btn">MSDS 찾기</span>로 공단 주소를 채울 수 있어요.</p></div>
+  </div>
+  <div class="tbl"><table>
+    <tr><th>보관 분류 8종</th></tr>
+    <tr><td>유기 · 산 · 염기 · 산화제 · 인화성 · 무기염 · 독성 · 기타</td></tr>
+  </table></div>
+  <div class="tip"><b>새 시약을 등록하면 위치를 추천해 줘요.</b>"추천 위치: 1번 시약장 좌 2단"처럼 분류가 맞고 섞으면 위험한 시약이 없는 칸 중 가장 비어 있는 칸이에요. <span class="btn">여기에 두기</span> · <span class="btn">다른 칸</span>, 여러 개면 <span class="btn">모두 추천대로</span> · <span class="btn">나중에</span>. 시약장 칸 분류를 정해 두어야 추천이 나와요.</div>
+</section>
+
+<section id="cabinets" data-k="시약장 칸 보관 분류 양문형 단문형 단 배치 위치 추천 섞으면 위험 혼재 QR 인쇄 라벨 스캔 번호로 찾기 카메라">
+  <h2>시약장 · QR</h2>
+  <p class="lead">실제 시약장처럼 칸을 그려 두고, 칸마다 보관 분류를 정해요. 시약장 문에 QR 라벨을 붙이면 찍기만 해도 그 장의 시약이 보여요.</p>
+  <figure class="shot"><img src="cabinets.webp" width="1152" height="1267" alt="시약장 설정 화면" loading="lazy"><figcaption>시약장 — 시약장 전환 · 문 형태 · 단 수 · 칸 분류 · 섞으면 위험 경고 · 칸 없음 시약 (예시 데이터)</figcaption></figure>
+  <div class="grid2">
+    <div class="card"><h3>시약장 만들기 <span class="tag staff">교사 · 관리자</span></h3>
+      <ul>
+        <li><span class="btn">+ 시약장 추가</span>: "{번호}번 시약장"이 생겨요(양문형 · 4단). 학교당 20개까지.</li>
+        <li>시약장마다 <b>고정 번호</b>가 있어요. 지운 번호는 다시 쓰지 않아 QR 라벨과 헷갈리지 않아요.</li>
+        <li><b>문 형태</b>(양문형 · 단문형), <b>단 수</b>(3단 · 4단)를 고르고, 칸을 눌러 <b>보관 분류</b>를 정해요. 한 칸에 여러 분류도 돼요.</li>
+        <li><span class="btn p">저장</span>을 눌러야 반영돼요. 저장하지 않고 다른 시약장으로 가면 확인 창이 떠요.</li>
+        <li><span class="btn">이름 바꾸기</span>(1~20자) · <b>삭제</b>(넣어 둔 시약은 지워지지 않고 "칸 없음"이 돼요).</li>
+      </ul>
+    </div>
+    <div class="card"><h3>시약 넣기 · 옮기기 <span class="tag staff">교사 · 관리자</span></h3>
+      <ul>
+        <li>시약장에서 <b>칸을 누르면</b> 그 칸의 시약 목록이 열려요. <b>시약 넣기</b>로 칸 없음 시약을 넣고, 빼기도 해요. 이 칸이 추천 칸인 시약에는 "추천"이 붙어요.</li>
+        <li>시약 상세의 보관 위치 줄에서 <span class="btn">위치 바꾸기</span> → 시약장 · 칸 고르기. 추천 칸이 처음 골라져 있어요.</li>
+        <li>칸 분류와 시약 분류가 안 맞거나 섞으면 위험한 조합이면 <b>경고</b>만 하고 막지는 않아요.</li>
+        <li>단 수를 줄이거나 단문형으로 바꿔 사라지는 칸의 시약은 "칸 없음"이 돼요. 저장 전에 몇 종인지 알려 줘요.</li>
+      </ul>
+    </div>
+  </div>
+  <h3>QR 인쇄 · 찾기</h3>
+  <div class="pair">
+    <figure class="shot"><img src="qr-print.webp" width="560" height="857" alt="QR 인쇄" loading="lazy"><figcaption>QR 인쇄 — 지금 시약장 또는 모두, A4 한 장에 라벨 여러 개</figcaption></figure>
+    <figure class="shot"><img src="scan.webp" width="560" height="515" alt="QR로 찾은 시약장" loading="lazy"><figcaption>QR 찾기 결과 — 그 시약장의 시약 · 칸 위치 · 재고</figcaption></figure>
+  </div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="card"><h3>QR 인쇄 <span class="tag staff">교사 · 관리자</span></h3>
+      <ol class="steps">
+        <li>시약장 화면의 <span class="btn">QR 인쇄</span>를 눌러요.</li>
+        <li>시약장을 골라요(기본 = 지금 시약장, "모두"도 돼요). 미리보기를 확인해요.</li>
+        <li><span class="btn p">인쇄</span> → 브라우저 인쇄로 A4에 뽑아 시약장 문에 붙여요. 라벨에는 학교명 · 시약장 번호 · 이름이 적혀요.</li>
+      </ol>
+    </div>
+    <div class="card"><h3>QR로 찾기 <span class="tag">모든 역할</span></h3>
+      <ul>
+        <li>휴대폰 <b>QR 스캔</b> 탭(컴퓨터는 사이드바 <b>QR 찾기</b>)에서 카메라로 라벨을 찍어요. 어두우면 <span class="btn">플래시</span>.</li>
+        <li>카메라를 쓸 수 없으면 <b>번호로 찾기</b>에 시약장 번호(예: 1)를 적어요.</li>
+        <li>결과에서 시약을 누르면 시약 상세, <span class="btn">배치도 보기</span>는 시약장 화면으로 가요.</li>
+        <li>휴대폰 기본 카메라로 찍어도 열려요. 로그인 전이면 로그인 뒤 그 시약장으로 바로 가요.</li>
+        <li>다른 학교 시약장 QR을 찍으면 우리 학교 시약장 QR이 아니라는 안내가 떠요.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="tip"><b>카메라 영상은 서버로 보내지 않아요.</b>QR은 휴대폰 브라우저 안에서만 읽어요.</div>
+</section>
+
+<section id="reorder" data-k="재주문 알림 재고 부족 기준 자동 직접 입력 판매처 연결 즐겨찾기 별표 검색 공통 목록 쇼핑몰">
+  <h2>재주문 알림 · 판매처 <span class="tag staff">교사 · 관리자</span></h2>
+  <p class="lead">재고가 재주문 기준보다 적어지면 알림에 올라와요. 알림에서 판매처 사이트로 바로 이어져요.</p>
+  <div class="pair">
+    <figure class="shot"><img src="reorder.webp" width="560" height="1341" alt="재주문 알림과 판매처 연결" loading="lazy"><figcaption>재주문 알림 — 기준 안내 · 알림 카드 · 판매처 연결 창 (예시 데이터)</figcaption></figure>
+    <div>
+      <div class="card"><h3>알림 카드</h3>
+        <ul>
+          <li><span class="tag low">재고 부족</span> 시약명 · "재주문 기준 100mL / 현재 재고 50mL" · 기준의 근거 · 알림 날짜(기준 아래로 내려간 날).</li>
+          <li>부족한 정도가 큰 시약이 위에 와요.</li>
+          <li>재고가 다시 기준 이상이 되면 알림에서 빠져요.</li>
+        </ul>
+      </div>
+      <div class="card"><h3>재주문 기준 정하기</h3>
+        <ul>
+          <li><b>자동</b> <span class="tag">자동</span> — 기준을 따로 정하지 않으면 최근 4주 사용량으로 2주치를 계산해요. 사용 기록이 없으면 마지막 입고량의 20%예요. 사용 · 입고를 기록할 때 다시 계산돼요.</li>
+          <li><b>실험 매뉴얼</b> — 1반 1회 실험량 × 조 수. <a href="#manual">실험 매뉴얼</a>에서 채워요.</li>
+          <li><b>직접 입력</b> — 시약 상세의 재주문 기준 줄에서 숫자를 적어요. 0이면 알림이 없어요.</li>
+          <li>매뉴얼 · 직접 입력 값이 있으면 자동보다 먼저예요. 상세의 <span class="btn">자동으로 돌리기</span>로 자동으로 되돌려요.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="card"><h3>판매처 연결</h3>
+      <ol class="steps">
+        <li>카드의 <span class="btn p">판매처 연결</span>을 눌러요.</li>
+        <li>판매처를 고르고 <span class="btn p">확인</span>을 누르면 그 사이트가 새 창으로 열려요. 공통 목록 판매처는 <b>시약 이름으로 검색한 결과</b>가 바로 열려요.</li>
+        <li>주문은 그 사이트에서 해요. Lab_Stock은 아무것도 저장하지 않아요.</li>
+      </ol>
+      <p style="margin-top:8px">판매처 옆 <b>별표</b>로 학교 즐겨찾기를 정해요(학교 안에서 함께 봐요). 즐겨찾기가 있으면 즐겨찾기만 먼저 보이고, <b>모든 판매처 보기</b>로 펼쳐요.</p>
+    </div>
+    <div class="card"><h3>판매처 설정 <span class="tag admin">관리자</span></h3>
+      <ul>
+        <li><b>우리 학교 판매처</b>: <span class="btn">판매처 등록</span> → 판매처명(필수) · 연락처 · 웹사이트 주소. 행의 더보기에서 수정 · 삭제.</li>
+        <li><b>공통 목록</b>: 모든 학교가 함께 쓰는 과학 쇼핑몰 목록이에요(보기만). 11번가 · G마켓 · 오피스안 · 퍼스트과학 · 과학생각 · 사이언스툴 · 컴사이언스 · 양원과학 · 과학랩 · 덕산종합과학 · 생물나라.</li>
+        <li>웹사이트가 없는 판매처를 고르면 확인 대신 연락처를 안내해요.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="manual" data-k="실험 매뉴얼 AI 추출 조 수 사용량 재주문 기준 필요량 Gemini PDF">
+  <h2>실험 매뉴얼 <span class="tag staff">교사 · 관리자</span></h2>
+  <p class="lead">실험 매뉴얼을 올리면 AI가 시약별 1조 사용량을 찾아요. 조 수를 곱해 재주문 기준으로 저장해요.</p>
+  <figure class="shot"><img src="manual.webp" width="1152" height="723" alt="실험 매뉴얼 추출 결과 확인" loading="lazy"><figcaption>추출 결과 확인 — 시약명 · 1조 사용량 · 단위 · 1반 1회 필요량 · 우리 학교 시약 연결 (예시 데이터)</figcaption></figure>
+  <div class="card">
+    <ol class="steps">
+      <li>사이드바 <b>실험 매뉴얼</b>(휴대폰은 관리 탭) 또는 재주문 알림의 <span class="btn">실험 매뉴얼 올리기</span>로 들어가요.</li>
+      <li>매뉴얼 파일 1개(PDF · JPG · PNG, 4MB까지)와 <b>조 수</b>(1~20)를 넣고 <span class="btn p">AI 추출</span>.</li>
+      <li>표에서 확인해요: 시약명 · 1조 사용량 · 단위(병 · mL · g) · 1반 1회 필요량(= 1조 사용량 × 조 수). 고친 칸은 하늘색으로 표시돼요. 틀린 행은 <b>삭제</b>.</li>
+      <li>행마다 <b>우리 학교 시약</b>이 자동 연결돼요. 연결되지 않은 행("등록되지 않은 시약")은 저장에서 빠져요.</li>
+      <li><span class="btn p">확인 후 저장</span> → 재주문 기준이 저장되고 재주문 알림으로 가요. 같은 파일로 <span class="btn">다시 추출</span>도 돼요.</li>
+    </ol>
+  </div>
+  <div class="grid3">
+    <div class="card"><h3>더 큰 값만</h3><p>이미 기준이 있는 시약은 새 필요량이 <b>더 클 때만</b> 바뀌어요. 표에 "기존 기준 N · 그대로 둬요 / 바뀌어요"로 미리 보여 줘요. 자동 기준이던 시약은 새 값으로 바뀌어요.</p></div>
+    <div class="card"><h3>중복 합치기</h3><p>같은 시약이 여러 줄로 나오면 한 줄로 합쳐 사용량을 더하고 "N개 행을 합쳤어요"라고 알려 줘요.</p></div>
+    <div class="card"><h3>파일은 남기지 않아요</h3><p>매뉴얼 파일은 추출하는 동안만 쓰고 버려요. 영어 매뉴얼도 한국어 시약명으로 보여 줘요.</p></div>
+  </div>
+</section>
+
+<section id="sensors" data-k="센서 무선 파스코 PASCO 카탈로그 모델 종류 상태 고장 점검 필요 서류로 등록 수량">
+  <h2>센서</h2>
+  <p class="lead">학교가 가진 무선 센서의 종류 · 수량 · 위치 · 상태를 관리해요. 측정값이나 대여는 다루지 않아요.</p>
+  <figure class="shot"><img src="sensors.webp" width="1280" height="800" alt="센서 목록" loading="lazy"><figcaption>센서 — 이름 · 종류 · 회사 · 모델 · 수량 · 보관 위치 · 상태 (둘러보기 화면)</figcaption></figure>
+  <div class="grid2">
+    <div class="card"><h3>보기 <span class="tag">모든 역할</span></h3>
+      <ul>
+        <li>컴퓨터는 사이드바 <b>센서</b>, 휴대폰은 <b>관리</b> 탭 → 센서.</li>
+        <li>이름 · 모델로 검색하고, <span class="btn">필터</span>로 종류 · 회사 · 상태를 골라요.</li>
+        <li>종류는 27가지가 물리 · 화학 · 생명·지구 · 장비 네 묶음으로 나뉘어 있어요.</li>
+        <li>상태: 정상 · 점검 필요 · 고장. 고장 · 점검 필요가 있으면 교사 · 관리자 홈에 알림이 떠요.</li>
+      </ul>
+    </div>
+    <div class="card"><h3>등록 <span class="tag staff">교사 · 관리자</span></h3>
+      <ul>
+        <li><b>직접 입력</b>: 이름 · 종류 · 회사 · 모델 · 수량 · 보관 위치(직접 적기 또는 시약장 칸) · 상태 · 메모.</li>
+        <li>회사를 <b>파스코</b>로 고르면 모델 칸에서 모델번호나 한국어 이름으로 찾을 수 있어요(예: PS-3215). 고르면 종류 · 이름이 채워져요.</li>
+        <li><b>서류로 등록</b>: 거래명세서를 올리면 AI가 품목을 읽어요. 같은 회사 · 모델 센서가 이미 있으면 "기존 센서에 더하기 · 지금 3개 → 5개", 없으면 새 센서로 등록해요.</li>
+        <li>여러 개 삭제: 목록의 <span class="btn">선택</span>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="admin" data-k="관리자 admin 사용자 관리 역할 변경 초대 초대 취소 내보내기 삭제 전체 삭제 기록 삭제 학교 이름 확인">
+  <h2>관리 <span class="tag admin">관리자</span></h2>
+  <p class="lead">관리자는 학교 사람과 판매처를 관리하고, 필요할 때 시약 · 기록을 한꺼번에 지워요.</p>
+  <div class="pair">
+    <figure class="shot"><img src="users.webp" width="560" height="860" alt="사용자 관리" loading="lazy"><figcaption>사용자 — 멤버 · 역할 · 초대 대기 · 삭제 확인 (예시 데이터)</figcaption></figure>
+    <div>
+      <div class="card"><h3>사용자</h3>
+        <ul>
+          <li>머리에 "학생 a · 교사 b · admin c". 이름으로 검색해요. 다른 사람의 이메일은 보이지 않아요.</li>
+          <li><b>역할 바꾸기</b>: 행을 눌러 학생 · 교사 · admin 중에서 골라요. 학교에 admin이 최소 1명은 있어야 해서, 마지막 admin은 바꿀 수 없어요.</li>
+          <li><b>삭제</b> = 학교에서 내보내기. 그 사람의 사용 · 입고 기록은 남고 이름은 "삭제된 사용자"로 보여요. 본인과 마지막 admin은 내보낼 수 없어요.</li>
+          <li>내보낸 사람은 로그인하면 "소속 학교가 없어요" 안내만 보여요. 같은 이메일로 다시 가입하면 돌아올 수 있어요.</li>
+        </ul>
+      </div>
+      <div class="card"><h3>초대</h3>
+        <ul>
+          <li><span class="btn p">초대</span> → 이메일(여러 명 가능) + 역할(학생 · 교사) → <b>N명 초대</b>.</li>
+          <li>메일은 가지 않아요. <span class="btn">초대 링크 복사</span>로 가입 주소를 직접 전해요.</li>
+          <li><b>초대 대기</b> 목록의 <b>⋯</b> → <b>초대 취소</b>. 취소한 뒤 그 이메일로 가입하면 학생으로 시작해요.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <h3>한꺼번에 지우기</h3>
+  <div class="grid2">
+    <div class="card"><h3>시약 전체 삭제</h3>
+      <ol class="steps">
+        <li>시약 화면 머리 오른쪽 <b>⋯</b> → <b>시약 전체 삭제</b>.</li>
+        <li>확인 칸에 <b>우리 학교 이름</b>을 똑같이 적어야 <span class="btn p">전체 삭제</span>가 켜져요.</li>
+        <li>우리 학교 시약이 모두 삭제돼요. 사용 · 입고 기록은 남아요.</li>
+      </ol>
+    </div>
+    <div class="card"><h3>기록 삭제</h3>
+      <ol class="steps">
+        <li>기록 화면 머리 오른쪽 <b>⋯</b> → <b>기록 삭제</b>.</li>
+        <li><b>전체 | 이 날짜 이전</b>을 골라요(그날은 빼고 그 전까지).</li>
+        <li>"사용 기록 N건 · 입고 기록 M건을 지워요" 미리보기를 확인하고 학교 이름을 적은 뒤 삭제해요.</li>
+        <li>지금 재고 수량은 그대로예요. 수업 정보도 함께 지워져요.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="warn"><b>되돌릴 수 없어요.</b>전체 삭제 · 기록 삭제는 관리자만 할 수 있고, 지운 뒤에는 되살릴 수 없어요. 지울 것이 없으면 메뉴가 꺼져 있어요.</div>
+  <p>판매처 관리는 <a href="#reorder">재주문 알림 · 판매처</a>를 보세요.</p>
+</section>
+
+<section id="student" data-k="학생 화면 사용 기록 QR 스캔 시약장 보기 권한 모바일">
+  <h2>학생 화면</h2>
+  <p class="lead">학생에게 안내할 때 보세요. 학생은 보기와 사용 기록 입력을 해요.</p>
+  <div class="pair">
+    <figure class="shot"><img src="m-manage.webp" width="390" height="844" alt="휴대폰 관리 탭" loading="lazy"><figcaption>휴대폰 관리 탭 — 학생은 재고 묶음(시약 · 센서 · 시약장)만 보여요 (둘러보기 화면)</figcaption></figure>
+    <div>
+      <div class="card"><h3>학생이 하는 것</h3>
+        <ul>
+          <li>시약 찾기 · 상세 · MSDS 보기</li>
+          <li><b>사용 기록 입력</b> (여러 시약 · 사용일 · 수업 · 메모)</li>
+          <li>기록 보기 — <span class="btn">내 기록</span>으로 내 것만</li>
+          <li>시약장 배치도 · 칸의 시약 보기</li>
+          <li>QR 스캔으로 시약장 찾기</li>
+          <li>센서 목록 보기</li>
+        </ul>
+      </div>
+      <div class="card"><h3>학생에게 없는 것</h3>
+        <p>입고 · 시약과 센서 등록 · 삭제 · 칸 배치 · 재주문 기준 · 재주문 알림 · 판매처 · 실험 매뉴얼 · 사용자 관리. 이런 버튼은 학생 화면에 보이지 않아요.</p>
+      </div>
+    </div>
+  </div>
+  <div class="tip"><b>실험 시간 팁</b>시약장 문의 QR을 찍으면 그 장의 시약과 칸이 바로 보여요. 시약을 누르고 <span class="btn p">사용 기록</span>을 누르면 그 시약이 담긴 채로 기록 화면이 열려요.</div>
+</section>
+
+<section id="privacy" data-k="개인정보 수집 항목 보유 기간 처리 위탁 Supabase Vercel Google Gemini 국외 AI 원칙 학교별 분리 파일 저장">
+  <h2>개인정보 · AI 원칙</h2>
+  <p class="lead">Lab_Stock이 모으는 정보와 맡기는 곳, AI를 쓰는 방식이에요.</p>
+  <h3>모으는 정보</h3>
+  <div class="tbl"><table>
+    <tr><th style="width:180px">항목</th><th>내용</th></tr>
+    <tr><td>수집 항목</td><td>이름 · 개인 이메일 · 비밀번호(암호화해 저장) · 학교 · 역할, 접속 기록</td></tr>
+    <tr><td>쓰는 곳</td><td>계정 확인, 학교 안에서 사용 기록에 이름 표시</td></tr>
+    <tr><td>보유 기간</td><td>탈퇴할 때까지</td></tr>
+  </table></div>
+  <h3>처리를 맡기는 곳</h3>
+  <div class="tbl"><table>
+    <tr><th style="width:180px">업체</th><th>맡기는 일</th><th style="width:150px">위치</th></tr>
+    <tr><td>Supabase</td><td>데이터 저장 · 로그인</td><td>서울</td></tr>
+    <tr><td>Vercel</td><td>앱 호스팅(화면 · 서버 실행)</td><td>서울</td></tr>
+    <tr><td>Google Gemini</td><td>AI 서류 읽기(입고 서류 · 실험 매뉴얼 · 센서 서류). 파일은 읽는 데만 쓰고 저장하지 않아요</td><td>국외 처리</td></tr>
+  </table></div>
+  <h3>지키는 원칙</h3>
+  <div class="grid2">
+    <div class="card"><h3>학교별로 따로</h3><p>모든 시약 · 재고 · 기록은 학교별로 나뉘어 있고, 다른 학교 데이터는 데이터베이스에서부터 보이지 않아요. 이름도 같은 학교 사람에게만 보여요.</p></div>
+    <div class="card"><h3>AI는 초안, 저장은 선생님이</h3><p>AI가 읽은 결과는 늘 확인 표로 먼저 보여 줘요. 선생님이 고치고 <b>확인 후 저장 · 입고</b>를 눌러야 반영돼요. 서류 안에 적힌 지시문은 따르지 않아요.</p></div>
+    <div class="card"><h3>파일은 남기지 않아요</h3><p>AI에 보내는 서류 · 매뉴얼 파일은 읽는 동안만 쓰고 서버에 보관하지 않아요. 원본은 선생님 컴퓨터에 두세요.</p></div>
+    <div class="card"><h3>연결 정보는 서버에만</h3><p>나이스 · AI · MSDS 같은 외부 서비스 연결 정보는 서버에서만 다루고 화면에 두지 않아요. QR 카메라 영상도 서버로 보내지 않아요.</p></div>
+  </div>
+</section>
+
+<section id="faq" data-k="자주 묻는 질문 FAQ">
+  <h2>자주 묻는 질문</h2>
+  <details><summary>학교를 잘못 골라 가입했어요.</summary><p>가입한 뒤에는 화면에서 학교를 바꿀 수 없어요. 그 학교 관리자가 사용자 화면에서 내보내면, 같은 이메일로 회원가입을 다시 하면서 학교를 고를 수 있어요.</p></details>
+  <details><summary>선생님인데 학생으로 가입됐어요.</summary><p>처음 가입자 다음부터는 학생으로 시작해요. 관리자에게 사용자 화면에서 역할을 교사로 바꿔 달라고 하세요. 앞으로는 관리자가 미리 교사로 초대해 두면 가입하자마자 교사예요.</p></details>
+  <details><summary>초대 메일이 안 와요.</summary><p>초대는 메일을 보내지 않아요. 관리자가 "초대 링크 복사"로 받은 가입 주소를 직접 전해 주면, 초대받은 이메일로 같은 학교를 골라 가입하세요.</p></details>
+  <details><summary>가입 확인 메일이 안 와요.</summary><p>스팸함을 먼저 보세요. 확인을 마친 뒤 개인 이메일과 비밀번호로 로그인하면 돼요.</p></details>
+  <details><summary>관리자를 다른 선생님께 넘기고 싶어요.</summary><p>사용자 화면에서 그 선생님의 역할을 admin으로 바꾸세요. 그다음 새 admin이 내 역할을 바꾸거나 나를 학교에서 내보내면 돼요. 학교에는 admin이 최소 1명 있어야 해서 마지막 admin은 바꾸거나 내보낼 수 없고, 자기 자신은 내보낼 수 없어요.</p></details>
+  <details><summary>재고 부족 알림이 안 떠요.</summary><p>재주문 기준이 0이면 알림이 없어요. 시약 상세에서 기준을 직접 적거나, 실험 매뉴얼로 채우거나, 사용 · 입고 기록이 쌓이면 자동 기준이 계산돼요.</p></details>
+  <details><summary>자동 기준이 예전 값 같아요.</summary><p>자동 기준은 그 시약의 사용 · 입고를 기록할 때 다시 계산해요. 매일 저절로 다시 계산하지는 않아서, 오래 기록이 없던 시약은 다음 기록 때 맞춰져요.</p></details>
+  <details><summary>AI가 읽은 값이 틀려요.</summary><p>저장 전 확인 표에서 바로 고치면 돼요. 틀린 행은 빼거나 삭제하고, 같은 파일로 다시 읽을 수도 있어요. 확인하기 전에는 아무것도 저장되지 않아요.</p></details>
+  <details><summary>"AI 추출을 쓸 수 없어요(서버 설정)"이 나와요.</summary><p>서버의 AI 연결이 꺼져 있을 때 나오는 문구예요. 그동안에는 직접 입력으로 입고 · 등록할 수 있어요.</p></details>
+  <details><summary>MSDS를 못 찾아요.</summary><p>공단에는 학교에서 부르는 이름과 다른 물질명으로 올라 있는 경우가 많아요(예: 염산 → 염화수소). CAS 번호가 있으면 더 잘 찾아요. 그래도 없으면 MSDS 주소를 직접 넣으세요.</p></details>
+  <details><summary>사용 기록을 잘못 입력했어요.</summary><p>사용 기록은 하나씩 고치거나 지우는 기능이 없어요. 관리자의 기록 삭제는 날짜 기준으로 한꺼번에 지우는 기능이라 신중히 쓰세요.</p></details>
+  <details><summary>삭제한 시약을 되살릴 수 있나요?</summary><p>되살릴 수 없어요. 그 시약의 사용 · 입고 기록은 "삭제된 시약"으로 남아요. 같은 이름으로 새로 등록할 수는 있어요.</p></details>
+  <details><summary>QR 스캔에서 카메라가 안 켜져요.</summary><p>브라우저에서 카메라 권한을 허용했는지 보세요. 쓸 수 없으면 "번호로 찾기"에 시약장 번호를 적으면 같은 결과가 나와요.</p></details>
+  <details><summary>둘러보기에서 저장이 안 돼요.</summary><p>둘러보기는 데모 학교를 보기만 하는 곳이에요. 가입하면 우리 학교 데이터로 모든 기능을 쓸 수 있어요.</p></details>
+</section>
+
+<p class="hidden" id="empty" style="color:var(--mute)">찾는 말이 있는 부분이 없어요. 다른 낱말로 찾아 보세요.</p>
+<footer>© 2026 사이음(sci_eum). 과학의 사이, 사람을 잇다.<br>화면은 둘러보기(데모 학교)와 예시 데이터로 찍었어요.</footer>
+</main>
+</div>
+<button class="to-top" id="toTop" type="button">목차</button>
+<script>
+(function(){
+  var toc=document.getElementById('toc'),tg=document.getElementById('tocToggle'),top=document.getElementById('toTop');
+  function setOpen(o){toc.classList.toggle('open',o);tg.setAttribute('aria-expanded',o);tg.textContent=o?'목차 닫기':'목차 열기';}
+  tg.addEventListener('click',function(){setOpen(!toc.classList.contains('open'));});
+  toc.addEventListener('click',function(e){if(e.target.tagName==='A'&&toc.classList.contains('open'))setOpen(false);});
+  top.addEventListener('click',function(){setOpen(true);window.scrollTo({top:0,behavior:'smooth'});});
+  var links=[].slice.call(toc.querySelectorAll('.toc-list a'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'));});
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id);});}});},{rootMargin:'-20% 0px -70% 0px'});
+    secs.forEach(function(s){if(s)io.observe(s);});
+  }
+  var q=document.getElementById('q'),all=[].slice.call(document.querySelectorAll('main section')),empty=document.getElementById('empty');
+  q.addEventListener('input',function(){
+    var v=q.value.trim().toLowerCase(),n=0;
+    all.forEach(function(s){var hit=!v||((s.dataset.k||'')+' '+s.textContent).toLowerCase().indexOf(v)>=0;s.classList.toggle('hidden',!hit);if(hit)n++;});
+    links.forEach(function(a,i){a.classList.toggle('hidden',!!secs[i]&&secs[i].classList.contains('hidden'));});
+    empty.classList.toggle('hidden',n>0);
+    if(v)setOpen(true);
+  });
+})();
+</script>
+</body>
+</html>
