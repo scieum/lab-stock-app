@@ -1,3 +1,4 @@
+import { GUIDE_LABEL, GUIDE_LINK_PROPS } from "@/lib/guide-link";
 import styles from "./styles.module.css";
 
 /** design/rules.json footer.text */
@@ -11,6 +12,10 @@ export function WebFooter({ className }: { className?: string }) {
   return (
     <footer data-component="web-footer" className={[styles.footer, className ?? ""].filter(Boolean).join(" ")}>
       <p className={styles.copyright}>{FOOTER_TEXT}</p>
+      {/* 시안 예외 (사용자 요청 2026-10-28, 요청서 10 대기): 저작권 줄 아래 '사용 가이드' 링크 하나, 새 탭 */}
+      <a {...GUIDE_LINK_PROPS} className={styles.guide}>
+        {GUIDE_LABEL}
+      </a>
     </footer>
   );
 }
