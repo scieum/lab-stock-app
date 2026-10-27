@@ -1,0 +1,6 @@
+gate-D4: 판정 불가 — Playwright JSON 결과 없음: [WebServer] }
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '2548655716'
+[WebServer] }
+결과: C:\Users\User\OneDrive - 한국교원대학교\Claude Code\lab-stock-app\runs\20261014-1442\judge\gate-D4.json
