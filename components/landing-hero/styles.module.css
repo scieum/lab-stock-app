@@ -73,6 +73,14 @@
   width: min(var(--landing-hero-copy-width), 40%);
 }
 
+/* 시안 예외(2026-10-27 사용자 요청): 세로 가운데보다 위로 — 왼쪽 글 묶음만 56 올림 (자리 차지 그대로, 히어로 높이·product-shot 불변) */
+@media (min-width: 1024px) {
+  .split .copy {
+    position: relative;
+    top: calc((var(--space-48) + var(--space-8)) * -1);
+  }
+}
+
 .text {
   display: flex;
   flex-direction: column;
