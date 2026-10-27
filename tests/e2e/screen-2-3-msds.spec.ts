@@ -1,7 +1,8 @@
 // MSDS 찾기 — 화면 3 (MSDS 없는 시약) · 화면 2 (일괄 찾기 띠) (harness/d7-data.md §20, design/rules.json 1.18 msds ·
 // variants["3"].msds · variants["2"]["msds-bulk"] · roles R5 · guest.hidden_components · never.N2, design/frames/3-msds-* · 2-msds-bulk-*).
 // C1 · R-ui · GM-ui · V1.
-// - 실제 안전보건공단 호출 없음: /api/msds/search 응답을 가로챈다 (msds-helpers). 가로채지 않으면 이 환경(키 없음) 503 문구.
+// - 실제 안전보건공단 호출 없음: /api/msds/search 응답을 가로챈다 (msds-helpers). 키 없음 갈래도 서버의 키 없음 응답(503 { error, code: "no-key" })으로
+//   가로챈다 — 로컬·배포 서버의 KOSHA 키 유무와 무관하게.
 // - 저장(set_reagent_msds)은 일회용 학교(admin·교사·학생 — service role 로 생성, 세션은 generateLink/verifyOtp)의 시약에서만.
 //   준비(시약 넣기 · CAS · MSDS 미리 넣기)는 register_reagent(admin 세션) · service role. 대조 조회는 그 계정 세션(RLS).
 // - afterAll: 일회용 계정·학교·시약 잔여 0, 학교 A·B·데모 시약장·칸·배치 스냅숏 그대로.
@@ -224,7 +225,7 @@ test.describe("일회용 학교", () => {
     });
   }
 
-  test(`[C1][S3] 일회용 교사 MSDS 없는 시약: 후보 0개 → "${NO_RESULT}" → 시트 안 주소 입력(잘못된 주소는 저장 불가) → 저장 → DB msds_url · CAS 그대로 비어 있음 / 가로채지 않으면(키 없음) "${NO_KEY_TEXT}" · 쓰기 0`, async ({ browser }, info) => {
+  test(`[C1][S3] 일회용 교사 MSDS 없는 시약: 후보 0개 → "${NO_RESULT}" → 시트 안 주소 입력(잘못된 주소는 저장 불가) → 저장 → DB msds_url · CAS 그대로 비어 있음 / 서버 키 없음 응답(503 no-key, 가로챔) → "${NO_KEY_TEXT}" · 쓰기 0`, async ({ browser }, info) => {
     const f = await fresh(info);
     const a = await prep(f, "황산구리");
     const b = await prep(f, "수산화나트륨");
@@ -232,8 +233,8 @@ test.describe("일회용 학교", () => {
     const { context, page } = await openTemp(browser, info, f.teacher, detailPath(b.id));
     const actions = watchActions(page);
     try {
-      // 키 없음 (가로채지 않음)
-      const real = await interceptSearch(page, () => null);
+      // 키 없음: 서버의 키 없음 응답(app/api/msds/search 503 { error, code: "no-key" })으로 가로챈다 — 실제 KOSHA 호출 없음
+      const real = await interceptSearch(page, () => ({ status: 503, body: { error: NO_KEY_TEXT, code: "no-key" } }));
       await waitDetail(page);
       const findB = entry(page).locator(sel(MSDS_SEARCH));
       await hydratedButton(page, findB);

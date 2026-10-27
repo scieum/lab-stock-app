@@ -1,6 +1,6 @@
 // 화면 7 새 시약 등록 — MSDS 칸 옆 "MSDS 찾기" (harness/d7-data.md §20 화면 7, design/rules.json 1.18 msds · variants["7"].msds · roles R5,
 // design/frames/7-msds-{mobile|desktop}). C1 · R-ui · V1.
-// - 실제 안전보건공단 호출 없음: /api/msds/search 응답을 가로챈다. 가로채지 않은 요청은 이 환경(키 없음)에서 503 문구를 보인다.
+// - 실제 안전보건공단 호출 없음: /api/msds/search 응답을 가로챈다. 키 없음 갈래도 서버의 키 없음 응답(503 { error, code: "no-key" })으로 가로챈다.
 // - 공용 학교 A 교사·admin 으로 폼만 채우고 저장하지 않는다 (쓰기 요청 0 — 데이터 변경 없음).
 import { join } from "node:path";
 import { test, expect, type Page } from "@playwright/test";
@@ -131,12 +131,12 @@ test(`[C1][S${SCREEN}] ${ROLE_LABEL.teacher} 후보 0개 → "${NO_RESULT}" → 
   }
 });
 
-test(`[C1][S${SCREEN}] ${ROLE_LABEL.admin} 가로채지 않음(이 환경 = 키 없음) → 시트에 "${NO_KEY_TEXT}" · 후보 0 · 키·외부 주소 문구 없음 · MSDS 칸 비어 있음`, async ({ browser }, info) => {
-  test.skip(Boolean(process.env.KOSHA_MSDS_API_KEY?.trim()), "키가 있는 환경 — 실제 KOSHA 호출이 되므로 키 없는 환경에서만");
+test(`[C1][S${SCREEN}] ${ROLE_LABEL.admin} 서버 키 없음 응답(503 no-key, 가로챔) → 시트에 "${NO_KEY_TEXT}" · 후보 0 · 키·외부 주소 문구 없음 · MSDS 칸 비어 있음`, async ({ browser }, info) => {
   test.setTimeout(120_000);
   const { context, page } = await openRegister(browser, info, "admin");
   try {
-    const calls = await interceptSearch(page, () => null);
+    // 서버의 키 없음 응답(app/api/msds/search 503 { error, code: "no-key" }) — 실제 KOSHA 호출 없음, 키 유무와 무관
+    const calls = await interceptSearch(page, () => ({ status: 503, body: { error: NO_KEY_TEXT, code: "no-key" } }));
     await nameInput(page).fill("질산 은");
     await findButton(page).click();
     const s = sheet(page);

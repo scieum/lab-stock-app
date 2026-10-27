@@ -1,6 +1,6 @@
 // 화면 7 서류로 입고 (harness/d7-data.md §21 · §17 · §20, design/rules.json 1.18 intake · screens_required["7"] · variants["7"]
 // doc-upload·doc-review·doc-fail·suggest·msds · roles R5 · guest.hidden_components · button.min_height, design/frames/7-*.json) — C1 · R-ui · GM-ui · C2 · V1.
-// - 실제 Gemini 호출 없음: POST /api/intake/extract 응답을 가로채 대체한다 (d7 §21 테스트). 가로채지 않은 요청은 키 없는 서버의 503.
+// - 실제 Gemini 호출 없음: POST /api/intake/extract 응답을 가로채 대체한다 (d7 §21 테스트). 키 없음 갈래도 서버의 키 없음 응답(503 { ok: false, error, code: "no-key" })으로 가로챈다 — GEMINI 키 유무와 무관.
 // - MSDS 찾기도 GET /api/msds/search 를 가로챈다 (d7 §20 테스트).
 // - 저장(record_document_intake)은 일회용 학교(admin·교사·학생 — service role 로 생성, 세션은 generateLink/verifyOtp)에서만.
 //   공용 학교 A·B 는 화면을 열고 가로챈 추출까지만 (저장 없음). afterAll: 일회용 잔여 0, 공용 학교 A·B·데모 시약장·배치 스냅숏 그대로.
@@ -210,15 +210,19 @@ test(`[C1][S${SCREEN}] 교사 파일 검사 (rules intake ${MAX_BYTES / 1024 / 1
   }
 });
 
-test(`[C1][S${SCREEN}] 교사 처리 중·취소·실패: "${READ}" → 처리 중("${READING}"·"${READING_BODY}"·진행 막대·[${CANCEL}]·"${READ}" 비활성·${INTAKE_MODE} 잠김) → [${CANCEL}] → 올리기(파일 유지) / 502 → 서버 문구 경고 · 파일 유지 · 다시 읽기 가능 / 가로채지 않음 → 키 없는 서버 503 문구`, async ({ browser }, info) => {
+test(`[C1][S${SCREEN}] 교사 처리 중·취소·실패: "${READ}" → 처리 중("${READING}"·"${READING_BODY}"·진행 막대·[${CANCEL}]·"${READ}" 비활성·${INTAKE_MODE} 잠김) → [${CANCEL}] → 올리기(파일 유지) / 502 → 서버 문구 경고 · 파일 유지 · 다시 읽기 가능 / 서버 키 없음 응답(503 no-key, 가로챔) → 503 문구`, async ({ browser }, info) => {
   test.setTimeout(150_000);
   const { context, page } = await openAs(browser, info, "teacher", SCREEN);
   const fail = "AI 추출에 실패했어요. 잠시 후 다시 시도해 주세요";
-  let mode: "slow" | "fail" | "real" = "slow";
+  const NO_KEY = "AI 추출을 쓸 수 없어요(서버 설정)";
+  let mode: "slow" | "fail" | "nokey" = "slow";
   try {
     await waitUpload(page);
     const route = await interceptExtract(page, () =>
-      mode === "slow" ? { body: { ok: true, docDate: null, items: [] }, delayMs: 8_000 } : mode === "fail" ? { status: 502, body: { ok: false, error: fail, code: "upstream" } } : null,
+      mode === "slow" ? { body: { ok: true, docDate: null, items: [] }, delayMs: 8_000 } : mode === "fail"
+          ? { status: 502, body: { ok: false, error: fail, code: "upstream" } }
+          : // 서버의 키 없음 응답(app/api/intake/extract 503) — 실제 Gemini 호출 없음
+            { status: 503, body: { ok: false, error: NO_KEY, code: "no-key" } },
     );
     await pickFile(page, DOC_PDF);
     await readButton(page).click();
@@ -242,9 +246,9 @@ test(`[C1][S${SCREEN}] 교사 처리 중·취소·실패: "${READ}" → 처리 �
     await expect(readButton(page), "다시 읽기 가능").toBeEnabled();
     await expect(table(page)).toHaveCount(0);
 
-    mode = "real";
+    mode = "nokey";
     await readButton(page).click();
-    await expect(up.getByRole("alert"), "키 없는 서버 503 문구").toContainText("AI 추출을 쓸 수 없어요(서버 설정)", { timeout: 30_000 });
+    await expect(up.getByRole("alert"), "키 없음 503 문구").toContainText(NO_KEY, { timeout: 30_000 });
     expect(route.calls, "요청 3번").toBe(3);
     expect(route.files.every((f) => f.startsWith("multipart/form-data|") && f.endsWith(DOC_PDF.name)), `multipart 로 고른 파일 1개 (${route.files.join(", ")})`).toBe(true);
   } finally {
