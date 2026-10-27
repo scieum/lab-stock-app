@@ -81,7 +81,7 @@ export function candidatesFor(q: string): Cand[] {
 
 export type MsdsRoute = { queries: string[] };
 /**
- * GET /api/msds/search 가로채기. reply(q) 가 null 이면 가로채지 않고 서버로 보낸다 (이 환경 = 키 없음 503).
+ * GET /api/msds/search 가로채기. reply(q) 가 null 이면 가로채지 않고 서버로 보낸다 (서버에 KOSHA 키가 있으면 실제 호출 — 테스트에서 쓰지 않는다).
  * 기본 = candidatesFor(q).
  */
 export async function interceptSearch(

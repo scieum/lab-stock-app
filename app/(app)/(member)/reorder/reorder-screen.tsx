@@ -51,7 +51,7 @@ const VENDORS_PATH = "/vendors";
  *       → (admin) vendor-register "판매처 등록". 데스크톱은 가운데 한 열(page-column 640, 사이 12, d7 §23 run c), 카드는 위아래(정보 → 동작).
  * "확인" 뒤에는 그 카드의 vendor-link 아래에 새 창 안내 줄(vendor-new-window, d7 §18)이 남는다.
  * "판매처 연결" → ex-modal-card (모바일: tab-bar 위 하단 시트 / 데스크톱: 화면 오른쪽 아래 카드, 시안 6-desktop).
- * 판매처를 고르고 "확인" → 그 판매처 웹사이트(공통 목록 4곳은 시약 이름 검색 결과 주소)를 새 창으로 연다. 아무것도 저장하지 않는다 (서버 요청 없음).
+ * 판매처를 고르고 "확인" → 그 판매처 웹사이트(검색 주소가 있는 공통 판매처는 시약 이름 검색 결과 주소)를 새 창으로 연다. 아무것도 저장하지 않는다 (서버 요청 없음).
  * 카드는 비모달이다 — 뒤 목록을 계속 조작할 수 있다. 닫기: Esc · "취소" · 같은 카드의 "판매처 연결" 다시 누르기.
  */
 export function ReorderScreen({ isAdmin, alerts, vendors: initialVendors }: Props) {
@@ -141,7 +141,7 @@ export function ReorderScreen({ isAdmin, alerts, vendors: initialVendors }: Prop
   };
 
   const confirm = (vendor: VendorLinkOption) => {
-    // 검색 주소가 있는 판매처(공통 목록 4곳)는 그 카드의 시약 이름으로 검색한 결과 주소, 아니면 웹사이트 (d7 §11)
+    // 검색 주소가 있는 판매처(공통 목록 일부)는 그 카드의 시약 이름으로 검색한 결과 주소, 아니면 웹사이트 (d7 §11)
     const url = vendorSearchUrl(vendor, open?.name);
     // 새 창은 noopener 로 연다 — 그래서 열렸는지(팝업 차단)를 알 수 없다. 직접 누를 수 있는 링크를 같이 남긴다
     if (open && openVendorWebsite(url) && isOpenableUrl(url)) {

@@ -1,9 +1,9 @@
 // 화면 6 판매처 연결 "검색어 자동 입력" 순수 규칙 (lib/vendor-rules: vendorSearchUrl · isOpenableUrl · VENDOR_SEARCH_PLACEHOLDER).
 // 기대값: harness/d7-data.md §11 "검색어 자동 입력" 행 (2026-10-07 사용자 결정)
-//   - 공통 목록 4곳은 웹사이트 대신 검색 결과 주소를 연다. 검색어 = 시약 이름 그대로(앞뒤 공백만 정리, URL 인코딩).
+//   - 공통 목록 판매처(d7 "지금 N곳" — 2026-10-14 생물나라 추가로 5곳)는 웹사이트 대신 검색 결과 주소를 연다. 검색어 = 시약 이름 그대로(앞뒤 공백만 정리, URL 인코딩).
 //   - 검색 주소 = vendors.search_url, `{q}` 자리에 검색어. search_url 이 없는 판매처는 웹사이트를 연다.
 //   §12 "테이블": website 300자 (검색 주소는 시약 이름이 붙으므로 이 길이 제한과 무관 — 이름을 자르지 않는다).
-// 공통 4곳 주소는 d7 문서에서 읽는다 (구현 상수·seed 를 읽지 않는다).
+// 공통 판매처 검색 주소·개수는 d7 문서에서 읽는다 (구현 상수·seed 를 읽지 않는다).
 import { describe, expect, it } from "vitest";
 import { join } from "node:path";
 import { VENDOR_SEARCH_PLACEHOLDER, isOpenableUrl, vendorSearchUrl } from "../../lib/vendor-rules";
@@ -13,6 +13,8 @@ const D7 = read(join(ROOT, "harness/d7-data.md"));
 const line = D7.split("\n").find((l) => l.startsWith("| 검색어 자동 입력 |")) ?? "";
 const COMMON_SEARCH = [...line.matchAll(/([^\s,()|:`]+) `(https:\/\/[^`\s]+)`/g)].map((m) => ({ name: m[1], searchUrl: m[2] }));
 const Q = (/`(\{[a-z]+\})` 자리에 검색어/.exec(line) ?? [])[1] ?? "";
+/** d7 §11 "공통 목록 판매처(지금 N곳)" */
+const COMMON_COUNT = Number((/공통 목록 판매처\(지금 (\d+)곳\)/.exec(line) ?? [])[1]);
 const WEBSITE_MAX = Number((/website\(null 또는 http\(s\):\/\/ 로 시작, (\d+)자\)/.exec(D7) ?? [])[1]);
 
 /** d7 §11 규칙대로 기대 주소: `{q}` → encodeURIComponent(trim(이름)) */
@@ -24,10 +26,12 @@ const SITE = "https://shop.example.test/";
 const TPL = "https://shop.example.test/search?kw={q}&page=1";
 
 describe("vendorSearchUrl: 기대값 원본", () => {
-  it("[K1][S6] d7 §11 에서 검색어 자리 `{q}` 와 공통 4곳 검색 주소(https://, `{q}` 1번)를 읽었다 · 구현 상수 = d7", () => {
+  it(`[K1][S6] d7 §11 에서 검색어 자리 {q} 와 공통 판매처 검색 주소(지금 ${COMMON_COUNT}곳 — 생물나라 포함, https://, {q} 1번)를 읽었다 · 구현 상수 = d7`, () => {
     expect(Q).toBe("{q}");
     expect(VENDOR_SEARCH_PLACEHOLDER, "구현 VENDOR_SEARCH_PLACEHOLDER = d7").toBe(Q);
-    expect(COMMON_SEARCH.map((s) => s.name), "d7 §11 공통 4곳").toHaveLength(4);
+    expect(COMMON_COUNT, "d7 §11 '지금 N곳'").toBeGreaterThan(0);
+    expect(COMMON_SEARCH.map((s) => s.name), `d7 §11 공통 ${COMMON_COUNT}곳`).toHaveLength(COMMON_COUNT);
+    expect(COMMON_SEARCH.map((s) => s.name), "d7 §11 2026-10-14 추가").toContain("생물나라");
     for (const s of COMMON_SEARCH) {
       expect(s.searchUrl.startsWith("https://"), `${s.name} https`).toBe(true);
       expect(s.searchUrl.split(Q).length - 1, `${s.name} {q} 1번`).toBe(1);
@@ -37,10 +41,10 @@ describe("vendorSearchUrl: 기대값 원본", () => {
   });
 });
 
-describe("vendorSearchUrl: 공통 4곳 (d7 §11 주소)", () => {
+describe(`vendorSearchUrl: 공통 ${COMMON_COUNT}곳 (d7 §11 주소)`, () => {
   const names = ["염산 (35%)", "황산구리(II) 오수화물", "NaOH", "에탄올 95% & 메탄올 #2", "  수산화 나트륨  "];
   for (const reagent of names) {
-    it(`[K1][S6] 시약 "${reagent}" → 4곳 각각 {q} = 인코딩한 이름 · 쿼리 값을 풀면 앞뒤 공백 뺀 이름 그대로`, () => {
+    it(`[K1][S6] 시약 "${reagent}" → ${COMMON_COUNT}곳 각각 {q} = 인코딩한 이름 · 쿼리 값을 풀면 앞뒤 공백 뺀 이름 그대로`, () => {
       for (const s of COMMON_SEARCH) {
         const got = vendorSearchUrl({ searchUrl: s.searchUrl, website: SITE }, reagent);
         expect(got, `${s.name}`).toBe(expected(s.searchUrl, reagent));

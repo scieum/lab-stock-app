@@ -107,15 +107,34 @@ const d7Line = (head: string, where: string): string => {
   return line;
 };
 
-/** d7 §12 "공통 목록" 의 처음 seed: "이름(https://…)" */
+/**
+ * d7 §12 "공통 목록" seed: "처음 seed(…): 이름(https://…), …" + 그 뒤 "YYYY-MM-DD 사용자 추가: 이름(https://… — 설명)".
+ * 추가 항목은 날짜와 함께 읽는다 (§12-1 "모두 N곳" 이 그 날짜 전에 쓰였는지 판단용).
+ */
 const SEED_12 = (() => {
   const line = d7Line("| 공통 목록 |", "§12");
   const tail = line.slice(line.indexOf("처음 seed"));
-  const list = tail.slice(tail.indexOf("):") + 2);
-  const out = [...list.matchAll(/([^\s,()|]+)\((https?:\/\/[^)\s]+)\)/g)].map((m) => ({ name: m[1], website: m[2] }));
-  if (out.length === 0) throw new Error("harness/d7-data.md §12 공통 목록 seed 를 읽지 못했습니다");
-  return out;
+  const body = tail.slice(tail.indexOf("):") + 2);
+  const addAt = [...body.matchAll(/(\d{4}-\d{2}-\d{2}) 사용자 추가:/g)];
+  const firstEnd = addAt.length > 0 ? addAt[0].index! : body.length;
+  const entries = (text: string) =>
+    [...text.matchAll(/([^\s,()|:]+)\((https?:\/\/[^)\s]+)(?:\)| —)/g)].map((m) => ({ name: m[1], website: m[2].replace(/[.,]$/, "") }));
+  const first = entries(body.slice(0, firstEnd));
+  if (first.length === 0) throw new Error("harness/d7-data.md §12 공통 목록 seed 를 읽지 못했습니다");
+  const added = addAt.flatMap((m, i) => {
+    const end = i + 1 < addAt.length ? addAt[i + 1].index! : body.length;
+    const got = entries(body.slice(m.index! + m[0].length, end)).map((e) => ({ ...e, date: m[1] }));
+    if (got.length === 0) throw new Error(`harness/d7-data.md §12 "${m[1]} 사용자 추가" 판매처를 읽지 못했습니다`);
+    return got;
+  });
+  // §12 행 끝의 "공통 목록 N곳" = §12 처음 seed + 사용자 추가 (§12-1 추가 seed 는 따로 센다)
+  const n12 = /공통 목록 (\d+)곳/.exec(body);
+  if (n12 && Number(n12[1]) !== first.length + added.length) throw new Error(`d7 §12 "공통 목록 ${n12[1]}곳" ≠ 처음 seed ${first.length} + 추가 ${added.length}`);
+  return { first, added };
 })();
+
+/** d7 §12 "YYYY-MM-DD 사용자 추가" 로 더한 공통 판매처 (예: 2026-10-14 생물나라) */
+export const COMMON_ADDED_12: { name: string; website: string; date: string }[] = SEED_12.added;
 
 /**
  * d7 §12-1 "공통 목록 추가 seed": "이름(https://웹사이트, `https://…{q}…`)" 또는 "이름(https://웹사이트, 검색 주소 없음 …)".
@@ -134,12 +153,21 @@ const SEED_12_1 = (() => {
   return { out, total: Number(total[1]) };
 })();
 
-/** d7 §12-1 "공통 목록은 모두 N곳" */
-export const COMMON_TOTAL = SEED_12_1.total;
+/** d7 §12-1 소제목 날짜 ("### 12-1. … (YYYY-MM-DD 사용자 결정)") — "모두 N곳" 을 쓴 날 */
+const DATE_12_1 = (/^### 12-1\..*\((\d{4}-\d{2}-\d{2})/m.exec(d7) ?? [])[1];
+if (!DATE_12_1) throw new Error("harness/d7-data.md §12-1 소제목 날짜를 읽지 못했습니다");
+
+/**
+ * 공통 목록 전체 수 = d7 §12-1 "공통 목록은 모두 N곳"(DATE_12_1 기준) + 그 뒤 §12 "사용자 추가" 수.
+ * (2026-10-14 생물나라 추가 때 §12 행은 "공통 목록 5곳"(§12 seed 만), §12-1 은 "모두 10곳" 그대로 — 두 문장을 날짜 순으로 합친다)
+ */
+export const COMMON_TOTAL =
+  SEED_12_1.total + SEED_12.added.filter((a) => a.date > DATE_12_1 && !SEED_12_1.out.some((o) => o.name === a.name)).length;
 
 /** 공통 목록 seed 전체 = d7 §12 처음 seed + §12-1 추가 seed (이름 중복은 건너뜀) */
 export const COMMON_SEED: { name: string; website: string }[] = (() => {
-  const out = [...SEED_12];
+  const out = [...SEED_12.first];
+  for (const s of SEED_12.added) if (!out.some((o) => o.name === s.name)) out.push({ name: s.name, website: s.website });
   for (const s of SEED_12_1.out) if (!out.some((o) => o.name === s.name)) out.push({ name: s.name, website: s.website });
   if (out.length !== COMMON_TOTAL) throw new Error(`d7 §12·§12-1 공통 seed ${out.length}곳 ≠ "모두 ${COMMON_TOTAL}곳"`);
   return out;

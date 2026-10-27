@@ -17,6 +17,7 @@ import {
   CELL,
   COMMON_HEAD,
   COMMON_NAMES,
+  COMMON_ADDED_12,
   COMMON_SEED,
   EMPTY,
   EMPTY_VENDORS,
@@ -270,6 +271,9 @@ test(`[C1][S${SCREEN}] 학교A admin "${TAB_COMMON}" 탭: ${CELL} 2열(${COMMON_
     expect([...pairs].sort((a, b) => a[0].localeCompare(b[0])), "행 = 판매처명 · 웹사이트 호스트").toEqual(
       COMMON_SEED.map((s) => [s.name, hostOf(s.website)] as [string, string]).sort((a, b) => a[0].localeCompare(b[0])),
     );
+
+    // d7 §12 "사용자 추가"(2026-10-14 생물나라) 행이 공통 목록 탭에 있다
+    for (const a of COMMON_ADDED_12) expect(pairs, `"${TAB_COMMON}" 탭에 d7 §12 ${a.date} 추가 "${a.name}" 행`).toContainEqual([a.name, hostOf(a.website)]);
 
     // 보기 전용
     await expect(main(page).getByRole("button", { name: /더보기|수정|삭제/ }), "수정·삭제·더보기 버튼").toHaveCount(0);
