@@ -4,6 +4,7 @@
 //       harness/d7-data.md §23 run d 세부, 새 프레임 1·14·15-desktop · 13-guest-desktop.
 // 기대값은 규칙 파일·새 프레임에서 읽는다. 태그 [K1] 은 dev-rules test_rules 밖 (D1 실행에 포함).
 import { test, expect, type Page } from "@playwright/test";
+import { GUIDE_LABEL, GUIDE_LINK_PROPS } from "../../lib/guide-link";
 import { DESKTOP_SHELL } from "../desktop-shell";
 import { HEADER, PRE, R, frameNodes, frameOf, frameTextsIn, hexToRgb } from "./pre-login-helpers";
 import { devRules, rules, sel } from "./screen-helpers";
@@ -48,7 +49,7 @@ test(`[K1][S1] ${GALLERY}: ${HEADER} 버튼 구성 3종 = 시안 1-desktop(${hea
   }
 });
 
-test(`[K1][S15] ${GALLERY}: cta-band 반전 버튼(rules landing_rhythm.inverted_button) · web-footer = rules footer.text 한 줄 · landing-tabs 글자 = 시안 탭 순서`, async ({ page }) => {
+test(`[K1][S15] ${GALLERY}: cta-band 반전 버튼(rules landing_rhythm.inverted_button) · web-footer = rules footer.text 한 줄 + 사용 가이드 링크 (시안 예외) · landing-tabs 글자 = 시안 탭 순서`, async ({ page }) => {
   await open(page);
   const inv = R.landing_rhythm.inverted_button;
   const fill = (/(#[0-9a-fA-F]{6})\s*채움/.exec(inv)?.[1] ?? "").toLowerCase();
@@ -62,8 +63,19 @@ test(`[K1][S15] ${GALLERY}: cta-band 반전 버튼(rules landing_rhythm.inverted
   expect(o.b, "반전 button-outline 테두리").toBe(hexToRgb(outline));
   expect(o.c, "반전 button-outline 라벨").toBe(hexToRgb(outline));
   const foot = page.locator(sel("web-footer")).first();
-  expect((await foot.innerText()).replace(/\s+/g, " ").trim(), "footer 글자").toBe(R.footer.text);
-  await expect(foot.locator("a"), "footer 링크 0").toHaveCount(0);
+  // 시안 예외 (사용자 요청 2026-10-28, 요청서 10 대기): 저작권 줄 아래 '사용 가이드' 링크 하나 (새 탭).
+  // 글자 = rules footer.text 로 시작 · 링크 글자를 뺀 나머지 = rules footer.text · 링크 = 정확히 1개 (lib/guide-link)
+  const nm = (t: string) => t.replace(/\s+/g, " ").trim();
+  const footAll = nm(await foot.innerText());
+  expect(footAll.startsWith(R.footer.text), `footer 글자 "${footAll}" 가 rules footer.text 로 시작`).toBe(true);
+  const footRest = nm(await foot.evaluate((el) => { const c = el.cloneNode(true) as HTMLElement; c.querySelectorAll("a").forEach((a) => a.remove()); return c.textContent ?? ""; }));
+  expect(footRest, "footer 글자 (가이드 링크 뺀 나머지) = rules footer.text").toBe(R.footer.text);
+  const footLinks = foot.locator("a");
+  await expect(footLinks, "footer 링크 = 사용 가이드 1개").toHaveCount(1);
+  expect(nm(await footLinks.innerText()), "링크 글자").toBe(GUIDE_LABEL);
+  expect(await footLinks.getAttribute("href"), "링크 href").toBe(GUIDE_LINK_PROPS.href);
+  expect(await footLinks.getAttribute("target"), "링크 target").toBe(GUIDE_LINK_PROPS.target);
+  expect((await footLinks.getAttribute("rel")) ?? "", "링크 rel noopener").toMatch(/(^|\s)noopener(\s|$)/);
   const tabs = (await page.locator(`${sel("landing-tabs")} a`).allInnerTexts()).map((t) => t.trim());
   // 갤러리는 컴포넌트 예시 (탭 일부) — 글자는 시안 15-desktop 탭 글자 중에서, 순서 유지. 화면 15 의 전체 탭은 c3-run-d 에서 시안과 같음을 본다
   const frameTabs = frameOf("15-desktop").nodes.filter((n) => n.type === "TEXT" && n.path.includes("landing-tabs")).map((n) => n.text!.characters.trim());

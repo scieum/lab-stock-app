@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { ButtonOutline } from "@/components/button-outline";
 import { NavAccountMenu } from "@/components/nav-account-menu";
+import { Icon } from "@/components/icons";
 import { SidebarItem } from "@/components/sidebar-item";
+import itemStyles from "@/components/sidebar-item/styles.module.css";
+import { GUIDE_LABEL, GUIDE_LINK_PROPS } from "@/lib/guide-link";
 import type { SidebarGroup, SidebarKey } from "@/lib/sidebar-menu";
 import styles from "./styles.module.css";
 
@@ -64,18 +67,26 @@ export function AppSidebar({ schoolName, groups, active, account, onLogout, clas
           ))}
         </nav>
       </div>
-      {guest ? (
-        <div className={styles.guestAccount}>
-          <span className={styles.guestStatus}>둘러보는 중</span>
-          <ButtonOutline href={guest.loginHref} className={styles.guestLogin}>
-            로그인
-          </ButtonOutline>
-        </div>
-      ) : account ? (
-        <div className={styles.account}>
-          <NavAccountMenu schoolName={schoolName} label={account} variant="sidebar" onLogout={onLogout} />
-        </div>
-      ) : null}
+      <div className={styles.bottom}>
+        {/* 시안 예외 (사용자 요청 2026-10-28, 요청서 10 대기): 계정 줄 위 '사용 가이드' — 모든 역할 · 둘러보기 공통, 새 탭.
+            sidebar-item 모양(같은 CSS)을 빌려 쓰되 메뉴 항목이 아니므로 data-component 는 달지 않는다 (메뉴 수 = rules desktop_shell.menu) */}
+        <a {...GUIDE_LINK_PROPS} className={[itemStyles.item, styles.guide].join(" ")}>
+          <Icon name="info" className={itemStyles.icon} />
+          <span className={itemStyles.label}>{GUIDE_LABEL}</span>
+        </a>
+        {guest ? (
+          <div className={styles.guestAccount}>
+            <span className={styles.guestStatus}>둘러보는 중</span>
+            <ButtonOutline href={guest.loginHref} className={styles.guestLogin}>
+              로그인
+            </ButtonOutline>
+          </div>
+        ) : account ? (
+          <div className={styles.account}>
+            <NavAccountMenu schoolName={schoolName} label={account} variant="sidebar" onLogout={onLogout} />
+          </div>
+        ) : null}
+      </div>
     </aside>
   );
 }
