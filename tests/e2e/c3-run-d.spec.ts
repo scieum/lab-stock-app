@@ -12,6 +12,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { test, expect, type Locator, type Page } from "@playwright/test";
+import { GUIDE_LABEL, GUIDE_LINK_PROPS } from "../../lib/guide-link";
 import { DESKTOP_SHELL, frameSidebarItems } from "../desktop-shell";
 import { NEW_FRAMES_DIR, desktopMigratedScreens } from "../frames";
 import { DRAWER, DRAWER_W, SIDEBAR_W, TABLE, drawer, drawerClose, drawerTitle, waitDrawer, waitWidthSettled } from "./desk-helpers";
@@ -453,7 +454,7 @@ test(`[C3][S${LANDING}] 1440 검정 띠 반전 버튼(rules landing_rhythm.inver
   }
 });
 
-test(`[C3][S${LANDING}] 1440 web-footer 한 줄 = rules footer.text · 링크 0 · 위 hairline · 글자색·크기 = 시안 · 가운데`, async ({ page }) => {
+test(`[C3][S${LANDING}] 1440 web-footer 한 줄 = rules footer.text · 링크 = 사용 가이드 1 (시안 예외) · 위 hairline · 글자색·크기 = 시안 · 가운데`, async ({ page }) => {
   test.setTimeout(90_000);
   const vp = await openLanding(page);
   if (vp === "mobile") {
@@ -463,8 +464,18 @@ test(`[C3][S${LANDING}] 1440 web-footer 한 줄 = rules footer.text · 링크 0 
   }
   const foot = page.locator(sel("web-footer"));
   await expect(foot).toHaveCount(1);
-  expect(norm(await foot.innerText()), "footer 글자 = rules footer.text").toBe(R.footer.text);
-  await expect(foot.locator("a"), "열·약관 링크 없음").toHaveCount(0);
+  // 시안 예외 (사용자 요청 2026-10-28, 요청서 10 대기): 저작권 줄 아래 '사용 가이드' 링크 하나 (새 탭).
+  // 글자 = rules footer.text 로 시작 · 링크 글자를 뺀 나머지 = rules footer.text · 링크 = 정확히 1개 (lib/guide-link)
+  const footAll = norm(await foot.innerText());
+  expect(footAll.startsWith(R.footer.text), `footer 글자 "${footAll}" 가 rules footer.text 로 시작`).toBe(true);
+  const footRest = norm(await foot.evaluate((el) => { const c = el.cloneNode(true) as HTMLElement; c.querySelectorAll("a").forEach((a) => a.remove()); return c.textContent ?? ""; }));
+  expect(footRest, "footer 글자 (가이드 링크 뺀 나머지) = rules footer.text").toBe(R.footer.text);
+  const footLinks = foot.locator("a");
+  await expect(footLinks, "링크 = 사용 가이드 1개 (열·약관 링크 없음)").toHaveCount(1);
+  expect(norm(await footLinks.innerText()), "링크 글자").toBe(GUIDE_LABEL);
+  expect(await footLinks.getAttribute("href"), "링크 href").toBe(GUIDE_LINK_PROPS.href);
+  expect(await footLinks.getAttribute("target"), "링크 target").toBe(GUIDE_LINK_PROPS.target);
+  expect((await footLinks.getAttribute("rel")) ?? "", "링크 rel noopener").toMatch(/(^|\s)noopener(\s|$)/);
   const ff = frameNodes("15-desktop", "web-footer")[0];
   const fc = frameNodes("15-desktop", "copyright")[0];
   const cs = await foot.evaluate((el) => {
