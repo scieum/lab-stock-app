@@ -61,3 +61,40 @@ export const BOARD_TEXT = {
 export function boardAnsweredCaption(count: number): string | null {
   return count > 0 ? `${BOARD_TEXT.statusAnswered} ${count}` : null;
 }
+
+/** 목록 한 번에 보이는 글 수 ('더 보기' 단위, d7 §30) */
+export const BOARD_PAGE_SIZE = 20;
+
+export type BoardInputField = "title" | "body";
+export type BoardInputCheck =
+  | { ok: true; title: string; body: string }
+  | { ok: false; field: BoardInputField; error: string };
+
+export const BOARD_INPUT_ERRORS = {
+  titleEmpty: "제목을 입력하세요",
+  titleLong: `제목은 ${BOARD_TITLE_MAX}자까지 쓸 수 있어요`,
+  bodyEmpty: "본문을 입력하세요",
+  bodyLong: `본문은 ${BOARD_BODY_MAX}자까지 쓸 수 있어요`,
+} as const;
+
+/**
+ * 글 제목·본문 검사 (d7 §30 board_posts check 와 같은 기준) — 앞뒤 공백을 뗀 값으로 1~100자 · 1~5000자.
+ * 통과하면 정리한 값을 돌려준다. FAQ(질문·답)와 운영자 답변(본문 기준)에도 같은 검사를 쓴다.
+ */
+export function checkBoardInput(title: unknown, body: unknown): BoardInputCheck {
+  const t = typeof title === "string" ? title.trim() : "";
+  const b = typeof body === "string" ? body.trim() : "";
+  if (!t) return { ok: false, field: "title", error: BOARD_INPUT_ERRORS.titleEmpty };
+  if ([...t].length > BOARD_TITLE_MAX) return { ok: false, field: "title", error: BOARD_INPUT_ERRORS.titleLong };
+  if (!b) return { ok: false, field: "body", error: BOARD_INPUT_ERRORS.bodyEmpty };
+  if ([...b].length > BOARD_BODY_MAX) return { ok: false, field: "body", error: BOARD_INPUT_ERRORS.bodyLong };
+  return { ok: true, title: t, body: b };
+}
+
+/** 운영자 답변 검사 — 1~5000자 */
+export function checkBoardAnswer(answer: unknown): { ok: true; answer: string } | { ok: false; error: string } {
+  const a = typeof answer === "string" ? answer.trim() : "";
+  if (!a) return { ok: false, error: "답변을 입력하세요" };
+  if ([...a].length > BOARD_BODY_MAX) return { ok: false, error: `답변은 ${BOARD_BODY_MAX}자까지 쓸 수 있어요` };
+  return { ok: true, answer: a };
+}
