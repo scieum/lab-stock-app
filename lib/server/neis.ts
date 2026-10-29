@@ -4,6 +4,7 @@ import { SCHOOL_KINDS, type SchoolKind } from "@/lib/school-kinds";
 
 // NEIS 학교기본정보 중계 (d7 §3·§19). 규칙은 디자인 하네스 harness/scripts/neis.py 와 같다.
 // - 학교급 = 초등학교·중학교·고등학교 (lib/school-kinds SCHOOL_KINDS — rules.json neis.school_kinds), 재외한국학교 제외
+//   + 각종학교(고) 중 온라인학교는 고등학교로 (ONLINE_SCHOOLS)
 // - 시/도·지역 목록은 세 학교급 전체에서, 학교 목록은 학교급별
 // - 지역 = 도로명주소 두 번째 토큰 (시/군/구로 끝날 때만), 아니면 시/도 이름
 // - 하루 캐시 (fetch revalidate + 프로세스 메모) — 둘 다 학교급별 키
@@ -12,6 +13,14 @@ const ENDPOINT = "https://open.neis.go.kr/hub/schoolInfo";
 const EXCLUDE_SIDO = ["재외한국학교"];
 const PAGE_SIZE = 1000;
 export const NEIS_REVALIDATE_SECONDS = 86400;
+
+// 시·도 온라인학교는 NEIS 학교급이 '각종학교(고)'라 고등학교 조회에 안 나온다.
+// 각종학교 중 이름이 이 규칙에 맞는 학교만 고등학교로 넣는다 (rules.json neis.online_schools, 2026-10-29 사용자 결정).
+export const ONLINE_SCHOOLS = {
+  kind: "고등학교",
+  neis_kind: "각종학교(고)",
+  name: /온라인학교$|온학교$|^온세종학교$/,
+} as const satisfies { kind: SchoolKind; neis_kind: string; name: RegExp };
 
 type NeisRow = {
   ATPT_OFCDC_SC_CODE: string;
@@ -59,7 +68,7 @@ function toSchool(row: NeisRow, kind: SchoolKind): NeisSchool {
   };
 }
 
-async function fetchPage(kind: SchoolKind, page: number): Promise<NeisResponse> {
+async function fetchPage(kind: string, page: number): Promise<NeisResponse> {
   const q = new URLSearchParams({
     KEY: apiKey(),
     Type: "json",
@@ -79,16 +88,27 @@ async function fetchPage(kind: SchoolKind, page: number): Promise<NeisResponse> 
   return (await res.json()) as NeisResponse;
 }
 
-async function fetchKind(kind: SchoolKind): Promise<NeisSchool[]> {
+/** NEIS 학교급(SCHUL_KND_SC_NM) 하나의 전체 행. allowEmpty 면 "해당 데이터 없음"(INFO-200)을 빈 목록으로 본다 */
+async function fetchRows(neisKind: string, allowEmpty = false): Promise<NeisRow[]> {
   const rows: NeisRow[] = [];
   for (let page = 1; ; page++) {
-    const data = await fetchPage(kind, page);
+    const data = await fetchPage(neisKind, page);
     if (!data.schoolInfo) {
+      if (allowEmpty && data.RESULT?.CODE === "INFO-200") break;
       throw new NeisError(`NEIS 응답 오류 (${data.RESULT?.CODE ?? "알 수 없음"})`, 502);
     }
     const [head, body] = data.schoolInfo;
     rows.push(...body.row);
     if (rows.length >= head.head[0].list_total_count || body.row.length === 0) break;
+  }
+  return rows;
+}
+
+async function fetchKind(kind: SchoolKind): Promise<NeisSchool[]> {
+  const rows = await fetchRows(kind);
+  if (kind === ONLINE_SCHOOLS.kind) {
+    const extra = await fetchRows(ONLINE_SCHOOLS.neis_kind, true);
+    rows.push(...extra.filter((r) => ONLINE_SCHOOLS.name.test(r.SCHUL_NM)));
   }
   // 학교 코드가 비어 있는 행(개교 예정 "(가칭)" 학교 등)은 학교를 식별할 수 없어 뺀다
   return rows
