@@ -103,12 +103,13 @@ describe("[C1][S2] [C1][S17] 여러 개 삭제 규칙 = rules bulk_delete", () =
 describe("[C1][S14] 가입 오류 요약 = rules signup_error · d7 §25", () => {
   it("문제 칸은 화면 위에서 아래 순서 · 약관만 빠지면 요약 = 시안 '약관에 동의해 주세요'", () => {
     const [termsExample] = quotes(rules.signup_error.summary as string);
-    const ok = { neisCode: "X", displayName: "김", email: "a@b.cd", password: "12345678", passwordConfirm: "12345678", agreeTerms: true, agreePrivacy: true };
+    const ok = { neisCode: "X", displayName: "김", email: "a@b.cd", password: "12345678", passwordConfirm: "12345678", agreeTerms: true, agreePrivacy: true, agreeAge: true };
     expect(signupFieldProblems(ok)).toEqual([]);
     const termsOnly = signupFieldProblems({ ...ok, agreeTerms: false });
     expect(termsOnly.map((p) => p.field)).toEqual(["terms"]);
     expect(termsOnly[0].summary).toBe(termsExample);
-    const all = signupFieldProblems({ neisCode: "", displayName: "", email: "x", password: "1", passwordConfirm: "", agreeTerms: false, agreePrivacy: false });
+    expect(signupFieldProblems({ ...ok, agreeAge: false }).map((p) => p.field), "만 14세 확인만 빠짐").toEqual(["terms"]);
+    const all = signupFieldProblems({ neisCode: "", displayName: "", email: "x", password: "1", passwordConfirm: "", agreeTerms: false, agreePrivacy: false, agreeAge: false });
     expect(all.map((p) => p.field)).toEqual(["school", "displayName", "email", "password", "terms"]);
   });
 });

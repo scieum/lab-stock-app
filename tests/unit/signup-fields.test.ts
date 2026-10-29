@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { PASSWORD_MIN, signupProblem, toSignupFields } from "../../lib/auth/signup-rules";
 
-const FIELD_KEYS = ["agreePrivacy", "agreeTerms", "displayName", "email", "neisCode", "password", "passwordConfirm"];
+const FIELD_KEYS = ["agreeAge", "agreePrivacy", "agreeTerms", "displayName", "email", "neisCode", "password", "passwordConfirm"];
 const pw = "p".repeat(PASSWORD_MIN);
 const valid = {
   neisCode: "E2E0000000",
@@ -12,6 +12,7 @@ const valid = {
   passwordConfirm: pw,
   agreeTerms: true,
   agreePrivacy: true,
+  agreeAge: true,
 };
 
 describe("signup fields", () => {
@@ -42,8 +43,15 @@ describe("signup fields", () => {
     for (const v of ["true", 1, "yes", null]) {
       expect(signupProblem(toSignupFields({ ...valid, agreeTerms: v }))).not.toBeNull();
       expect(signupProblem(toSignupFields({ ...valid, agreePrivacy: v }))).not.toBeNull();
+      expect(signupProblem(toSignupFields({ ...valid, agreeAge: v }))).not.toBeNull();
     }
     expect(signupProblem(toSignupFields(valid))).toBeNull();
+  });
+
+  it("[C1][S14] 만 14세 이상 확인이 없으면 가입 불가 (개인정보 보호법 제22조의2)", () => {
+    expect(signupProblem(toSignupFields({ ...valid, agreeAge: false }))).not.toBeNull();
+    const { agreeAge: _omit, ...noAge } = valid;
+    expect(signupProblem(toSignupFields(noAge)), "agreeAge 빠진 옛 요청").not.toBeNull();
   });
 
   it("[C1][S14] 본문이 객체가 아니면 모든 필드 빈 값 → 문제", () => {
