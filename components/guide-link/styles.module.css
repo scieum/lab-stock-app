@@ -1,0 +1,22 @@
+/* 시안 20-desktop guide-link: 215 × 44 · 안쪽 0 12 · 사이 12 · 아이콘 20 muted · 글자 15/400 text-muted · 오른쪽 ↗ 20 muted */
+.sidebar {
+  flex-shrink: 0;
+}
+
+.sidebarLabel {
+  flex: 1;
+  color: var(--color-text-muted);
+}
+
+.external {
+  margin-left: auto;
+}
+
+.srOnly {
+  position: absolute;
+  width: var(--border-width);
+  height: var(--border-width);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

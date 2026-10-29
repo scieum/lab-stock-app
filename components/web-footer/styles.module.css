@@ -1,11 +1,11 @@
-/* 시안 15-desktop web-footer: 1440 × 84, padding 32/0, 흰 바탕 + 위 hairline(gray-100) */
+/* 시안 19-mobile web-footer: 390 × 90 · 안쪽 12 16 · 사이 4 · 두 줄(저작권 / footer-links), 흰 바탕 + 위 hairline-soft */
 .footer {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: var(--space-4);
   align-items: center;
   justify-content: center;
-  padding: var(--space-32) var(--space-16);
+  padding: var(--space-12) var(--space-16);
   border-top: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-none);
   background: var(--color-surface);
@@ -21,20 +21,24 @@
   text-align: center;
 }
 
-/* 시안 예외 (사용자 요청 2026-10-28, 요청서 10 대기): '사용 가이드' — copyright 와 같은 caption 12/400 회색 + 밑줄 */
-.guide {
+.separator {
+  display: none;
   color: var(--color-text-muted);
   font-size: var(--font-size-12);
-  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-normal);
-  text-decoration: underline;
+  white-space: pre;
 }
 
-.guide:hover {
-  color: var(--color-text);
-}
+/* 시안 15-desktop · 19-desktop: 가운데 한 줄 '저작권 · 개인정보 처리방침 · 사용 가이드', 위아래 32 → 링크 44 터치 영역 몫을 뺀다 */
+@media (min-width: 1024px) {
+  .footer {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--space-0);
+    padding: var(--space-16) var(--space-16);
+  }
 
-.guide:focus-visible {
-  outline: var(--border-width) solid var(--color-highlight);
-  outline-offset: var(--space-4);
+  .separator {
+    display: inline;
+  }
 }

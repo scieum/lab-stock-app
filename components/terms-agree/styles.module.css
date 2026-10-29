@@ -1,0 +1,162 @@
+/* 시안 14 · 14-consent terms-agree: 모두 동의 → hairline-soft → 행(44 높이, check-hit 44 + 글자 + term-view 44) */
+.terms {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.srOnly {
+  position: absolute;
+  width: var(--border-width);
+  height: var(--border-width);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.termAll,
+.termLabelWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--button-min-height);
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.checkInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.checkHit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+}
+
+.checkCircle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-md);
+  height: var(--icon-md);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  box-sizing: border-box;
+  color: transparent;
+}
+
+.checkIcon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+}
+
+.checkInput:checked + .checkHit .checkCircle {
+  border-color: var(--color-highlight);
+  background: var(--color-highlight-soft);
+  color: var(--color-highlight);
+}
+
+.checkInput:focus-visible + .checkHit .checkCircle {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: var(--space-4);
+}
+
+.termAllLabel {
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+}
+
+.divider {
+  width: 100%;
+  height: var(--border-width);
+  margin: 0;
+  border: 0;
+  background: var(--color-border);
+}
+
+.termItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.termRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.termLabel {
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.termView {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.termView:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: calc(var(--space-4) * -1);
+  border-radius: var(--radius-pill);
+}
+
+/* 시안 14-consent: 체크한 행의 › = highlight, 그 밖(펼친 ⌄ 포함) = text-muted */
+.termViewIcon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  color: var(--color-text-muted);
+}
+
+.termItem:has(.checkInput:checked) .termViewIcon {
+  color: var(--color-highlight);
+}
+
+/* 펼침 상자 자리: 왼쪽 48(체크 칸 44 + 사이 4) 들여 · 위아래 8 (시안 consent-detail-wrap) */
+.detailWrap {
+  padding: var(--space-8) var(--space-0) var(--space-8) calc(var(--button-min-height) + var(--space-4));
+}
+
+/* 한 줄 펼침 (서비스 이용약관 · 만 14세): canvas-soft · rounded 24 · body-sm ink */
+.termSummary {
+  margin: 0;
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.error {
+  margin: 0;
+  padding-top: var(--space-8);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}

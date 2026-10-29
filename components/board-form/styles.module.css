@@ -1,0 +1,26 @@
+/* 시안 20-new board-form: 묶음 사이 16 / form-field 라벨(caption muted) + segmented 사이 4 */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.fieldLabel {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}

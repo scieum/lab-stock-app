@@ -106,6 +106,58 @@ export function TextInput({
   );
 }
 
+type AreaProps = {
+  /** 위 라벨 */
+  label: string;
+  required?: boolean;
+  error?: string;
+  /** 상자 아래 오른쪽 글자 수 ("120/5000") */
+  counter?: string;
+} & Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "required">;
+
+/**
+ * 여러 줄 입력 상자 (text-input 과 같은 모양 — 회색 바탕 · radius 16 · 안쪽 12 16, 시안 20-new 본문 200 높이).
+ * 게시판 본문·운영자 답변 (d7 §30).
+ */
+export function TextInputArea({ label, required, error, counter, id, className, rows = 8, ...rest }: AreaProps) {
+  const autoId = useId();
+  const inputId = id ?? autoId;
+  const errorId = `${inputId}-error`;
+  const counterId = `${inputId}-counter`;
+  const describedBy = [error ? errorId : "", counter ? counterId : ""].filter(Boolean).join(" ") || undefined;
+  return (
+    <div data-component="text-input" className={[styles.field, className ?? ""].filter(Boolean).join(" ")}>
+      <div className={styles.labelRow}>
+        <label htmlFor={inputId} className={styles.label}>
+          {label}
+        </label>
+        {required ? <span className={styles.required}>필수</span> : null}
+      </div>
+      <div className={[styles.box, styles.areaBox].join(" ")}>
+        <textarea
+          id={inputId}
+          rows={rows}
+          className={[styles.input, styles.area].join(" ")}
+          required={required}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          {...rest}
+        />
+      </div>
+      {error ? (
+        <p id={errorId} role="alert" className={styles.error}>
+          {error}
+        </p>
+      ) : null}
+      {counter ? (
+        <p id={counterId} className={styles.counter}>
+          {counter}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export type TextInputSelectOption = { value: string; label: string };
 
 type SelectProps = {

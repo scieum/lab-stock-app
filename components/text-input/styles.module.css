@@ -198,3 +198,13 @@
 .selectBox:has(.select:disabled) .selectIcon {
   color: var(--color-text-placeholder);
 }
+
+/* 여러 줄 (TextInputArea): 위 정렬 · 손으로 높이 조절 */
+.areaBox {
+  align-items: stretch;
+}
+
+.area {
+  min-height: calc(var(--control-height) * 3);
+  resize: vertical;
+}

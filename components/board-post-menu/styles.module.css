@@ -1,0 +1,16 @@
+/* ⋯ 버튼 자리 (안쪽 reagent-more-menu 모양 그대로) */
+.wrap {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+/* 시안 20-detail menu-item label 15/400 */
+.label {
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.link {
+  text-decoration: none;
+}

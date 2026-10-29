@@ -1,0 +1,300 @@
+/* 시안 13-feature-intro-mobile feature-intro-popup: 390 · 흰 바탕 · border-strong 한 줄 · radius 24 · 안쪽 24 · 사이 24, 그림자 없음 */
+.popup {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  min-width: 0;
+  padding: var(--space-24);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-none);
+  box-sizing: border-box;
+}
+
+.popup:focus {
+  outline: none;
+}
+
+/* 화면 위에 띄움: 딤 + 모바일 바텀시트 (tab-bar 까지 덮는다, 위 모서리만 둥글게) */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+/* 딤: ink 바탕을 반투명으로 (rgba 토큰 badge-overlay 는 badge-overlay 전용 — rules colors.allowed_rgba) */
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--color-primary);
+  opacity: 0.4;
+}
+
+.floating {
+  width: 100%;
+  max-height: calc(100% - var(--space-48));
+  overflow-y: auto;
+  border-bottom: 0;
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-none) var(--radius-none);
+  padding-bottom: calc(var(--space-24) + env(safe-area-inset-bottom));
+}
+
+/* ✕ 닫기 = 데스크톱만 (모바일 바텀시트에는 ✕ 없음) */
+.close {
+  position: absolute;
+  top: var(--space-16);
+  right: var(--space-16);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.close:hover {
+  background: var(--color-surface-muted);
+}
+
+.close:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+}
+
+.closeIcon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+}
+
+/* intro-head: 꼬리표 + 제목, 사이 16 */
+.head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-16);
+}
+
+.tag {
+  padding: var(--space-4) var(--space-12);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  word-break: keep-all;
+}
+
+/* intro-figure: canvas-soft · radius 24(시안 16 조각) · 안쪽 16 · 사이 8, 모바일 세로 */
+.figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-16);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+}
+
+.shot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  width: 100%;
+  padding: var(--space-16);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-sizing: border-box;
+}
+
+.shotTable {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-16);
+}
+
+.shotDoc {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--button-min-height);
+  height: var(--button-min-height);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.shotIcon {
+  flex-shrink: 0;
+  width: var(--icon-md);
+  height: var(--icon-md);
+  color: var(--color-text-muted);
+}
+
+.shotLines {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.lineLong,
+.lineShort {
+  display: block;
+  height: var(--space-8);
+  border-radius: var(--radius-pill);
+  background: var(--color-border-strong);
+}
+
+.lineLong {
+  flex: 2;
+  width: 100%;
+}
+
+.lineShort {
+  flex: 1;
+  width: 50%;
+}
+
+.tableRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--icon-md);
+  height: var(--icon-md);
+  border-radius: var(--radius-pill);
+  background: var(--color-highlight-soft);
+  color: var(--color-highlight);
+}
+
+.checkIcon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+}
+
+.arrow {
+  flex-shrink: 0;
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  color: var(--color-text-muted);
+}
+
+/* intro-body: 단계 + 버튼, 사이 16 */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.stepNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  box-sizing: border-box;
+  color: var(--color-text);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.stepText {
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+/* 시안 13-feature-intro-desktop: 가운데 모달 560 · 모서리 모두 24 · ✕ · 그림 가로 */
+@media (min-width: 1024px) {
+  .overlay {
+    align-items: center;
+    padding: var(--space-24);
+  }
+
+  .floating {
+    max-width: calc(var(--space-64) * 8 + var(--space-48));
+    border-bottom: var(--border-width) solid var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    padding-bottom: var(--space-24);
+  }
+
+  .popup {
+    max-width: calc(var(--space-64) * 8 + var(--space-48));
+  }
+
+  .close {
+    display: inline-flex;
+  }
+
+  .head {
+    padding-right: var(--space-48);
+  }
+
+  .figure {
+    flex-direction: row;
+  }
+
+  .shot {
+    flex: 1;
+    align-self: stretch;
+  }
+
+  .arrow {
+    transform: rotate(-90deg);
+  }
+}

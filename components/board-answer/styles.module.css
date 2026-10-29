@@ -1,0 +1,24 @@
+.answer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-16);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+}
+
+.head {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.body {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}

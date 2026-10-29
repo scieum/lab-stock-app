@@ -165,6 +165,30 @@ import { SignupErrorSummary } from "@/components/signup-error-summary";
 import { QrManualEntry } from "@/components/qr-manual-entry";
 import { QrResultSheet } from "@/components/qr-result-sheet";
 import { QrScan } from "@/components/qr-scan";
+import { BoardAnswer } from "@/components/board-answer";
+import { BoardDetail } from "@/components/board-detail";
+import { BoardForm } from "@/components/board-form";
+import { BoardLink } from "@/components/board-link";
+import { BoardPostMenu } from "@/components/board-post-menu";
+import { BoardPostRow } from "@/components/board-post-row";
+import { BoardPrivacyNote } from "@/components/board-privacy-note";
+import { BoardStatusBadge } from "@/components/board-status-badge";
+import { BoardWrite } from "@/components/board-write";
+import { FaqItem } from "@/components/faq-item";
+import { FeatureIntroDismiss } from "@/components/feature-intro-dismiss";
+import { FeatureIntroPopup } from "@/components/feature-intro-popup";
+import { FooterLinks } from "@/components/footer-links";
+import { GuideLink } from "@/components/guide-link";
+import { PrivacyConsentDetail } from "@/components/privacy-consent-detail";
+import { PrivacyDoc } from "@/components/privacy-doc";
+import { PrivacyLink } from "@/components/privacy-link";
+import { PrivacyTable } from "@/components/privacy-table";
+import { PrivacyToc } from "@/components/privacy-toc";
+import { boardAnsweredCaption } from "@/lib/board";
+import { PRIVACY_SECTIONS } from "@/lib/privacy";
+import { AgeConfirm } from "@/components/age-confirm";
+import { BoardTabs } from "@/components/board-tabs";
+import { TermsAgree } from "@/components/terms-agree";
 import styles from "./gallery.module.css";
 
 export const metadata: Metadata = { title: "컴포넌트 갤러리 · Lab_Stock" };
@@ -1273,6 +1297,74 @@ export default function GalleryPage() {
           </EmptyStateCard>
           <SensorAlertTile variant="desktop" counts={{ broken: 1, check: 1 }} />
           <SensorAlertTile variant="mobile" counts={{ broken: 1, check: 1 }} />
+        </Item>
+
+        <Item name="feature-intro-popup · feature-intro-dismiss (디자인 1.32 — 시안 13-feature-intro, 교사·admin 홈)">
+          <FeatureIntroPopup overlay={false} />
+          <FeatureIntroDismiss />
+        </Item>
+
+        <Item name="board-link · guide-link (디자인 1.32 — 시안 18 도움말 묶음 · 20-desktop 사이드바)">
+          <BoardLink variant="row" caption={boardAnsweredCaption(1)} />
+          <GuideLink variant="row" />
+          <div className={styles.row}>
+            <BoardLink variant="sidebar" active />
+            <GuideLink variant="sidebar" />
+          </div>
+        </Item>
+
+        <Item name="footer-links (디자인 1.32 — 시안 15 · 19 web-footer)">
+          <FooterLinks />
+        </Item>
+
+        <Item name="terms-agree · privacy-consent-detail · privacy-link · age-confirm (디자인 1.32 — 시안 14-consent)">
+          <TermsAgree defaultValue={{ terms: true, privacy: false, age: false }} defaultOpen="privacy" />
+          <AgeConfirm defaultOpen />
+          <PrivacyConsentDetail />
+          <PrivacyLink />
+        </Item>
+
+        <Item name="privacy-doc · privacy-toc · privacy-table (디자인 1.32 — 시안 19 /privacy)">
+          <PrivacyToc items={PRIVACY_SECTIONS.map((s) => ({ id: `g-toc-${s.id}`, label: s.title }))} />
+          <PrivacyTable />
+          <PrivacyDoc sections={PRIVACY_SECTIONS.slice(3, 4).map((s) => ({ ...s, id: `g-doc-${s.id}` }))} />
+        </Item>
+
+        <Item name="board-tabs · faq-item · board-write (디자인 1.32 — 시안 20 FAQ 탭)">
+          <div className={styles.row}>
+            <BoardWrite href="/board/new?category=bug" />
+          </div>
+          <BoardTabs />
+          <FaqItem question="온라인학교는 회원가입에서 어디에 있나요?" answer="학교급에서 '고등학교'를 고르면 시·도 온라인학교(예: 충북온라인학교)가 함께 나와요." defaultOpen />
+          <FaqItem question="만 14세 미만 학생도 가입할 수 있나요?" answer="아니요. 만 14세 미만은 보호자 동의가 필요해서 Lab_Stock에 가입할 수 없어요." />
+        </Item>
+
+        <Item name="board-post-row · board-status-badge (디자인 1.32 — 시안 20-student 오류 문의 탭)">
+          <div className={styles.row}>
+            <BoardStatusBadge answered={false} />
+            <BoardStatusBadge answered />
+          </div>
+          <BoardPostRow href="/board/sample-1" categoryLabel="오류 문의" title="사용 기록 저장 뒤 홈 숫자가 늦게 바뀌어요" author={`${SAMPLE_SCHOOL} 선생님`} date="10월 28일" answered />
+          <BoardPostRow href="/board/sample-2" categoryLabel="오류 문의" title="서류로 입고에서 두 장짜리 PDF가 한 장만 읽혀요" author="충북고등학교 선생님" date="10월 27일" answered={false} />
+        </Item>
+
+        <Item name="board-detail · board-answer · board-post-menu (디자인 1.32 — 시안 20-detail)">
+          <BoardDetail
+            categoryLabel="오류 문의"
+            title="사용 기록 저장 뒤 홈 숫자가 늦게 바뀌어요"
+            author={`${SAMPLE_SCHOOL} 선생님`}
+            date="10월 28일"
+            answered
+            body="여러 시약을 한 번에 저장하면 홈의 재고 부족 숫자가 새로고침해야 바뀌어요. 모바일 크롬에서 봤어요."
+            menu={<BoardPostMenu editHref="/board/sample-1/edit" answered defaultOpen />}
+          >
+            <BoardAnswer date="10월 29일" body="알려 주셔서 고마워요. 저장하면 홈 숫자가 바로 바뀌도록 고쳤어요. 같은 일이 또 생기면 다시 남겨 주세요." />
+          </BoardDetail>
+        </Item>
+
+        <Item name="board-form · board-privacy-note (디자인 1.32 — 시안 20-new)">
+          <BoardPrivacyNote />
+          <BoardForm defaultValues={{ category: "bug", title: "QR 인쇄 미리보기가 비어 보여요" }} />
         </Item>
 
         <Item name="tab-bar · tab-item">

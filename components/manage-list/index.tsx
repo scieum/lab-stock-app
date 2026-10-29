@@ -1,7 +1,5 @@
-import { Icon } from "@/components/icons";
 import { ManageGroup } from "@/components/manage-group";
-import rowStyles from "@/components/manage-row/styles.module.css";
-import { GUIDE_LABEL, GUIDE_LINK_PROPS } from "@/lib/guide-link";
+import { GuideLink } from "@/components/guide-link";
 import type { ManageCounts, ManageGroup as ManageGroupData } from "@/lib/manage-menu";
 import styles from "./styles.module.css";
 
@@ -24,16 +22,9 @@ export function ManageList({ groups, counts, className }: Props) {
           <ManageGroup group={g} counts={counts} />
         </div>
       ))}
-      {/* 시안 예외 (사용자 요청 2026-10-28, 요청서 10 대기): 목록 맨 아래 '사용 가이드' — 모든 역할(학생 포함) · 둘러보기 공통, 새 탭.
-          manage-row 모양(같은 CSS)을 빌려 쓰되 관리 묶음·행이 아니므로 data-component 는 달지 않는다 (묶음·행 = rules manage.list) */}
+      {/* rules 1.32 manage.guide: 맨 아래 '도움말' 묶음의 guide-link '사용 가이드 ↗' — 모든 역할(학생 포함) · 둘러보기 공통, 새 탭 */}
       <div className={styles.divided}>
-        <a {...GUIDE_LINK_PROPS} className={rowStyles.row}>
-          <Icon name="info" className={rowStyles.icon} />
-          <span className={rowStyles.text}>
-            <span className={rowStyles.name}>{GUIDE_LABEL}</span>
-          </span>
-          <Icon name="external" className={rowStyles.chevron} />
-        </a>
+        <GuideLink variant="row" />
       </div>
     </nav>
   );

@@ -1,0 +1,70 @@
+/* 시안 20-student board-post-row: 390 × 64 · 안쪽 0 16 · 사이 12 · 아래 hairline-soft / post-text 사이 4 / post-line 사이 8 */
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-height: calc(var(--control-height) + var(--space-16));
+  padding: var(--space-8) var(--space-16);
+  border-bottom: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.row:hover {
+  background: var(--color-surface-muted);
+}
+
+.row:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: calc(var(--border-width) * -1);
+}
+
+.row:active,
+.row:has([data-pending]) {
+  opacity: var(--pressed-opacity);
+}
+
+.text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.category {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
