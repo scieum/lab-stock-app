@@ -5,6 +5,7 @@ import { ButtonOutline } from "@/components/button-outline";
 import { NavAccountMenu } from "@/components/nav-account-menu";
 import { SidebarItem } from "@/components/sidebar-item";
 import type { SidebarGroup, SidebarKey } from "@/lib/sidebar-menu";
+import { BoardLink } from "@/components/board-link";
 import { GuideLink } from "@/components/guide-link";
 import styles from "./styles.module.css";
 
@@ -26,6 +27,8 @@ type Props = {
    * "둘러보는 중" + 로그인(button-outline 전폭). 잠긴 메뉴(locked)는 guest-lock.
    */
   guest?: { loginHref: string };
+  /** 화면 20 게시판(/board · /board/*)에서 true — board-link 현재 표시 (rules 1.32 desktop_shell.board_link) */
+  boardActive?: boolean;
 };
 
 /**
@@ -33,7 +36,7 @@ type Props = {
  * 위 = 워드마크 Lab_Stock + 학교명, 그 아래 sidebar-item 목록(역할별 묶음, 묶음 제목 12 회색),
  * 맨 아래 = 계정 줄 "이름 · 역할" ▾ → 로그아웃.
  */
-export function AppSidebar({ schoolName, groups, active, account, onLogout, className, guest }: Props) {
+export function AppSidebar({ schoolName, groups, active, account, onLogout, className, guest, boardActive = false }: Props) {
   return (
     <aside data-component="app-sidebar" className={[styles.sidebar, className].filter(Boolean).join(" ")}>
       <div className={styles.top}>
@@ -67,6 +70,8 @@ export function AppSidebar({ schoolName, groups, active, account, onLogout, clas
       </div>
       <div className={styles.bottom}>
         {/* rules 1.32 desktop_shell.guide_link: 계정 줄 위 guide-link '사용 가이드 ↗' — 모든 역할 · 둘러보기 공통, 새 탭 */}
+        {/* rules 1.32 desktop_shell.board_link: guide-link 바로 위 board-link '게시판' — 로그인한 모든 역할, 둘러보기 없음 */}
+        {guest ? null : <BoardLink variant="sidebar" active={boardActive} className={styles.guide} />}
         <GuideLink variant="sidebar" className={styles.guide} />
         {guest ? (
           <div className={styles.guestAccount}>

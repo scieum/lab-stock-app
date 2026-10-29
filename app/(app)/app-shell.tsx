@@ -7,6 +7,7 @@ import { NavPill, type NavLinkItem } from "@/components/nav-pill";
 import { TabBar } from "@/components/tab-bar";
 import { manageBackHref, tabActiveKey } from "@/lib/manage-menu";
 import { useRememberScanReturn, useScanReturnHref } from "@/lib/scan-return";
+import { BOARD_HREF } from "@/lib/board";
 import { sidebarAccountLabel, sidebarActiveKey, sidebarMenu, type SidebarRole } from "@/lib/sidebar-menu";
 import { useIsDesktop } from "@/lib/use-viewport";
 import styles from "./shell.module.css";
@@ -224,6 +225,7 @@ export function AppShell({ schoolName, role, displayName, children }: Props) {
           schoolName={schoolName}
           groups={sidebarMenu(role)}
           active={sidebarActiveKey(pathname)}
+          boardActive={isActive(pathname, BOARD_HREF)}
           account={sidebarAccountLabel(displayName, role)}
           onLogout={logout}
         />
