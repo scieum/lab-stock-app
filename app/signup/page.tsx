@@ -9,6 +9,9 @@ import styles from "./signup.module.css";
 
 export const metadata: Metadata = { title: "회원가입 · Lab_Stock" };
 
+// 빌드 때 한 번 만들어 CDN 에서 바로 준다 (app/landing/page.tsx 와 같은 이유). 학교 목록은 브라우저가 /api/neis 로 받는다.
+export const dynamic = "force-static";
+
 /**
  * 화면 14 — 회원가입 (시안 14-mobile · 14-desktop · 14-no-school). 로그인 전 화면이라 tab-bar 없음.
  * 로그인된 사용자는 proxy가 / 로 보낸다.

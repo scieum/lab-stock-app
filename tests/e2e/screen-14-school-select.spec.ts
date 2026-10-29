@@ -140,9 +140,11 @@ test(`[N1-d][S${SCREEN}] ${N1.school_select_levels.join(" → ")} 순서 강제 
   expect(new URL(sr.url()).searchParams.get("kind")).toBe(rules.neis.default_kind);
   const schools = await jsonList<NeisSchool>(sr, "schools");
   expect(schools.length, "학교 응답").toBeGreaterThan(0);
+  // 온라인학교(rules.json neis.online_schools)는 고등학교로 들어오지만 이름에 '고등학교'가 없다 (예: 충북온라인학교)
+  const online = new RegExp(rules.neis.online_schools.name_pattern);
   for (const s of schools) {
     expect(s.kind, "학교급").toBe(rules.neis.default_kind);
-    expect(s.name, "학교 이름에 학교급").toContain(rules.neis.default_kind);
+    if (!online.test(s.name)) expect(s.name, "학교 이름에 학교급").toContain(rules.neis.default_kind);
     expect(s.sido).toBe(rules.neis.default_sido);
     expect(s.region).toBe(rules.neis.default_region);
   }

@@ -64,6 +64,8 @@ export type DesignRules = {
     school_kinds: string[];
     /** 1.18: 시안 예시 데이터용 학교급 (화면 기본값 아님) */
     default_kind: string;
+    /** 2026-10-29: 각종학교(고) 중 이름 규칙에 맞는 온라인학교 → 고등학교 */
+    online_schools: { kind: string; neis_kind: string; name_pattern: string };
   };
   school_kind_select: { component: string; shape: string; default: string; no_school: string };
   /** 상태 프레임별 필수 컴포넌트 ("source" 키는 문자열) */
