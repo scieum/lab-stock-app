@@ -33,6 +33,21 @@ function rowsOf(kind: string): Row[] {
 // 특수학교(3종 밖) 코드 — NEIS 에 있어도 학교급 조회 대상이 아니라 가입할 수 없다
 const SPECIAL_CODE = "T9000001";
 
+// 각종학교(고): 온라인학교는 고등학교로 들어가고, 그 밖 각종학교는 빠진다 (rules.json neis.online_schools)
+const ONLINE = rules.neis.online_schools;
+const ONLINE_NAMES = ["가짜온라인학교", "가짜온학교", "온세종학교"];
+const OTHER_CODE = "T8000009";
+function variousRows(): Row[] {
+  return [
+    ...ONLINE_NAMES.map((name, n) => ({
+      ATPT_OFCDC_SC_CODE: "X10", SD_SCHUL_CODE: `T80000${n}0`, SCHUL_NM: name, LCTN_SC_NM: SIDO, ORG_RDNMA: `${SIDO} ${REGION} 온라인로 ${n}`,
+    })),
+    { ATPT_OFCDC_SC_CODE: "X10", SD_SCHUL_CODE: OTHER_CODE, SCHUL_NM: "가짜예술학교", LCTN_SC_NM: SIDO, ORG_RDNMA: `${SIDO} ${REGION} 예술로 9` },
+  ];
+}
+/** 학교급 조회에 따라붙는 NEIS 요청 (고등학교 → 각종학교(고)) */
+const withExtra = (kinds: string[]) => kinds.flatMap((k) => (k === ONLINE.kind ? [k, ONLINE.neis_kind] : [k]));
+
 const calls: string[] = [];
 
 beforeEach(() => {
@@ -48,7 +63,9 @@ beforeEach(() => {
       const rows =
         kind === "특수학교"
           ? [{ ATPT_OFCDC_SC_CODE: "X10", SD_SCHUL_CODE: SPECIAL_CODE, SCHUL_NM: "가짜특수학교", LCTN_SC_NM: SIDO, ORG_RDNMA: `${SIDO} ${REGION} 1` }]
-          : rowsOf(kind);
+          : kind === ONLINE.neis_kind
+            ? variousRows()
+            : rowsOf(kind);
       const body = rows.length
         ? { schoolInfo: [{ head: [{ list_total_count: rows.length }] }, { row: rows }] }
         : { RESULT: { CODE: "INFO-200", MESSAGE: "해당하는 데이터가 없습니다." } };
@@ -98,10 +115,28 @@ describe("[N1-d][S14] NEIS 조회는 학교급별 (d7 §19)", () => {
     const { listSchools } = await load();
     for (const k of KINDS) {
       const list = await listSchools(SIDO, REGION, k as never);
-      expect(list.map((s) => s.name), k).toEqual([`가나${k}`]);
+      const online = k === ONLINE.kind ? ONLINE_NAMES : [];
+      expect(new Set(list.map((s) => s.name)), k).toEqual(new Set([`가나${k}`, ...online]));
       expect(list.every((s) => s.kind === k), `${k} kind 필드`).toBe(true);
     }
-    expect(new Set(calls), "요청한 학교급").toEqual(new Set(KINDS));
+    expect(new Set(calls), "요청한 학교급").toEqual(new Set(withExtra(KINDS)));
+  });
+
+  it("온라인학교(각종학교(고), 이름 규칙)는 고등학교 목록에, 그 밖 각종학교는 어디에도 없다", async () => {
+    const { listSchools } = await load();
+    const high = await listSchools(SIDO, REGION, ONLINE.kind);
+    for (const name of ONLINE_NAMES) expect(high.map((s) => s.name), name).toContain(name);
+    for (const k of KINDS) {
+      const list = await listSchools(SIDO, REGION, k as never);
+      expect(list.map((s) => s.name), k).not.toContain("가짜예술학교");
+    }
+  });
+
+  it("ONLINE_SCHOOLS 가 rules.json neis.online_schools 와 같다", async () => {
+    const { ONLINE_SCHOOLS } = await load();
+    expect(ONLINE_SCHOOLS.kind).toBe(ONLINE.kind);
+    expect(ONLINE_SCHOOLS.neis_kind).toBe(ONLINE.neis_kind);
+    expect(ONLINE_SCHOOLS.name.source).toBe(ONLINE.name_pattern);
   });
 
   it("listSido·listRegions 는 세 학교급 전체에서 (학교급마다 다른 지역이 모두 나온다), 재외한국학교 제외", async () => {
@@ -111,18 +146,18 @@ describe("[N1-d][S14] NEIS 조회는 학교급별 (d7 §19)", () => {
     for (const ex of EXCLUDED) expect(sido).not.toContain(ex);
     const regions = await listRegions(SIDO);
     expect(new Set(regions)).toEqual(new Set([REGION, ...KINDS.map((_, i) => KIND_ONLY_REGION(i))]));
-    expect(new Set(calls), "세 학교급 모두 조회").toEqual(new Set(KINDS));
+    expect(new Set(calls), "세 학교급 모두 조회").toEqual(new Set(withExtra(KINDS)));
   });
 
   it("캐시 키 = 학교급: 같은 학교급 재조회는 NEIS 요청을 늘리지 않고, 다른 학교급은 따로 부른다", async () => {
     const { listSchools } = await load();
     await listSchools(SIDO, REGION, KINDS[2] as never);
     const after1 = calls.length;
-    expect(calls).toEqual([KINDS[2]]);
+    expect(calls).toEqual(withExtra([KINDS[2]]));
     await listSchools(SIDO, KIND_ONLY_REGION(2), KINDS[2] as never);
     expect(calls.length, "같은 학교급 두 번째 조회").toBe(after1);
     await listSchools(SIDO, REGION, KINDS[0] as never);
-    expect(calls, "다른 학교급은 새로 조회").toEqual([KINDS[2], KINDS[0]]);
+    expect(calls, "다른 학교급은 새로 조회").toEqual(withExtra([KINDS[2], KINDS[0]]));
   });
 });
 
@@ -139,9 +174,16 @@ describe("[N1-d][S14] 가입 검증 verifyNeisSchool 은 세 학교급 학교 �
     });
   }
 
-  it("3종 밖(특수학교) 코드·재외한국학교 코드·없는 코드는 404 로 거부", async () => {
+  it("온라인학교 코드 → 그 학교 (kind = 고등학교)", async () => {
+    const { verifyNeisSchool } = await load();
+    const s = await verifyNeisSchool("T8000020");
+    expect(s.name).toBe("온세종학교");
+    expect(s.kind).toBe(ONLINE.kind);
+  });
+
+  it("3종 밖(특수학교·온라인 아닌 각종학교) 코드·재외한국학교 코드·없는 코드는 404 로 거부", async () => {
     const { verifyNeisSchool, NeisError } = await load();
-    for (const code of [SPECIAL_CODE, codeOf(0, 9), codeOf(2, 9), "T0999999"]) {
+    for (const code of [SPECIAL_CODE, OTHER_CODE, codeOf(0, 9), codeOf(2, 9), "T0999999"]) {
       const err = await verifyNeisSchool(code).then(
         () => null,
         (e: unknown) => e,

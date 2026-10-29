@@ -455,6 +455,12 @@
     ],
     "default_kind": "고등학교",
     "school_kinds_source": "2026-10-07 사용자 결정 (요청 4): 초·중·고 3종, 특수학교·각종학교 제외. default_kind는 시안 예시 데이터용(화면 기본값은 없음)",
+    "online_schools": {
+      "kind": "고등학교",
+      "neis_kind": "각종학교(고)",
+      "name_pattern": "온라인학교$|온학교$|^온세종학교$"
+    },
+    "online_schools_source": "2026-10-29 사용자 결정: 시·도 온라인학교(NEIS 각종학교(고), 온세종학교 등 18곳)는 고등학교로 넣는다. 그 밖의 각종학교는 계속 제외",
     "sido_field": "LCTN_SC_NM",
     "region_from": "ORG_RDNMA 두 번째 토큰 (시/군/구로 끝날 때만, 아니면 시/도 이름)",
     "default_sido": "충청북도",
