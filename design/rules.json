@@ -1,5 +1,5 @@
 {
-  "version": "1.29",
+  "version": "1.32",
   "sources": [
     "docs/design.md",
     "docs/story-service.md",
@@ -29,7 +29,10 @@
     "2026-10-11 여러 개 삭제·QR 탭 준비 중·앱 404·가입 오류 요약·랜딩 그림·기록 추가·무선 센서 화면 17 (개발 세션 요청 7)",
     "2026-10-12 센서 종류 27·파스코 모델 카탈로그·센서 서류로 등록·모바일 전체 메뉴·권한 안내 토스트·초대 취소·모바일 랜딩 워드마크 1번 (개발 세션 요청 8)",
     "2026-10-12 센서 종류 묶음 토글(접힘) — 종류 시트·필터 시트 (요청 8 후속)",
-    "2026-10-13 모바일 하단 관리 탭(화면 18)·☰ 메뉴 없앰·inventory-switch 없앰·시약 전체 삭제·기록 삭제(admin, 학교명 입력) (개발 세션 요청 9)"
+    "2026-10-13 모바일 하단 관리 탭(화면 18)·☰ 메뉴 없앰·inventory-switch 없앰·시약 전체 삭제·기록 삭제(admin, 학교명 입력) (개발 세션 요청 9)",
+    "2026-10-27 신기능 소개 팝업(AI 입고)·랜딩 히어로 글 세로 가운데",
+    "2026-10-27 회원가입 개인정보 동의 펼침·개인정보 처리방침 화면 19·footer 링크·사용 가이드 진입점 (개발 세션 요청 10)",
+    "2026-10-29 게시판(화면 20)·온라인학교 고등학교 포함·회원가입 만 14세 확인 (개발 세션 요청 11)"
   ],
   "colors": {
     "allowed": [
@@ -181,7 +184,7 @@
       1440,
       900
     ],
-    "name_pattern": "^([1-9]|1[0-8])-(mobile|desktop)$",
+    "name_pattern": "^([1-9]|1[0-9]|20)-(mobile|desktop)$",
     "keyscreens": {
       "default": [
         2,
@@ -211,11 +214,13 @@
       15,
       16,
       17,
-      18
+      18,
+      19,
+      20
     ],
-    "guest_name_pattern": "^([1-9]|1[0-8])-guest-(mobile|desktop)$",
-    "variant_name_pattern": "^([1-9]|1[0-8])-(empty|delete|slot|print|unsaved|location|result|doc-upload|doc-review|doc-fail|suggest|msds|msds-bulk|filter|filter-empty|past-date|no-school|loading|fail|no-summary|picker|error|select|bulk-delete|not-found|detail|form|type|model|menu|no-access|invite-cancel|wipe|record-wipe)-(mobile|desktop)$",
-    "variant_note": "같은 화면의 다른 상태 프레임. input.json variants {\"11\": [\"empty\",\"delete\"]} 로 요청 (2026-10-04) · 2026-10-06 상태 추가: 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 상태 추가: 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk · 2026-10-07 상태 추가: 2-filter·2-filter-empty, 4-past-date · 2026-10-07 상태 추가: 14-no-school · 2026-10-08 상태 추가: 16-loading·16-fail·16-no-summary · 2026-10-10 상태 추가: 4-picker·4-empty·4-error, 3-delete · 2026-10-11 상태 추가: 2-select·2-bulk-delete, 13-not-found·1-not-found, 14-error, 17-detail·17-form·17-empty·17-select · 2026-10-12 상태 추가: 17-type·17-model·17-doc-upload·17-doc-review·17-doc-fail, 13-menu·13-no-access, 8-invite-cancel · 2026-10-12 상태 추가: 17-filter · 2026-10-13 상태 추가: 2-wipe·10-record-wipe, 13-menu 없앰",
+    "guest_name_pattern": "^([1-9]|1[0-9]|20)-guest-(mobile|desktop)$",
+    "variant_name_pattern": "^([1-9]|1[0-9]|20)-(empty|delete|slot|print|unsaved|location|result|doc-upload|doc-review|doc-fail|suggest|msds|msds-bulk|filter|filter-empty|past-date|no-school|loading|fail|no-summary|picker|error|select|bulk-delete|not-found|detail|form|type|model|menu|no-access|invite-cancel|wipe|record-wipe|feature-intro|consent|new|student)-(mobile|desktop)$",
+    "variant_note": "같은 화면의 다른 상태 프레임. input.json variants {\"11\": [\"empty\",\"delete\"]} 로 요청 (2026-10-04) · 2026-10-06 상태 추가: 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 상태 추가: 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk · 2026-10-07 상태 추가: 2-filter·2-filter-empty, 4-past-date · 2026-10-07 상태 추가: 14-no-school · 2026-10-08 상태 추가: 16-loading·16-fail·16-no-summary · 2026-10-10 상태 추가: 4-picker·4-empty·4-error, 3-delete · 2026-10-11 상태 추가: 2-select·2-bulk-delete, 13-not-found·1-not-found, 14-error, 17-detail·17-form·17-empty·17-select · 2026-10-12 상태 추가: 17-type·17-model·17-doc-upload·17-doc-review·17-doc-fail, 13-menu·13-no-access, 8-invite-cancel · 2026-10-12 상태 추가: 17-filter · 2026-10-13 상태 추가: 2-wipe·10-record-wipe, 13-menu 없앰 · 2026-10-27 상태 추가: 13-feature-intro, 14-consent · 2026-10-29 상태 추가: 20-detail·20-new·20-empty·20-student",
     "tall": {
       "15-desktop": {
         "width": 1440,
@@ -287,10 +292,14 @@
         "sensor-doc-add",
         "page-more-menu",
         "reagent-wipe",
-        "record-wipe"
+        "record-wipe",
+        "feature-intro-popup",
+        "board-write",
+        "board-form",
+        "board-post-menu"
       ],
       "max": 0,
-      "source": "2026-10-02 화면 7 · 2026-10-06 threshold-edit(재주문 기준 고치기 = 시약 정보 입력) 추가 · 2026-10-07 doc-upload·msds-search·msds-bulk-banner 추가 · 2026-10-10 reagent-more-menu·reagent-delete(시약 삭제 = 교사·admin) 추가 · 2026-10-11 선택 모드·여러 개 삭제·센서 등록·수정·삭제·홈 센서 타일(교사·admin) 추가 · 2026-10-12 sensor-doc-add(센서 서류로 등록 = 교사·admin) 추가 · 2026-10-13 전체 삭제(admin 전용) 진입점 추가"
+      "source": "2026-10-02 화면 7 · 2026-10-06 threshold-edit(재주문 기준 고치기 = 시약 정보 입력) 추가 · 2026-10-07 doc-upload·msds-search·msds-bulk-banner 추가 · 2026-10-10 reagent-more-menu·reagent-delete(시약 삭제 = 교사·admin) 추가 · 2026-10-11 선택 모드·여러 개 삭제·센서 등록·수정·삭제·홈 센서 타일(교사·admin) 추가 · 2026-10-12 sensor-doc-add(센서 서류로 등록 = 교사·admin) 추가 · 2026-10-13 전체 삭제(admin 전용) 진입점 추가 · 2026-10-27 feature-intro-popup(신기능 소개 = 교사·admin) 추가 · 2026-10-29 board-write·board-form·board-post-menu(게시판 글쓰기·내 글 수정·삭제 = 교사·admin) 추가"
     },
     "R6": {
       "component": "user-manage",
@@ -340,7 +349,8 @@
         13,
         16,
         17,
-        18
+        18,
+        20
       ],
       "school_name_pattern": "[가-힣A-Za-z0-9]+(?:초등학교|중학교|고등학교)",
       "distinct_school_names": 1,
@@ -374,7 +384,9 @@
       ],
       "school_select_levels_source": "docs/story-service.md 결정 사항 \"학교 선택\" · 2026-10-07 학교급(school-select-kind) 추가",
       "school_select_screen": 14,
-      "school_select_source": "2026-10-02 사용자 결정: 학교는 회원가입(14)에서만 선택, 로그인(1)은 개인 이메일·비밀번호"
+      "school_select_source": "2026-10-02 사용자 결정: 학교는 회원가입(14)에서만 선택, 로그인(1)은 개인 이메일·비밀번호",
+      "board_exception": "화면 20 게시판만 학교를 넘어 보인다(글쓴이 = 학교명 + '선생님', 이름 없음) → school_name_scope_screens에 넣지 않는다. 시약·재고·사용 기록은 계속 학교별 분리",
+      "board_exception_source": "2026-10-29 사용자 결정 (개발 세션 요청 11) — docs/story-service.md N1 예외"
     },
     "N2": {
       "banned_terms": [
@@ -454,13 +466,7 @@
       "고등학교"
     ],
     "default_kind": "고등학교",
-    "school_kinds_source": "2026-10-07 사용자 결정 (요청 4): 초·중·고 3종, 특수학교·각종학교 제외. default_kind는 시안 예시 데이터용(화면 기본값은 없음)",
-    "online_schools": {
-      "kind": "고등학교",
-      "neis_kind": "각종학교(고)",
-      "name_pattern": "온라인학교$|온학교$|^온세종학교$"
-    },
-    "online_schools_source": "2026-10-29 사용자 결정: 시·도 온라인학교(NEIS 각종학교(고), 온세종학교 등 18곳)는 고등학교로 넣는다. 그 밖의 각종학교는 계속 제외",
+    "school_kinds_source": "2026-10-07 사용자 결정 (요청 4): 초·중·고 3종, 특수학교·각종학교 제외. default_kind는 시안 예시 데이터용(화면 기본값은 없음) · 2026-10-29 온라인학교만 예외(online_schools)",
     "sido_field": "LCTN_SC_NM",
     "region_from": "ORG_RDNMA 두 번째 토큰 (시/군/구로 끝날 때만, 아니면 시/도 이름)",
     "default_sido": "충청북도",
@@ -470,7 +476,13 @@
     "exclude_sido": [
       "재외한국학교"
     ],
-    "exclude_sido_source": "2026-10-01 사용자 결정 (그 외 시/도 이름은 NEIS 값 그대로)"
+    "exclude_sido_source": "2026-10-01 사용자 결정 (그 외 시/도 이름은 NEIS 값 그대로)",
+    "online_schools": {
+      "kind": "고등학교",
+      "neis_kind": "각종학교(고)",
+      "name_pattern": "온라인학교$|온학교$|^온세종학교$"
+    },
+    "online_schools_source": "2026-10-29 사용자 결정: 시·도 온라인학교(NEIS 각종학교(고), 온세종학교 등 18곳)는 고등학교로 넣는다. 그 밖의 각종학교는 계속 제외"
   },
   "screens_required": {
     "11": [
@@ -514,14 +526,15 @@
       "class-select"
     ],
     "14": [
-      "school-select-kind"
+      "school-select-kind",
+      "age-confirm"
     ],
     "16": [
       "msds-summary",
       "ghs-pictogram",
       "msds-original-link"
     ],
-    "source": "2026-10-02 story-service 결정 (화면별 필수 컴포넌트, 규칙 C1) · 15 랜딩 2026-10-03 · 2026-10-06 화면 3 보관 위치·재주문 기준, 화면 11 시약장 번호·QR 인쇄 · 2026-10-07 화면 7 intake-mode · 2026-10-07 화면 2 list-filter-button, 화면 4 usage-date · 2026-10-07 화면 14 school-select-kind · 2026-10-08 화면 16 MSDS 요약 · 2026-10-10 화면 4 여러 시약·수업, 화면 10 수업 표시·반 필터·삭제된 시약 · 2026-10-11 화면 10 record-add, 화면 17 센서 · 2026-10-13 화면 18 관리",
+    "source": "2026-10-02 story-service 결정 (화면별 필수 컴포넌트, 규칙 C1) · 15 랜딩 2026-10-03 · 2026-10-06 화면 3 보관 위치·재주문 기준, 화면 11 시약장 번호·QR 인쇄 · 2026-10-07 화면 7 intake-mode · 2026-10-07 화면 2 list-filter-button, 화면 4 usage-date · 2026-10-07 화면 14 school-select-kind · 2026-10-08 화면 16 MSDS 요약 · 2026-10-10 화면 4 여러 시약·수업, 화면 10 수업 표시·반 필터·삭제된 시약 · 2026-10-11 화면 10 record-add, 화면 17 센서 · 2026-10-13 화면 18 관리 · 2026-10-27 화면 18 guide-link, 화면 19 개인정보 처리방침 · 2026-10-29 화면 14 age-confirm, 화면 18 board-link, 화면 20 게시판",
     "10": [
       "class-label",
       "class-filter",
@@ -536,7 +549,20 @@
     ],
     "18": [
       "manage-list",
-      "manage-row"
+      "manage-row",
+      "guide-link",
+      "board-link"
+    ],
+    "19": [
+      "privacy-doc",
+      "privacy-toc",
+      "privacy-table",
+      "web-footer"
+    ],
+    "20": [
+      "board-tabs",
+      "faq-item",
+      "board-write"
     ]
   },
   "cabinet": {
@@ -641,7 +667,8 @@
       13,
       16,
       17,
-      18
+      18,
+      20
     ],
     "source": "2026-10-02 사용자 결정: 하단 탭바 (refs/uibowl-home-nav-20261002.md)",
     "radius": 0,
@@ -719,7 +746,10 @@
       "page-more-menu",
       "reagent-wipe",
       "record-wipe",
-      "school-name-confirm"
+      "school-name-confirm",
+      "feature-intro-popup",
+      "board-link",
+      "board-write"
     ],
     "source": "2026-10-03 사용자 결정: 비회원 둘러보기 (데모 학교 읽기 전용)",
     "sidebar_locks": 2,
@@ -850,6 +880,11 @@
       ],
       "error": [
         "signup-error-summary"
+      ],
+      "consent": [
+        "terms-agree",
+        "privacy-consent-detail",
+        "privacy-link"
       ]
     },
     "16": {
@@ -865,13 +900,17 @@
         "msds-original-link"
       ]
     },
-    "source": "2026-10-04 여러 시약장: 빈 상태(교사 기준)·삭제 확인 상태 필수 컴포넌트 (C1) · 2026-10-06 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk, 3-location + suggest-badge · 2026-10-07 2-filter·2-filter-empty, 4-past-date · 2026-10-07 14-no-school · 2026-10-08 16-loading·16-fail·16-no-summary · 2026-10-10 4-picker·4-empty·4-error, 3-delete · 2026-10-11 2-select·2-bulk-delete, 13-not-found·1-not-found, 14-error, 17-detail·form·empty·select · 2026-10-12 17-type·17-model·17-doc-upload·17-doc-review·17-doc-fail, 13-menu·13-no-access, 8-invite-cancel · 2026-10-12 17-type에 sensor-type-group(접힘 토글), 17-filter 추가 · 2026-10-13 2-wipe·10-record-wipe 추가, 13-menu 없앰",
+    "source": "2026-10-04 여러 시약장: 빈 상태(교사 기준)·삭제 확인 상태 필수 컴포넌트 (C1) · 2026-10-06 11-slot·11-print·11-unsaved·3-location·12-result · 2026-10-07 7-doc-upload·doc-review·doc-fail·suggest·msds, 3-msds, 2-msds-bulk, 3-location + suggest-badge · 2026-10-07 2-filter·2-filter-empty, 4-past-date · 2026-10-07 14-no-school · 2026-10-08 16-loading·16-fail·16-no-summary · 2026-10-10 4-picker·4-empty·4-error, 3-delete · 2026-10-11 2-select·2-bulk-delete, 13-not-found·1-not-found, 14-error, 17-detail·form·empty·select · 2026-10-12 17-type·17-model·17-doc-upload·17-doc-review·17-doc-fail, 13-menu·13-no-access, 8-invite-cancel · 2026-10-12 17-type에 sensor-type-group(접힘 토글), 17-filter 추가 · 2026-10-13 2-wipe·10-record-wipe 추가, 13-menu 없앰 · 2026-10-27 13-feature-intro·14-consent · 2026-10-29 20-detail·20-new·20-empty·20-student",
     "13": {
       "not-found": [
         "ex-empty-state-card"
       ],
       "no-access": [
         "ex-toast"
+      ],
+      "feature-intro": [
+        "feature-intro-popup",
+        "feature-intro-dismiss"
       ]
     },
     "1": {
@@ -940,6 +979,28 @@
         "record-wipe-range",
         "wipe-preview",
         "school-name-confirm"
+      ]
+    },
+    "20": {
+      "detail": [
+        "board-detail",
+        "board-status-badge",
+        "board-answer",
+        "board-post-menu"
+      ],
+      "new": [
+        "board-form",
+        "board-privacy-note"
+      ],
+      "empty": [
+        "board-tabs",
+        "ex-empty-state-card",
+        "board-write"
+      ],
+      "student": [
+        "board-tabs",
+        "board-post-row",
+        "board-status-badge"
       ]
     }
   },
@@ -1039,7 +1100,8 @@
       12,
       13,
       16,
-      17
+      17,
+      20
     ],
     "forbidden_on_desktop": [
       "nav-pill"
@@ -1069,6 +1131,12 @@
       ],
       "17": [
         "data-table"
+      ],
+      "13": [
+        "board-link"
+      ],
+      "20": [
+        "board-link"
       ]
     },
     "menu": {
@@ -1099,13 +1167,14 @@
     ],
     "form_width": 640,
     "overlay": "모달 = 확인·짧은 입력만. 모바일 고르기용 바텀시트(필터·MSDS 후보·위치 등) → 데스크톱 드롭다운·팝오버. 한 건 보기 → detail-drawer",
-    "screens_note": "둘러보기 desktop은 GM4(사이드바 1·잠금 2), 로그인 전 1·14·15는 pre_login",
+    "screens_note": "둘러보기 desktop은 GM4(사이드바 1·잠금 2), 로그인 전 1·14·15는 pre_login · 19 개인정보 처리방침도 pre_login(로그인 없이 열림, 2026-10-27)",
     "source": "2026-10-08 사용자 결정 (A + 무거운 작업은 페이지, 모바일 그대로)",
     "pre_login": {
       "screens": [
         1,
         14,
-        15
+        15,
+        19
       ],
       "component": "web-header",
       "forbidden": [
@@ -1122,12 +1191,20 @@
           "step-flow",
           "cta-band",
           "web-footer"
+        ],
+        "19": [
+          "privacy-doc",
+          "privacy-toc",
+          "privacy-table",
+          "web-footer"
         ]
       },
       "landing_sections": "15-desktop 순서: 히어로(landing-hero·product-shot·landing-cta·guest-entry) → landing-tabs(접는 선, 스크롤 시 고정) → 문제 공감 feature-card 3 → landing-section 4(좌우 번갈아, 꼬리표·제목·점 목록 3·승인 화면 조각) → step-flow 5단계 → 대상 탭(segmented-control 교사·학생·관리자) → 안심 2×2(hairline 격자, 운영 숫자 없음) → cta-band → web-footer 한 줄"
     },
     "heavy_pages_source": "2026-10-10 사용자 결정: 화면 4 여러 시약 = 본문 페이지(드로어 아님)",
-    "menu_source": "2026-10-11 사용자 결정 (개발 세션 요청 7) 7: 사이드바 '시약' 아래 '센서'(모든 역할). QR 찾기는 화면 12 전까지 비활성 '준비 중' · 2026-10-12 모바일 전체 메뉴(mobile_menu)가 같은 목록을 씀 (요청 8 6) · 2026-10-13 모바일은 ☰ 대신 관리 탭(화면 18)이 같은 목록(홈·기록·QR 제외)"
+    "menu_source": "2026-10-11 사용자 결정 (개발 세션 요청 7) 7: 사이드바 '시약' 아래 '센서'(모든 역할). QR 찾기는 화면 12 전까지 비활성 '준비 중' · 2026-10-12 모바일 전체 메뉴(mobile_menu)가 같은 목록을 씀 (요청 8 6) · 2026-10-13 모바일은 ☰ 대신 관리 탭(화면 18)이 같은 목록(홈·기록·QR 제외)",
+    "guide_link": "사이드바 맨 아래 이름·역할 칸 바로 위, hairline-soft 구분선 아래 guide-link '사용 가이드 ↗' 한 줄(아이콘 + body text-muted, 44 높이). sidebar-item이 아니고 현재 표시 없음. 새 탭. 모든 역할·둘러보기 (2026-10-27 요청 10)",
+    "board_link": "guide-link 바로 위에 board-link '게시판' 한 줄(sidebar-item 모양: 아이콘 + body, 44 높이). 화면 20에서는 현재 표시(sidebar-item 현재와 같음). 로그인한 모든 역할, 둘러보기 없음 (2026-10-29 요청 11)"
   },
   "msds_summary": {
     "screen": 16,
@@ -1144,8 +1221,13 @@
   },
   "footer": {
     "text": "© 2026 사이음(sci_eum). 과학의 사이, 사람을 잇다.",
-    "layout": "가운데 한 줄, 위 hairline-soft, caption text-muted. 열·약관 링크 없음",
-    "source": "2026-10-08 사용자 결정"
+    "links": [
+      "개인정보 처리방침",
+      "사용 가이드"
+    ],
+    "component": "footer-links",
+    "layout": "가운데 한 줄, 위 hairline-soft, caption text-muted. 저작권 글 뒤 ' · ' 로 footer-links: '개인정보 처리방침'(caption, ink, 굵게 600 — 쉽게 찾게) · '사용 가이드'(caption text-muted). 모바일은 두 줄(저작권 / 링크). 열 없음",
+    "source": "2026-10-08 사용자 결정 · 2026-10-27 사용자 결정 (개발 세션 요청 10): 개인정보 처리방침·사용 가이드 링크 추가(10-08 '약관 링크 없음'을 바꿈)"
   },
   "landing_rhythm": {
     "bands": "히어로 아래 섹션 = 전폭 띠, #ffffff ↔ #f3f3f3 번갈아, step-flow·cta-band는 #141414 반전",
@@ -1415,10 +1497,11 @@
     "head": "nav-pill(학교명 ▾ nav-account-menu) 아래 페이지 제목 '관리'(heading-2)",
     "list": "manage-list: 묶음 3개, 묶음 제목(caption muted) + manage-row들. '재고' = 시약 · 센서 · 시약장(모든 역할) / '입고·주문' = 입고 · 실험 매뉴얼 · 재주문 알림(교사·admin) / '학교' = 사용자 · 판매처(admin). 묶음 사이 hairline-soft",
     "row": "manage-row: 아이콘(colors.ink) + 이름(title) + 요약 caption text-muted(예: '시약 128종 · 재고 부족 3', '센서 12개 · 고장 1', '시약장 2개', '알림 2건', '학생 40 · 교사 3 · admin 1', '4곳') + 오른쪽 ›. 56 높이, 사각, colors.canvas. 숫자는 무채색 글자만(핑크·하늘 없음). 요약이 없는 항목은 이름만",
-    "back": "manage-back: 관리 아래 화면(2·5·6·7·8·9·11·17) 모바일 머리 왼쪽 '‹ 관리'(link, ink). 그 화면들의 tab-bar 활성 = '관리'. 시약 상세(3)·MSDS(16) 등 더 깊은 화면은 지금처럼 ‹ 뒤로",
+    "back": "manage-back: 관리 아래 화면(2·5·6·7·8·9·11·17) 모바일 머리 왼쪽 '‹ 관리'(link, ink). 그 화면들의 tab-bar 활성 = '관리'. 시약 상세(3)·MSDS(16) 등 더 깊은 화면은 지금처럼 ‹ 뒤로 · 화면 20 게시판 목록도 '‹ 관리'(2026-10-29), 20 글 보기·글쓰기는 '‹ 게시판'",
     "guest": "둘러보기: 18-guest-mobile = '재고' 묶음에 시약 · 센서 두 줄만(요약 데모 값), 나머지 묶음 숨김. 탭 '관리' 활성, QR 스캔·기록 guest-lock 2",
     "desktop": "데스크톱은 바꾸지 않는다(app-sidebar 그대로)",
-    "source": "2026-10-13 사용자 결정 (개발 세션 요청 9) 1: 묶음 3개 + 요약 줄, 탭 이름 '관리'"
+    "source": "2026-10-13 사용자 결정 (개발 세션 요청 9) 1: 묶음 3개 + 요약 줄, 탭 이름 '관리'",
+    "guide": "맨 아래 넷째 묶음 '도움말' = board-link '게시판'(manage-row 모양, 요약 caption 예: '답변 완료 1', ›) + guide-link '사용 가이드 ↗'. 둘러보기는 guide-link만 (2026-10-27 · 2026-10-29 게시판 추가)"
   },
   "wipe": {
     "roles": [
@@ -1433,5 +1516,130 @@
     "record": "기록 삭제(화면 10): 모바일 바텀시트 / 데스크톱 detail-drawer(짧은 폼), × 닫기. 제목 경고 아이콘 + '기록 삭제' → record-wipe-range: segmented-control '전체 | 이 날짜 이전'(기본 '이 날짜 이전') + 날짜 text-input(미래 불가, 이 날짜 '이전' = 그날 미포함) → wipe-preview: canvas-soft 줄 '사용 기록 {N}건 · 입고 기록 {M}건을 지워요' + muted '지금 재고 수량은 그대로예요. 수업 정보도 함께 지워져요.' (0건이면 '이 기간에 지울 기록이 없어요', 버튼 꺼짐) → school-name-confirm → button-primary '기록 {N+M}건 삭제'(검정). 실행 뒤 ex-toast '기록 {N}건을 삭제했어요'",
     "after": "홈 숫자·재주문 알림 바로 반영. 둘러보기·교사·학생에게 진입점 없음",
     "source": "2026-10-13 사용자 결정 (개발 세션 요청 9) 2: 머리 ⋯ 메뉴, 0건 = 비활성 + 이유"
+  },
+  "feature_intro": {
+    "component": "feature-intro-popup",
+    "first": "AI 입고(화면 7 서류로 입고)",
+    "mobile": "바텀시트(위 모서리 rounded.lg, 배경 딤) — ✕ 없음",
+    "desktop": "가운데 모달(ex-modal-card 계열, 그보다 넓게 560 안팎), 오른쪽 위 ✕ = 닫기",
+    "order": "꼬리표 '새 기능'(caption, canvas-soft 알약) → 제목 heading → 그림(화면 7 서류 올리기 → 확인 표 조각, canvas-soft 패널, 실제 승인 화면 조각) → 단계 3줄 → 전폭 button-primary → feature-intro-dismiss",
+    "copy": {
+      "tag": "새 기능",
+      "title": "거래명세서만 올리면 AI가 입고 목록을 채워요",
+      "steps": [
+        "명세서·납품서 사진이나 PDF를 올려요",
+        "AI가 시약 이름·규격·수량을 읽어요",
+        "확인하고 한 번에 입고해요"
+      ],
+      "cta": "AI 입고 써 보기"
+    },
+    "dismiss": "feature-intro-dismiss = 맨 아래 한 줄, 왼쪽 '일주일 동안 보지 않기' · 오른쪽 '닫기' — 둘 다 text-muted 텍스트 버튼(주 버튼보다 약하게). 데스크톱은 ✕도 닫기",
+    "behavior": "닫기 = 이번 접속에서만 숨김 · 일주일 동안 보지 않기 = 7일 숨김(브라우저 저장) · 주 버튼 = 화면 7 서류로 입고로 이동 + 이 기능 팝업 다시 안 띄움",
+    "roles": [
+      "교사",
+      "admin"
+    ],
+    "entry": "홈(화면 13) 들어올 때만, 한 번에 팝업 하나. 학생·둘러보기 없음",
+    "style": "그림자 없음(effects.drop_shadow_max), 핑크 없음 — 정보이지 경고가 아님",
+    "frame": "상태 프레임 13-feature-intro-mobile·desktop(교사 홈 위에 팝업)",
+    "source": "2026-10-27 사용자 결정: 모바일 바텀시트, 문구·동작 refs/uibowl-feature-intro-popup-20261027.md 제안대로"
+  },
+  "landing_hero_align": {
+    "rule": "15-desktop landing-hero 왼쪽 글 묶음(꼬리표~특징 캡션) 전체의 세로 가운데 = 오른쪽 product-shot 회색 패널의 세로 가운데(±8px). 글 묶음 안 간격은 그대로",
+    "mobile": "모바일 랜딩은 한 줄 흐름이라 해당 없음",
+    "source": "2026-10-27 사용자 결정: 글 묶음이 아래로 몰려 위 400px가 비어 보임 → 패널 세로 가운데"
+  },
+  "privacy_consent": {
+    "screen": 14,
+    "rows": "terms-agree = 모두 동의 + 서비스 이용약관 동의(필수) + 개인정보 수집·이용 동의(필수) + age-confirm '만 14세 이상입니다 (필수)'. '모두 동의'가 셋 다 체크, 필수 체크 방식 유지 (2026-10-29 만 14세 추가)",
+    "detail": "privacy-consent-detail: '개인정보 수집·이용 동의' › 를 누르면 그 행 아래 colors.canvas-soft 상자(rounded.md)에 항목 목록. 항목마다 작은 제목(caption text-muted) 위 + 본문(body-sm ink) 아래, 항목 사이 12. 순서 = 수집 목적 → 수집 항목 → 보유 기간 → 처리 위탁·국외 이전 → 동의 거부 권리 → 보호책임자. 표 아님(390 폭)",
+    "long": "상자 안 스크롤 없음 — 다 펼치고 페이지가 스크롤. 아래 고정 '가입하기'는 그대로. 펼친 행의 › 는 ⌄",
+    "link": "privacy-link: 상자 마지막 줄 '개인정보 처리방침 전문 보기 ↗'(link, colors.highlight 아님 — ink 밑줄), 새 탭(가입 입력 유지)",
+    "copy": {
+      "purpose": "회원 확인, 학교별 시약·센서 관리, 사용·입고 기록에 이름 표시, 초대·안내 메일",
+      "items": "(필수) 이름, 개인 이메일, 비밀번호(암호화 저장), 학교(NEIS 학교 정보), 역할 · 자동 수집: 접속 기록",
+      "period": "탈퇴할 때까지 (탈퇴·학교 계정 삭제 시 바로 파기)",
+      "refuse": "동의하지 않을 수 있지만, 동의하지 않으면 가입할 수 없어요",
+      "processors": "Supabase(DB·로그인, 서울) · Vercel(호스팅, 서울) · Google Gemini(AI 서류 읽기, 국외 — 올린 파일은 읽기에만 쓰고 저장하지 않음)",
+      "officer": "{운영자 이름} · {이메일} (개발 쪽이 실제 값으로)"
+    },
+    "frames": "상태 프레임 14-consent = 개인정보 동의 펼친 모습(모바일·데스크톱)",
+    "source": "2026-10-27 사용자 결정 (개발 세션 요청 10) 1",
+    "age_confirm": {
+      "component": "age-confirm",
+      "label": "만 14세 이상입니다 (필수)",
+      "detail": "› 를 누르면 그 행 아래 canvas-soft 상자(rounded.md)에 한 줄: '만 14세 미만은 보호자 동의가 필요해서 Lab_Stock에 가입할 수 없어요.' (body-sm ink). 펼친 행의 › 는 ⌄",
+      "error": "체크하지 않으면 signup-error-summary '약관에 동의해 주세요'",
+      "source": "2026-10-29 사용자 결정 (개발 세션 요청 11) 3 — 앱에는 이미 반영"
+    }
+  },
+  "privacy_page": {
+    "screen": 19,
+    "path": "/privacy",
+    "shell": "로그인 없이 열림. desktop = web-header + 가운데 읽기 단(최대 720) + web-footer, mobile = nav-pill(로그인 전) + 같은 단 + web-footer. tab-bar·app-sidebar 없음",
+    "doc": "privacy-doc: 제목 '개인정보 처리방침'(heading-2) → '시행일 2026-10-27'(caption muted) → privacy-toc(번호 붙은 목차 링크 목록, canvas-soft 상자) → 번호 절(title 제목 + body 본문): 1 수집 목적 · 2 수집 항목 · 3 보유·파기 · 4 처리 위탁·국외 이전 · 5 이용자 권리(열람·정정·삭제·처리정지 요청 방법) · 6 보호책임자 · 7 시행일",
+    "table": "privacy-table(4절 위탁): desktop = data-table 열 업체 · 하는 일 · 위치, mobile = 업체마다 canvas-soft 카드 한 장",
+    "note": "국외 이전 고지 항목(국가·이전받는 자·항목·시기 등)과 별도 동의 필요 여부는 운영자·개발 쪽 법적 확인 — 시안은 자리만",
+    "source": "2026-10-27 사용자 결정 (개발 세션 요청 10) 1"
+  },
+  "guide": {
+    "component": "guide-link",
+    "label": "사용 가이드",
+    "open": "새 탭 (public/guide/index.html 정적 문서)",
+    "entries": "데스크톱 = 사이드바 아래(desktop_shell.guide_link) · 모바일 = 관리 탭(18) 맨 아래 묶음 '도움말'의 manage-row 모양 한 줄, 오른쪽 › 대신 ↗ · 랜딩·처리방침 = footer-links. 모든 역할·둘러보기",
+    "mark": "↗ = 새 탭(원문 MSDS 보기 ↗와 같은 뜻)",
+    "html_tone": "가이드 HTML(시안 없음): rules colors·typography 토큰, 히어로 = canvas-soft 띠 + heading-1(display 40·48 쓰지 않음), 목차 현재 항목·검색 일치 = highlight-soft, 핑크 없음. 캡처 = 둘러보기 데모·샘플고등학교만(실제 학교 데이터·키 없음)",
+    "source": "2026-10-27 사용자 결정 (개발 세션 요청 10) 2"
+  },
+  "board": {
+    "screen": 20,
+    "paths": {
+      "list": "/board",
+      "detail": "/board/{id}",
+      "new": "/board/new"
+    },
+    "readers": "로그인한 모든 사용자(학생 포함), 전체 학교 공용. 둘러보기 없음",
+    "scope": "N1 예외 — 게시판 글만 학교를 넘어 보인다. 시약·재고·사용 기록은 계속 학교별 분리",
+    "tabs": "board-tabs = segmented-control 3칸 FAQ(맨 앞, 고정) · 오류 문의 · 개선 제안. 목록 기본 = FAQ",
+    "faq": "faq-item: Q 한 줄(title ink) + 오른쪽 › / 펼치면 ⌄, 아래 canvas-soft 상자(rounded.md)에 답(body-sm). 글쓴이·상태 배지 없음. FAQ 작성 = 운영자만",
+    "row": "board-post-row: 분류(caption muted) · 제목(title) / 아래 줄 '○○고등학교 선생님 · 10월 28일'(caption muted) + 오른쪽 board-status-badge. hairline-soft 구분, 56 이상",
+    "status": "board-status-badge 무채색: '접수' = canvas-soft 바탕 + text-muted 글자, '답변 완료' = ink 바탕 + 흰 글자. 핑크·하늘 없음",
+    "author": "글쓴이 = 학교명 + '선생님'(예: '충북고등학교 선생님'). 이름·이메일은 다른 학교에 보이지 않는다. admin도 같은 표시",
+    "write": "board-write = button-primary '글쓰기'(페이지 머리 오른쪽, 모바일 44 높이 알약). 교사·admin만, 학생은 0(R5). → board-form",
+    "form": "board-form: 분류(오류 문의 · 개선 제안 — FAQ 없음) → 제목 → board-privacy-note → 본문 → button-primary '등록'. board-privacy-note = 정보 아이콘(text-muted) + '학생 이름·연락처 같은 개인정보는 쓰지 마세요'(body-sm ink), 핑크 없음",
+    "detail": "board-detail: 분류 caption → 제목 heading-2 → 글쓴이·날짜 줄 + board-status-badge → 본문 body. 답이 있으면 아래 board-answer = canvas-soft 상자(rounded.md), 머리 '운영자 답변'(caption muted) · 날짜, 본문 body-sm",
+    "answer": "답변 = 운영자만. 운영자 = 서버 환경변수의 운영자 이메일 1명(서비스 개발자), 화면·DB에서 지정 불가. 운영자는 FAQ 작성·답변·글 숨기기. 운영자 화면은 시안 범위 밖(답변 입력 칸을 그리지 않는다)",
+    "own_post": "board-post-menu ⋯ = 글쓴이 본인만: 수정 · 삭제. 답변이 달린 뒤에는 '수정' 비활성 + 이유 '답변이 달린 글은 고칠 수 없어요', 삭제는 확인 모달(ex-modal-card)",
+    "empty": "20-empty = 고른 분류에 글 0: ex-empty-state-card '아직 올라온 글이 없어요' + 교사·admin은 board-write",
+    "entry": "데스크톱 = 사이드바 guide-link 바로 위 board-link(desktop_shell.board_link) · 모바일 = 관리 탭(18) '도움말' 묶음의 board-link(manage.guide). 모바일 tab-bar 활성 = '관리'",
+    "faq_examples": [
+      {
+        "q": "온라인학교는 회원가입에서 어디에 있나요?",
+        "a": "학교급에서 '고등학교'를 고르면 시·도 온라인학교(예: 충북온라인학교)가 함께 나와요."
+      },
+      {
+        "q": "만 14세 미만 학생도 가입할 수 있나요?",
+        "a": "아니요. 만 14세 미만은 보호자 동의가 필요해서 Lab_Stock에 가입할 수 없어요."
+      },
+      {
+        "q": "우리 학교가 학교 목록에 없어요",
+        "a": "학교 목록은 NEIS 학교 정보를 그대로 써요. 시/도·지역·학교급을 다시 확인해 주세요."
+      },
+      {
+        "q": "다른 학교 선생님이 우리 학교 재고를 볼 수 있나요?",
+        "a": "아니요. 시약·재고·사용 기록은 학교별로 나뉘어 있어요. 게시판 글만 모든 학교가 함께 봐요."
+      },
+      {
+        "q": "재주문 알림 기준은 어떻게 정하나요?",
+        "a": "시약 상세에서 직접 입력하거나, 비워 두면 최근 사용량으로 자동 계산해요."
+      },
+      {
+        "q": "학생도 사용 기록을 남길 수 있나요?",
+        "a": "네. 학생·교사 모두 사용 기록을 입력할 수 있어요."
+      }
+    ],
+    "faq_examples_note": "시안 예시 데이터. 실제 FAQ = 개발 쪽이 사용 가이드 자주 묻는 질문 12개 + 온라인학교 위치 · 만 14세 미만 가입 2개를 미리 등록",
+    "frames": "20(목록, 교사 · FAQ 탭) · 20-detail(내 오류 문의 + 운영자 답변) · 20-new(글쓰기) · 20-empty(개선 제안 0건) · 20-student(학생 · 오류 문의 탭, board-write 0)",
+    "source": "2026-10-29 사용자 결정 (개발 세션 요청 11) 1"
   }
 }
