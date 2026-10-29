@@ -21,6 +21,7 @@ const base = () => ({
   passwordConfirm: PASSWORD,
   agreeTerms: true,
   agreePrivacy: true,
+  agreeAge: true,
 });
 
 type Body = { ok?: boolean; error?: string; needsEmailConfirm?: boolean; role?: string };
@@ -88,6 +89,7 @@ test(`[C1][S${SCREEN}] 가입 API: 이름 빈 값·${DISPLAY_NAME_MAX}자 초과
   await expect400(request, { ...base(), displayName: "가".repeat(DISPLAY_NAME_MAX + 1) }, "이름 길이 초과");
   await expect400(request, { ...base(), agreeTerms: false }, "이용약관 미동의");
   await expect400(request, { ...base(), agreePrivacy: false }, "개인정보 미동의");
+  await expect400(request, { ...base(), agreeAge: false }, "만 14세 이상 미확인");
   await expect400(request, { ...base(), agreeTerms: "true", agreePrivacy: "true" }, "동의 값이 문자열");
 });
 

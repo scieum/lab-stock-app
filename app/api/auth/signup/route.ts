@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * POST /api/auth/signup — 화면 14 회원가입
- * 본문: { neisCode, displayName, email, password, passwordConfirm, agreeTerms, agreePrivacy }
+ * 본문: { neisCode, displayName, email, password, passwordConfirm, agreeTerms, agreePrivacy, agreeAge }
  * 학교 정보는 neisCode로 서버가 NEIS에서 다시 확정하고, 역할은 DB 함수가 정한다.
  * 응답: { ok: true, needsEmailConfirm } | { ok: false, error }
  */

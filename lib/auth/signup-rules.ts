@@ -12,7 +12,11 @@ export type SignupFields = {
   passwordConfirm: string;
   agreeTerms: boolean;
   agreePrivacy: boolean;
+  /** 만 14세 이상 확인 — 만 14세 미만은 보호자 동의 절차가 없어 가입 불가 (개인정보 보호법 제22조의2, 2026-10-29 사용자 결정) */
+  agreeAge: boolean;
 };
+
+const allAgreed = (f: SignupFields) => f.agreeTerms && f.agreePrivacy && f.agreeAge;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -25,7 +29,7 @@ export function signupProblem(f: SignupFields): string | null {
   if (!EMAIL_RE.test(f.email.trim())) return "개인 이메일 주소를 정확히 입력하세요.";
   if (f.password.length < PASSWORD_MIN) return `비밀번호는 ${PASSWORD_MIN}자 이상 입력하세요.`;
   if (f.password !== f.passwordConfirm) return "비밀번호 확인이 일치하지 않아요.";
-  if (!f.agreeTerms || !f.agreePrivacy) return "필수 약관에 모두 동의해 주세요.";
+  if (!allAgreed(f)) return "필수 약관에 모두 동의해 주세요.";
   return null;
 }
 
@@ -41,6 +45,7 @@ export function toSignupFields(body: unknown): SignupFields {
     passwordConfirm: str(b.passwordConfirm),
     agreeTerms: b.agreeTerms === true,
     agreePrivacy: b.agreePrivacy === true,
+    agreeAge: b.agreeAge === true,
   };
 }
 
@@ -73,6 +78,6 @@ export function signupFieldProblems(f: SignupFields): SignupFieldProblem[] {
   } else if (f.password !== f.passwordConfirm) {
     out.push({ field: "passwordConfirm", message: "비밀번호가 일치하지 않아요", summary: "비밀번호가 일치하지 않아요" });
   }
-  if (!f.agreeTerms || !f.agreePrivacy) out.push({ field: "terms", message: "필수 약관에 동의해 주세요", summary: "약관에 동의해 주세요" });
+  if (!allAgreed(f)) out.push({ field: "terms", message: "필수 약관에 동의해 주세요", summary: "약관에 동의해 주세요" });
   return out;
 }

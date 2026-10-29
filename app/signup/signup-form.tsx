@@ -34,7 +34,14 @@ const TERMS = [
   {
     key: "privacy",
     label: "개인정보 수집·이용 동의 (필수)",
-    summary: "이름과 개인 이메일을 계정 확인과 학교 내 사용 기록 표시에만 써요. 탈퇴하면 지워요.",
+    // 개인정보 보호법 제15조 제2항 고지 4가지: 항목 · 목적 · 보유 기간 · 거부 권리와 불이익
+    summary:
+      "수집 항목: 이름, 개인 이메일, 비밀번호(암호화해 저장), 학교, 역할, 접속 기록. 이용 목적: 계정 확인, 같은 학교 안에서 사용 기록에 이름 표시. 보유 기간: 탈퇴할 때까지. 동의하지 않을 수 있지만, 동의하지 않으면 가입할 수 없어요.",
+  },
+  {
+    key: "age",
+    label: "만 14세 이상입니다 (필수)",
+    summary: "만 14세 미만은 보호자 동의가 필요해서 Lab_Stock에 가입할 수 없어요.",
   },
 ] as const;
 
@@ -69,7 +76,7 @@ export function SignupForm() {
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [agree, setAgree] = useState<Record<TermKey, boolean>>({ terms: false, privacy: false });
+  const [agree, setAgree] = useState<Record<TermKey, boolean>>({ terms: false, privacy: false, age: false });
   const [openTerm, setOpenTerm] = useState<TermKey | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -79,7 +86,7 @@ export function SignupForm() {
   const inFlight = useRef(false);
   const [done, setDone] = useState<Done | null>(null);
 
-  const allAgreed = agree.terms && agree.privacy;
+  const allAgreed = agree.terms && agree.privacy && agree.age;
   const current: SignupFields = {
     neisCode: sel.school,
     displayName,
@@ -88,10 +95,11 @@ export function SignupForm() {
     passwordConfirm,
     agreeTerms: agree.terms,
     agreePrivacy: agree.privacy,
+    agreeAge: agree.age,
   };
   const problems = tried ? signupFieldProblems(current) : [];
   const problemOf = (f: SignupField) => problems.find((p) => p.field === f)?.message;
-  const toggleAll = () => setAgree({ terms: !allAgreed, privacy: !allAgreed });
+  const toggleAll = () => setAgree({ terms: !allAgreed, privacy: !allAgreed, age: !allAgreed });
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -104,6 +112,7 @@ export function SignupForm() {
       passwordConfirm,
       agreeTerms: agree.terms,
       agreePrivacy: agree.privacy,
+      agreeAge: agree.age,
     };
     const found = signupFieldProblems(fields);
     if (found.length > 0) {
