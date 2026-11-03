@@ -66,7 +66,8 @@ const tableNodes = under(m5, TABLE);
 const actionNodes = under(m5, "action-row");
 const groupsNodes = under(m5, "group-count");
 
-export const NAV_TITLE = one(textOf(under(m5, NAV), "nav-title"), "nav-title");
+/** 화면 제목 — 시안 1.32 5-mobile 은 nav-pill 에 manage-back 만, 제목은 본문 page-head/heading (5-desktop page-head title 과 같은 글자) */
+export const NAV_TITLE = one(textOf(under(m5, "page-head"), "heading"), "page-head heading");
 /** 1단계 업로드 안내 (1.16 시안 문구 — 1.17 프레임은 2단계만 그렸다) */
 export const GUIDE = "실험 매뉴얼을 올리면 시약별 사용량을 찾아드려요";
 export const FRAME_FILE = one(textOf(under(m5, OVERLAY), "label"), "badge-overlay label");

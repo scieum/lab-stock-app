@@ -12,6 +12,7 @@ import { test, expect, type Locator, type Page } from "@playwright/test";
 import { isDesktopMigrated } from "../frames";
 import {
   DESKTOP_SHELL as DS,
+  frameActive,
   frameActiveLabel,
   frameNode,
   frameSidebarItems,
@@ -127,13 +128,16 @@ async function expectDesktopShell(page: Page, role: ShellRole, screen: number, w
     const want = GROUP_TITLES[role].includes(t) ? 1 : 0;
     await expect(sb.getByText(exact(t)), `${where}: 묶음 제목 "${t}" ${want}`).toHaveCount(want);
   }
-  // 현재 화면 활성 1 = 시안 {N}-desktop 의 칠한 메뉴, aria-current=page, 바탕 = 시안 활성 색
-  const want = frameActiveLabel(screen);
-  const active = sb.locator(`${sel(DS.item)}[aria-current="page"]`);
-  await expect(active, `${where}: 활성 메뉴 1`).toHaveCount(1);
+  // 현재 화면 활성 1 = 시안 {N}-desktop 의 칠한 메뉴(sidebar-item, 화면 20 은 board-link — rules desktop_shell.board_link),
+  // aria-current=page, 바탕 = 시안 활성 색. 사이드바 안 현재 표시는 그것 하나뿐
+  const fa = frameActive(screen);
+  const want = fa.label;
+  const active = sb.locator(`${sel(fa.component)}[aria-current="page"]`);
+  await expect(sb.locator('[aria-current="page"]'), `${where}: 사이드바 현재 표시 1`).toHaveCount(1);
+  await expect(active, `${where}: 활성 ${fa.component} 1`).toHaveCount(1);
   await expect(active, `${where}: 활성 = 시안 "${want}"`).toHaveText(exact(want));
-  expect(await bg(active), `${where}: 활성 바탕 = 시안 ${ACTIVE_FILL}`).toBe(hexToRgb(ACTIVE_FILL));
-  for (const label of menu.filter((l) => l !== want)) {
+  expect(await bg(active), `${where}: 활성 바탕 = 시안 ${fa.fill}`).toBe(hexToRgb(fa.fill));
+  for (const label of menu.filter((l) => fa.component !== DS.item || l !== want)) {
     expect(await bg(itemByLabel(page, label)), `${where}: "${label}" 은 활성 바탕 아님`).not.toBe(hexToRgb(ACTIVE_FILL));
   }
   // 치수: 폭 240 · radius 0 · 바탕 = 시안 app-sidebar 색 · 본문은 사이드바 오른쪽
@@ -206,7 +210,7 @@ test(`[C3][S*] 기대값 원본: dev-rules desktop_shell_done · desktop_shell.s
 
 for (const screen of SHELL_SCREENS) {
   const roles = ROLES.filter((r) => canOpen(r, screen));
-  test(`[C3][S${screen}] ${roles.map((r) => ROLE_LABEL[r]).join("·")} ${routeOf(screen)}: 1440 = ${DS.component} 1 · ${DS.item} = 역할별 메뉴(문구·순서 = desktop_shell.menu) · 활성 1 = 시안 "${frameActiveLabel(screen)}" · nav-pill·tab-bar 0 · 폭 ${DS.width} · radius ${DS.radius} · 본문은 오른쪽 · 학교명·계정 줄 / 390 = nav-pill 1 · tab-bar 1 · ${DS.component} 0`, async ({ browser }, info) => {
+  test(`[C3][S${screen}] ${roles.map((r) => ROLE_LABEL[r]).join("·")} ${routeOf(screen)}: 1440 = ${DS.component} 1 · ${DS.item} = 역할별 메뉴(문구·순서 = desktop_shell.menu) · 활성 1 = 시안 "${frameActive(screen).label}" · nav-pill·tab-bar 0 · 폭 ${DS.width} · radius ${DS.radius} · 본문은 오른쪽 · 학교명·계정 줄 / 390 = nav-pill 1 · tab-bar 1 · ${DS.component} 0`, async ({ browser }, info) => {
     test.setTimeout(240_000);
     for (const role of roles) {
       const { context, page, viewport } = await openAs(browser, info, role, 13);
