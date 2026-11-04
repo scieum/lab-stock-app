@@ -58,15 +58,39 @@ export function FeatureIntroPopup({ onPrimary, onClose, onDismissWeek, overlay =
   const titleId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
 
+  // 열 때 팝업으로, 닫힐 때 원래 자리로 (sheet-panel 과 같은 방식)
   useEffect(() => {
     if (!overlay) return;
+    const before = document.activeElement;
     rootRef.current?.focus({ preventScroll: true });
+    return () => {
+      const now = document.activeElement;
+      if (now && now !== document.body) return;
+      if (before instanceof HTMLElement && before !== document.body && before.isConnected) before.focus({ preventScroll: true });
+    };
   }, [overlay]);
 
   useEffect(() => {
-    if (!overlay || !onClose) return;
+    if (!overlay) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !e.defaultPrevented) onClose();
+      if (e.key === "Escape" && !e.defaultPrevented) onClose?.();
+      if (e.key !== "Tab" || !rootRef.current) return;
+      // 포커스 트랩: 보이는 버튼·링크 사이에서 Tab·Shift+Tab 순환
+      const items = Array.from(rootRef.current.querySelectorAll<HTMLElement>("button, a[href]")).filter(
+        (el) => el.getClientRects().length > 0,
+      );
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      const inside = rootRef.current.contains(active);
+      if (e.shiftKey && (!inside || active === first || active === rootRef.current)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (!inside || active === last)) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
