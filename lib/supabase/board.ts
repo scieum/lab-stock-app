@@ -121,16 +121,6 @@ export async function getBoardPost(id: string): Promise<BoardPostDetail | null> 
   };
 }
 
-/** 관리 탭 board-link 요약 — 내가 쓴 글 중 답변 완료 수 (학생·오류 = 0, caption 없음) */
-export async function countMyAnsweredPosts(): Promise<number> {
-  const me = await getServerSession();
-  if (me.kind !== "member" || me.role === "student") return 0;
-  const supabase = await getServerClient();
-  const { data, error } = await supabase.rpc("board_my_answered_count");
-  if (error || typeof data !== "number") return 0;
-  return data;
-}
-
 export type SaveBoardPostResult =
   | { ok: true; id: string }
   | { ok: false; error: string; field?: BoardInputField | "category" };

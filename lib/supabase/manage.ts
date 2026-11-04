@@ -2,7 +2,6 @@ import "server-only";
 import { createAnonClient } from "./anon";
 import { getServerClient, getServerSession, type SessionRole } from "./server";
 import { DEMO_SCHOOL_ID } from "./demo-data";
-import { countMyAnsweredPosts } from "./board";
 import { isLowStock } from "@/lib/types";
 import type { ManageCounts } from "@/lib/manage-menu";
 
@@ -69,7 +68,7 @@ export async function getManageSummary(): Promise<ManageSummaryResult> {
     if (n !== undefined) counts.vendors = n;
   }
 
-  if (staff) counts.boardAnswered = boardAnswered;
+  if (staff && boardAnswered > 0) counts.boardAnswered = boardAnswered;
 
   return { kind: "ok", data: { role, schoolName: me.school.name, counts } };
 }
@@ -93,4 +92,15 @@ export async function getDemoManageCounts(): Promise<ManageCounts> {
   const sensorBroken = countOf(broken);
   if (sensorTotal !== undefined && sensorBroken !== undefined) counts.sensors = { total: sensorTotal, broken: sensorBroken };
   return counts;
+}
+
+// board.ts 는 @/lib/board 를 불러와서, 여기 두면 manage 가 board 규칙에 묶이지 않는다
+/** 관리 탭 board-link 요약 — 내가 쓴 글 중 답변 완료 수 (학생·오류 = 0, caption 없음) */
+export async function countMyAnsweredPosts(): Promise<number> {
+  const me = await getServerSession();
+  if (me.kind !== "member" || me.role === "student") return 0;
+  const supabase = await getServerClient();
+  const { data, error } = await supabase.rpc("board_my_answered_count");
+  if (error || typeof data !== "number") return 0;
+  return data;
 }
