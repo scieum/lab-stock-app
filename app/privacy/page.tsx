@@ -31,7 +31,7 @@ export default function PrivacyPage() {
       <main className={styles.body}>
         <PrivacyDoc className={styles.doc} />
       </main>
-      <WebFooter />
+      <WebFooter compact />
     </div>
   );
 }
