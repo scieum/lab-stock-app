@@ -5,12 +5,13 @@ import { LandingCta } from "@/components/landing-cta";
 import { LandingHero } from "@/components/landing-hero";
 import { NavPill } from "@/components/nav-pill";
 import { DesktopOnly, MobileOnly } from "@/components/viewport-only";
+import { WebFooter } from "@/components/web-footer";
 import { LandingDesktop } from "./landing-desktop";
 import styles from "./landing.module.css";
 
 /**
  * 화면 15 — 랜딩. 경로 `/` 로그인 전 (dev-rules.json route_auth). 로그인 전 화면이라 tab-bar·학교명 없음.
- * - 모바일(15-mobile): nav-pill(워드마크) → landing-hero → feature-card 4 → 하단 landing-cta(+ guest-entry).
+ * - 모바일(15-mobile): nav-pill(워드마크) → landing-hero → feature-card 4 → footer-wrap(web-footer 두 줄, 1.32) → 하단 landing-cta(+ guest-entry).
  * - 데스크톱(15-desktop, d7 §23 run d): web-header + 긴 웹 랜딩 (LandingDesktop).
  * 첫 그림(폭 모름)에는 둘 다 그리고 CSS 로 한쪽만 보이며, 하이드레이션 뒤 맞지 않는 쪽은 DOM 에서 빠진다 (components/viewport-only).
  */
@@ -55,6 +56,9 @@ function LandingMobile() {
             description="필요한 양보다 적으면 알려 주고 판매처로 연결해요"
             badge={<BadgeLowStock />}
           />
+        </div>
+        <div className={styles.footerWrap}>
+          <WebFooter />
         </div>
       </div>
       <LandingCta signupHref="/signup" loginHref="/login" guest={<GuestEntry href="/demo" />} className={styles.cta} />

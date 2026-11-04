@@ -29,13 +29,13 @@
   white-space: pre;
 }
 
-/* 시안 15-desktop · 19-desktop: 가운데 한 줄 '저작권 · 개인정보 처리방침 · 사용 가이드', 위아래 32 → 링크 44 터치 영역 몫을 뺀다 */
+/* 시안 15-desktop · 19-desktop (1.32): 가운데 한 줄 '저작권 · 개인정보 처리방침 · 사용 가이드', 높이 92 = 위아래 24 + 링크 44 */
 @media (min-width: 1024px) {
   .footer {
     flex-direction: row;
     flex-wrap: wrap;
     gap: var(--space-0);
-    padding: var(--space-16) var(--space-16);
+    padding: var(--space-24) var(--space-16);
   }
 
   .separator {
