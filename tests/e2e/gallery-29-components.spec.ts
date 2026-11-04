@@ -298,7 +298,8 @@ test(`[K1][S*] 기대값 원본: dev-rules components 에 새 ${NEW.length}개 �
   const frames = [F18, F18G, F2, F2W, F2WD, F10W, F10WD];
   for (const n of NEW) expect(frames.some((f) => f.some((x) => leaf(x) === n)), `프레임에 ${n}`).toBe(true);
   expect(dev.components["manage-list"]).toEqual([18]);
-  expect(dev.components["page-more-menu"]).toEqual([2, 10]);
+  // d7 §30: 화면 20 운영자 '숨기기'도 page-more-menu (wipe 진입은 2·10 그대로)
+  expect(dev.components["page-more-menu"]).toEqual([2, 10, (rules as unknown as { board: { screen: number } }).board.screen]);
   const admin = ["page-more-menu", "reagent-wipe", "record-wipe"];
   expect(rules.wipe.roles, "rules wipe.roles = admin").toEqual(["admin"]);
   expect(rules.roles.R5.components, "R5 학생 0").toEqual(expect.arrayContaining(admin));
@@ -307,8 +308,12 @@ test(`[K1][S*] 기대값 원본: dev-rules components 에 새 ${NEW.length}개 �
   expect(REMOVED).toEqual(["mobile-menu-button", "mobile-menu-sheet", "inventory-switch"]);
   for (const n of REMOVED) expect(names, `dev-rules components 에 ${n} 없음`).not.toContain(n);
   expect(rules.tab_bar.labels).toEqual(["홈", "관리", "QR 스캔", "기록"]);
-  expect(MANAGE.groups.map((g) => g.title)).toEqual(["재고", "입고·주문", "학교"]);
-  expect(MANAGE.guestGroups.map((g) => g.rows.map((r) => r.name))).toEqual([["시약", "센서"]]);
+  // rules manage.guide (2026-10-27·29): 맨 아래 넷째 묶음 '도움말'
+  const guideGroup = /넷째 묶음 '([^']+)'/.exec((rules.manage as unknown as { guide: string }).guide)?.[1];
+  expect(guideGroup, "rules manage.guide 넷째 묶음").toBe("도움말");
+  expect(MANAGE.groups.map((g) => g.title)).toEqual(["재고", "입고·주문", "학교", guideGroup]);
+  // rules manage.guide: 둘러보기 '도움말' 묶음은 guide-link(rules guide.label) 만
+  expect(MANAGE.guestGroups.map((g) => g.rows.map((r) => r.name))).toEqual([["시약", "센서"], [(rules as unknown as { guide: { label: string } }).guide.label]]);
   expect(D7_29, "d7 §29 관리 경로").toContain("'관리' → `/manage`");
   expect(dev.routes["18"]).toBe("/manage");
   expect(dev.routes["18-guest"]).toBe("/demo/manage");

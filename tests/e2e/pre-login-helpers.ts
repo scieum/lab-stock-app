@@ -20,7 +20,7 @@ type Typo = { display_sizes: { sizes: number[]; only_within: string[] } };
 type Extra = {
   desktop_shell: { pre_login: PreLogin };
   typography: Typo;
-  footer: { text: string; layout: string };
+  footer: { text: string; layout: string; links: string[]; component: string };
   landing_rhythm: { bands: string; inverted_button: string; motion: string };
   frames: { tall: Record<string, { width: number; min_height: number; max_height: number }> };
   colors: Record<string, unknown>;
@@ -39,13 +39,14 @@ export const isPreLogin = (screen: number): boolean => PRE.screens.includes(scre
  * 로그인 전 화면에서 폭별 컴포넌트 기대값 (dev-rules components 대조용):
  * - 1440: pre_login.forbidden(nav-pill · app-sidebar) = 0
  * - 390: web-header · pre_login.desktop_required[화면] (데스크톱 랜딩 전용) = 0 — 폭 390 은 변경 없음(d7 §23)이고
- *   새 모바일 프레임(1·14·15-mobile)에 그 노드가 없다 (아래 assertFramesAgree 로 확인)
+ *   새 모바일 프레임(1·14·15-mobile)에 그 노드가 없을 때만 (1.32: 15-mobile 에는 web-footer 가 있다 → 시안 노드 수)
  * 반환 null = 폭별 0 규칙 없음 (시안 노드 수 이상으로 본다)
  */
 export function preLoginZero(screen: number, vp: ViewportName, name: string): boolean {
   if (!isPreLogin(screen)) return false;
   if (vp === "desktop") return PRE.forbidden.includes(name);
-  return name === HEADER || (PRE.desktop_required[String(screen)] ?? []).includes(name);
+  // desktop_required 중 새 모바일 프레임에도 있는 것(1.32 15-mobile web-footer)은 0 이 아니다 — 시안 노드 수로 본다
+  return name === HEADER || ((PRE.desktop_required[String(screen)] ?? []).includes(name) && !frameOf(`${screen}-mobile`).nodes.some((n) => n.name === name));
 }
 
 type FNode = {

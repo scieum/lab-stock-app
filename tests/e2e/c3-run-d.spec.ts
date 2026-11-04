@@ -12,7 +12,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { test, expect, type Locator, type Page } from "@playwright/test";
-import { GUIDE_LABEL, GUIDE_LINK_PROPS } from "../../lib/guide-link";
+import { GUIDE_LINK_PROPS } from "../../lib/guide-link";
 import { DESKTOP_SHELL, frameSidebarItems } from "../desktop-shell";
 import { NEW_FRAMES_DIR, desktopMigratedScreens } from "../frames";
 import { DRAWER, DRAWER_W, SIDEBAR_W, TABLE, drawer, drawerClose, drawerTitle, waitDrawer, waitWidthSettled } from "./desk-helpers";
@@ -110,7 +110,12 @@ function watchWrites(page: Page): () => string[] {
 
 test(`[C3][S*] 기대값 원본 (run d): pre_login.screens ${PRE.screens.join("·")} = dev-rules ${HEADER} · desktop_required[15] ${REQ15.join("·")} = dev-rules [15] · display ${DISPLAY.sizes.join("/")} only_within ${DISPLAY.only_within.join("·")} · 15-desktop 높이 = frames.tall · footer = 시안 · 띠 색 = landing_rhythm · 둘러보기 사이드바 잠금 ${SIDEBAR_LOCKS}`, () => {
   expect([...devRules.components[HEADER]].sort(), `dev-rules components ${HEADER}`).toEqual([...PRE.screens].sort());
-  for (const n of REQ15) expect(devRules.components[n], `dev-rules components ${n} = [15]`).toEqual([LANDING]);
+  // 1.30: web-footer 는 화면 19 desktop_required 에도 있다 → dev-rules = 그 이름을 desktop_required 에 둔 화면들
+  for (const n of REQ15) {
+    const want = PRE.screens.filter((s) => (PRE.desktop_required[String(s)] ?? []).includes(n)).sort((a, b) => a - b);
+    expect(want, `${n} 은 화면 15 desktop_required`).toContain(LANDING);
+    expect([...devRules.components[n]].sort((a, b) => a - b), `dev-rules components ${n} = desktop_required 화면 ${want.join("·")}`).toEqual(want);
+  }
   for (const s of PRE.screens) expect(DESKTOP_SHELL.screens, `로그인 전 ${s} 은 사이드바 셸 대상 아님`).not.toContain(s);
   const migrated = desktopMigratedScreens();
   // 모바일 전용 화면(frames.mobile_only_screens — 18)은 데스크톱 재구성 대상이 아니다
@@ -131,7 +136,10 @@ test(`[C3][S*] 기대값 원본 (run d): pre_login.screens ${PRE.screens.join("�
   expect(f15.height).toBeGreaterThanOrEqual(tall.min_height);
   expect(f15.height).toBeLessThanOrEqual(tall.max_height);
   // footer
-  expect(frameTextsIn("15-desktop", "web-footer"), "시안 web-footer 글자 = rules footer.text").toEqual([R.footer.text]);
+  for (const vp of ["mobile", "desktop"]) {
+    expect(frameTextsIn(`15-${vp}`, "copyright"), `시안 15-${vp} 저작권 = rules footer.text`).toEqual([R.footer.text]);
+    expect(frameTextsIn(`15-${vp}`, "footer-links").filter((t) => t !== "·"), `시안 15-${vp} footer-links = rules footer.links`).toEqual(R.footer.links);
+  }
   // 띠 색: 시안 띠 fill 은 rules landing_rhythm 의 색만 (흰·회 번갈아, step-flow·cta-band 는 검정)
   const bandHex = hexesIn(R.landing_rhythm.bands);
   expect(bandHex.length, "landing_rhythm 색 3").toBe(3);
@@ -318,8 +326,9 @@ test(`[C3][S${LANDING}] desktop_required ${REQ15.join("·")} = 시안 15-desktop
   test.setTimeout(90_000);
   const vp = await openLanding(page);
   if (vp === "mobile") {
-    for (const n of REQ15) await expect(page.locator(sel(n)), `390 ${n} 0`).toHaveCount(0);
     const f = frameOf("15-mobile").nodes;
+    // 1.32: 15-mobile 에도 web-footer 가 있다 — 데스크톱 전용 조각은 0, 모바일 프레임에 있는 것은 시안 노드 수
+    for (const n of REQ15) await expect(page.locator(sel(n)), `390 ${n} = 시안 15-mobile`).toHaveCount(f.filter((x) => x.name === n).length);
     for (const n of ["landing-hero", "landing-cta", "guest-entry", "feature-card"]) {
       await expect(page.locator(sel(n)), `390 ${n} = 시안 15-mobile`).toHaveCount(f.filter((x) => x.name === n).length);
     }
@@ -454,49 +463,169 @@ test(`[C3][S${LANDING}] 1440 검정 띠 반전 버튼(rules landing_rhythm.inver
   }
 });
 
-test(`[C3][S${LANDING}] 1440 web-footer 한 줄 = rules footer.text · 링크 = 사용 가이드 1 (시안 예외) · 위 hairline · 글자색·크기 = 시안 · 가운데`, async ({ page }) => {
+const PRIVACY_SCREEN = (rules as unknown as { privacy_page: { screen: number } }).privacy_page.screen;
+
+test(`[C3][S${LANDING}] web-footer (rules footer 1.32): 저작권 = rules footer.text · ${R.footer.component} = rules footer.links(개인정보 처리방침 → routes[${PRIVACY_SCREEN}] · 사용 가이드 새 탭) · 링크 글자색·굵기 = 시안 · 1440 한 줄·전폭·가운데 / 390 두 줄(저작권 / 링크) · 높이·위 hairline = 시안 15-{폭}`, async ({ page }) => {
   test.setTimeout(90_000);
   const vp = await openLanding(page);
-  if (vp === "mobile") {
-    // 390 = 15-mobile 그대로 (footer 없음 — 시안 15-mobile)
-    for (const n of ["web-footer"]) await expect(page.locator(sel(n)), `390 ${n} 0`).toHaveCount(0);
-    return;
-  }
+  const frame = `15-${vp}`;
+  const ff = frameNodes(frame, "web-footer");
+  expect(ff.length, `시안 ${frame} web-footer`).toBe(1);
   const foot = page.locator(sel("web-footer"));
-  await expect(foot).toHaveCount(1);
-  // 시안 예외 (사용자 요청 2026-10-28, 요청서 10 대기): 저작권 줄 아래 '사용 가이드' 링크 하나 (새 탭).
-  // 글자 = rules footer.text 로 시작 · 링크 글자를 뺀 나머지 = rules footer.text · 링크 = 정확히 1개 (lib/guide-link)
-  const footAll = norm(await foot.innerText());
-  expect(footAll.startsWith(R.footer.text), `footer 글자 "${footAll}" 가 rules footer.text 로 시작`).toBe(true);
-  const footRest = norm(await foot.evaluate((el) => { const c = el.cloneNode(true) as HTMLElement; c.querySelectorAll("a").forEach((a) => a.remove()); return c.textContent ?? ""; }));
-  expect(footRest, "footer 글자 (가이드 링크 뺀 나머지) = rules footer.text").toBe(R.footer.text);
-  const footLinks = foot.locator("a");
-  await expect(footLinks, "링크 = 사용 가이드 1개 (열·약관 링크 없음)").toHaveCount(1);
-  expect(norm(await footLinks.innerText()), "링크 글자").toBe(GUIDE_LABEL);
-  expect(await footLinks.getAttribute("href"), "링크 href").toBe(GUIDE_LINK_PROPS.href);
-  expect(await footLinks.getAttribute("target"), "링크 target").toBe(GUIDE_LINK_PROPS.target);
-  expect((await footLinks.getAttribute("rel")) ?? "", "링크 rel noopener").toMatch(/(^|\s)noopener(\s|$)/);
-  const ff = frameNodes("15-desktop", "web-footer")[0];
-  const fc = frameNodes("15-desktop", "copyright")[0];
-  const cs = await foot.evaluate((el) => {
+  await expect(foot, `web-footer = 시안 ${frame} ${ff.length}`).toHaveCount(ff.length);
+  await foot.scrollIntoViewIfNeeded();
+  const links = foot.locator(sel(R.footer.component));
+  await expect(links, `web-footer 안 ${R.footer.component} = 시안`).toHaveCount(frameNodes(frame, R.footer.component).length);
+  // 저작권 = 링크 묶음·장식(aria-hidden ' · ')을 뺀 글자
+  const rest = norm(
+    await foot.evaluate((el, c) => {
+      const k = el.cloneNode(true) as HTMLElement;
+      k.querySelectorAll(`[data-component="${c}"], [aria-hidden="true"]`).forEach((x) => x.remove());
+      return k.textContent ?? "";
+    }, R.footer.component),
+  );
+  expect(rest, "저작권 글자 = rules footer.text").toBe(R.footer.text);
+  // 링크 = rules footer.links 순서
+  const a = links.locator("a");
+  await expect(a, `링크 ${R.footer.links.length}개`).toHaveCount(R.footer.links.length);
+  expect((await a.allInnerTexts()).map(norm), "링크 글자 = rules footer.links").toEqual(R.footer.links);
+  expect(new URL((await a.nth(0).getAttribute("href"))!, "http://x").pathname, `'${R.footer.links[0]}' → routes[${PRIVACY_SCREEN}]`).toBe(routeOf(PRIVACY_SCREEN));
+  expect(await a.nth(1).getAttribute("href"), "사용 가이드 href").toBe(GUIDE_LINK_PROPS.href);
+  expect(await a.nth(1).getAttribute("target"), "사용 가이드 새 탭").toBe(GUIDE_LINK_PROPS.target);
+  expect((await a.nth(1).getAttribute("rel")) ?? "", "사용 가이드 rel noopener").toMatch(/(^|\s)noopener(\s|$)/);
+  // 링크 글자색·굵기·크기 = 시안 footer-link (개인정보 처리방침 ink 600 · 사용 가이드 text-muted 400)
+  const fl = frameNodes(frame, "footer-link");
+  expect(fl.map((n) => n.text!.characters.trim()), "시안 footer-link 글자").toEqual(R.footer.links);
+  for (let i = 0; i < fl.length; i++) {
+    const cs = await a.nth(i).evaluate((e) => ({ c: getComputedStyle(e).color, w: getComputedStyle(e).fontWeight, s: getComputedStyle(e).fontSize }));
+    expect(cs.c, `'${R.footer.links[i]}' 글자색 = 시안 ${fl[i].fills![0]}`).toBe(hexToRgb(fl[i].fills![0]));
+    expect(cs.w, `'${R.footer.links[i]}' 굵기 = 시안`).toBe(String((fl[i].text as { fontWeight?: number }).fontWeight));
+    expect(cs.s, `'${R.footer.links[i]}' 크기 = 시안`).toBe(`${fl[i].text!.fontSize}px`);
+  }
+  // 저작권 줄 · 링크 줄 위치
+  const fc = frameNodes(frame, "copyright")[0];
+  const g = await foot.evaluate((el, c) => {
     const s = getComputedStyle(el);
     const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
     let t: Text | null = null;
     for (let n = w.nextNode(); n; n = w.nextNode()) if ((n.textContent ?? "").trim()) { t = n as Text; break; }
-    const p = t!.parentElement!;
-    const range = document.createRange();
-    range.selectNodeContents(t!);
-    const lines = new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
-    const rr = range.getBoundingClientRect();
-    return { bt: s.borderTopColor, btw: s.borderTopWidth, shadow: s.boxShadow, color: getComputedStyle(p).color, size: getComputedStyle(p).fontSize, lines, cx: rr.x + rr.width / 2, w: el.getBoundingClientRect().width };
-  });
-  expect(cs.lines, "한 줄").toBe(1);
-  expect(Math.round(cs.w), "전폭").toBe(VIEW_W);
-  expect(Math.abs(cs.cx - VIEW_W / 2), "가운데").toBeLessThanOrEqual(2);
-  const line = hexToRgb(ff.strokes![0]);
-  expect(cs.bt === line && parseFloat(cs.btw) > 0 ? true : cs.shadow.includes(line), `위 hairline = 시안 ${ff.strokes![0]}`).toBe(true);
-  expect(cs.color, `글자색 = 시안 ${fc.fills![0]}`).toBe(hexToRgb(fc.fills![0]));
-  expect(cs.size, `글자 크기 = 시안 ${fc.text!.fontSize}`).toBe(`${fc.text!.fontSize}px`);
+    const r = document.createRange();
+    r.selectNodeContents(t!);
+    const cr = r.getBoundingClientRect();
+    const lines = new Set([...r.getClientRects()].map((x) => Math.round(x.top))).size;
+    const lk = el.querySelector(`[data-component="${c}"]`)!;
+    const lr = [...lk.querySelectorAll("a")].map((x) => x.getBoundingClientRect());
+    const box = el.getBoundingClientRect();
+    const left = Math.min(cr.left, ...lr.map((x) => x.left));
+    const right = Math.max(cr.right, ...lr.map((x) => x.right));
+    return {
+      bt: s.borderTopColor,
+      btw: s.borderTopWidth,
+      shadow: s.boxShadow,
+      color: getComputedStyle(t!.parentElement!).color,
+      size: getComputedStyle(t!.parentElement!).fontSize,
+      lines,
+      cBottom: cr.bottom,
+      cMid: (cr.top + cr.bottom) / 2,
+      lTop: Math.min(...lr.map((x) => x.top)),
+      lMid: lr.map((x) => (x.top + x.bottom) / 2),
+      w: box.width,
+      h: box.height,
+      cx: (left + right) / 2,
+      boxCx: box.left + box.width / 2,
+    };
+  }, R.footer.component);
+  expect(g.lines, "저작권 한 줄").toBe(1);
+  expect(g.color, `저작권 글자색 = 시안 ${fc.fills![0]}`).toBe(hexToRgb(fc.fills![0]));
+  expect(g.size, `저작권 크기 = 시안 ${fc.text!.fontSize}`).toBe(`${fc.text!.fontSize}px`);
+  for (const m of g.lMid) expect(Math.abs(m - g.lMid[0]), "링크 둘은 한 줄").toBeLessThanOrEqual(2);
+  if (vp === "desktop") {
+    // rules footer.layout: 가운데 한 줄 — 저작권 · 링크가 같은 줄
+    expect(Math.abs(g.lMid[0] - g.cMid), "1440 저작권과 링크 한 줄").toBeLessThanOrEqual(4);
+    expect(Math.round(g.w), "1440 전폭").toBe(VIEW_W);
+    expect(Math.abs(g.cx - VIEW_W / 2), "1440 가운데").toBeLessThanOrEqual(2);
+  } else {
+    // rules footer.layout: 모바일은 두 줄(저작권 / 링크)
+    expect(g.lTop, "390 링크 줄은 저작권 줄 아래").toBeGreaterThanOrEqual(g.cBottom - 1);
+    expect(Math.abs(g.cx - g.boxCx), "390 가운데").toBeLessThanOrEqual(2);
+  }
+  expect(Math.round(g.h), `web-footer 높이 = 시안 ${frame} ${ff[0].height}`).toBe(ff[0].height);
+  const line = hexToRgb(ff[0].strokes![0]);
+  expect(g.bt === line && parseFloat(g.btw) > 0 ? true : g.shadow.includes(line), `위 hairline = 시안 ${ff[0].strokes![0]}`).toBe(true);
+});
+
+/** rules landing_hero_align.rule 의 '±Npx' */
+const HERO_ALIGN = (rules as unknown as { landing_hero_align: { rule: string; mobile: string } }).landing_hero_align;
+const HERO_ALIGN_TOL = Number(/±(\d+)px/.exec(HERO_ALIGN.rule)?.[1]);
+
+test(`[C3][S${LANDING}] 1440 rules landing_hero_align: landing-hero 글 묶음(꼬리표~특징 캡션) 세로 가운데 = product-shot 회색 패널(시안 shot-base) 세로 가운데 ±${HERO_ALIGN_TOL}px / 390 해당 없음`, async ({ page }) => {
+  expect(Number.isFinite(HERO_ALIGN_TOL), "rules landing_hero_align ±px").toBe(true);
+  const vp = await openLanding(page);
+  if (vp === "mobile") {
+    expect(HERO_ALIGN.mobile, "rules: 모바일 해당 없음").toContain("해당 없음");
+    return;
+  }
+  const base = frameNodes("15-desktop", "shot-base")[0];
+  expect(base?.path, "시안 shot-base 는 product-shot 안").toContain("product-shot");
+  const panelFill = hexToRgb(base.fills![0]);
+  const hero = page.locator(sel("landing-hero"));
+  await expect(hero).toHaveCount(1);
+  const m = await hero.evaluate((el, fill) => {
+    const shot = el.querySelector('[data-component="product-shot"]');
+    // 회색 패널 = product-shot 안(자신 포함) 바탕이 시안 shot-base 색인 첫 요소
+    const panel = shot ? ([shot, ...shot.querySelectorAll("*")].find((x) => getComputedStyle(x).backgroundColor === fill) ?? null) : null;
+    // 글 묶음 = h1 을 품은 landing-hero 의 자식 — 그 안 보이는 요소들의 위·아래 끝 (늘어난 칸 높이가 아니라 글 자체)
+    const copy = [...el.children].find((c) => c.querySelector("h1")) ?? null;
+    if (!panel || !copy) return { panel: !!panel, copy: !!copy, top: 0, bottom: 0, pTop: 0, pBottom: 0 };
+    const kids = [...copy.querySelectorAll("*")].map((x) => x.getBoundingClientRect()).filter((r) => r.height > 0 && r.width > 0);
+    const pr = panel.getBoundingClientRect();
+    return { panel: true, copy: true, top: Math.min(...kids.map((r) => r.top)), bottom: Math.max(...kids.map((r) => r.bottom)), pTop: pr.top, pBottom: pr.bottom };
+  }, panelFill);
+  expect(m.panel, `product-shot 회색 패널(${base.fills![0]})`).toBe(true);
+  expect(m.copy, "h1 을 품은 글 묶음").toBe(true);
+  const textMid = (m.top + m.bottom) / 2;
+  const panelMid = (m.pTop + m.pBottom) / 2;
+  expect(Math.abs(textMid - panelMid), `글 묶음 가운데 ${textMid.toFixed(1)} vs 패널 가운데 ${panelMid.toFixed(1)} (±${HERO_ALIGN_TOL})`).toBeLessThanOrEqual(HERO_ALIGN_TOL);
+});
+
+/** 시안 15-desktop landing-section 별 화면 조각(shot-*) — 그 안 shot-image radius(없으면 조각 radius), [좌상, 우상, 우하, 좌하] */
+function frameSectionShotRadii(): { band: string; shot: string; radius: number[] }[][] {
+  const nodes = frameOf("15-desktop").nodes;
+  const corners = (r: unknown): number[] => (Array.isArray(r) ? (r as number[]) : [r, r, r, r].map(Number));
+  const bands = [...new Set(nodes.filter((n) => n.name === "landing-section").map((n) => n.path[n.path.length - 2]))];
+  return bands.map((b) =>
+    nodes
+      .filter((n) => n.path.length === 4 && n.path[1] === b && n.path[2] === "landing-section" && /^shot-/.test(n.name))
+      .map((n) => {
+        const img = nodes.find((x) => x.name === "shot-image" && x.path.length === 5 && x.path[1] === b && x.path[3] === n.name);
+        return { band: b, shot: n.name, radius: corners((img ?? n).cornerRadius) };
+      }),
+  );
+}
+
+test(`[C3][S${LANDING}] 1440 landing-section 화면 조각 radius = 시안 15-desktop shot-image (1.32: 화면 끝까지 가는 왼쪽 조각 0 · 오른쪽 조각 네 모서리 16)`, async ({ page }) => {
+  test.setTimeout(90_000);
+  const vp = await openLanding(page);
+  if (vp === "mobile") {
+    await expect(page.locator(sel("landing-section")), "390 landing-section = 시안 15-mobile").toHaveCount(frameNodes("15-mobile", "landing-section").length);
+    return;
+  }
+  const want = frameSectionShotRadii();
+  const secs = page.locator(sel("landing-section"));
+  await expect(secs, "landing-section = 시안").toHaveCount(want.length);
+  for (let i = 0; i < want.length; i++) {
+    // 조각 = landing-section 안 role="img" (문서 순서 = 뒤 큰 조각 → 앞 작은 조각, 시안 노드 순서와 같음)
+    const got = await secs.nth(i).evaluate((el) =>
+      [...el.querySelectorAll('[role="img"]')].map((x) => {
+        const s = getComputedStyle(x);
+        return [s.borderTopLeftRadius, s.borderTopRightRadius, s.borderBottomRightRadius, s.borderBottomLeftRadius].map((v) => parseFloat(v));
+      }),
+    );
+    expect(got.length, `${want[i][0]?.band} 조각 수 = 시안`).toBe(want[i].length);
+    for (let j = 0; j < want[i].length; j++) {
+      expect(got[j], `${want[i][j].band} ${want[i][j].shot} radius [좌상·우상·우하·좌하] = 시안`).toEqual(want[i][j].radius);
+    }
+  }
 });
 
 const DISPLAY_PATHS = [routeOf(LANDING), routeOf(LOGIN), routeOf(SIGNUP), guestRouteOf(13), guestRouteOf(2)];

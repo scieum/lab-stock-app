@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { isDesktopMigrated } from "../frames";
 import {
+  BOARD_LINK,
   DESKTOP_SHELL as DS,
   frameActive,
   frameActiveLabel,
@@ -188,7 +189,9 @@ test(`[C3][S*] 기대값 원본: dev-rules desktop_shell_done · desktop_shell.s
     expect(sb.width, `${frame} app-sidebar 폭`).toBe(DS.width);
     expect(sb.cornerRadius, `${frame} app-sidebar radius`).toBe(DS.radius);
     const fi = frameSidebarItems(frame);
-    expect(fi.filter((i) => i.active), `${frame} 활성 1`).toHaveLength(1);
+    // 20-desktop 은 sidebar-item 대신 board-link 가 현재 표시 (rules desktop_shell.board_link) — 둘을 합쳐 정확히 1
+    expect(() => frameActive(s), `${frame} 현재 표시 1 (sidebar-item·board-link)`).not.toThrow();
+    if (frameActive(s).component === BOARD_LINK) expect(fi.filter((i) => i.active), `${frame} sidebar-item 활성 0 (board-link 가 현재)`).toHaveLength(0);
     // 1.26 이전에 그려진 프레임에는 menu_source 로 더한 메뉴('센서')가 없다 — 그 프레임은 더하기 전 메뉴와 같아야 한다
     const stale = !fi.some((i) => i.label === MENU_ADDED);
     const expected = (r: ShellRole) => sidebarMenuOf(r).filter((l) => !stale || l !== MENU_ADDED);
@@ -484,7 +487,14 @@ test.describe("일회용 계정 로그아웃", () => {
 type PreLogin = { screens: number[]; component: string; forbidden: string[]; desktop_required: Record<string, string[]> };
 const PRE = (DS as unknown as { pre_login: PreLogin }).pre_login;
 
-test(`[C3][S*] 로그인 전 ${PRE.screens.join("·")} · 둘러보기 ${rules.guest.screens.join("·")}: desktop_migrated_screens 에 든 화면은 C3(로그인 전 = ${PRE.component} 1 · ${PRE.forbidden.join("·")} 0 / 둘러보기 1440 = ${DS.component} 1 · 사이드바 안 ${rules.guest.lock} ${(rules.guest as unknown as { sidebar_locks: number }).sidebar_locks}), 아직이면 셸 run a 가 바꾸지 않았다(nav-pill 1 · ${DS.component}·${DS.item} 0)`, async ({ browser }, info) => {
+/** rules privacy_page.screen (19 /privacy) — 화면 19 차례에 만든다. 그 화면 검사는 [S19] 로 따로 (화면 15 판정에 끼지 않게) */
+const PRIVACY_SCREEN = (rules as unknown as { privacy_page: { screen: number } }).privacy_page.screen;
+const PRE_GROUPS = [
+  { tag: "S*", pre: PRE.screens.filter((s) => s !== PRIVACY_SCREEN), guest: true },
+  { tag: `S${PRIVACY_SCREEN}`, pre: [PRIVACY_SCREEN], guest: false },
+];
+for (const G of PRE_GROUPS)
+test(`[C3][${G.tag}] 로그인 전 ${G.pre.join("·")}${G.guest ? ` · 둘러보기 ${rules.guest.screens.join("·")}` : ""}: desktop_migrated_screens 에 든 화면은 C3(로그인 전 = ${PRE.component} 1 · ${PRE.forbidden.join("·")} 0 / 둘러보기 1440 = ${DS.component} 1 · 사이드바 안 ${rules.guest.lock} ${(rules.guest as unknown as { sidebar_locks: number }).sidebar_locks}), 아직이면 셸 run a 가 바꾸지 않았다(nav-pill 1 · ${DS.component}·${DS.item} 0)`, async ({ browser }, info) => {
   test.setTimeout(240_000);
   const demo = (await demoReagents())[0];
   const guestPath: Record<number, string> = {
@@ -494,8 +504,8 @@ test(`[C3][S*] 로그인 전 ${PRE.screens.join("·")} · 둘러보기 ${rules.g
     16: devRules.routes["16-guest"].replace(/\[[^\]]+\]/, demo.id),
   };
   const targets: { screen: number; path: string; kind: "pre" | "guest" }[] = [
-    ...PRE.screens.map((s) => ({ screen: s, path: routeOf(s), kind: "pre" as const })),
-    ...rules.guest.screens.filter((s) => guestPath[s]).map((s) => ({ screen: s, path: guestPath[s], kind: "guest" as const })),
+    ...G.pre.map((s) => ({ screen: s, path: routeOf(s), kind: "pre" as const })),
+    ...rules.guest.screens.filter((s) => G.guest && guestPath[s]).map((s) => ({ screen: s, path: guestPath[s], kind: "guest" as const })),
   ];
   const viewport = info.project.name as ViewportName;
   const context = await anonContext(browser, info);
