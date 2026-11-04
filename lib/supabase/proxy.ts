@@ -4,8 +4,8 @@ import type { Database } from "@/lib/types/database";
 import { getSupabasePublicEnv } from "./env";
 import { nextOrHome } from "@/lib/auth/next-path";
 
-/** 로그인 없이 열리는 경로 (화면 1·14·비밀번호 찾기·확인 메일 링크·NEIS 중계·컴포넌트 갤러리·둘러보기 /demo) */
-const PUBLIC_ROOTS = ["/login", "/signup", "/forgot-password", "/auth", "/api", "/gallery", "/demo"];
+/** 로그인 없이 열리는 경로 (화면 1·14·비밀번호 찾기·확인 메일 링크·NEIS 중계·컴포넌트 갤러리·둘러보기 /demo·화면 19 처리방침 — 로그인 후에도 그대로) */
+const PUBLIC_ROOTS = ["/login", "/signup", "/forgot-password", "/auth", "/api", "/gallery", "/demo", "/privacy"];
 
 /**
  * 로그인된 사용자가 오면 홈(`/`)으로 보내는 경로 — 회원가입, 둘러보기 /demo·/demo/**

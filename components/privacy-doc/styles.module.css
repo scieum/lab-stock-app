@@ -63,3 +63,10 @@
   line-height: var(--line-height-normal);
   overflow-wrap: anywhere;
 }
+
+/* 시안 19-desktop doc-sections: 절 사이 12 (모바일 24) */
+@media (min-width: 1024px) {
+  .sections {
+    gap: var(--space-12);
+  }
+}

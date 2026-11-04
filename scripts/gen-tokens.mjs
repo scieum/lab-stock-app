@@ -43,6 +43,8 @@ const LAYOUT = [
   ["landing-content-width", "1200px"],
   ["landing-hero-copy-width", "560px"],
   ["landing-copy-width", "480px"],
+  // 화면 19 처리방침 가운데 읽기 단 (rules.json 1.32 privacy_page.shell "최대 720")
+  ["reading-width", "720px"],
 ];
 
 // 랜딩 스크롤 동작 (rules.json landing_rhythm.motion: "16px 아래에서 0.4초 떠오르며 나타남")
