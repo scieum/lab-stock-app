@@ -61,6 +61,7 @@ export function BoardForm({ mode = "post", defaultValues, submitLabel = BOARD_TE
       <TextInput
         label={isFaq ? BOARD_TEXT.faqTitleField : BOARD_TEXT.titleField}
         name="title"
+        className={styles.titleInput}
         value={title}
         maxLength={BOARD_TITLE_MAX}
         placeholder={isFaq ? undefined : BOARD_TEXT.titlePlaceholder}
@@ -72,6 +73,8 @@ export function BoardForm({ mode = "post", defaultValues, submitLabel = BOARD_TE
       <TextInputArea
         label={isFaq ? BOARD_TEXT.faqBodyField : BOARD_TEXT.bodyField}
         name="body"
+        className={styles.bodyInput}
+        rows={1}
         value={body}
         maxLength={BOARD_BODY_MAX}
         placeholder={isFaq ? undefined : BOARD_TEXT.bodyPlaceholder}

@@ -4,7 +4,8 @@
   flex-shrink: 0;
 }
 
-.button {
+.wrap .button {
+  height: var(--button-min-height);
   min-height: var(--button-min-height);
   padding: 0 var(--space-16);
 }

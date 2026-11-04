@@ -20,6 +20,12 @@
   margin-top: calc(var(--space-12) * -1);
 }
 
+/* 시안 20 head-row manage-back · board-back: 44 높이 · label 15/600 (1.29 기본 48 · 400 을 덮음) */
+.headRow > a {
+  min-height: var(--button-min-height);
+  font-weight: var(--font-weight-semibold);
+}
+
 .pageHead {
   display: flex;
   align-items: center;
@@ -80,6 +86,12 @@
   padding-top: var(--space-16);
 }
 
+/* 시안 20-empty ex-empty-state-card: radius 24 · 안쪽 24 */
+.emptyWrap > * {
+  padding: var(--space-24);
+  border-radius: var(--radius-lg);
+}
+
 .error {
   margin: 0;
   padding-top: var(--space-16);
@@ -128,6 +140,12 @@
   gap: var(--space-16);
   min-width: 0;
   padding: var(--space-32);
+}
+
+/* 시안 20-detail-desktop detail-drawer: 왼쪽 테두리 포함 안쪽 24 · 묶음 사이 24 */
+.drawer > [data-name="drawer-body"] {
+  gap: var(--space-24);
+  padding-left: calc(var(--space-24) - var(--border-width));
 }
 
 .drawerHead {

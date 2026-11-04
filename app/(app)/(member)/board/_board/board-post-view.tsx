@@ -138,7 +138,7 @@ export function BoardPostView({ post, hidden, operator, canWrite, list }: Props)
               error={list.error}
             />
           </div>
-          <DetailDrawer labelledBy={titleId} closeHref={listHref} focusKey={post.id}>
+          <DetailDrawer className={styles.drawer} labelledBy={titleId} closeHref={listHref} focusKey={post.id}>
             <div className={styles.drawerHead} data-name="drawer-head">
               {menus}
               <Link href={listHref} scroll={false} prefetch={false} className={drawerStyles.close} aria-label="닫기" data-name="drawer-close">

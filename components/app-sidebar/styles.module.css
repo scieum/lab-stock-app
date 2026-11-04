@@ -87,6 +87,13 @@
   flex-shrink: 0;
 }
 
+.guideGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
 .account {
   display: flex;
   min-width: 0;

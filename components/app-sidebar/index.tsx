@@ -71,8 +71,11 @@ export function AppSidebar({ schoolName, groups, active, account, onLogout, clas
       <div className={styles.bottom}>
         {/* rules 1.32 desktop_shell.guide_link: 계정 줄 위 guide-link '사용 가이드 ↗' — 모든 역할 · 둘러보기 공통, 새 탭 */}
         {/* rules 1.32 desktop_shell.board_link: guide-link 바로 위 board-link '게시판' — 로그인한 모든 역할, 둘러보기 없음 */}
-        {guest ? null : <BoardLink variant="sidebar" active={boardActive} className={styles.guide} />}
-        <GuideLink variant="sidebar" className={styles.guide} />
+        {/* 시안 20-desktop sidebar-guide: board-link ↔ guide-link gap 4 */}
+        <div data-name="sidebar-guide" className={styles.guideGroup}>
+          {guest ? null : <BoardLink variant="sidebar" active={boardActive} className={styles.guide} />}
+          <GuideLink variant="sidebar" className={styles.guide} />
+        </div>
         {guest ? (
           <div className={styles.guestAccount}>
             <span className={styles.guestStatus}>둘러보는 중</span>
