@@ -20,6 +20,9 @@ const EXCEPTION = (rules as unknown as { app_exceptions: Record<string, string> 
 const LOGOUT = "로그아웃";
 /** rules frames.mobile_only_screens (1.29 — 18 관리): 데스크톱 폭에서는 / 로 보낸다 → 1440 에서는 셸 화면 순회에서 뺀다 */
 const MOBILE_ONLY: number[] = (rules as unknown as { frames: { mobile_only_screens?: number[] } }).frames.mobile_only_screens ?? [];
+/** 화면 13 다음 차례 새 화면(rules board.screen 20) — 그 경로 검사는 그 화면 태그로 붙여 화면 13 판정(--grep "[S13g?]|[S*]")에 끼지 않게 한다 (screen-15-helpers tagScreenOf 와 같은 방식) */
+const LATER_SCREENS: number[] = [(rules as unknown as { board: { screen: number } }).board.screen];
+const tagScreenOf = (screen: number): number => (LATER_SCREENS.includes(screen) ? screen : SCREEN);
 
 /** dev-rules route_auth 로 이 역할이 그 화면에 들어갈 수 있는지 ("admin만" · "교사·admin만") */
 function canOpen(role: "student" | "teacher" | "admin", screen: number): boolean {
@@ -37,23 +40,26 @@ async function pathOf(page: Page, screen: number): Promise<string> {
   return routeOf(3).replace(/\[[^\]]+\]/, one.data!.id as string);
 }
 
-test(`[C1][S${SCREEN}] 기대값 원본: rules.json app_exceptions["${MENU}"] = 학교명 옆 ▾ · "${LOGOUT}" 1개 · dev-rules components["${MENU}"] = 로그인 후 셸 화면 (2~13·17 — dev-rules 1.19 화면 12 추가(d7 §26) · 16 은 dev-rules 에 없음)`, () => {
+test(`[C1][S${SCREEN}] 기대값 원본: rules.json app_exceptions["${MENU}"] = 학교명 옆 ▾ · "${LOGOUT}" 1개 · dev-rules components["${MENU}"] = 로그인 후 셸 화면 · 그 화면 시안 프레임마다 ${MENU} 1개`, () => {
   expect(EXCEPTION).toMatch(/▾/);
   expect(EXCEPTION).toContain(`'${LOGOUT}' 1개`);
-  // 1.26: 화면 17 센서도 로그인 후 셸 (프레임 17-mobile · 17-desktop 에 nav-account-menu)
-  // d7 §26 (dev-rules 1.19): 화면 12 QR 스캔도 로그인 후 셸 (프레임 12-mobile · 12-desktop 에 nav-account-menu)
-  // 1.29 (d7 §29): 화면 18 관리(모바일 전용 — frames.mobile_only_screens)도 로그인 후 셸 (프레임 18-mobile 에 nav-account-menu)
-  expect(SCREENS, "셸 화면").toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 17, 18]);
-  expect(MOBILE_ONLY, "rules frames.mobile_only_screens").toContain(18);
-  for (const f of ["12-mobile", "12-desktop", "17-mobile", "17-desktop", "18-mobile"]) expect(newFrame(f).filter((n) => n.name === MENU).length, `프레임 ${f} ${MENU} 1`).toBe(1);
-  for (const s of [1, 14, 15]) expect(SCREENS, `로그인 전 화면 ${s} 에 없음`).not.toContain(s);
+  expect(SCREENS.length, `dev-rules components["${MENU}"]`).toBeGreaterThan(0);
+  // dev-rules 목록의 화면마다 시안 기본 프레임({화면}-mobile · 모바일 전용이 아니면 {화면}-desktop)에 1개 (16 은 시안에 있으나 dev-rules 에 없음 — 목록은 dev-rules 가 원본)
+  for (const s of SCREENS) {
+    for (const v of MOBILE_ONLY.includes(s) ? ["mobile"] : ["mobile", "desktop"]) {
+      expect(newFrame(`${s}-${v}`).filter((n) => n.name === MENU).length, `프레임 ${s}-${v} ${MENU} 1`).toBe(1);
+    }
+  }
+  // 로그인 전 화면(랜딩 15 · 로그인 1 · 가입 14)에는 없음
+  for (const s of [15, 1, 14]) expect(SCREENS, `로그인 전 화면 ${s} 에 없음`).not.toContain(s);
   expect(ROUTE_AUTH.logout, "route_auth.logout: 둘러보기·로그인 전·NoSchoolScreen 에는 없음").toMatch(/둘러보기·로그인 전·NoSchoolScreen 에는 없음/);
 });
 
-for (const role of SCHOOL_A_ROLES as ("student" | "teacher" | "admin")[]) {
-  const open = SCREENS.filter((s) => canOpen(role, s));
+for (const role of SCHOOL_A_ROLES as ("student" | "teacher" | "admin")[]) for (const tag of [...new Set(SCREENS.map(tagScreenOf))]) {
+  const open = SCREENS.filter((s) => canOpen(role, s) && tagScreenOf(s) === tag);
+  if (open.length === 0) continue;
   // 폭 390 = nav-pill 학교명 버튼(글자 = 학교명), 폭 1440 = app-sidebar 계정 줄(글자 = "이름 · 역할", 시안 1.22 sidebar-account, d7 §23)
-  test(`[C1][S${SCREEN}] ${ROLE_LABEL[role]}: 들어갈 수 있는 셸 화면(${open.join("·")})마다 ${MENU} 정확히 1개 · 셸 계정 버튼(390 nav-pill 학교명 / 1440 app-sidebar "이름 · 역할", aria-haspopup=menu) 안 · 보임 · 홈에서 열면 role=menu 항목 "${LOGOUT}" 1개 (누르지 않음)`, async ({ browser }, info) => {
+  test(`[C1][S${tag}] ${ROLE_LABEL[role]}: 들어갈 수 있는 셸 화면(${open.join("·")})마다 ${MENU} 정확히 1개 · 셸 계정 버튼(390 nav-pill 학교명 / 1440 app-sidebar "이름 · 역할", aria-haspopup=menu) 안 · 보임${tag === SCREEN ? ` · 홈에서 열면 role=menu 항목 "${LOGOUT}" 1개 (누르지 않음)` : ""}`, async ({ browser }, info) => {
     test.setTimeout(360_000);
     const { context, page, viewport } = await openAs(browser, info, role, SCREEN);
     try {
@@ -83,6 +89,7 @@ for (const role of SCHOOL_A_ROLES as ("student" | "teacher" | "admin")[]) {
         const html = await res!.text();
         expect(html, `화면 ${screen}: 응답 본문에 ${MENU}`).toContain(`data-component="${MENU}"`);
       }
+      if (tag !== SCREEN) return;
       // 홈에서 메뉴 열고 닫기 (로그아웃은 누르지 않는다)
       await page.goto(routeOf(SCREEN));
       await expect(page.locator(sel("home-summary")).first()).toBeVisible({ timeout: 45_000 });
