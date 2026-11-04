@@ -26,7 +26,7 @@ type FrameNode = {
 };
 type Rules = {
   version: string;
-  manage: { list: string; row: string; back: string; guest: string };
+  manage: { list: string; row: string; back: string; guest: string; guide: string };
   wipe: { roles: string[]; entry: string; empty: string; danger_mark: string; school_name_confirm: string; disabled_button: string; reagent: string; record: string };
   tab_bar: { component: string; item: string; items: number; labels: string[]; labels_source: string; sensor_entry: string };
   mobile_menu: { removed: string };
@@ -92,18 +92,24 @@ const F2WD = frame("2-wipe-desktop");
 const F10W = frame("10-record-wipe-mobile");
 const F10WD = frame("10-record-wipe-desktop");
 
-/** 시안 18: 묶음 제목 · 행(이름 · 요약) */
+/** 시안 18 묶음 안 한 줄: manage-row 또는 도움말 묶음(rules manage.guide)의 board-link · guide-link (manage-row 모양이지만 manage-row 아님) */
+const ITEM_COMPS = ["manage-row", "board-link", "guide-link"] as const;
+type FrameItem = { comp: (typeof ITEM_COMPS)[number]; name: string; caption: string | null };
+/** 시안 18: 묶음 제목 · 줄(이름 · 요약). rows = manage-row 만, links = board-link · guide-link */
 function frameGroups(nodes: FrameNode[]) {
-  const out: { title: string; rows: { name: string; caption: string | null }[] }[] = [];
+  const out: { title: string; items: FrameItem[] }[] = [];
   for (const n of under(nodes, "manage-list")) {
     if (!n.text) continue;
-    if (leaf(n) === "caption" && n.path.includes("group-title")) out.push({ title: n.text.characters, rows: [] });
-    else if (leaf(n) === "name") out[out.length - 1].rows.push({ name: n.text.characters, caption: null });
-    else if (leaf(n) === "caption" && n.path.includes("manage-row")) out[out.length - 1].rows.at(-1)!.caption = n.text.characters;
+    const comp = ITEM_COMPS.find((c) => n.path.includes(c));
+    if (leaf(n) === "caption" && n.path.includes("group-title")) out.push({ title: n.text.characters, items: [] });
+    else if (comp && leaf(n) === "name") out[out.length - 1].items.push({ comp, name: n.text.characters, caption: null });
+    else if (comp && leaf(n) === "caption") out[out.length - 1].items.at(-1)!.caption = n.text.characters;
   }
-  return out;
+  return out.map((g) => ({ ...g, rows: g.items.filter((i) => i.comp === "manage-row"), links: g.items.filter((i) => i.comp !== "manage-row") }));
 }
 const MANAGE = {
+  /** rules manage.guide 맨 아래 넷째 묶음 제목 ('도움말') */
+  helpTitle: pick(rules.manage.guide, () => true, "manage.guide 묶음 제목"),
   groups: frameGroups(F18),
   guestGroups: frameGroups(F18G),
   list: node(F18, "manage-list"),
@@ -313,7 +319,10 @@ test(`[K1][S*] 기대값 원본: dev-rules components 에 새 ${NEW.length}개 �
   expect(guideGroup, "rules manage.guide 넷째 묶음").toBe("도움말");
   expect(MANAGE.groups.map((g) => g.title)).toEqual(["재고", "입고·주문", "학교", guideGroup]);
   // rules manage.guide: 둘러보기 '도움말' 묶음은 guide-link(rules guide.label) 만
-  expect(MANAGE.guestGroups.map((g) => g.rows.map((r) => r.name))).toEqual([["시약", "센서"], [(rules as unknown as { guide: { label: string } }).guide.label]]);
+  expect(MANAGE.guestGroups.map((g) => g.items.map((r) => `${r.comp}:${r.name}`))).toEqual([["manage-row:시약", "manage-row:센서"], [`guide-link:${(rules as unknown as { guide: { label: string } }).guide.label}`]]);
+  // 로그인 시안 도움말 = board-link '게시판' + guide-link (둘 다 manage-row 아님)
+  expect(MANAGE.groups.at(-1)!.items.map((r) => r.comp), "시안 18-mobile 도움말 줄").toEqual(["board-link", "guide-link"]);
+  expect(MANAGE.groups.at(-1)!.rows, "시안 18-mobile 도움말 manage-row 0").toEqual([]);
   expect(D7_29, "d7 §29 관리 경로").toContain("'관리' → `/manage`");
   expect(dev.routes["18"]).toBe("/manage");
   expect(dev.routes["18-guest"]).toBe("/demo/manage");
@@ -354,11 +363,28 @@ test(`[C1][S18] manage-list admin 시안 18-mobile: 묶음 ${MANAGE.groups.map((
     await expect(grp.locator("h2, h3, [role=heading]").first(), `묶음 ${gi + 1} 제목`).toHaveText(exact(g.title));
     const rows = grp.locator(sel("manage-row"));
     await expect(rows, `${g.title} 행 수`).toHaveCount(g.rows.length);
+    expect(
+      await grp.locator(ITEM_COMPS.map(sel).join(", ")).evaluateAll((els) => els.map((e) => e.getAttribute("data-component"))),
+      `${g.title} 줄 종류 · 순서 = 시안`,
+    ).toEqual(g.items.map((i) => i.comp));
     for (const [ri, r] of g.rows.entries()) {
       const row = rows.nth(ri);
       await expect(row.getByText(r.name, { exact: true }), `${g.title} ${ri + 1} 이름`).toHaveCount(1);
       const text = (await row.innerText()).replace(/\s+/g, " ").trim();
       expect(text, `${r.name} 행 글자 = 이름 + 요약(시안)`).toBe(r.caption ? `${r.name} ${r.caption}` : r.name);
+    }
+    for (const l of g.links) {
+      const link = grp.locator(sel(l.comp));
+      await expect(link, `${g.title} ${l.comp} 1`).toHaveCount(1);
+      await expect(link.getByText(l.name, { exact: true }), `${l.comp} 이름 = 시안`).toHaveCount(1);
+      if (l.comp === "board-link") {
+        const text = (await link.innerText()).replace(/\s+/g, " ").trim();
+        expect(text, `${l.name} 글자 = 이름 + 요약(시안 18-mobile)`).toBe(l.caption ? `${l.name} ${l.caption}` : l.name);
+        expect(await link.getAttribute("href"), "board-link → 화면 20").toBe(dev.routes["20"]);
+      } else {
+        expect(await link.getAttribute("target"), "guide-link 새 탭").toBe("_blank");
+      }
+      expect(Math.round((await box(link)).height), `${l.comp} 높이 = manage-row 모양 ${MANAGE.row.height}`).toBe(MANAGE.row.height);
     }
     if (gi > 0) {
       // 묶음 사이 hairline-soft: 앞 묶음 끝과 이 묶음 사이에 1px 선
@@ -413,8 +439,17 @@ test("[R-ui][S18] manage-list 역할별 (rules manage.list): 교사 = '재고' �
   await open(page, MANAGE_GALLERY);
   const titles = async (id: string) => (await area(page, id).locator(`${sel("manage-group")} h2`).allInnerTexts()).map((t) => t.trim());
   const all = MANAGE.groups.map((g) => g.title);
-  expect(await titles("manage-teacher"), "교사 묶음").toEqual(all.slice(0, 2));
-  expect(await titles("manage-student"), "학생 묶음").toEqual(all.slice(0, 1));
+  expect(all.at(-1), "시안 마지막 묶음 = rules manage.guide").toBe(MANAGE.helpTitle);
+  // 도움말 묶음은 로그인한 모든 역할 맨 아래 (rules manage.guide)
+  expect(await titles("manage-teacher"), "교사 묶음").toEqual([...all.slice(0, 2), MANAGE.helpTitle]);
+  expect(await titles("manage-student"), "학생 묶음").toEqual([...all.slice(0, 1), MANAGE.helpTitle]);
+  const help = MANAGE.groups.at(-1)!;
+  for (const id of ["manage-teacher", "manage-student"]) {
+    const grp = area(page, id).locator(sel("manage-group")).last();
+    expect(await grp.locator(ITEM_COMPS.map(sel).join(", ")).evaluateAll((els) => els.map((e) => e.getAttribute("data-component"))), `${id} 도움말 = 시안`).toEqual(
+      help.items.map((i) => i.comp),
+    );
+  }
   const names = async (id: string) => (await area(page, id).locator(sel("manage-row")).allInnerTexts()).map((t) => t.split("\n")[0].trim());
   expect(await names("manage-teacher")).toEqual(MANAGE.groups.slice(0, 2).flatMap((g) => g.rows.map((r) => r.name)));
   expect(await names("manage-student")).toEqual(MANAGE.groups[0].rows.map((r) => r.name));
@@ -423,7 +458,15 @@ test("[R-ui][S18] manage-list 역할별 (rules manage.list): 교사 = '재고' �
 test(`[GM-ui][S18g] manage-list 둘러보기 시안 18-guest-mobile: '${MANAGE.guestGroups[0].title}' ${MANAGE.guestGroups[0].rows.map((r) => r.name).join(" · ")} 만 · 요약 = 시안 데모 값 · 주소 = 둘러보기 경로`, async ({ page }) => {
   await open(page, MANAGE_GALLERY);
   const sec = area(page, "manage-guest");
-  await expect(sec.locator(sel("manage-group"))).toHaveCount(1);
+  const groups = sec.locator(sel("manage-group"));
+  await expect(groups, "둘러보기 묶음 수 = 시안 18-guest-mobile").toHaveCount(MANAGE.guestGroups.length);
+  expect((await groups.locator("h2").allInnerTexts()).map((t) => t.trim()), "둘러보기 묶음 제목").toEqual(MANAGE.guestGroups.map((g) => g.title));
+  expect(MANAGE.guestGroups.at(-1)!.title, "둘러보기 마지막 묶음 = rules manage.guide").toBe(MANAGE.helpTitle);
+  // 둘러보기 도움말 = guide-link 만 (rules manage.guide '둘러보기는 guide-link만')
+  expect(await groups.last().locator(ITEM_COMPS.map(sel).join(", ")).evaluateAll((els) => els.map((e) => e.getAttribute("data-component"))), "둘러보기 도움말 = 시안").toEqual(
+    MANAGE.guestGroups.at(-1)!.items.map((i) => i.comp),
+  );
+  await expect(sec.locator(sel("board-link")), "둘러보기 board-link 0").toHaveCount(0);
   const rows = sec.locator(sel("manage-row"));
   await expect(rows).toHaveCount(MANAGE.guestGroups[0].rows.length);
   for (const [i, r] of MANAGE.guestGroups[0].rows.entries()) {
