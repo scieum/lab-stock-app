@@ -5,6 +5,7 @@ import { getServerSession } from "@/lib/supabase/server";
 import { LandingScreen } from "../../landing-screen";
 import { NoSchoolScreen } from "../../no-school-screen";
 import { DeniedToast } from "./denied-toast";
+import { FeatureIntro } from "./feature-intro";
 import { HomeScreen } from "./home-screen";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,8 @@ export default async function HomePage() {
       <Suspense fallback={null}>
         <DeniedToast />
       </Suspense>
+      {/* 신기능 소개 팝업 = 교사·admin 만 (d7 §30) */}
+      {me.role !== "student" && <FeatureIntro />}
     </>
   );
 }
