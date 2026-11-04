@@ -307,7 +307,9 @@ test(`[C1]${S} 학생 FAQ 탭: faq-item 앞 ${FAQ_SEED_COUNT}개 = 가이드 '�
     expect(qs.slice(0, FAQ_SEED_COUNT), "FAQ 순서·문구 = seed (d7 §30)").toEqual(EXPECTED_FAQ.map((f) => f.q));
     const list = page.locator('main [data-name="faq-list"]');
     await expect(list.locator(sel("board-status-badge")), "FAQ 상태 배지 0 (rules board.faq)").toHaveCount(0);
-    await expect(list, "FAQ 글쓴이 표시 0").not.toContainText(AUTHOR_SUFFIX);
+    // 질문 문구에도 '선생님'이 들어 있으므로(seed) 질문을 뺀 나머지 글자에서 글쓴이 표시를 찾는다
+    const listText = (await list.innerText()).split("\n").map((l) => l.trim()).filter((l) => l && !qs.includes(l)).join("\n");
+    expect(listText, "FAQ 글쓴이 표시 0 (질문 문구 제외)").not.toContain(AUTHOR_SUFFIX);
     // 닫힌 상태: 답 0, aria-expanded false
     for (let i = 0; i < 3; i++) await expect(items.nth(i).locator("button").first()).toHaveAttribute("aria-expanded", "false");
     await expect(page.getByText(EXPECTED_FAQ[0].a, { exact: true })).toHaveCount(0);
