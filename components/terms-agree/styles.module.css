@@ -142,6 +142,13 @@
   padding: var(--space-8) var(--space-0) var(--space-8) calc(var(--button-min-height) + var(--space-4));
 }
 
+/* 시안 14-consent-desktop consent-detail-wrap: 아래 0 (모바일은 8) */
+@media (min-width: 1024px) {
+  .detailWrap {
+    padding-bottom: var(--space-0);
+  }
+}
+
 /* 한 줄 펼침 (서비스 이용약관 · 만 14세): canvas-soft · rounded 24 · body-sm ink */
 .termSummary {
   margin: 0;
