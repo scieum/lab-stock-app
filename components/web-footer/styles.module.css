@@ -6,7 +6,8 @@
   align-items: center;
   justify-content: center;
   padding: var(--space-12) var(--space-16);
-  border-top: var(--border-width) solid var(--color-border);
+  /* 위 hairline = 안쪽 그림자 (시안 stroke inside — 높이에 더하지 않음) */
+  box-shadow: inset 0 var(--border-width) 0 var(--color-border);
   border-radius: var(--radius-none);
   background: var(--color-surface);
 }
