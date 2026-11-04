@@ -155,8 +155,11 @@ export function guestTabActiveKey(pathname: string): TabKey | undefined {
   return undefined;
 }
 
-/** 관리 아래 첫 화면 (manage-back '‹ 관리' 를 두는 곳): 2·5·6·7·8·9·11·17 목록 화면 + 20 게시판 목록(d7 §30 목록 머리 '‹ 관리') */
-const MANAGE_CHILDREN = ["/reagents", "/manual", "/reorder", "/intake", "/users", "/vendors", "/cabinets", "/sensors", "/board"];
+/**
+ * 관리 아래 첫 화면 (nav-pill 안 manage-back '‹ 관리' 를 두는 곳): 2·5·6·7·8·9·11·17 목록 화면.
+ * 20 게시판 목록의 '‹ 관리' 는 시안 20-mobile 대로 nav-pill(워드마크) 아래 본문 head-row 에 페이지가 그린다.
+ */
+const MANAGE_CHILDREN = ["/reagents", "/manual", "/reorder", "/intake", "/users", "/vendors", "/cabinets", "/sensors"];
 const GUEST_MANAGE_CHILDREN = ["/demo/reagents", "/demo/sensors"];
 
 /**

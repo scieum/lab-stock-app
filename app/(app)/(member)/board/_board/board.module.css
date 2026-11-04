@@ -1,0 +1,215 @@
+/*
+ * 화면 20 게시판 (시안 20 · 20-detail · 20-new · 20-empty · 20-student)
+ * 모바일: top-bar(아래 12) 바로 아래 head-row 44(‹ 관리 · ‹ 게시판) → page-head → tabs-wrap(위 16 · 아래 8) → 목록.
+ *   셸 content 는 안쪽 16 · nav 와 본문 사이 24 — head-row 를 위로 12 당기고, 전폭 목록은 좌우 16 을 음수 여백으로 상쇄한다.
+ * 데스크톱: main 안쪽 32(셸 .page) · 묶음 사이 16, board-tabs 360, 글 목록 = hairline-soft 테두리 · radius 16.
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.headRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: var(--button-min-height);
+  margin-top: calc(var(--space-12) * -1);
+}
+
+.pageHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  min-height: var(--button-min-height);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-24);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+}
+
+.tabsWrap {
+  padding: var(--space-16) var(--space-0) var(--space-8);
+}
+
+.faqList {
+  display: flex;
+  flex-direction: column;
+}
+
+.faqList > :last-child {
+  border-bottom-width: 0;
+}
+
+.faqTools {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-8);
+}
+
+.faqActions {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.postList {
+  display: flex;
+  flex-direction: column;
+  margin: var(--space-0) calc(var(--space-16) * -1);
+}
+
+.postList > :last-child {
+  border-bottom-width: 0;
+}
+
+.more {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--space-16);
+}
+
+.emptyWrap {
+  padding-top: var(--space-16);
+}
+
+.error {
+  margin: 0;
+  padding-top: var(--space-16);
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+/* 20-detail · 20-new 모바일: head-row 아래 안쪽 위 8 · 묶음 사이 24 */
+.detailWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  padding-top: var(--space-8);
+}
+
+.formHead {
+  margin: var(--space-0);
+}
+
+.formWrap {
+  padding-top: var(--space-16);
+}
+
+.answerForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.answerForm > :last-child {
+  align-self: flex-start;
+}
+
+/* 데스크톱 글 보기: [글 목록(남는 폭, 안쪽 32)] [detail-drawer 480] */
+.desk {
+  display: flex;
+  align-items: flex-start;
+  min-height: 100dvh;
+}
+
+.deskList {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+  padding: var(--space-32);
+}
+
+.drawerHead {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-4);
+  min-height: var(--button-min-height);
+}
+
+/* 확인 카드: 모바일 = ex-modal-card 하단 시트 그대로 · 데스크톱 = 본문(사이드바 오른쪽) 가운데 440 */
+.dialog {
+  display: contents;
+}
+
+.dialogActions {
+  display: flex;
+  gap: var(--space-8);
+  padding-top: var(--space-16);
+}
+
+.dialogActions > * {
+  flex: 1;
+}
+
+@media (min-width: 1024px) {
+  .headRow {
+    margin-top: var(--space-0);
+  }
+
+  .page {
+    gap: var(--space-16);
+  }
+
+  .tabsWrap {
+    width: calc(var(--drawer-width) * 3 / 4);
+    max-width: 100%;
+    padding: var(--space-0);
+  }
+
+  .faqList {
+    padding-top: var(--space-8);
+  }
+
+  .postList {
+    margin: var(--space-0);
+    overflow: hidden;
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  .emptyWrap {
+    padding-top: var(--space-8);
+  }
+
+  /* 20-new-desktop form-column 640 · 사이 8 */
+  .formColumn {
+    gap: var(--space-8);
+    width: var(--form-width);
+    max-width: 100%;
+  }
+
+  .formWrap {
+    padding-top: var(--space-16);
+  }
+
+  .dialog {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: var(--sidebar-width);
+    z-index: 45;
+    display: grid;
+    place-items: center;
+    padding: var(--space-24);
+    pointer-events: none;
+  }
+
+  .dialog > * {
+    width: calc(var(--space-48) * 9 + var(--space-8));
+    max-width: 100%;
+    pointer-events: auto;
+  }
+}

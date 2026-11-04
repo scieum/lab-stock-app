@@ -16,6 +16,8 @@ const NO_PREFETCH = [
   /^\/users(\/|$)/,
   /^\/reorder(\/|$)/,
   /^\/vendors(\/|$)/,
+  // 게시판 글 보기·글쓰기·고치기 (화면 20): 행마다 요청이 생긴다
+  /^\/board\/.+/,
 ];
 
 export function linkPrefetch(href: string): false | undefined {

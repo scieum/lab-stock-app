@@ -47,6 +47,10 @@
   overflow-wrap: anywhere;
 }
 
+.title:focus {
+  outline: none;
+}
+
 .meta {
   display: flex;
   align-items: center;

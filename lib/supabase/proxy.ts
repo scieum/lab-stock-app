@@ -30,6 +30,7 @@ const APP_ROOTS = [
   "/sensors",
   "/scan",
   "/manage",
+  "/board",
   "/reset-password",
 ];
 

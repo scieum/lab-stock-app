@@ -82,7 +82,7 @@ export function BoardForm({ mode = "post", defaultValues, submitLabel = BOARD_TE
           {error}
         </p>
       ) : null}
-      <ButtonPrimary type="submit" fullWidth disabled={!ready} aria-busy={submitting || undefined}>
+      <ButtonPrimary type="submit" fullWidth className={styles.submit} disabled={!ready} aria-busy={submitting || undefined}>
         {submitLabel}
       </ButtonPrimary>
     </form>
