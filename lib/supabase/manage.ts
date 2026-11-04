@@ -2,6 +2,7 @@ import "server-only";
 import { createAnonClient } from "./anon";
 import { getServerClient, getServerSession, type SessionRole } from "./server";
 import { DEMO_SCHOOL_ID } from "./demo-data";
+import { countMyAnsweredPosts } from "./board";
 import { isLowStock } from "@/lib/types";
 import type { ManageCounts } from "@/lib/manage-menu";
 
@@ -11,6 +12,7 @@ import type { ManageCounts } from "@/lib/manage-menu";
  * 역할별로 필요한 것만 읽는다 — 화면 항목(lib/manage-menu)과 같은 기준:
  *   모든 역할: 시약 N종 · 재고 부족 K / 센서 N개 · 고장 K / 시약장 N개
  *   교사·admin: + 재주문 알림 N건 (화면 6 과 같은 기준 stock < min_stock = 재고 부족 수)
+ *   교사·admin: + 게시판 '답변 완료 N' (내가 쓴 글, RPC board_my_answered_count · RLS — 학생·0 = caption 없음)
  *   admin: + 학생 a · 교사 b · admin c (profiles) / 판매처 N곳 (우리 학교가 등록한 판매처 — 공통 목록 제외, 화면 9 '우리 학교' 목록)
  */
 export type ManageSummary = { role: SessionRole; schoolName: string; counts: ManageCounts };
@@ -37,13 +39,14 @@ export async function getManageSummary(): Promise<ManageSummaryResult> {
 
   const supabase = await getServerClient();
   const none = Promise.resolve(null);
-  const [reagents, sensors, broken, cabinets, profiles, vendors] = await Promise.all([
+  const [reagents, sensors, broken, cabinets, profiles, vendors, boardAnswered] = await Promise.all([
     supabase.from("reagents").select("stock, min_stock").eq("school_id", schoolId),
     supabase.from("sensors").select("id", { count: "exact", head: true }).eq("school_id", schoolId),
     supabase.from("sensors").select("id", { count: "exact", head: true }).eq("school_id", schoolId).eq("status", "broken"),
     supabase.from("cabinets").select("id", { count: "exact", head: true }).eq("school_id", schoolId),
     admin ? supabase.from("profiles").select("role").eq("school_id", schoolId) : none,
     admin ? supabase.from("vendors").select("id", { count: "exact", head: true }).eq("school_id", schoolId) : none,
+    countMyAnsweredPosts(),
   ]);
 
   const counts: ManageCounts = {};
@@ -65,6 +68,8 @@ export async function getManageSummary(): Promise<ManageSummaryResult> {
     const n = countOf(vendors);
     if (n !== undefined) counts.vendors = n;
   }
+
+  if (staff) counts.boardAnswered = boardAnswered;
 
   return { kind: "ok", data: { role, schoolName: me.school.name, counts } };
 }

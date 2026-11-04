@@ -24,6 +24,7 @@ const COUNTS: ManageCounts = {
   reorder: 3,
   users: { student: 3, teacher: 1, admin: 1 },
   vendors: 4,
+  boardAnswered: 1,
 };
 
 /** 시안 18-guest-mobile 데모 값 */
@@ -59,7 +60,7 @@ export default function ManageGalleryPage() {
           <ManageList groups={manageMenu("teacher")} counts={COUNTS} />
         </Item>
         <Item id="manage-student" name="manage-list — 학생 (재고 묶음만)">
-          <ManageList groups={manageMenu("student")} counts={COUNTS} />
+          <ManageList groups={manageMenu("student")} counts={{ ...COUNTS, boardAnswered: undefined }} />
         </Item>
         <Item id="manage-guest" name="manage-list — 둘러보기 (시안 18-guest-mobile: 시약 · 센서)">
           <ManageList groups={guestManageMenu()} counts={GUEST_COUNTS} help={manageHelp("guest")} />
