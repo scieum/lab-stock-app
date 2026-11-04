@@ -442,11 +442,13 @@ test("[R-db][S20] 직접 표 조회로도 FAQ seed 는 글쓴이·학교 없음 
   const { data, error } = await s.client
     .from("board_posts")
     .select("title, author_id, author_school_id, answer, hidden_at")
-    .eq("category", "faq")
-    .in("title", EXPECTED_FAQ.map((f) => f.q));
+    .eq("category", "faq");
   expect(error, error?.message).toBeNull();
-  expect(data ?? []).toHaveLength(EXPECTED_FAQ.length);
-  for (const r of data ?? []) expect(r).toMatchObject({ author_id: null, author_school_id: null, answer: null, hidden_at: null });
+  // 제목 필터는 JS 에서: PostgREST in() 은 따옴표·괄호가 든 제목("AI 추출을 쓸 수 없어요(서버 설정)"…)을 잘못 나눠 일부 행을 놓친다
+  const seedTitles = new Set(EXPECTED_FAQ.map((f) => f.q));
+  const seeds = (data ?? []).filter((r) => seedTitles.has(String(r.title)));
+  expect(seeds.map((r) => r.title).sort()).toEqual([...seedTitles].sort());
+  for (const r of seeds) expect(r).toMatchObject({ author_id: null, author_school_id: null, answer: null, hidden_at: null });
 });
 
 test("[R-db][S20] 테스트 글 정리 대상은 이 워커가 만든 S20-db- 글뿐 (seed 보호 전제)", () => {
