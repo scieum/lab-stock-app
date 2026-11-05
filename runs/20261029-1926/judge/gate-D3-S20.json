@@ -1,0 +1,26 @@
+{
+  "gate": "gate-D3-S20",
+  "pass": true,
+  "exit": 0,
+  "violations": [],
+  "logs": {},
+  "report": {
+    "V1": {
+      "screenshots": [
+        "test-results/v1-20-desktop.png",
+        "test-results/v1-20-detail-desktop.png",
+        "test-results/v1-20-detail-mobile.png",
+        "test-results/v1-20-empty-desktop-student.png",
+        "test-results/v1-20-empty-desktop.png",
+        "test-results/v1-20-empty-mobile-student.png",
+        "test-results/v1-20-empty-mobile.png",
+        "test-results/v1-20-mobile.png",
+        "test-results/v1-20-new-desktop.png",
+        "test-results/v1-20-new-mobile.png",
+        "test-results/v1-20-student-desktop.png",
+        "test-results/v1-20-student-mobile.png"
+      ],
+      "figma_page": "https://www.figma.com/design/B4bHJR70riJS4cmXPT4ETs?node-id=2049-2"
+    }
+  }
+}
