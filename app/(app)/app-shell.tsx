@@ -230,6 +230,7 @@ export function AppShell({ schoolName, role, displayName, children }: Props) {
           groups={sidebarMenu(role)}
           active={sidebarActiveKey(pathname)}
           boardActive={isActive(pathname, BOARD_HREF)}
+          guide={pathname === "/" || pathname === "/manage" || isActive(pathname, BOARD_HREF)}
           account={sidebarAccountLabel(displayName, role)}
           onLogout={logout}
         />
