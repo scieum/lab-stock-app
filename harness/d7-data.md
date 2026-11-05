@@ -404,6 +404,28 @@
 | 반영 | 실행 뒤 화면 2·10·13·6 숫자 바로 반영(revalidate). 감사 로그는 두지 않는다(이번 범위 밖) |
 | 테스트 | 공용 학교 A·B·데모 데이터는 절대 지우지 않는다 — 전체 삭제·기록 삭제의 성공 경로는 일회용 학교에서만. 공용 학교로는 거부 경로(교사·학생·학교명 틀림·다른 학교)만 |
 
+## 30. 게시판(화면 20)·개인정보 처리방침(화면 19)·동의 펼침·신기능 소개 팝업·사용 가이드·게시판 진입 (화면 13·14·15·18·19·20, 2026-10-29 — design/rules.json 1.30~1.32 board · privacy_page · privacy_consent · feature_intro · guide · footer · desktop_shell.board_link·guide_link · manage.guide · landing_hero_align, 디자인 run 20261027-1224·20261027-1613·20261029-1556)
+
+| 항목 | 결정 |
+|---|---|
+| N1 예외 | rules auth.board_exception: **게시판 글만** 학교를 넘어 보인다. 시약·재고·사용 기록·사용자 등 다른 테이블의 학교 분리(N1-db)는 그대로. N1-ui(학교명 종류 = 1)는 rules school_name_scope_screens 대상 화면에만 — 화면 20 은 제외(다른 학교명 '○○고등학교 선생님'이 보이는 것이 정상) |
+| 게시판 테이블 | 새 테이블 `board_posts`: id uuid, category text check ∈ {faq, bug, idea}(화면 표시 FAQ · 오류 문의 · 개선 제안), title text(1~100자), body text(1~5000자), author_id uuid(auth.users), author_school_id uuid(schools, FAQ 는 null 가능), answer text null, answered_at timestamptz null, hidden_at timestamptz null, created_at·updated_at. 상태 = answer 가 있으면 '답변 완료', 없으면 '접수'(따로 저장하지 않음). FAQ 는 상태 배지 없음 |
+| 읽기 (RLS) | 로그인한 사용자(학생 포함, 데모 학교 제외)는 hidden_at is null 인 모든 학교 글을 읽는다. anon(둘러보기 포함) 0행. 글쓴이 표시 = 글쓴이 학교명(schools.name) + ' 선생님' — 이름·이메일·역할은 화면·응답·RSC 어디에도 보내지 않는다(profiles 등 개인 정보 테이블을 다른 학교에 열지 않는다). 학교명은 글 목록 읽기 함수/뷰에서만 붙인다 |
+| 쓰기 (RLS) | 글쓰기 = 교사·admin(자기 학교 membership), category ∈ {bug, idea}, author_id = auth.uid(), author_school_id = 자기 학교, answer·answered_at·hidden_at 은 null 로만. 학생·데모·anon insert 거부(R-db). 수정 = 글쓴이 본인 + answer is null 일 때만 title·body·category(bug/idea). 삭제 = 글쓴이 본인(답변이 달린 뒤에도 가능, 실제 delete) |
+| 운영자 | 서버 환경변수 `BOARD_OPERATOR_EMAIL`(lib/server 에서만 읽음, NEXT_PUBLIC 금지) 과 로그인 이메일이 같으면 운영자. 화면·DB 로 지정 불가. 운영자 쓰기(FAQ 작성·수정·삭제, 답변 작성·수정, 글 숨기기·되살리기)는 app/api/board/** 서버 경로에서 운영자 확인 뒤 service role 로만(lib/server) — RLS 로는 누구도 answer·hidden_at·faq 를 쓰지 못한다. 값이 비어 있으면 운영자 없음(운영자 기능 전부 403). 로컬 .env.local 에 값, 배포는 사람이 Vercel 환경변수로 |
+| 운영자 화면 | 시안 범위 밖(rules board.answer) — 최소한으로: 운영자에게만 글 보기(20-detail) 아래 '답변' text-input(여러 줄) + button-primary '답변 등록'(있으면 '답변 고치기'), page-more-menu 에 '숨기기'. FAQ 탭에 '+ FAQ 추가'(button-outline) → board-form 같은 모양(분류 고정 FAQ, 제목 = 질문, 본문 = 답). FAQ 항목 펼친 상자 아래 '고치기 · 삭제'(운영자만). 기존 컴포넌트·토큰만, 새 시각 요소 없음. 운영자가 아니면 이 요소 0 |
+| 화면 20 목록 | `/board?tab=faq\|bug\|idea`(기본 faq). board-tabs(segmented-control 3칸) · FAQ = faq-item 목록(펼침 하나씩 아님 — 여러 개 동시 펼침 허용) · 오류 문의/개선 제안 = board-post-row 최신순, 20개씩 '더 보기'. 분류에 글 0 = 20-empty. board-write '글쓰기'(교사·admin, 학생 0) → `/board/new?category=` 현재 탭(FAQ 탭이면 bug) |
+| 20-detail | `/board/[id]`: 숨긴 글·없는 글 = 404(운영자는 숨긴 글도 보이고 '숨긴 글' caption). board-post-menu ⋯ = 글쓴이 본인만(수정 → /board/[id]/edit = board-form 채운 채, 답변 뒤 비활성 + 이유 문구 / 삭제 = ex-modal-card 확인 → 목록 + ex-toast '글을 삭제했어요'). FAQ 글은 detail 로 열지 않는다(목록에서 펼침) |
+| 20-new | board-form: 분류 segmented(오류 문의 · 개선 제안) → 제목 text-input → board-privacy-note → 본문(여러 줄) → button-primary '등록'. 빈 제목·본문이면 버튼 꺼짐. 등록 → 그 글 보기 + ex-toast '글을 올렸어요'. 학생이 /board/new 에 오면 /board 로 |
+| 진입 | 데스크톱 = 사이드바 guide-link 바로 위 board-link '게시판'(sidebar-item 모양, /board·/board/* 에서 현재 표시). 모바일 = 관리 탭(18) 맨 아래 넷째 묶음 '도움말' = board-link(manage-row 모양, 요약 caption = 내가 쓴 글 중 답변 완료 수 'N개 답변 완료' 대신 rules 예시 '답변 완료 N', 0 이면 caption 없음, 학생은 caption 없음) + guide-link '사용 가이드 ↗'(새 탭). 둘러보기 = guide-link 만. 화면 20 모바일 tab-bar 활성 = '관리', 목록 머리 '‹ 관리', 글 보기·쓰기 머리 '‹ 게시판' |
+| 미리 등록 FAQ | 마이그레이션 seed 로 16개: public/guide/index.html '자주 묻는 질문' 14개(질문·답 문구 그대로) + rules board.faq_examples 의 '온라인학교는 회원가입에서 어디에 있나요?'·'만 14세 미만 학생도 가입할 수 있나요?' 2개. author_id = null 허용(seed), 순서 = 가이드 순서 뒤에 2개. 다시 실행해도 중복 없게(제목 기준 on conflict 또는 not exists) |
+| 화면 19 처리방침 | `/privacy`, 로그인 전·후 모두 열림(proxy 가 막지 않음, GUEST_ONLY 아님), 정적 생성(force-static). rules privacy_page 의 절 순서·privacy-toc·privacy-table 그대로. 시행일 2026-10-29(이번 배포일). 보호책임자 = 'Lab_Stock 운영자 · gkrngkdus22@gmail.com'(2026-10-29 사용자 결정, 한 곳 상수로 — 동의 펼침과 같은 출처). 위탁·국외 이전 표 = Supabase(DB·로그인, 서울) · Vercel(호스팅, 서울) · Google(Gemini, AI 서류 읽기, 국외 — 미국, 올린 파일은 읽기에만 쓰고 저장하지 않음). 국외 이전 항목(이전 국가·받는 자·항목·시기·방법·보유 기간·거부 방법과 결과)은 절 4 본문에 문장으로 |
+| 화면 14 동의 펼침 | rules privacy_consent: '개인정보 수집·이용 동의' › → privacy-consent-detail(목적 → 항목 → 보유 기간 → 처리 위탁·국외 이전 → 동의 거부 권리 → 보호책임자, rules copy 문구) + privacy-link '개인정보 처리방침 전문 보기 ↗'(/privacy 새 탭, 입력 유지). age-confirm '만 14세 이상입니다 (필수)' › → 한 줄 펼침. 기존 동의 검사(agreeAge 등, PR #2)는 그대로 |
+| 화면 13 신기능 팝업 | rules feature_intro 그대로. 교사·admin, 홈(13) 들어올 때만. 닫기/✕ = sessionStorage(이번 접속), '일주일 동안 보지 않기' = localStorage 7일, 주 버튼 = 화면 7 서류로 입고(현재 입고 화면의 서류 모드 진입 방식 그대로) + localStorage 영구 숨김. 저장소 접근 실패 시 팝업을 띄우지 않는다. 학생·둘러보기 0 |
+| 화면 15 | web-footer footer-links('개인정보 처리방침'(/privacy) · '사용 가이드'(/guide/ 새 탭)) — 모바일 두 줄. 데스크톱 landing-hero 글 묶음 세로 가운데 = product-shot 패널 가운데(±8, rules landing_hero_align) |
+| 사용 가이드 링크 | 이미 넣은 시안 예외 링크(사이드바 아래·관리 탭 맨 아래·랜딩 footer, f2c67a1)를 rules guide·desktop_shell.guide_link·manage.guide·footer 대로 맞춘다(guide-link data-component, 새 탭, ↗). 가이드 HTML 자체는 이번 범위 밖 |
+| 테스트 | 게시판 성공 경로(글쓰기·수정·삭제·운영자 답변)는 테스트가 만든 글만 지운다 — seed FAQ 는 지우지 않는다. 운영자 테스트는 BOARD_OPERATOR_EMAIL 을 테스트 계정 이메일로 바꿔 띄운 서버에서만, 또는 운영자 확인 함수 단위 테스트로. N1-db: 학교 B 사용자가 학교 A 글을 읽음 = 정상(예외), 학교 A 글 수정·삭제 = 0행 |
+
 ## 10. 로그아웃 (2026-10-05 결정)
 
 - 로그인 후 모든 화면의 nav-pill 학교명을 누르면 작은 메뉴가 열리고 "로그아웃" 1개가 있다. 누르면 `POST /api/auth/logout` → `/login`.

@@ -1,0 +1,33 @@
+/* 시안 13-feature-intro feature-intro-dismiss: 전폭 · 높이 44 · 양 끝 정렬 */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: var(--button-min-height);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--button-min-height);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+}
+
+.button:hover {
+  color: var(--color-text);
+}
+
+.button:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: var(--space-4);
+  border-radius: var(--radius-md);
+}

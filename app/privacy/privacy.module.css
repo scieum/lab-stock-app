@@ -1,0 +1,32 @@
+/*
+ * 화면 19 처리방침 — 시안 19-mobile: top-bar 안쪽 16/16/8/16 → page-body 위 16 · 사이 48(문서 → web-footer), 문서 좌우 16.
+ * 19-desktop: web-header → page-body 위 24, 가운데 읽기 단 최대 720 (rules privacy_page.shell).
+ */
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--color-surface);
+}
+
+.top {
+  padding: var(--space-16) var(--space-16) var(--space-8);
+}
+
+.body {
+  display: flex;
+  flex: 1 0 auto;
+  justify-content: center;
+  padding: var(--space-16) var(--space-16) var(--space-48);
+}
+
+.doc {
+  width: 100%;
+  max-width: var(--reading-width);
+}
+
+@media (min-width: 1024px) {
+  .body {
+    padding-top: var(--space-24);
+  }
+}

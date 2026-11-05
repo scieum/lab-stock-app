@@ -1,6 +1,6 @@
 /* 자동 생성 파일 — 직접 고치지 않는다. */
 /* 원본: design/rules.json · 생성: node scripts/gen-tokens.mjs */
-/* rules.json version 1.29 */
+/* rules.json version 1.32 */
 
 :root {
   /* color (rules.json colors.allowed) */
@@ -106,6 +106,7 @@
   --landing-content-width: 1200px;
   --landing-hero-copy-width: 560px;
   --landing-copy-width: 480px;
+  --reading-width: 720px;
 
   /* motion (rules.json landing_rhythm) */
   --motion-reveal-distance: 16px;

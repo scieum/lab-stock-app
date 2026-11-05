@@ -11,6 +11,7 @@ import type { ManageCounts } from "@/lib/manage-menu";
  * 역할별로 필요한 것만 읽는다 — 화면 항목(lib/manage-menu)과 같은 기준:
  *   모든 역할: 시약 N종 · 재고 부족 K / 센서 N개 · 고장 K / 시약장 N개
  *   교사·admin: + 재주문 알림 N건 (화면 6 과 같은 기준 stock < min_stock = 재고 부족 수)
+ *   교사·admin: + 게시판 '답변 완료 N' (내가 쓴 글, RPC board_my_answered_count · RLS — 학생·0 = caption 없음)
  *   admin: + 학생 a · 교사 b · admin c (profiles) / 판매처 N곳 (우리 학교가 등록한 판매처 — 공통 목록 제외, 화면 9 '우리 학교' 목록)
  */
 export type ManageSummary = { role: SessionRole; schoolName: string; counts: ManageCounts };
@@ -37,13 +38,14 @@ export async function getManageSummary(): Promise<ManageSummaryResult> {
 
   const supabase = await getServerClient();
   const none = Promise.resolve(null);
-  const [reagents, sensors, broken, cabinets, profiles, vendors] = await Promise.all([
+  const [reagents, sensors, broken, cabinets, profiles, vendors, boardAnswered] = await Promise.all([
     supabase.from("reagents").select("stock, min_stock").eq("school_id", schoolId),
     supabase.from("sensors").select("id", { count: "exact", head: true }).eq("school_id", schoolId),
     supabase.from("sensors").select("id", { count: "exact", head: true }).eq("school_id", schoolId).eq("status", "broken"),
     supabase.from("cabinets").select("id", { count: "exact", head: true }).eq("school_id", schoolId),
     admin ? supabase.from("profiles").select("role").eq("school_id", schoolId) : none,
     admin ? supabase.from("vendors").select("id", { count: "exact", head: true }).eq("school_id", schoolId) : none,
+    countMyAnsweredPosts(),
   ]);
 
   const counts: ManageCounts = {};
@@ -65,6 +67,8 @@ export async function getManageSummary(): Promise<ManageSummaryResult> {
     const n = countOf(vendors);
     if (n !== undefined) counts.vendors = n;
   }
+
+  if (staff && boardAnswered > 0) counts.boardAnswered = boardAnswered;
 
   return { kind: "ok", data: { role, schoolName: me.school.name, counts } };
 }
@@ -88,4 +92,15 @@ export async function getDemoManageCounts(): Promise<ManageCounts> {
   const sensorBroken = countOf(broken);
   if (sensorTotal !== undefined && sensorBroken !== undefined) counts.sensors = { total: sensorTotal, broken: sensorBroken };
   return counts;
+}
+
+// board.ts 는 @/lib/board 를 불러와서, 여기 두면 manage 가 board 규칙에 묶이지 않는다
+/** 관리 탭 board-link 요약 — 내가 쓴 글 중 답변 완료 수 (학생·오류 = 0, caption 없음) */
+export async function countMyAnsweredPosts(): Promise<number> {
+  const me = await getServerSession();
+  if (me.kind !== "member" || me.role === "student") return 0;
+  const supabase = await getServerClient();
+  const { data, error } = await supabase.rpc("board_my_answered_count");
+  if (error || typeof data !== "number") return 0;
+  return data;
 }

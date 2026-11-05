@@ -50,7 +50,9 @@ export type IconName =
   | "flash"
   | "menu"
   | "link"
-  | "grid";
+  | "grid"
+  | "help"
+  | "board";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   // 랜딩 15-desktop 문제 공감 카드 (icon-quote) · 안심 격자 (icon-lock · icon-shield)
@@ -321,6 +323,21 @@ const PATHS: Record<IconName, React.ReactNode> = {
     <>
       <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" />
       <path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
+    </>
+  ),
+  // 사용 가이드 guide-link (시안 18-mobile · 20-desktop icon-help: 원 + 물음표)
+  help: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.6 9.4a2.5 2.5 0 0 1 4.8 1c0 1.7-2.4 2.2-2.4 3.6" />
+      <path d="M12 17h.01" />
+    </>
+  ),
+  // 게시판 board-link (시안 18-mobile · 20-desktop icon-board: 말풍선 + 글 줄)
+  board: (
+    <>
+      <path d="M4.5 5.5h15v10h-8l-4 3.5v-3.5h-3Z" />
+      <path d="M8 9.5h8M8 12.5h5" />
     </>
   ),
 };

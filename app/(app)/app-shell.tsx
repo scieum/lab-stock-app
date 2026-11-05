@@ -7,6 +7,7 @@ import { NavPill, type NavLinkItem } from "@/components/nav-pill";
 import { TabBar } from "@/components/tab-bar";
 import { manageBackHref, tabActiveKey } from "@/lib/manage-menu";
 import { useRememberScanReturn, useScanReturnHref } from "@/lib/scan-return";
+import { BOARD_HREF } from "@/lib/board";
 import { sidebarAccountLabel, sidebarActiveKey, sidebarMenu, type SidebarRole } from "@/lib/sidebar-menu";
 import { useIsDesktop } from "@/lib/use-viewport";
 import styles from "./shell.module.css";
@@ -191,6 +192,8 @@ function MobileNav({ schoolName, staff = false, admin = false, page }: AppNavPro
  */
 function isDeskPath(pathname: string): boolean {
   if (/^\/sensors\/doc\/?$/.test(pathname)) return false;
+  // 20 /board/[id] (시안 20-detail-desktop: 글 목록 + 오른쪽 detail-drawer). /board/new 는 본문 페이지
+  if (/^\/board\/(?!new\/?$)[^/]+\/?$/.test(pathname)) return true;
   return /^\/(reagents(\/[^/]+)?|msds\/[^/]+|usage|users|vendors|scan|sensors(\/[^/]+(\/edit)?)?)\/?$/.test(pathname);
 }
 
@@ -200,6 +203,8 @@ function isDeskPath(pathname: string): boolean {
  * 오른쪽 detail-drawer(11 QR 인쇄)가 열리면 본문 + 드로어 가로 배치.
  */
 function isPagePath(pathname: string): boolean {
+  // 20 /board · /board/new · /board/[id]/edit (시안 20-desktop · 20-new-desktop: main 안쪽 32)
+  if (/^\/board(\/new|\/[^/]+\/edit)?\/?$/.test(pathname)) return true;
   return /^\/(manual|reorder|intake|cabinets|usage\/new|sensors\/doc)?\/?$/.test(pathname);
 }
 
@@ -224,6 +229,8 @@ export function AppShell({ schoolName, role, displayName, children }: Props) {
           schoolName={schoolName}
           groups={sidebarMenu(role)}
           active={sidebarActiveKey(pathname)}
+          boardActive={isActive(pathname, BOARD_HREF)}
+          guide={pathname === "/" || pathname === "/manage" || isActive(pathname, BOARD_HREF)}
           account={sidebarAccountLabel(displayName, role)}
           onLogout={logout}
         />

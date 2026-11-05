@@ -43,7 +43,10 @@ async function expectActiveTab(page: Page, screen: number, where: string): Promi
 }
 
 test(`[C2][S*] 기대값 원본: rules manage.back 관리 아래 화면 ${MANAGE_BACK_SCREENS.join("·")} = dev-rules components["${BACK}"] · 활성 탭 '관리' · routes 18 · 18-guest`, () => {
-  expect([...MANAGE_BACK_SCREENS].sort((a, b) => a - b), "dev-rules components manage-back").toEqual([...(devRules.components[BACK] ?? [])].sort((a, b) => a - b));
+  // rules manage.back 2026-10-29: '화면 20 게시판 목록도 ‹ 관리' — 화면 20 은 그 화면 차례에 screen-20 테스트에서 본다
+  const later = [...MANAGE_RULES.back.matchAll(/화면 (\d+) [^·]*'‹ 관리'/g)].map((m) => Number(m[1]));
+  expect(later, "rules manage.back 게시판 화면").toEqual([(rules as unknown as { board: { screen: number } }).board.screen]);
+  expect([...MANAGE_BACK_SCREENS, ...later].sort((a, b) => a - b), "dev-rules components manage-back").toEqual([...(devRules.components[BACK] ?? [])].sort((a, b) => a - b));
   for (const s of MANAGE_BACK_SCREENS) expect(mobileActiveTab(s), `화면 ${s} 활성 탭`).toBe(mobileActiveTab(MANAGE_SCREEN));
   expect(routeOf(MANAGE_SCREEN)).toBe("/manage");
   expect(GUEST_MANAGE).toBe("/demo/manage");

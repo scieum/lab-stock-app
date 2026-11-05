@@ -98,6 +98,28 @@ export function frameActiveLabel(screen: number): string {
   return act[0].label;
 }
 
+/** rules desktop_shell.board_link: 사이드바 아래 '게시판' 줄 — 화면 20 에서는 이것이 현재 표시 (sidebar-item 은 활성 0) */
+export const BOARD_LINK = "board-link";
+
+/**
+ * 새 프레임 {screen}-desktop 의 현재 표시 1개: 칠한 sidebar-item, 없으면 칠한 board-link (20-desktop).
+ * 둘 다 합쳐 정확히 1개가 아니면 throw — 테스트 본문(또는 그 화면 범위)에서 부른다.
+ */
+export function frameActive(screen: number): { component: string; label: string; fill: string } {
+  const frame = `${screen}-desktop`;
+  const items = frameSidebarItems(frame).filter((i) => i.active).map((i) => ({ component: DESKTOP_SHELL.item, label: i.label, fill: i.fill! }));
+  const nodes = loadShellFrameNodes<Node>(frame);
+  const boards = nodes.flatMap((n, i) => {
+    if (n.name !== BOARD_LINK || !n.fills?.length) return [];
+    const t = nodes.slice(i + 1).find((x) => x.type === "TEXT" && x.path.includes(BOARD_LINK));
+    if (!t?.text) throw new Error(`${frame} board-link 글자 없음`);
+    return [{ component: BOARD_LINK, label: t.text.characters, fill: n.fills[0] }];
+  });
+  const all = [...items, ...boards];
+  if (all.length !== 1) throw new Error(`${frame} 현재 표시(sidebar-item·board-link) ${all.length}개`);
+  return all[0];
+}
+
 /** 새 프레임 {frame} 의 이름이 name 인 첫 노드 */
 export function frameNode(frame: string, name: string): Node & Record<string, unknown> {
   const n = loadShellFrameNodes<Node & Record<string, unknown>>(frame).find((x) => x.name === name);

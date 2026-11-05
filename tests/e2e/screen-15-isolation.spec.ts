@@ -36,6 +36,8 @@ import {
   guestEntryRoute,
   guestRoutes,
   protectedRoutes,
+  publicRoutes,
+  tagScreenOf,
   waitLanding,
 } from "./screen-15-helpers";
 
@@ -187,7 +189,7 @@ for (const role of ["student", "schoolB"] as Role[]) {
 }
 
 for (const { screen, route } of protectedRoutes()) {
-  test(`[N1-ui][S${SCREEN}] 로그인 없이 ${route} (화면 ${screen}) → ${routeOf(LOGIN)} · 학교 데이터 미노출`, async ({ page }, info) => {
+  test(`[N1-ui][S${tagScreenOf(screen)}] 로그인 없이 ${route} (화면 ${screen}) → ${routeOf(LOGIN)} · 학교 데이터 미노출`, async ({ page }, info) => {
     const schools = seedRows("schools");
     const reagents = seedRows("reagents");
     await useProjectViewport(page, info);
@@ -196,6 +198,33 @@ for (const { screen, route } of protectedRoutes()) {
     await page.waitForLoadState("load");
     expect(screenOfPath(new URL(page.url()).pathname), "이동한 화면").toBe(LOGIN);
     await expect(page.locator(sel("ex-auth-form-card")).first(), "로그인 화면 표시").toBeVisible();
+    const text = await page.locator("body").innerText();
+    expect([...new Set(text.match(new RegExp(N1.school_name_pattern, "g")) ?? [])], "학교명 없음").toHaveLength(0);
+    for (const s of schools) expect(text, `seed 학교명 ${s.name}`).not.toContain(s.name);
+    for (const r of reagents) expect(text, `seed 시약명 ${r.name}`).not.toContain(r.name);
+  });
+}
+
+// d7 §30 · dev-rules route_auth["19"]: /privacy 는 로그인 전·후 모두 공개 (proxy 가 막지 않음) — 로그인 없이 200 · /login 아님 · 학교 데이터 없음
+test(`[N1-ui][S*] dev-rules route_auth 공개 경로 = 화면 19 (${publicRoutes().map((p) => p.route).join("·")}) · 보호 경로 목록에 없음`, () => {
+  const pub = publicRoutes();
+  const privacy = (rules as unknown as { privacy_page: { screen: number; path: string } }).privacy_page;
+  expect(pub, "공개 경로 = rules privacy_page").toEqual([{ screen: privacy.screen, route: privacy.path }]);
+  const list = protectedRoutes().map((p) => p.route);
+  for (const p of pub) expect(list, `${p.route} 는 보호 경로 아님`).not.toContain(p.route);
+});
+
+for (const { screen, route } of publicRoutes()) {
+  test(`[N1-ui][S${tagScreenOf(screen)}] 로그인 없이 ${route} (화면 ${screen}, 공개) → 200 · ${routeOf(LOGIN)} 아님 · 학교 데이터 미노출`, async ({ page }, info) => {
+    const schools = seedRows("schools");
+    const reagents = seedRows("reagents");
+    await useProjectViewport(page, info);
+    const res = await page.goto(route);
+    await page.waitForLoadState("load");
+    expect(res?.status(), `${route} 응답`).toBe(200);
+    expect(res!.request().redirectedFrom(), "리다이렉트 없음").toBeNull();
+    expect(new URL(page.url()).pathname, "공개 경로에 머무름").toBe(route);
+    await expect(page.locator(sel("ex-auth-form-card")), "로그인 화면 아님").toHaveCount(0);
     const text = await page.locator("body").innerText();
     expect([...new Set(text.match(new RegExp(N1.school_name_pattern, "g")) ?? [])], "학교명 없음").toHaveLength(0);
     for (const s of schools) expect(text, `seed 학교명 ${s.name}`).not.toContain(s.name);

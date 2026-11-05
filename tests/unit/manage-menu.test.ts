@@ -1,5 +1,5 @@
 // 모바일 관리 탭(화면 18) 목록 · 요약 caption · 하단 탭 활성 · '‹ 관리' 주소 (lib/manage-menu) + ☰ · inventory-switch 없앰 확인.
-// 기준(구현이 아니라 여기서 도출): harness/d7-data.md §29, design/rules.json manage(list · row · back · guest) · tab_bar(labels ·
+// 기준(구현이 아니라 여기서 도출): harness/d7-data.md §29 · §30, design/rules.json manage(list · row · back · guest · guide) · board.entry · tab_bar(labels ·
 //   labels_source · sensor_entry) · mobile_menu.removed · desktop_shell.menu, harness/dev-rules.json routes,
 //   design/frames 18-mobile · 18-guest-mobile (묶음 제목 · 행 이름 · 요약 글자).
 // lib/sidebar-menu(sidebarMenu · guestSidebarMenu)는 "같은 출처" 비교 대상으로만 부른다.
@@ -11,6 +11,7 @@ import {
   guestTabActiveKey,
   manageBackHref,
   manageCaption,
+  manageHelp,
   manageMenu,
   tabActiveKey,
   type ManageCounts,
@@ -29,24 +30,44 @@ type FrameNode = { name: string; path: string[]; text?: { characters: string } |
 const frame = (name: string): FrameNode[] =>
   (JSON.parse(read(join(ROOT, "design/frames", `${name}.json`))) as { frames: { nodes: FrameNode[] }[] }).frames[0].nodes;
 
-/** 시안 18-*: manage-group 마다 제목(group-title caption) + 행(manage-row name · caption) — 노드 순서대로 */
-function frameGroups(name: string): { title: string; rows: { name: string; caption: string | null }[] }[] {
-  const out: { title: string; rows: { name: string; caption: string | null }[] }[] = [];
+/** 시안 18-* 행 모양: manage-row(관리 항목) · board-link · guide-link(도움말 묶음, rules 1.32 manage.guide) */
+const ROW_KINDS = ["manage-row", "board-link", "guide-link"] as const;
+type RowKind = (typeof ROW_KINDS)[number];
+type FrameRow = { kind: RowKind; name: string; caption: string | null };
+/** 시안 18-*: manage-group 마다 제목(group-title caption) + 행(name · caption, 행 모양 이름) — 노드 순서대로 */
+function frameAllGroups(name: string): { title: string; rows: FrameRow[] }[] {
+  const out: { title: string; rows: FrameRow[] }[] = [];
   for (const n of frame(name)) {
     if (!n.path.includes("manage-list") || !n.text) continue;
+    const kind = ROW_KINDS.find((k) => n.path.includes(k));
     if (n.name === "caption" && n.path.includes("group-title")) out.push({ title: n.text.characters, rows: [] });
-    else if (n.name === "name" && n.path.includes("manage-row")) out[out.length - 1].rows.push({ name: n.text.characters, caption: null });
-    else if (n.name === "caption" && n.path.includes("manage-row")) {
+    else if (n.name === "name" && kind) out[out.length - 1].rows.push({ kind, name: n.text.characters, caption: null });
+    else if (n.name === "caption" && kind) {
       const rows = out[out.length - 1].rows;
       rows[rows.length - 1].caption = n.text.characters;
     }
   }
   return out;
 }
-const F18 = frameGroups("18-mobile");
-const F18G = frameGroups("18-guest-mobile");
 
-const M = rules.manage as { list: string; row: string; back: string; guest: string; screen: number };
+const M = rules.manage as { list: string; row: string; back: string; guest: string; guide: string; screen: number };
+/** rules manage.guide "맨 아래 넷째 묶음 '도움말' = board-link '게시판'(… 예: '답변 완료 1' …) + guide-link '사용 가이드 ↗'. 둘러보기는 guide-link만" */
+const HELP = (() => {
+  const title = /묶음 '([^']+)'/.exec(M.guide)?.[1] ?? "";
+  const links = [...M.guide.matchAll(/((?:board|guide)-link) '([^']+)'/g)].map((m) => ({ kind: m[1] as RowKind, name: m[2].replace(/\s*↗$/, "") }));
+  const guestOnly = (/둘러보기는 ([a-z-]+)만/.exec(M.guide) ?? [])[1] ?? "";
+  const caption = (/예: '([^']+)'/.exec(M.guide) ?? [])[1] ?? "";
+  return { title, links, guestLinks: links.filter((l) => l.kind === guestOnly), caption };
+})();
+/** 관리 항목 묶음(manage-row) 과 도움말 묶음을 나눈다 */
+const splitHelp = (gs: { title: string; rows: FrameRow[] }[]) => ({
+  rows: gs.filter((g) => g.title !== HELP.title),
+  help: gs.filter((g) => g.title === HELP.title),
+});
+const F18_ALL = splitHelp(frameAllGroups("18-mobile"));
+const F18G_ALL = splitHelp(frameAllGroups("18-guest-mobile"));
+const F18 = F18_ALL.rows;
+const F18G = F18G_ALL.rows;
 const TB = rules.tab_bar as { labels: string[]; labels_source: string; sensor_entry: string; mobile_screens: number[] };
 const ROLES: SidebarRole[] = ["student", "teacher", "admin"];
 const ROLE_KO: Record<SidebarRole, string> = { student: "학생", teacher: "교사", admin: "admin" };
@@ -75,6 +96,7 @@ describe("[C1][S18] 관리 목록 = rules manage.list 묶음 3개 · 역할별 (
     expect(RULE_GROUPS.map((g) => g.title)).toEqual(["재고", "입고·주문", "학교"]);
     expect(RULE_GROUPS.map((g) => g.roles)).toEqual([ROLES, ["teacher", "admin"], ["admin"]]);
     expect(F18.map((g) => ({ title: g.title, labels: g.rows.map((r) => r.name) }))).toEqual(RULE_GROUPS.map((g) => ({ title: g.title, labels: g.labels })));
+    expect(F18.flatMap((g) => g.rows.map((r) => r.kind)).every((k) => k === "manage-row"), "관리 항목 묶음 행 = manage-row").toBe(true);
     expect(BACK_SCREENS).toEqual([2, 5, 6, 7, 8, 9, 11, 17]);
     expect(Object.values(LABEL_SCREEN).sort((a, b) => a - b)).toEqual(BACK_SCREENS);
     expect(read(join(ROOT, "harness/d7-data.md"))).toContain("항목 목록은 lib/sidebar-menu 와 같은 출처(역할별)");
@@ -114,6 +136,54 @@ describe("[C1][S18] 관리 목록 = rules manage.list 묶음 3개 · 역할별 (
       .flatMap((g) => g.items)
       .filter((i) => i.label in LABEL_SCREEN);
     expect(manageMenu(role).flatMap((g) => g.items.map((i) => i.key)).sort()).toEqual(sideTargets.map((i) => i.key).sort());
+  });
+});
+
+describe("[C1][S18] 관리 목록 맨 아래 '도움말' 묶음 (rules manage.guide · 시안 18-mobile, d7 §30)", () => {
+  it("[C1][S18] 기대값 원본: rules manage.guide = '도움말' 넷째 묶음 · board-link '게시판' + guide-link '사용 가이드' · 둘러보기는 guide-link 만", () => {
+    expect(HELP.title).toBe("도움말");
+    expect(HELP.links).toEqual([
+      { kind: "board-link", name: "게시판" },
+      { kind: "guide-link", name: "사용 가이드" },
+    ]);
+    expect(HELP.guestLinks).toEqual([{ kind: "guide-link", name: "사용 가이드" }]);
+  });
+
+  it("[C1][S18] 시안 18-mobile: 넷째(맨 아래) 묶음 = rules manage.guide — board-link · guide-link 행(manage-row 아님) · 게시판 요약 = rules 예", () => {
+    const all = frameAllGroups("18-mobile");
+    expect(all.map((g) => g.title)).toEqual([...RULE_GROUPS.map((g) => g.title), HELP.title]);
+    expect(F18_ALL.help).toHaveLength(1);
+    const rows = F18_ALL.help[0].rows;
+    expect(rows.map((r) => ({ kind: r.kind, name: r.name }))).toEqual(HELP.links);
+    expect(rows.find((r) => r.kind === "board-link")?.caption).toBe(HELP.caption);
+    expect(rows.find((r) => r.kind === "guide-link")?.caption).toBeNull();
+  });
+
+  it("[GM-ui][S18g] 시안 18-guest-mobile: 맨 아래 묶음 = '도움말' guide-link 만 (rules manage.guide '둘러보기는 guide-link만')", () => {
+    const all = frameAllGroups("18-guest-mobile");
+    expect(all.map((g) => g.title)).toEqual([...F18G.map((g) => g.title), HELP.title]);
+    expect(F18G_ALL.help).toHaveLength(1);
+    expect(F18G_ALL.help[0].rows.map((r) => ({ kind: r.kind, name: r.name }))).toEqual(HELP.guestLinks);
+  });
+
+  it("[C1][S18] manageHelp('member') = 제목 '도움말' · board-link 있음 · guide-link 있음 (로그인한 모든 역할)", () => {
+    const kinds = HELP.links.map((l) => l.kind);
+    expect(manageHelp("member")).toEqual({ title: HELP.title, board: kinds.includes("board-link"), guide: kinds.includes("guide-link") });
+    expect(manageHelp("member").board).toBe(true);
+  });
+
+  it("[GM-ui][S18g] manageHelp('guest') = 제목 '도움말' · board-link 없음 · guide-link 만", () => {
+    const kinds = HELP.guestLinks.map((l) => l.kind);
+    expect(manageHelp("guest")).toEqual({ title: HELP.title, board: kinds.includes("board-link"), guide: kinds.includes("guide-link") });
+    expect(manageHelp("guest").board).toBe(false);
+  });
+
+  it("[C1][S18] 관리 항목 묶음(manageMenu · guestManageMenu)에 '도움말' 묶음 · 게시판 · 사용 가이드 행 0 (도움말은 manageHelp 로 따로)", () => {
+    for (const gs of [...ROLES.map((r) => manageMenu(r)), guestManageMenu()]) {
+      expect(gs.map((g) => g.title)).not.toContain(HELP.title);
+      const labels = gs.flatMap((g) => g.items.map((i) => i.label));
+      for (const l of HELP.links) expect(labels).not.toContain(l.name);
+    }
   });
 });
 
@@ -220,7 +290,17 @@ const keyOfLabel = (label: string): TabKey => {
   if (i < 0) throw new Error(`tab_bar.labels 에 ${label} 없음`);
   return TAB_KEYS[i];
 };
-/** labels_source "화면 2·3·…·18 모바일에서 '관리'가 활성, 13 홈·10 기록·12 QR은 각자 탭" */
+/**
+ * labels_source "화면 2·3·…·18 모바일에서 '관리'가 활성, 13 홈·10 기록·12 QR은 각자 탭" (2026-10-13)
+ * + 화면 20 게시판(2026-10-29, rules 1.32): labels_source 글에는 없고 board.entry "모바일 tab-bar 활성 = '관리'" ·
+ *   manage.back "화면 20 게시판 목록도 '‹ 관리'" 가 출처.
+ */
+const BOARD = rules.board as { screen: number; entry: string };
+const BOARD_ACTIVE: { screen: number; key: TabKey } = (() => {
+  const m = /tab-bar 활성 = '([^']+)'/.exec(BOARD.entry);
+  if (!m) throw new Error("rules board.entry 에서 tab-bar 활성 탭을 읽지 못함");
+  return { screen: BOARD.screen, key: keyOfLabel(m[1]) };
+})();
 const ACTIVE: { screen: number; key: TabKey }[] = (() => {
   const m = /화면 ([\d·]+) 모바일에서 '([^']+)'가 활성, (.+?)은 각자 탭/.exec(TB.labels_source);
   if (!m) throw new Error("rules tab_bar.labels_source 에서 활성 탭 표를 읽지 못함");
@@ -229,12 +309,14 @@ const ACTIVE: { screen: number; key: TabKey }[] = (() => {
     const [n, label] = s.trim().split(/\s+/);
     return { screen: Number(n), key: keyOfLabel(label) };
   });
-  return [...manage, ...own];
+  return [...manage, ...own, BOARD_ACTIVE];
 })();
 
 describe("[C2][S*] 하단 탭 활성 = rules tab_bar.labels_source (13 홈 · 10 기록 · 12 QR, 나머지 관리)", () => {
   it("[C2][S*] 기대값 원본: tab_bar.labels = 홈 · 관리 · QR 스캔 · 기록 · 활성 표가 tab_bar.mobile_screens 전부를 덮음", () => {
     expect(TB.labels).toEqual(["홈", "관리", "QR 스캔", "기록"]);
+    expect(BOARD_ACTIVE).toEqual({ screen: 20, key: "manage" });
+    expect(M.back).toContain(`화면 ${BOARD.screen} 게시판 목록도 '‹ 관리'`);
     expect(ACTIVE.map((a) => a.screen).sort((a, b) => a - b)).toEqual([...TB.mobile_screens].sort((a, b) => a - b));
     expect(ACTIVE.filter((a) => a.key !== "manage")).toEqual([
       { screen: 13, key: "home" },
@@ -252,6 +334,9 @@ describe("[C2][S*] 하단 탭 활성 = rules tab_bar.labels_source (13 홈 · 10
       expect(tabActiveKey(p), p).toBe("manage");
     expect(tabActiveKey(`${route("10")}/`), "기록 끝 /").toBe("records");
     expect(tabActiveKey(route("4")), "사용 기록 입력(4) = 관리 (labels_source 의 4)").toBe("manage");
+    for (const p of [`${route("20")}/new`, `${route("20")}/00000000-0000-4000-8000-000000000001`, `${route("20")}/`])
+      expect(tabActiveKey(p), `게시판 하위 ${p} (rules board.entry)`).toBe("manage");
+    expect(tabActiveKey("/boardx"), "비슷한 이름").toBeUndefined();
   });
 
   it("[C2][S*] 탭바가 없는 화면(로그인 1 · 회원가입 14)과 비슷한 이름 경로는 어느 탭도 아님", () => {

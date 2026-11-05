@@ -15,6 +15,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      board_posts: {
+        Row: {
+          answer: string | null
+          answered_at: string | null
+          author_id: string | null
+          author_school_id: string | null
+          body: string
+          category: string
+          created_at: string
+          hidden_at: string | null
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          answer?: string | null
+          answered_at?: string | null
+          author_id?: string | null
+          author_school_id?: string | null
+          body: string
+          category: string
+          created_at?: string
+          hidden_at?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          answer?: string | null
+          answered_at?: string | null
+          author_id?: string | null
+          author_school_id?: string | null
+          body?: string
+          category?: string
+          created_at?: string
+          hidden_at?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_posts_author_school_id_fkey"
+            columns: ["author_school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cabinet_slots: {
         Row: {
           cabinet_id: string
@@ -566,6 +616,36 @@ export type Database = {
       archive_reagents: { Args: { p_reagent_ids: string[] }; Returns: number }
       archive_sensor: { Args: { p_sensor_id: string }; Returns: Json }
       archive_sensors: { Args: { p_sensor_ids: string[] }; Returns: number }
+      board_my_answered_count: { Args: never; Returns: number }
+      board_post: {
+        Args: { p_id: string }
+        Returns: {
+          answer: string
+          answered_at: string
+          body: string
+          category: string
+          created_at: string
+          id: string
+          is_mine: boolean
+          school_name: string
+          title: string
+          updated_at: string
+        }[]
+      }
+      board_posts_list: {
+        Args: { p_category: string; p_limit?: number; p_offset?: number }
+        Returns: {
+          answered: boolean
+          body: string
+          category: string
+          created_at: string
+          id: string
+          is_mine: boolean
+          school_name: string
+          title: string
+          updated_at: string
+        }[]
+      }
       cancel_invite: { Args: { p_invite_id: string }; Returns: Json }
       change_member_role: {
         Args: { p_role: string; p_user_id: string }

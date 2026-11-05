@@ -5,7 +5,7 @@
 // 이 파일은 DB 에 쓰지 않는다. 필터는 screen-10-filters, 상세는 screen-10-detail, 학교 격리는 screen-10-isolation.
 import { join } from "node:path";
 import { test, expect, type Page } from "@playwright/test";
-import { ROLE_LABEL, SCHOOL_A_ROLES, type Role } from "./db-helpers";
+import { ROLE_LABEL, SCHOOL_A_ROLES, ensureUsageLog, signIn, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
 import {
   PROFILE_ROLE,
@@ -119,6 +119,12 @@ async function writeEntries(page: Page): Promise<string[]> {
 // =====================================================================
 // R-ui
 // =====================================================================
+
+// 기본 상태의 "${ROW} ≥ 1": 공용 학교 A·B 에 기본 기간(최근 1개월) 안 기록을 둔다 — 날짜가 지나도 시드가 기간 밖으로 밀리지 않게
+test.beforeAll(async ({}, info) => {
+  info.setTimeout(120_000);
+  for (const r of ["teacher", "schoolB"] as Role[]) await ensureUsageLog(await signIn(r), info);
+});
 
 test(`[R-ui][S${SCREEN}] rules.json R4 = ${MSDS} 를 학생·교사·admin 모두에게(min_per_role), 화면 ${SCREEN} 검사에 학생 max 규칙·R4 가 모두 포함됨`, () => {
   expect(R4.component, "R4 컴포넌트").toBe(MSDS);

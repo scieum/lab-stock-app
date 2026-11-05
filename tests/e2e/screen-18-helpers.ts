@@ -109,20 +109,67 @@ export function expectedCaption(label: string, c: Counts): string | null {
 
 export const squash = (s: string) => s.replace(/\s+/g, "");
 
-export type ShownRow = { group: string; label: string; text: string; href: string };
+// ---------- 기대값: rules manage.guide (맨 아래 넷째 묶음 '도움말') ----------
 
-/** 화면의 묶음 · 행 (DOM 순서) */
-export async function readList(page: Page): Promise<{ groups: string[]; rows: ShownRow[] }> {
+/** rules manage.guide "'도움말' = board-link '게시판'(…요약 caption 예: '답변 완료 1', ›) + guide-link '사용 가이드 ↗'. 둘러보기는 guide-link만" */
+export const GUIDE_RULE: string = (MANAGE_RULES as unknown as { guide: string }).guide;
+const guideQuoted = [...GUIDE_RULE.matchAll(/'([^']+)'/g)].map((m) => m[1]);
+export const BOARD_LINK = "board-link";
+export const GUIDE_LINK = "guide-link";
+export const HELP = {
+  title: guideQuoted[0],
+  boardLabel: guideQuoted[1],
+  /** '답변 완료 1' → '답변 완료 {n}' */
+  answered: guideQuoted[2].replace(/\d[\d,]*/, "{n}"),
+  guideLabel: guideQuoted[3].replace(/\s*↗\s*$/, ""),
+};
+
+/** d7 §30 진입: board-link 요약 = 내가 쓴 글 중 답변 완료 수(로그인 세션 RLS), 0 이면 caption 없음, 학생은 caption 없음 */
+export async function dbBoardAnswered(page: Page): Promise<number> {
+  const { client, userId } = await browserClient(page);
+  const r = await client.from("board_posts").select("id, author_id, answer").eq("author_id", userId).not("answer", "is", null);
+  expect(r.error, `board_posts RLS 조회 ${r.error?.message}`).toBeNull();
+  expect((r.data ?? []).filter((x) => x.author_id !== userId), "내 글만").toEqual([]);
+  return (r.data ?? []).length;
+}
+export const expectedBoardCaption = (student: boolean, answered: number): string | null => (student || answered === 0 ? null : fill(HELP.answered, answered));
+
+export type ShownRow = { group: string; label: string; text: string; href: string };
+export type ShownLink = { component: string; label: string; text: string; href: string; target: string; rel: string };
+export type ShownHelp = { title: string; links: ShownLink[]; rows: number };
+
+/** 화면의 묶음 · 행 (DOM 순서). board-link · guide-link 가 든 묶음(도움말, rules manage.guide)은 help 로 따로 */
+export async function readList(page: Page): Promise<{ groups: string[]; rows: ShownRow[]; help: ShownHelp[] }> {
   const list = page.locator(`main ${sel(LIST)}`);
   return list.evaluate((root, names) => {
     const groups: string[] = [];
     const rows: { group: string; label: string; text: string; href: string }[] = [];
+    const help: ShownHelp[] = [];
+    const leafLabel = (el: Element) =>
+      (Array.from(el.querySelectorAll("span")).filter((s) => s.children.length === 0 && (s.textContent ?? "").trim() !== "")[0]?.textContent ?? "").trim();
+    const linkSel = names.links.map((n) => `[data-component="${n}"]`).join(", ");
     for (const g of Array.from(root.querySelectorAll(`[data-component="${names.group}"]`))) {
       const rowEls = Array.from(g.querySelectorAll(`[data-component="${names.row}"]`));
-      // 묶음 제목 = 묶음 안에서 행 밖의 글자
+      const linkEls = Array.from(g.querySelectorAll(linkSel));
+      // 묶음 제목 = 묶음 안에서 행 · 링크 밖의 글자
       const clone = g.cloneNode(true) as HTMLElement;
-      clone.querySelectorAll(`[data-component="${names.row}"]`).forEach((r) => r.remove());
+      clone.querySelectorAll(`[data-component="${names.row}"], ${linkSel}`).forEach((r) => r.remove());
       const title = (clone.textContent ?? "").replace(/\s+/g, " ").trim();
+      if (linkEls.length > 0) {
+        help.push({
+          title,
+          rows: rowEls.length,
+          links: linkEls.map((a) => ({
+            component: a.getAttribute("data-component") ?? "",
+            label: leafLabel(a),
+            text: (a.textContent ?? "").replace(/\s+/g, ""),
+            href: a.getAttribute("href") ?? "",
+            target: a.getAttribute("target") ?? "",
+            rel: a.getAttribute("rel") ?? "",
+          })),
+        });
+        continue;
+      }
       groups.push(title);
       for (const r of rowEls) {
         const spans = Array.from(r.querySelectorAll("span")).filter((s) => s.children.length === 0 && (s.textContent ?? "").trim() !== "");
@@ -134,8 +181,8 @@ export async function readList(page: Page): Promise<{ groups: string[]; rows: Sh
         });
       }
     }
-    return { groups, rows };
-  }, { group: GROUP, row: ROW });
+    return { groups, rows, help };
+  }, { group: GROUP, row: ROW, links: [BOARD_LINK, GUIDE_LINK] });
 }
 
 export async function waitManage(page: Page): Promise<void> {

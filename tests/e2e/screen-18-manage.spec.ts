@@ -27,7 +27,29 @@ import {
 import { RULE_ROLE, expectShell, schoolNamesIn } from "./shell-helpers";
 import { GUEST, checkBanner, checkHidden, checkSchoolName, checkTabBar, demoSchool, guestRouteOf, openGuest, waitGuestShell } from "./guest-helpers";
 import { loadShellFrameNodes } from "../frames";
-import { GROUP, GROUPS, LIST, ROW, ROW_SCREEN, SCREEN, EXAMPLES, dbCounts, expectedCaption, groupsFor, readList, squash, waitManage, type Counts } from "./screen-18-helpers";
+import {
+  BOARD_LINK,
+  GROUP,
+  GROUPS,
+  GUIDE_LINK,
+  GUIDE_RULE,
+  HELP,
+  LIST,
+  ROW,
+  ROW_SCREEN,
+  SCREEN,
+  EXAMPLES,
+  dbBoardAnswered,
+  dbCounts,
+  expectedBoardCaption,
+  expectedCaption,
+  groupsFor,
+  readList,
+  squash,
+  waitManage,
+  type Counts,
+  type ShownHelp,
+} from "./screen-18-helpers";
 
 const TB = rules.tab_bar;
 const ALL_ROLES: Role[] = [...SCHOOL_A_ROLES, "schoolB"];
@@ -48,6 +70,24 @@ function watchWrites(page: Page): () => string[] {
   return () => w;
 }
 
+/** rules manage.guide 맨 아래 '도움말' 묶음 1개: 로그인 = board-link(→ 화면 20, 요약 caption) + guide-link(새 탭) / 둘러보기 = guide-link 만 */
+function expectHelp(help: ShownHelp[], what: string, board: { caption: string | null } | null) {
+  expect(help.map((h) => h.title), `${what} 도움말 묶음 1개 = '${HELP.title}'`).toEqual([HELP.title]);
+  const h = help[0];
+  expect(h.rows, `${what} 도움말 묶음 안 ${ROW} 0 (board-link · guide-link 는 manage-row 아님)`).toBe(0);
+  expect(h.links.map((l) => l.component), `${what} 도움말 순서`).toEqual(board ? [BOARD_LINK, GUIDE_LINK] : [GUIDE_LINK]);
+  if (board) {
+    const b = h.links[0];
+    expect(b.label, "board-link 이름").toBe(HELP.boardLabel);
+    expect(b.text, `board-link 글자 = '${HELP.boardLabel}'${board.caption ? ` + '${board.caption}'` : " 만"} (d7 §30 진입)`).toBe(squash(HELP.boardLabel + (board.caption ?? "")));
+    expect(b.href, "board-link → 화면 20").toBe(routeOf(20));
+  }
+  const g = h.links.at(-1)!;
+  expect(g.label, "guide-link 이름").toBe(HELP.guideLabel);
+  expect(g.target, "guide-link 새 탭 (rules guide.open)").toBe("_blank");
+  expect(g.rel, "guide-link noopener").toMatch(/noopener/);
+}
+
 const shot = (page: Page, name: string, viewport: ViewportName) =>
   page.screenshot({ path: join(process.cwd(), "test-results", `v1-${name}-${viewport}.png`), fullPage: false });
 
@@ -60,16 +100,27 @@ test(`[C1][S${SCREEN}] 기대값 원본: rules manage.screen ${SCREEN} · routes
   expect(devRules.routes[`${SCREEN}-guest`], "dev-rules routes 18-guest").toBe("/demo/manage");
   expect(MOBILE_ONLY_SCREENS, "rules frames.mobile_only_screens").toContain(SCREEN);
   expect(TB.mobile_screens, "rules tab_bar.mobile_screens").toContain(SCREEN);
-  expect(rules.screens_required[String(SCREEN)], "screens_required[18]").toEqual([LIST, ROW]);
+  expect(rules.screens_required[String(SCREEN)], "screens_required[18]").toEqual([LIST, ROW, GUIDE_LINK, BOARD_LINK]);
+  expect(GUIDE_RULE, "rules manage.guide 넷째 묶음 · 둘러보기 guide-link 만").toMatch(/넷째 묶음 '[^']+' = board-link '[^']+'.*\+ guide-link '[^']+'.*둘러보기는 guide-link만/);
+  expect(HELP.answered, "rules manage.guide 요약 예시 숫자 자리").toContain("{n}");
   for (const n of [LIST, GROUP, ROW]) expect(devRules.components[n], `dev-rules components ${n}`).toEqual([SCREEN]);
   expect(mobileActiveTab(SCREEN), "18 의 활성 탭 = 관리").toBe("관리");
   expect(GROUPS.map((g) => g.title), "rules manage.list 묶음 3").toEqual(["재고", "입고·주문", "학교"]);
-  // 시안 18-mobile (admin 시안 — 묶음 3개 · 행 8개) 묶음 제목 · 행 이름 = rules
+  // 시안 18-mobile (admin 시안 — rules manage.list 묶음 3개 · 행 8개 + manage.guide 넷째 묶음 '도움말') 묶음 제목 · 행 이름 = rules
   const nodes = loadShellFrameNodes<{ name: string; path: string[]; text: { characters: string } | null; height: number }>("18-mobile");
   const fGroups = nodes.filter((n) => n.name === GROUP);
-  expect(fGroups.length, "시안 manage-group 수").toBe(GROUPS.length);
+  expect(fGroups.length, "시안 manage-group 수 = manage.list 묶음 + 도움말").toBe(GROUPS.length + 1);
   const fTitles = nodes.filter((n) => n.path.includes("group-title") && n.text).map((n) => n.text!.characters);
-  expect(fTitles, "시안 묶음 제목").toEqual(GROUPS.map((g) => g.title));
+  expect(fTitles, "시안 묶음 제목").toEqual([...GROUPS.map((g) => g.title), HELP.title]);
+  // 시안 도움말 묶음: board-link '게시판' + 요약 caption (rules 예시 형식) · guide-link '사용 가이드' — manage-row 아님
+  const fText = (comp: string, leaf: string) => nodes.filter((n) => n.path.includes(comp) && n.name === leaf && n.text).map((n) => n.text!.characters);
+  expect(fText(BOARD_LINK, "name"), "시안 board-link 이름").toEqual([HELP.boardLabel]);
+  expect(fText(BOARD_LINK, "caption").map((c) => c.replace(/\d[\d,]*/, "{n}")), "시안 board-link 요약 형식 = rules 예시").toEqual([HELP.answered]);
+  expect(fText(GUIDE_LINK, "name"), "시안 guide-link 이름").toEqual([HELP.guideLabel]);
+  for (const comp of [BOARD_LINK, GUIDE_LINK]) {
+    expect(nodes.filter((n) => n.name === comp).map((n) => n.height), `시안 ${comp} 높이 = manage-row 모양 56`).toEqual([56]);
+    expect(nodes.filter((n) => n.name === comp && n.path.includes(ROW)), `시안 ${comp} 는 manage-row 안 아님`).toEqual([]);
+  }
   const fNames = nodes.filter((n) => n.path.includes(ROW) && n.name === "name" && n.text).map((n) => n.text!.characters);
   expect(fNames, "시안 행 이름").toEqual(GROUPS.flatMap((g) => g.items));
   for (const name of fNames) expect(ROW_SCREEN[name], `행 '${name}' → 관리 아래 화면 (데스크톱 메뉴 문구)`).toBeDefined();
@@ -80,7 +131,9 @@ test(`[C1][S${SCREEN}] 기대값 원본: rules manage.screen ${SCREEN} · routes
   // 둘러보기: '재고' 묶음 시약 · 센서
   const g = loadShellFrameNodes<{ name: string; path: string[]; text: { characters: string } | null }>("18-guest-mobile");
   expect(g.filter((n) => n.path.includes(ROW) && n.name === "name" && n.text).map((n) => n.text!.characters), "시안 18-guest-mobile 행").toEqual(["시약", "센서"]);
-  expect(g.filter((n) => n.path.includes("group-title") && n.text).map((n) => n.text!.characters), "시안 18-guest-mobile 묶음").toEqual(["재고"]);
+  expect(g.filter((n) => n.path.includes("group-title") && n.text).map((n) => n.text!.characters), "시안 18-guest-mobile 묶음").toEqual(["재고", HELP.title]);
+  expect(g.filter((n) => n.name === BOARD_LINK), "시안 18-guest-mobile board-link 0").toEqual([]);
+  expect(g.filter((n) => n.path.includes(GUIDE_LINK) && n.name === "name" && n.text).map((n) => n.text!.characters), "시안 18-guest-mobile guide-link").toEqual([HELP.guideLabel]);
   expect(MANAGE_RULES.guest).toMatch(/시약 · 센서 두 줄만/);
 });
 
@@ -122,7 +175,7 @@ for (const role of ALL_ROLES) {
       expect(shown.groups, `${ROLE_LABEL[role]} 묶음`).toEqual(want.map((g) => g.title));
       expect(shown.rows.map((r) => r.label), `${ROLE_LABEL[role]} 행 이름`).toEqual(want.flatMap((g) => g.items));
       expect(shown.rows.map((r) => r.group), "행이 속한 묶음").toEqual(want.flatMap((g) => g.items.map(() => g.title)));
-      await expect(page.locator(sel(GROUP)), `${GROUP} 수`).toHaveCount(want.length);
+      await expect(page.locator(sel(GROUP)), `${GROUP} 수 = manage.list 묶음 + 도움말`).toHaveCount(want.length + 1);
       await expect(page.locator(sel(ROW)), `${ROW} 수`).toHaveCount(want.flatMap((g) => g.items).length);
       for (const r of shown.rows) expect(r.href, `행 '${r.label}' → 화면 ${ROW_SCREEN[r.label]}`).toBe(routeOf(ROW_SCREEN[r.label]));
       // 행 높이 56 (rules manage.row)
@@ -136,6 +189,11 @@ for (const role of ALL_ROLES) {
         const cap = expectedCaption(r.label, counts);
         expect(r.text, `행 '${r.label}' 글자 = 이름${cap ? ` + '${cap}'` : "만"}`).toBe(squash(r.label + (cap ?? "")));
       }
+      // 맨 아래 '도움말' (rules manage.guide): board-link 요약 = 내가 쓴 글 중 답변 완료 수(RLS), 0 · 학생 = caption 없음 (d7 §30 진입)
+      const answered = await dbBoardAnswered(page);
+      expectHelp(shown.help, ROLE_LABEL[role], { caption: expectedBoardCaption(ruleRole === "학생", answered) });
+      await expect(page.locator(`main ${sel(LIST)} ${sel(BOARD_LINK)}`), "도움말 board-link 1").toHaveCount(1);
+      await expect(page.locator(`main ${sel(LIST)} ${sel(GUIDE_LINK)}`), "도움말 guide-link 1").toHaveCount(1);
       // 숫자는 무채색 글자만 (rules manage.row) — caption 색에 채도 없음
       const colors = await page.locator(`main ${sel(ROW)} span`).evaluateAll((els) => els.map((e) => getComputedStyle(e).color));
       for (const c of colors) {
@@ -231,7 +289,10 @@ test(`[GM-ui][C1][S${SCREEN}g] 둘러보기 ${devRules.routes[`${SCREEN}-guest`]
     const shown = await readList(page);
     const stock = GROUPS[0];
     const guestItems = stock.items.filter((label) => ROW_SCREEN[label] === 2 || ROW_SCREEN[label] === 17);
-    expect(shown.groups, "둘러보기 묶음 = '재고' 만").toEqual([stock.title]);
+    expect(shown.groups, "둘러보기 묶음 = '재고' 만 (+ 도움말)").toEqual([stock.title]);
+    expectHelp(shown.help, "둘러보기", null);
+    await expect(page.locator(sel(BOARD_LINK)), "둘러보기 board-link 0 (rules manage.guide · guest.hidden_components)").toHaveCount(0);
+    await expect(page.locator(`main ${sel(LIST)} ${sel(GUIDE_LINK)}`), "둘러보기 guide-link 1").toHaveCount(1);
     expect(shown.rows.map((r) => r.label), "둘러보기 행 = 시약 · 센서").toEqual(guestItems);
     for (const r of shown.rows) expect(r.href, `행 '${r.label}' → 데모 경로`).toBe(guestRouteOf(ROW_SCREEN[r.label]));
     // 요약 = anon(데모 학교) 숫자

@@ -53,6 +53,11 @@ test(`[C1][S${SCREEN}] 화면 ${SCREEN} 시안 컴포넌트(dev-rules components
       continue;
     }
     // 1.26 variants[14].error (signup-error-summary): 가입하기를 누른 뒤 오류 상태에만 — 기본 상태 0 (오류 상태는 screen-14-error-summary.spec)
+    // 1.32 variants[14].consent: 기본 프레임에 없는 것(privacy-consent-detail·privacy-link)은 › 를 눌러야 열림 — 기본 상태 0 (펼친 상태는 screen-14-consent.spec)
+    if (CONSENT.includes(name) && frameCount(SCREEN, vp, name) === 0) {
+      expect(await countComponent(page, name), `${name} 기본 상태(펼치기 전) 0`).toBe(0);
+      continue;
+    }
     if (ERROR_ONLY.includes(name)) {
       expect(frameCount(SCREEN, vp, name), `${name}: 기본 프레임 ${SCREEN}-${vp} 에 없음`).toBe(0);
       expect(await countComponent(page, name), `${name} 기본 상태(가입하기 전) 0`).toBe(0);
@@ -63,7 +68,9 @@ test(`[C1][S${SCREEN}] 화면 ${SCREEN} 시안 컴포넌트(dev-rules components
   }
 });
 
-const ERROR_ONLY: string[] = (rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants[String(SCREEN)].error ?? [];
+const VARIANTS = (rules as unknown as { variants: Record<string, Record<string, string[]>> }).variants[String(SCREEN)];
+const ERROR_ONLY: string[] = VARIANTS.error ?? [];
+const CONSENT: string[] = VARIANTS.consent ?? [];
 
 // ---------- R-ui (로그인 전) ----------
 test(`[R-ui][S${SCREEN}] 로그인 전 화면 ${SCREEN}: roles R1~R7 역할 제한 컴포넌트 0개`, async ({ page }, info) => {

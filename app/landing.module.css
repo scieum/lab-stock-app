@@ -24,6 +24,11 @@
   gap: var(--space-12);
 }
 
+/* 시안 15-mobile footer-wrap (1.32): 위 16 → web-footer(저작권 / footer-links 두 줄) */
+.footerWrap {
+  padding-top: var(--space-16);
+}
+
 .cta {
   position: sticky;
   bottom: 0;

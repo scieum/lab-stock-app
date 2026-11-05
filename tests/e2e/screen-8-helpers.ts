@@ -10,6 +10,7 @@
 //   @supabase/ssr 쿠키 형식(sb-{ref}-auth-token = "base64-" + base64url(JSON))으로 넣는다 (비밀번호 로그인 한도를 쓰지 않는다).
 // - 일회용 계정은 사용 기록(usage_logs)을 만들지 않는다 (계정 삭제가 FK 로 막히지 않게).
 // - 이 파일의 접두사(s8ui-… / S8UI-…)는 D2 스펙(db-s8-user-manage: s8-test-… / S8-TEST-…)과 겹치지 않는다 — 서로의 정리가 지우지 않게.
+import { hideFeatureIntro } from "./feature-intro-helpers";
 import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -685,6 +686,7 @@ export type TempPage = { context: BrowserContext; page: Page; viewport: Viewport
 /** 일회용 계정으로 화면을 연다 (기본 = 화면 8) */
 export async function openTemp(browser: Browser, info: TestInfo, u: TempUser, path: string = routeOf(SCREEN)): Promise<TempPage> {
   const context = await contextFor(browser, info, u);
+  await hideFeatureIntro(context); // 화면 13 신기능 소개 팝업이 홈을 덮지 않게 (feature-intro-helpers)
   const page = await context.newPage();
   const response = await page.goto(path);
   await page.waitForLoadState("load");

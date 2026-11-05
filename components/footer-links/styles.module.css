@@ -1,0 +1,42 @@
+/* 시안 19-mobile footer-links: 한 줄 · 높이 44 · caption 12 */
+.links {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--button-min-height);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.privacy,
+.guide {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--button-min-height);
+  text-decoration: none;
+}
+
+.privacy {
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.guide {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-regular);
+}
+
+.privacy:hover,
+.guide:hover {
+  text-decoration: underline;
+}
+
+.privacy:focus-visible,
+.guide:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: var(--space-4);
+}
+
+.separator {
+  color: var(--color-text-muted);
+  white-space: pre;
+}

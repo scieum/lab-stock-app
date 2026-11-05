@@ -10,7 +10,7 @@ import { ReagentWipeItem } from "@/components/reagent-wipe";
 import { RecordWipeItem } from "@/components/record-wipe";
 import { TabBar } from "@/components/tab-bar";
 import { WipePreview } from "@/components/wipe-preview";
-import { guestManageMenu, manageMenu, type ManageCounts } from "@/lib/manage-menu";
+import { guestManageMenu, manageHelp, manageMenu, type ManageCounts } from "@/lib/manage-menu";
 import styles from "../gallery.module.css";
 import { RangePreviewDemo, ReagentWipeDemo, RecordWipeDemo, SchoolNameConfirmDemo } from "./demo";
 
@@ -24,6 +24,7 @@ const COUNTS: ManageCounts = {
   reorder: 3,
   users: { student: 3, teacher: 1, admin: 1 },
   vendors: 4,
+  boardAnswered: 1,
 };
 
 /** 시안 18-guest-mobile 데모 값 */
@@ -59,10 +60,10 @@ export default function ManageGalleryPage() {
           <ManageList groups={manageMenu("teacher")} counts={COUNTS} />
         </Item>
         <Item id="manage-student" name="manage-list — 학생 (재고 묶음만)">
-          <ManageList groups={manageMenu("student")} counts={COUNTS} />
+          <ManageList groups={manageMenu("student")} counts={{ ...COUNTS, boardAnswered: undefined }} />
         </Item>
         <Item id="manage-guest" name="manage-list — 둘러보기 (시안 18-guest-mobile: 시약 · 센서)">
-          <ManageList groups={guestManageMenu()} counts={GUEST_COUNTS} />
+          <ManageList groups={guestManageMenu()} counts={GUEST_COUNTS} help={manageHelp("guest")} />
         </Item>
         <Item id="manage-row" name="manage-group · manage-row (요약 없음 = 이름만)">
           <ManageGroup group={{ title: "입고·주문", items: [{ key: "intake", label: "입고", icon: "download", href: "/intake" }] }} />

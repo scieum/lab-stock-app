@@ -1,0 +1,11 @@
+/* 시안 20 board-write: 44 높이 알약 · 좌우 16 */
+.wrap {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.wrap .button {
+  height: var(--button-min-height);
+  min-height: var(--button-min-height);
+  padding: 0 var(--space-16);
+}

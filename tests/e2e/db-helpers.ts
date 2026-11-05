@@ -201,11 +201,13 @@ export async function restoreStock(staff: Session, reagentId: string, stock: num
 }
 
 /**
- * 학교(staff 계정)의 usage_logs 가 0행이면 record_usage(1)로 1행 만들고 stock 을 되돌린다.
+ * 학교(staff 계정)의 최근 usage_logs 가 0행이면 record_usage(1)로 오늘 1행 만들고 stock 을 되돌린다.
  * 교차 학교 조회가 "원래 0행이라 0" 이 되지 않도록 하는 양성 대조군 준비.
+ * "최근" = 사용일 27일 안 — 화면 10 기본 기간(최근 1개월, 가장 짧은 달 28일)에 늘 들어간다. 날짜가 지나도 대조군이 기간 밖으로 밀리지 않게.
  */
 export async function ensureUsageLog(staff: Session, info: TestInfo): Promise<void> {
-  const { data, error } = await staff.client.from("usage_logs").select("id").limit(1);
+  const since = new Date(Date.now() - 27 * 86_400_000).toISOString().slice(0, 10);
+  const { data, error } = await staff.client.from("usage_logs").select("id").gte("used_on", since).limit(1);
   if (error) throw new Error(`usage_logs 조회 실패: ${error.message}`);
   if ((data ?? []).length > 0) return;
   const r = pickReagent(await ownReagents(staff), REAGENT_SLOT.ensureLog, info);

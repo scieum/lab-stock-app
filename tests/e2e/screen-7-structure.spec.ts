@@ -154,9 +154,14 @@ test(`[R-ui][S${SCREEN}] rules.json R5 = 학생 ${INTAKE}·${REGISTER} max 0 이
     "sensor-doc-add": [SENSOR_SCREEN],
     "sensor-alert-tile": [13],
     // rules 1.29 R5 source "2026-10-13 전체 삭제(admin 전용) 진입점" — 상태 프레임 variants[2].wipe · variants[10]["record-wipe"] 의 화면
-    "page-more-menu": WIPE_SCREENS("page-more-menu"),
+    // + d7 §30 운영자 화면: 게시판(rules board.screen) page-more-menu 에 '숨기기'
+    "page-more-menu": [...WIPE_SCREENS("page-more-menu"), (rules as unknown as { board: { screen: number } }).board.screen].sort(), // 아래 비교와 같은 기본 정렬
     "reagent-wipe": WIPE_SCREENS("reagent-wipe"),
     "record-wipe": WIPE_SCREENS("record-wipe"),
+    // rules R5 source "2026-10-27 feature-intro-popup" — rules feature_intro.entry "홈(화면 13) 들어올 때만"
+    "feature-intro-popup": [13],
+    // rules R5 source "2026-10-29 board-write·board-form·board-post-menu" — 게시판 화면(rules board.screen)
+    ...Object.fromEntries(["board-write", "board-form", "board-post-menu"].map((c) => [c, [(rules as unknown as { board: { screen: number } }).board.screen]])),
   };
   expect(R5_COMPONENTS, "1.17 R5 에 doc-upload").toContain("doc-upload");
   expect(devRules.components["doc-upload"] ?? [], "dev-rules 1.9 components 에 doc-upload").toContain(SCREEN);

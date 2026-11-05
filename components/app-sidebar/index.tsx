@@ -3,11 +3,10 @@
 import Link from "next/link";
 import { ButtonOutline } from "@/components/button-outline";
 import { NavAccountMenu } from "@/components/nav-account-menu";
-import { Icon } from "@/components/icons";
 import { SidebarItem } from "@/components/sidebar-item";
-import itemStyles from "@/components/sidebar-item/styles.module.css";
-import { GUIDE_LABEL, GUIDE_LINK_PROPS } from "@/lib/guide-link";
 import type { SidebarGroup, SidebarKey } from "@/lib/sidebar-menu";
+import { BoardLink } from "@/components/board-link";
+import { GuideLink } from "@/components/guide-link";
 import styles from "./styles.module.css";
 
 type Props = {
@@ -28,6 +27,10 @@ type Props = {
    * "둘러보는 중" + 로그인(button-outline 전폭). 잠긴 메뉴(locked)는 guest-lock.
    */
   guest?: { loginHref: string };
+  /** 화면 20 게시판(/board · /board/*)에서 true — board-link 현재 표시 (rules 1.32 desktop_shell.board_link) */
+  boardActive?: boolean;
+  /** sidebar-guide(board-link · guide-link)를 그릴지 — 시안은 13·20-desktop 에만 있다 (dev-rules components 화면 소속) */
+  guide?: boolean;
 };
 
 /**
@@ -35,7 +38,7 @@ type Props = {
  * 위 = 워드마크 Lab_Stock + 학교명, 그 아래 sidebar-item 목록(역할별 묶음, 묶음 제목 12 회색),
  * 맨 아래 = 계정 줄 "이름 · 역할" ▾ → 로그아웃.
  */
-export function AppSidebar({ schoolName, groups, active, account, onLogout, className, guest }: Props) {
+export function AppSidebar({ schoolName, groups, active, account, onLogout, className, guest, boardActive = false, guide = true }: Props) {
   return (
     <aside data-component="app-sidebar" className={[styles.sidebar, className].filter(Boolean).join(" ")}>
       <div className={styles.top}>
@@ -68,12 +71,15 @@ export function AppSidebar({ schoolName, groups, active, account, onLogout, clas
         </nav>
       </div>
       <div className={styles.bottom}>
-        {/* 시안 예외 (사용자 요청 2026-10-28, 요청서 10 대기): 계정 줄 위 '사용 가이드' — 모든 역할 · 둘러보기 공통, 새 탭.
-            sidebar-item 모양(같은 CSS)을 빌려 쓰되 메뉴 항목이 아니므로 data-component 는 달지 않는다 (메뉴 수 = rules desktop_shell.menu) */}
-        <a {...GUIDE_LINK_PROPS} className={[itemStyles.item, styles.guide].join(" ")}>
-          <Icon name="info" className={itemStyles.icon} />
-          <span className={itemStyles.label}>{GUIDE_LABEL}</span>
-        </a>
+        {/* rules 1.32 desktop_shell.guide_link: 계정 줄 위 guide-link '사용 가이드 ↗' — 모든 역할 · 둘러보기 공통, 새 탭 */}
+        {/* rules 1.32 desktop_shell.board_link: guide-link 바로 위 board-link '게시판' — 로그인한 모든 역할, 둘러보기 없음 */}
+        {/* 시안 20-desktop sidebar-guide: board-link ↔ guide-link gap 4 */}
+        {guide ? (
+          <div data-name="sidebar-guide" className={styles.guideGroup}>
+            {guest ? null : <BoardLink variant="sidebar" active={boardActive} className={styles.guide} />}
+            <GuideLink variant="sidebar" className={styles.guide} />
+          </div>
+        ) : null}
         {guest ? (
           <div className={styles.guestAccount}>
             <span className={styles.guestStatus}>둘러보는 중</span>

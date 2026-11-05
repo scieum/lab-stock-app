@@ -1,0 +1,58 @@
+/* 시안 19-mobile privacy-toc: canvas-soft · rounded 24 · 안쪽 16 · 사이 8 / toc-col 사이 4 · toc-link 44 높이 */
+.toc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-16);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  min-height: var(--button-min-height);
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.link:focus-visible {
+  outline: var(--border-width) solid var(--color-highlight);
+  outline-offset: var(--space-4);
+}
+
+/* 시안 19-desktop toc-columns: 두 단(4 · 3) · 단 사이 24 · 줄 사이 0 */
+@media (min-width: 1024px) {
+  .list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(4, auto);
+    grid-auto-flow: column;
+    column-gap: var(--space-24);
+    row-gap: var(--space-0);
+  }
+}

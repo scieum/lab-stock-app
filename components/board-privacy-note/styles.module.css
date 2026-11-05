@@ -1,0 +1,17 @@
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-8);
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  line-height: var(--line-height-normal);
+}
+
+.icon {
+  flex-shrink: 0;
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  margin-top: calc(var(--border-width) * 2);
+  color: var(--color-text-muted);
+}

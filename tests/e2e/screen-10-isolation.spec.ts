@@ -4,7 +4,7 @@
 //  - 응답 본문(HTML·RSC)에도 다른 학교 시약명·사용자 이름·학교명 없음
 //  - ?q= 로 다른 학교 시약명을 검색해도 0건 (그 학교 계정에게는 같은 검색이 1건 이상 — 양성 대조)
 // 다른 학교 기록이 실제로 있다는 양성 대조는 그 학교 계정의 브라우저 세션(RLS)으로 확인한다. service role 미사용.
-// 이 파일은 DB 에 쓰지 않는다 (학교 B 기록이 0행일 때만 db-helpers ensureUsageLog 가 1행 만든다 — D2 스펙과 같은 준비).
+// 이 파일은 DB 에 쓰지 않는다 (학교 B 최근 기록이 0행일 때만 db-helpers ensureUsageLog 가 오늘 1행 만든다 — D2 스펙과 같은 준비).
 import { test, expect, type Page } from "@playwright/test";
 import { ROLE_LABEL, SCHOOL_A_ROLES, ensureUsageLog, signIn, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";

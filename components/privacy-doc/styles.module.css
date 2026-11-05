@@ -1,0 +1,72 @@
+/* 시안 19 privacy-doc: 사이 16 / doc-head 사이 4 / doc-sections 위 8 · 사이 24 / doc-section 사이 4 / section-content 사이 8 */
+.doc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-24);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.date {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  padding-top: var(--space-8);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  scroll-margin-top: var(--space-16);
+}
+
+.sectionTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-17);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.body {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+/* 시안 19-desktop doc-sections: 절 사이 12 (모바일 24) */
+@media (min-width: 1024px) {
+  .sections {
+    gap: var(--space-12);
+  }
+}

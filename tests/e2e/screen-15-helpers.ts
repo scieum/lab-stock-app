@@ -68,12 +68,34 @@ export function guestRoutes(): { screen: number; route: string }[] {
  * `/`(15 와 공유) 가 아니고, 둘러보기(`-guest`, guest_screens) 경로가 아니고, [param] 이 없는 경로.
  */
 export function protectedRoutes(): { screen: number; route: string }[] {
-  const open = new Set([routeOf(SCREEN), routeOf(SIGNUP), routeOf(LOGIN)]);
+  const open = new Set([routeOf(SCREEN), routeOf(SIGNUP), routeOf(LOGIN), ...publicRoutes().map((p) => p.route)]);
   const guest = new Set(guestRoutes().map((g) => g.route));
   return Object.entries(devRules.routes)
     .filter(([k, r]) => !isGuestRouteKey(k) && !guest.has(r) && !open.has(r) && !r.includes("["))
-    .map(([s, r]) => ({ screen: Number(s), route: r }));
+    .map(([k, r]) => ({ screen: screenOfRouteKey(k), route: r }));
 }
+
+/** routes 키 → 화면 번호 ("20-new" → 20, "17-doc" → 17) */
+export const screenOfRouteKey = (k: string): number => parseInt(k, 10);
+
+/** dev-rules route_auth 가 '로그인 전·후 모두 (공개…' 인 경로 (d7 §30: 화면 19 /privacy) — 로그인 없이 열려야 한다 */
+export function publicRoutes(): { screen: number; route: string }[] {
+  const auth = (devRules as unknown as { route_auth: Record<string, string> }).route_auth;
+  return Object.entries(devRules.routes)
+    .filter(([k]) => /^로그인 전·후 모두/.test(auth[k] ?? ""))
+    .map(([k, r]) => ({ screen: screenOfRouteKey(k), route: r }));
+}
+
+/**
+ * 이번 run 에서 화면 15 다음 차례인 새 화면(rules privacy_page.screen 19 · board.screen 20) — 그 경로 검사는 그 화면 태그([S19]·[S20])로
+ * 붙여 화면 15 판정(--grep "[S15]|[S*]")에 끼지 않게 한다.
+ */
+export const LATER_SCREENS: number[] = [
+  (rules as unknown as { privacy_page: { screen: number } }).privacy_page.screen,
+  (rules as unknown as { board: { screen: number } }).board.screen,
+];
+/** 경로 검사 태그 화면: 다음 차례 화면이면 그 화면, 아니면 15 */
+export const tagScreenOf = (screen: number): number => (LATER_SCREENS.includes(screen) ? screen : SCREEN);
 
 type FrameNode = { name: string; type: string; path: string[]; text: { characters: string } | null };
 type FrameFile = { frames: { name: string; nodes: FrameNode[] }[] };

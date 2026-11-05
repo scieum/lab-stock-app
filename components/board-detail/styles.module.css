@@ -1,0 +1,83 @@
+/* 시안 20-detail board-detail: 사이 16 / detail-head 사이 8 / title-block 사이 4 / meta-row 양 끝 */
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.titleRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-8);
+}
+
+.titleBlock {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.category {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.hidden {
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-24);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+}
+
+.title:focus {
+  outline: none;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.metaText {
+  min-width: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-normal);
+}
+
+.divider {
+  width: 100%;
+  height: var(--border-width);
+  margin: 0;
+  border: 0;
+  background: var(--color-border);
+}
+
+.body {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  line-height: var(--line-height-normal);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}

@@ -43,6 +43,18 @@ export function guestManageMenu(): ManageGroup[] {
   return toGroups(guestSidebarMenu().flatMap((g) => g.items));
 }
 
+/**
+ * 맨 아래 넷째 묶음 '도움말' (rules 1.32 manage.guide, 시안 18-mobile · 18-guest-mobile, d7 §30):
+ * board-link '게시판'(로그인한 모든 역할) + guide-link '사용 가이드 ↗'(모든 역할 · 둘러보기). 둘러보기는 guide-link 만.
+ * manage-row 묶음(manageMenu)과 따로 둔다 — 행이 manage-row 가 아니라 board-link · guide-link 이다.
+ */
+export const MANAGE_HELP_TITLE = "도움말";
+export type ManageHelp = { title: string; board: boolean; guide: true };
+
+export function manageHelp(kind: "member" | "guest"): ManageHelp {
+  return { title: MANAGE_HELP_TITLE, board: kind === "member", guide: true };
+}
+
 /** 관리 목록 요약 숫자 (한 번의 서버 읽기 결과). 없는 값은 그 항목 요약을 그리지 않는다 */
 export type ManageCounts = {
   reagents?: { total: number; low: number };
@@ -51,6 +63,8 @@ export type ManageCounts = {
   reorder?: number;
   users?: { student: number; teacher: number; admin: number };
   vendors?: number;
+  /** 내가 쓴 게시판 글 중 답변 완료 수 (도움말 묶음 board-link 요약 — 값 없음 = caption 없음) */
+  boardAnswered?: number;
 };
 
 const num = (n: number) => n.toLocaleString("ko-KR");
@@ -103,7 +117,8 @@ export type TabKey = "home" | "manage" | "scan" | "records";
 /**
  * 로그인 후 활성 탭 (rules tab_bar.labels_source, d7 §29):
  * 13 홈 = 홈 · 10 /usage = 기록 · 12 /scan = QR 스캔 ·
- * 그 밖의 관리 아래 화면(2·5·6·7·8·9·11·17)과 더 깊은 화면(3·4 /usage/new·16·센서 상세·폼·서류) · 18 /manage = 관리.
+ * 그 밖의 관리 아래 화면(2·5·6·7·8·9·11·17)과 더 깊은 화면(3·4 /usage/new·16·센서 상세·폼·서류) · 18 /manage
+ * · 20 게시판(/board · /board/*, rules 1.32 board.entry) = 관리.
  */
 export function tabActiveKey(pathname: string): TabKey | undefined {
   if (pathname === "/" || pathname === "") return "home";
@@ -120,7 +135,8 @@ export function tabActiveKey(pathname: string): TabKey | undefined {
     under(pathname, "/manual") ||
     under(pathname, "/reorder") ||
     under(pathname, "/users") ||
-    under(pathname, "/vendors")
+    under(pathname, "/vendors") ||
+    under(pathname, "/board")
   )
     return "manage";
   return undefined;
@@ -139,7 +155,10 @@ export function guestTabActiveKey(pathname: string): TabKey | undefined {
   return undefined;
 }
 
-/** 관리 아래 첫 화면 (manage-back '‹ 관리' 를 두는 곳): 2·5·6·7·8·9·11·17 목록 화면 */
+/**
+ * 관리 아래 첫 화면 (nav-pill 안 manage-back '‹ 관리' 를 두는 곳): 2·5·6·7·8·9·11·17 목록 화면.
+ * 20 게시판 목록의 '‹ 관리' 는 시안 20-mobile 대로 nav-pill(워드마크) 아래 본문 head-row 에 페이지가 그린다.
+ */
 const MANAGE_CHILDREN = ["/reagents", "/manual", "/reorder", "/intake", "/users", "/vendors", "/cabinets", "/sensors"];
 const GUEST_MANAGE_CHILDREN = ["/demo/reagents", "/demo/sensors"];
 

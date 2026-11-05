@@ -11,7 +11,9 @@ import { join } from "node:path";
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { isDesktopMigrated } from "../frames";
 import {
+  BOARD_LINK,
   DESKTOP_SHELL as DS,
+  frameActive,
   frameActiveLabel,
   frameNode,
   frameSidebarItems,
@@ -127,13 +129,16 @@ async function expectDesktopShell(page: Page, role: ShellRole, screen: number, w
     const want = GROUP_TITLES[role].includes(t) ? 1 : 0;
     await expect(sb.getByText(exact(t)), `${where}: 묶음 제목 "${t}" ${want}`).toHaveCount(want);
   }
-  // 현재 화면 활성 1 = 시안 {N}-desktop 의 칠한 메뉴, aria-current=page, 바탕 = 시안 활성 색
-  const want = frameActiveLabel(screen);
-  const active = sb.locator(`${sel(DS.item)}[aria-current="page"]`);
-  await expect(active, `${where}: 활성 메뉴 1`).toHaveCount(1);
+  // 현재 화면 활성 1 = 시안 {N}-desktop 의 칠한 메뉴(sidebar-item, 화면 20 은 board-link — rules desktop_shell.board_link),
+  // aria-current=page, 바탕 = 시안 활성 색. 사이드바 안 현재 표시는 그것 하나뿐
+  const fa = frameActive(screen);
+  const want = fa.label;
+  const active = sb.locator(`${sel(fa.component)}[aria-current="page"]`);
+  await expect(sb.locator('[aria-current="page"]'), `${where}: 사이드바 현재 표시 1`).toHaveCount(1);
+  await expect(active, `${where}: 활성 ${fa.component} 1`).toHaveCount(1);
   await expect(active, `${where}: 활성 = 시안 "${want}"`).toHaveText(exact(want));
-  expect(await bg(active), `${where}: 활성 바탕 = 시안 ${ACTIVE_FILL}`).toBe(hexToRgb(ACTIVE_FILL));
-  for (const label of menu.filter((l) => l !== want)) {
+  expect(await bg(active), `${where}: 활성 바탕 = 시안 ${fa.fill}`).toBe(hexToRgb(fa.fill));
+  for (const label of menu.filter((l) => fa.component !== DS.item || l !== want)) {
     expect(await bg(itemByLabel(page, label)), `${where}: "${label}" 은 활성 바탕 아님`).not.toBe(hexToRgb(ACTIVE_FILL));
   }
   // 치수: 폭 240 · radius 0 · 바탕 = 시안 app-sidebar 색 · 본문은 사이드바 오른쪽
@@ -184,7 +189,9 @@ test(`[C3][S*] 기대값 원본: dev-rules desktop_shell_done · desktop_shell.s
     expect(sb.width, `${frame} app-sidebar 폭`).toBe(DS.width);
     expect(sb.cornerRadius, `${frame} app-sidebar radius`).toBe(DS.radius);
     const fi = frameSidebarItems(frame);
-    expect(fi.filter((i) => i.active), `${frame} 활성 1`).toHaveLength(1);
+    // 20-desktop 은 sidebar-item 대신 board-link 가 현재 표시 (rules desktop_shell.board_link) — 둘을 합쳐 정확히 1
+    expect(() => frameActive(s), `${frame} 현재 표시 1 (sidebar-item·board-link)`).not.toThrow();
+    if (frameActive(s).component === BOARD_LINK) expect(fi.filter((i) => i.active), `${frame} sidebar-item 활성 0 (board-link 가 현재)`).toHaveLength(0);
     // 1.26 이전에 그려진 프레임에는 menu_source 로 더한 메뉴('센서')가 없다 — 그 프레임은 더하기 전 메뉴와 같아야 한다
     const stale = !fi.some((i) => i.label === MENU_ADDED);
     const expected = (r: ShellRole) => sidebarMenuOf(r).filter((l) => !stale || l !== MENU_ADDED);
@@ -206,7 +213,7 @@ test(`[C3][S*] 기대값 원본: dev-rules desktop_shell_done · desktop_shell.s
 
 for (const screen of SHELL_SCREENS) {
   const roles = ROLES.filter((r) => canOpen(r, screen));
-  test(`[C3][S${screen}] ${roles.map((r) => ROLE_LABEL[r]).join("·")} ${routeOf(screen)}: 1440 = ${DS.component} 1 · ${DS.item} = 역할별 메뉴(문구·순서 = desktop_shell.menu) · 활성 1 = 시안 "${frameActiveLabel(screen)}" · nav-pill·tab-bar 0 · 폭 ${DS.width} · radius ${DS.radius} · 본문은 오른쪽 · 학교명·계정 줄 / 390 = nav-pill 1 · tab-bar 1 · ${DS.component} 0`, async ({ browser }, info) => {
+  test(`[C3][S${screen}] ${roles.map((r) => ROLE_LABEL[r]).join("·")} ${routeOf(screen)}: 1440 = ${DS.component} 1 · ${DS.item} = 역할별 메뉴(문구·순서 = desktop_shell.menu) · 활성 1 = 시안 "${frameActive(screen).label}" · nav-pill·tab-bar 0 · 폭 ${DS.width} · radius ${DS.radius} · 본문은 오른쪽 · 학교명·계정 줄 / 390 = nav-pill 1 · tab-bar 1 · ${DS.component} 0`, async ({ browser }, info) => {
     test.setTimeout(240_000);
     for (const role of roles) {
       const { context, page, viewport } = await openAs(browser, info, role, 13);
@@ -480,7 +487,14 @@ test.describe("일회용 계정 로그아웃", () => {
 type PreLogin = { screens: number[]; component: string; forbidden: string[]; desktop_required: Record<string, string[]> };
 const PRE = (DS as unknown as { pre_login: PreLogin }).pre_login;
 
-test(`[C3][S*] 로그인 전 ${PRE.screens.join("·")} · 둘러보기 ${rules.guest.screens.join("·")}: desktop_migrated_screens 에 든 화면은 C3(로그인 전 = ${PRE.component} 1 · ${PRE.forbidden.join("·")} 0 / 둘러보기 1440 = ${DS.component} 1 · 사이드바 안 ${rules.guest.lock} ${(rules.guest as unknown as { sidebar_locks: number }).sidebar_locks}), 아직이면 셸 run a 가 바꾸지 않았다(nav-pill 1 · ${DS.component}·${DS.item} 0)`, async ({ browser }, info) => {
+/** rules privacy_page.screen (19 /privacy) — 화면 19 차례에 만든다. 그 화면 검사는 [S19] 로 따로 (화면 15 판정에 끼지 않게) */
+const PRIVACY_SCREEN = (rules as unknown as { privacy_page: { screen: number } }).privacy_page.screen;
+const PRE_GROUPS = [
+  { tag: "S*", pre: PRE.screens.filter((s) => s !== PRIVACY_SCREEN), guest: true },
+  { tag: `S${PRIVACY_SCREEN}`, pre: [PRIVACY_SCREEN], guest: false },
+];
+for (const G of PRE_GROUPS)
+test(`[C3][${G.tag}] 로그인 전 ${G.pre.join("·")}${G.guest ? ` · 둘러보기 ${rules.guest.screens.join("·")}` : ""}: desktop_migrated_screens 에 든 화면은 C3(로그인 전 = ${PRE.component} 1 · ${PRE.forbidden.join("·")} 0 / 둘러보기 1440 = ${DS.component} 1 · 사이드바 안 ${rules.guest.lock} ${(rules.guest as unknown as { sidebar_locks: number }).sidebar_locks}), 아직이면 셸 run a 가 바꾸지 않았다(nav-pill 1 · ${DS.component}·${DS.item} 0)`, async ({ browser }, info) => {
   test.setTimeout(240_000);
   const demo = (await demoReagents())[0];
   const guestPath: Record<number, string> = {
@@ -490,8 +504,8 @@ test(`[C3][S*] 로그인 전 ${PRE.screens.join("·")} · 둘러보기 ${rules.g
     16: devRules.routes["16-guest"].replace(/\[[^\]]+\]/, demo.id),
   };
   const targets: { screen: number; path: string; kind: "pre" | "guest" }[] = [
-    ...PRE.screens.map((s) => ({ screen: s, path: routeOf(s), kind: "pre" as const })),
-    ...rules.guest.screens.filter((s) => guestPath[s]).map((s) => ({ screen: s, path: guestPath[s], kind: "guest" as const })),
+    ...G.pre.map((s) => ({ screen: s, path: routeOf(s), kind: "pre" as const })),
+    ...rules.guest.screens.filter((s) => G.guest && guestPath[s]).map((s) => ({ screen: s, path: guestPath[s], kind: "guest" as const })),
   ];
   const viewport = info.project.name as ViewportName;
   const context = await anonContext(browser, info);

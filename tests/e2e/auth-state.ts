@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Browser, BrowserContext, Page, Response, TestInfo } from "@playwright/test";
 import type { Role } from "./db-helpers";
+import { hideFeatureIntro } from "./feature-intro-helpers";
 import { devRules, loginViaUi, routeOf, sel, type ViewportName } from "./screen-helpers";
 
 const DIR = join(tmpdir(), "lab-stock-e2e-auth");
@@ -81,8 +82,17 @@ export type RolePage = { context: BrowserContext; page: Page; viewport: Viewport
  * 역할 계정으로 로그인된 새 컨텍스트에서 화면을 연다 (프로젝트 viewport = dev-rules.json viewports).
  * 저장 세션이 거부되면(로그인 화면으로 이동) 한 번 다시 로그인한다.
  * path: 화면 route 에 [param] 이 있을 때 실제 경로 (예: /reagents/{id}). 생략하면 routes[screen].
+ * opts.featureIntro: true 면 화면 13 신기능 소개 팝업을 그대로 둔다. 기본은 '이번 접속에서 닫음' 주입(feature-intro-helpers) —
+ * 팝업이 교사·admin 홈을 덮어 다른 홈 테스트의 클릭을 막지 않게 한다.
  */
-export async function openAs(browser: Browser, info: TestInfo, role: Role, screen: number, path?: string): Promise<RolePage> {
+export async function openAs(
+  browser: Browser,
+  info: TestInfo,
+  role: Role,
+  screen: number,
+  path?: string,
+  opts: { featureIntro?: boolean } = {},
+): Promise<RolePage> {
   const vp = viewportOf(info);
   const route = path ?? routeOf(screen);
   for (const force of [false, true]) {
@@ -92,6 +102,7 @@ export async function openAs(browser: Browser, info: TestInfo, role: Role, scree
       viewport: { width: vp.width, height: vp.height },
       storageState,
     });
+    if (!opts.featureIntro) await hideFeatureIntro(context);
     const page = await context.newPage();
     const response = await page.goto(route);
     await page.waitForLoadState("load");

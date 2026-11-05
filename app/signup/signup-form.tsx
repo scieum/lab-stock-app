@@ -12,6 +12,7 @@ import { SchoolSelectSido } from "@/components/school-select-sido";
 import type { SelectOption } from "@/components/select-field";
 import { TextInput } from "@/components/text-input";
 import { SignupErrorSummary } from "@/components/signup-error-summary";
+import { TermsAgree, type TermsAgreeValue } from "@/components/terms-agree";
 import {
   DISPLAY_NAME_MAX,
   PASSWORD_MIN,
@@ -24,28 +25,6 @@ import { useSchoolSelect } from "./use-school-select";
 import styles from "./signup.module.css";
 
 const toOptions = (list: string[]): SelectOption[] => list.map((v) => ({ value: v, label: v }));
-
-const TERMS = [
-  {
-    key: "terms",
-    label: "서비스 이용약관 동의 (필수)",
-    summary: "Lab_Stock은 학교 과학실 시약 재고를 학교별로 관리하는 서비스예요. 계정은 가입할 때 고른 학교에만 연결돼요.",
-  },
-  {
-    key: "privacy",
-    label: "개인정보 수집·이용 동의 (필수)",
-    // 개인정보 보호법 제15조 제2항 고지 4가지: 항목 · 목적 · 보유 기간 · 거부 권리와 불이익
-    summary:
-      "수집 항목: 이름, 개인 이메일, 비밀번호(암호화해 저장), 학교, 역할, 접속 기록. 이용 목적: 계정 확인, 같은 학교 안에서 사용 기록에 이름 표시. 보유 기간: 탈퇴할 때까지. 동의하지 않을 수 있지만, 동의하지 않으면 가입할 수 없어요.",
-  },
-  {
-    key: "age",
-    label: "만 14세 이상입니다 (필수)",
-    summary: "만 14세 미만은 보호자 동의가 필요해서 Lab_Stock에 가입할 수 없어요.",
-  },
-] as const;
-
-type TermKey = (typeof TERMS)[number]["key"];
 
 type Done = { email: string; needsEmailConfirm: boolean };
 
@@ -76,8 +55,7 @@ export function SignupForm() {
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [agree, setAgree] = useState<Record<TermKey, boolean>>({ terms: false, privacy: false, age: false });
-  const [openTerm, setOpenTerm] = useState<TermKey | null>(null);
+  const [agree, setAgree] = useState<TermsAgreeValue>({ terms: false, privacy: false, age: false });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   // 가입하기를 한 번 누른 뒤부터 칸별 오류를 보인다 (고치면 바로 사라진다)
@@ -86,7 +64,6 @@ export function SignupForm() {
   const inFlight = useRef(false);
   const [done, setDone] = useState<Done | null>(null);
 
-  const allAgreed = agree.terms && agree.privacy && agree.age;
   const current: SignupFields = {
     neisCode: sel.school,
     displayName,
@@ -99,7 +76,6 @@ export function SignupForm() {
   };
   const problems = tried ? signupFieldProblems(current) : [];
   const problemOf = (f: SignupField) => problems.find((p) => p.field === f)?.message;
-  const toggleAll = () => setAgree({ terms: !allAgreed, privacy: !allAgreed, age: !allAgreed });
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -310,59 +286,7 @@ export function SignupForm() {
         />
       </section>
 
-      <fieldset className={styles.terms} data-name="terms">
-        <legend className={styles.srOnly}>약관 동의</legend>
-        <label className={styles.termAll}>
-          <input type="checkbox" className={styles.checkInput} checked={allAgreed} onChange={toggleAll} />
-          <span className={styles.checkHit} aria-hidden="true">
-            <span className={styles.checkCircle}>
-              <Icon name="check" className={styles.checkIcon} />
-            </span>
-          </span>
-          <span className={styles.termAllLabel}>모두 동의</span>
-        </label>
-        <hr className={styles.divider} />
-        {TERMS.map((t) => (
-          <div key={t.key} className={styles.termItem}>
-            <div className={styles.termRow}>
-              <label className={styles.termLabelWrap}>
-                <input
-                  type="checkbox"
-                  data-term={t.key}
-                  className={styles.checkInput}
-                  checked={agree[t.key]}
-                  onChange={(e) => setAgree((a) => ({ ...a, [t.key]: e.target.checked }))}
-                />
-                <span className={styles.checkHit} aria-hidden="true">
-                  <span className={styles.checkCircle}>
-                    <Icon name="check" className={styles.checkIcon} />
-                  </span>
-                </span>
-                <span className={styles.termLabel}>{t.label}</span>
-              </label>
-              <button
-                type="button"
-                className={styles.termView}
-                aria-expanded={openTerm === t.key}
-                aria-controls={`term-${t.key}`}
-                aria-label={`${t.label} 내용 보기`}
-                onClick={() => setOpenTerm((k) => (k === t.key ? null : t.key))}
-              >
-                <Icon
-                  name={openTerm === t.key ? "chevron-down" : "chevron-right"}
-                  className={styles.termViewIcon}
-                />
-              </button>
-            </div>
-            {openTerm === t.key ? (
-              <p id={`term-${t.key}`} className={styles.termSummary}>
-                {t.summary}
-              </p>
-            ) : null}
-          </div>
-        ))}
-        {problemOf("terms") ? <p className={styles.fieldError}>{problemOf("terms")}</p> : null}
-      </fieldset>
+      <TermsAgree value={agree} onChange={setAgree} error={problemOf("terms")} />
 
       {error ? (
         <p className={styles.message} role="alert">

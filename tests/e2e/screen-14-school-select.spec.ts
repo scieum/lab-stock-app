@@ -26,6 +26,8 @@ import {
 } from "./screen-14-helpers";
 
 const N1 = rules.never.N1;
+const ONLINE = (rules.neis as unknown as { online_schools: { kind: string; name_pattern: string } }).online_schools;
+const ONLINE_NAME = new RegExp(ONLINE.name_pattern);
 type NeisSchool = { name: string; sido: string; region: string; neis_code: string; kind: string };
 const KIND_FIRST = rules.school_kind_select.default.match(/'([^']+)'/)?.[1] ?? "";
 
@@ -142,7 +144,9 @@ test(`[N1-d][S${SCREEN}] ${N1.school_select_levels.join(" → ")} 순서 강제 
   expect(schools.length, "학교 응답").toBeGreaterThan(0);
   for (const s of schools) {
     expect(s.kind, "학교급").toBe(rules.neis.default_kind);
-    expect(s.name, "학교 이름에 학교급").toContain(rules.neis.default_kind);
+    // rules neis.online_schools (2026-10-29): 시·도 온라인학교는 학교급 이름이 없어도 그 학교급(kind) 목록에 들어간다
+    const online = ONLINE.kind === rules.neis.default_kind && ONLINE_NAME.test(s.name);
+    expect(s.name.includes(rules.neis.default_kind) || online, `학교 이름에 학교급 또는 online_schools.name_pattern: ${s.name}`).toBe(true);
     expect(s.sido).toBe(rules.neis.default_sido);
     expect(s.region).toBe(rules.neis.default_region);
   }

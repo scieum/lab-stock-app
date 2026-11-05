@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ManageList } from "@/components/manage-list";
-import type { ManageCounts, ManageGroup } from "@/lib/manage-menu";
+import { manageHelp, type ManageCounts, type ManageGroup } from "@/lib/manage-menu";
 import { useIsDesktop } from "@/lib/use-viewport";
 import styles from "./manage.module.css";
 
@@ -38,7 +38,7 @@ export function ManageView({ groups, counts, desktopHref, guest = false }: Props
   return (
     <div className={[styles.page, guest ? styles.guest : ""].filter(Boolean).join(" ")}>
       <h1 className={styles.title}>관리</h1>
-      <ManageList className={styles.list} groups={groups} counts={counts} />
+      <ManageList className={styles.list} groups={groups} counts={counts} help={manageHelp(guest ? "guest" : "member")} />
     </div>
   );
 }

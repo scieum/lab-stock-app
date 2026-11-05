@@ -14,12 +14,11 @@
 
 .bleedLeft {
   border-left: 0;
-  border-radius: var(--radius-none) var(--radius-md) var(--radius-md) var(--radius-none);
+  border-radius: var(--radius-none); /* 시안 1.32 shot-image: 왼쪽 끝까지 가는 조각 = 0 */
 }
 
 .bleedRight {
-  border-right: 0;
-  border-radius: var(--radius-md) var(--radius-none) var(--radius-none) var(--radius-md);
+  border-right: 0; /* radius 는 .shot 그대로 네 모서리 16 (시안 1.32 shot-image) */
 }
 
 .inner {
