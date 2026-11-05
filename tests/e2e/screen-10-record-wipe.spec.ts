@@ -9,7 +9,7 @@
 import { join } from "node:path";
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ROLE_LABEL, type Role } from "./db-helpers";
+import { ROLE_LABEL, ensureUsageLog, signIn, type Role } from "./db-helpers";
 import { openAs } from "./auth-state";
 import { browserClient, browserSession, devRules, routeOf, rules, sel, type ViewportName } from "./screen-helpers";
 import { waitWidthSettled } from "./desk-helpers";
@@ -100,6 +100,8 @@ const shot = (page: Page, name: string, vp: ViewportName) => page.screenshot({ p
 let sharedBefore: SharedSnap | null = null;
 test.beforeAll(async ({}, info) => {
   info.setTimeout(120_000);
+  // 대조 "기록이 있다": 공용 학교 A·B 에 기본 기간(최근 1개월) 안 기록 — 날짜가 지나도 (지우지 않는 추가라 공용 불변 검사와 무관)
+  for (const r of ["teacher", "schoolB"] as Role[]) await ensureUsageLog(await signIn(r), info);
   if (HAS_SERVICE) sharedBefore = await sharedSnapshot();
 });
 test.afterAll(async ({}, info) => {
